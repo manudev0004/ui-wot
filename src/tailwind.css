@@ -1,0 +1,4 @@
+/* Tailwind CSS imports - separated to avoid linting errors */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

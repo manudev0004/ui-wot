@@ -1,0 +1,95 @@
+{
+  "@context": ["https://www.w3.org/2019/wot/td/v1"],
+  "title": "CoffeeMachine",
+  "id": "urn:dev:wot:coffee-machine:001",
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": ["nosec_sc"],
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": ["idle", "brewing", "grinding", "error"],
+      "readOnly": true,
+      "forms": [{
+        "href": "http://localhost:8080/state",
+        "contentType": "application/json",
+        "op": "readproperty"
+      }]
+    },
+    "waterLevel": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "unit": "percent",
+      "readOnly": true,
+      "forms": [{
+        "href": "http://localhost:8080/waterLevel",
+        "op": "readproperty"
+      }]
+    },
+    "beanLevel": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "unit": "percent",
+      "readOnly": true,
+      "forms": [{
+        "href": "http://localhost:8080/beanLevel",
+        "op": "readproperty"
+      }]
+    },
+    "binLevel": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "unit": "percent",
+      "readOnly": true,
+      "forms": [{
+        "href": "http://localhost:8080/binLevel",
+        "op": "readproperty"
+      }]
+    },
+    "power": {
+      "type": "boolean",
+      "writeOnly": true,
+      "forms": [{
+        "href": "http://localhost:8080/power",
+        "op": "writeproperty"
+      }]
+    }
+  },
+  "actions": {
+    "brewCoffee": {
+      "description": "Brewing selected coffee",
+      "input": {
+        "type": "string",
+        "enum": ["espresso", "americano", "latte"]
+      },
+      "forms": [{
+        "href": "http://localhost:8080/brewCoffee",
+        "op": "invokeaction"
+      }]
+    },
+    "stopBrewing": {
+      "description": "Stops brewing process",
+      "forms": [{
+        "href": "coap://localhost:5683/stopBrewing",
+        "op": "invokeaction"
+      }]
+    }
+  },
+  "events": {
+    "warning": {
+      "data": {
+        "type": "string"
+      },
+      "forms": [{
+        "href": "http://localhost:8080/events/warning",
+        "subprotocol": "longpoll"
+      }]
+    }
+  }
+}
