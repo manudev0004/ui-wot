@@ -1,6 +1,12 @@
-# UI-WoT
+<h1>
+  <picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/eclipse-thingweb/thingweb/master/brand/logos/ui-wot_for_dark_bg.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/eclipse-thingweb/thingweb/master/brand/logos/ui-wot.svg">
+  <img title="ThingWeb ui-wot" alt="Thingweb ui-wot logo" src="https://raw.githubusercontent.com/eclipse-thingweb/thingweb/master/brand/logos/ui-wot.svg" width="300">
+</picture>
+</h1>
 
-## 👋 Hey there!
+> UI for your IoT applications and devices
 
 Welcome to **UI-WoT**, a Google Summer of Code 2025 project with Eclipse Foundation!. We are working to parse any valid WoT Thing Description, extract all its affordances (properties, actions, and events), and then automatically render them as usable UI widgets, and enable real-time interaction
 
@@ -35,5 +41,3 @@ Feel free to give suggestions here, will love to hear from you!
 [View the UI-WoT Figma Design](https://www.figma.com/design/PcgN3oVPl6387MqqidCF1H/UI-WOT?node-id=0-1&t=6rQYTFoWH27GqBwQ-1)
 
 I will be sharing the progress with the community. Stay tuned!
-
-
