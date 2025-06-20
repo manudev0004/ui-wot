@@ -1,0 +1,22 @@
+{
+  "name": "@thingweb/ui-wot-components",
+  "version": "0.1.0",
+  "description": "Independent UI components library to build interfaces for IoT applications",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eclipse-thingweb/ui-wot.git"
+  },
+  "keywords": [
+    "ui-components",
+    "iot",
+    "dashboard"
+  ],
+  "author": "Eclipse Thingweb <thingweb-dev@eclipse.org> (https://thingweb.io/)",
+  "license": "EPL-2.0 OR W3C-20150513",
+  "bugs": {
+    "url": "https://github.com/eclipse-thingweb/ui-wot/issues"
+  },
+  "homepage": "https://github.com/eclipse-thingweb/ui-wot/packages/components#readme"
+}

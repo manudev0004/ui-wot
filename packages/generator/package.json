@@ -1,0 +1,19 @@
+{
+  "name": "@thingweb/ui-wot-generator",
+  "version": "0.1.0",
+  "description": "A library capable of creating UI components from a W3C Thing Description",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eclipse-thingweb/ui-wot.git"
+  },
+  "devDependencies": {},
+  "scripts": {},
+  "keywords": [
+    "ui",
+    "generator",
+    "dashboard"
+  ],
+  "author": "Eclipse Thingweb <thingweb-dev@eclipse.org> (https://thingweb.io/)",
+  "license": "EPL-2.0 OR W3C-20150513",
+  "homepage": "https://github.com/eclipse-thingweb/ui-wot/packages/generator#readme"
+}
