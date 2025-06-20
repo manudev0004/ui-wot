@@ -2,7 +2,7 @@
   "name": "@thingweb/ui-wot",
   "private": true,
   "version": "0.1.0",
-  "description": "A set of projects to build user interfaces for IoT applications using Web of Things (WoT) standards.",
+  "description": "A set of packages to build user interfaces for IoT applications using Web of Things (WoT) standards.",
   "scripts": {},
   "repository": {
     "type": "git",

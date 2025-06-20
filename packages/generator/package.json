@@ -1,7 +1,7 @@
 {
   "name": "@thingweb/ui-wot-generator",
   "version": "0.1.0",
-  "description": "A library capable of create ui components from a W3C Thing Description",
+  "description": "A library capable of creating ui components from a W3C Thing Description",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eclipse-thingweb/ui-wot.git"
