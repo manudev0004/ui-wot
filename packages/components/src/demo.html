@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
+  <title>UI WoT Components Demo</title>
+  <script type="module" src="/build/ui-wot-components.esm.js"></script>
+  <script nomodule src="/build/ui-wot-components.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 2rem;
+      background: #f9fafb;
+    }
+    
+    .demo-section {
+      background: white;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .demo-section h2 {
+      margin-top: 0;
+      color: #1f2937;
+    }
+    
+    .component-grid {
+      display: grid;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    
+    .component-demo {
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      background: #f9fafb;
+    }
+    
+    .component-demo h4 {
+      margin: 0 0 0.5rem 0;
+      color: #374151;
+      font-size: 14px;
+    }
+    
+    .variant-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    
+    .event-log {
+      background: #1f2937;
+      color: #f9fafb;
+      padding: 1rem;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 1rem;
+    }
+    
+    .custom-themed {
+      --ui-toggle-bg-checked: #10b981;
+      --ui-slider-fill-color: #f59e0b;
+      --ui-slider-thumb-border: 2px solid #f59e0b;
+    }
+  </style>
+</head>
+<body>
+  <h1>UI WoT Components Demo</h1>
+  
+  <!-- Toggle Component Demo -->
+  <div class="demo-section">
+    <h2>UI Toggle Component</h2>
+    
+    <div class="variant-grid">
+      <div class="component-demo">
+        <h4>Default</h4>
+        <ui-toggle id="toggle-default"></ui-toggle>
+      </div>
+      
+      <div class="component-demo">
+        <h4>Primary</h4>
+        <ui-toggle variant="primary" id="toggle-primary"></ui-toggle>
+      </div>
+      
+      <div class="component-demo">
+        <h4>Secondary</h4>
+        <ui-toggle variant="secondary" id="toggle-secondary"></ui-toggle>
+      </div>
+      
+      <div class="component-demo">
+        <h4>Accent</h4>
+        <ui-toggle variant="accent" id="toggle-accent"></ui-toggle>
+      </div>
+      
+      <div class="component-demo">
+        <h4>Checked</h4>
+        <ui-toggle checked id="toggle-checked"></ui-toggle>
+      </div>
+      
+      <div class="component-demo">
+        <h4>Disabled</h4>
+        <ui-toggle disabled id="toggle-disabled"></ui-toggle>
+      </div>
+      
+      <div class="component-demo">
+        <h4>Custom Theme</h4>
+        <ui-toggle class="custom-themed" id="toggle-custom"></ui-toggle>
+      </div>
+    </div>
+    
+    <div class="event-log" id="toggle-events"></div>
+  </div>
+  
+  <!-- Slider Component Demo -->
+  <div class="demo-section">
+    <h2>UI Slider Component</h2>
+    
+    <div class="component-grid">
+      <div class="component-demo">
+        <h4>Default (0-100)</h4>
+        <ui-slider id="slider-default" value="50"></ui-slider>
+      </div>
+      
+      <div class="component-demo">
+        <h4>Primary with Label</h4>
+        <ui-slider variant="primary" label="Volume" min="0" max="10" step="0.5" value="5" id="slider-primary"></ui-slider>
+      </div>
+      
+      <div class="component-demo">
+        <h4>Secondary Range</h4>
+        <ui-slider variant="secondary" min="20" max="80" step="5" value="50" id="slider-secondary"></ui-slider>
+      </div>
+      
+      <div class="component-demo">
+        <h4>Accent</h4>
+        <ui-slider variant="accent" value="75" id="slider-accent"></ui-slider>
+      </div>
+      
+      <div class="component-demo">
+        <h4>Disabled</h4>
+        <ui-slider disabled value="30" id="slider-disabled"></ui-slider>
+      </div>
+      
+      <div class="component-demo">
+        <h4>Custom Theme</h4>
+        <ui-slider class="custom-themed" label="Brightness" value="60" id="slider-custom"></ui-slider>
+      </div>
+    </div>
+    
+    <div class="event-log" id="slider-events"></div>
+  </div>
+  
+  <!-- TD Binding Demo -->
+  <div class="demo-section">
+    <h2>TD Binding Demo</h2>
+    <p>Components with simulated Thing Description property bindings:</p>
+    
+    <div class="component-grid">
+      <div class="component-demo">
+        <h4>Smart Light Toggle</h4>
+        <ui-toggle id="td-toggle"></ui-toggle>
+        <button onclick="simulateTDRead('toggle')">Simulate TD Read</button>
+      </div>
+      
+      <div class="component-demo">
+        <h4>Thermostat Slider</h4>
+        <ui-slider label="Temperature" min="15" max="30" id="td-slider"></ui-slider>
+        <button onclick="simulateTDRead('slider')">Simulate TD Read</button>
+      </div>
+    </div>
+    
+    <div class="event-log" id="td-events"></div>
+  </div>
+
+  <script>
+    // Event logging
+    const toggleLog = document.getElementById('toggle-events');
+    const sliderLog = document.getElementById('slider-events');
+    const tdLog = document.getElementById('td-events');
+    
+    function logEvent(log, event, detail) {
+      const time = new Date().toLocaleTimeString();
+      log.innerHTML += `[${time}] ${event}: ${JSON.stringify(detail)}\n`;
+      log.scrollTop = log.scrollHeight;
+    }
+    
+    // Toggle event listeners
+    document.querySelectorAll('ui-toggle').forEach(toggle => {
+      toggle.addEventListener('toggle', (e) => {
+        logEvent(toggleLog, `Toggle (${toggle.id})`, e.detail);
+      });
+    });
+    
+    // Slider event listeners
+    document.querySelectorAll('ui-slider').forEach(slider => {
+      slider.addEventListener('change', (e) => {
+        logEvent(sliderLog, `Slider (${slider.id})`, e.detail);
+      });
+    });
+    
+    // TD Binding simulation
+    let deviceState = {
+      lightSwitch: false,
+      temperature: 22
+    };
+    
+    const tdProperties = {
+      toggle: {
+        name: 'lightSwitch',
+        read: async () => {
+          logEvent(tdLog, 'TD Read', `lightSwitch = ${deviceState.lightSwitch}`);
+          return deviceState.lightSwitch;
+        },
+        write: async (value) => {
+          deviceState.lightSwitch = value;
+          logEvent(tdLog, 'TD Write', `lightSwitch = ${value}`);
+        }
+      },
+      slider: {
+        name: 'temperature',
+        read: async () => {
+          logEvent(tdLog, 'TD Read', `temperature = ${deviceState.temperature}`);
+          return deviceState.temperature;
+        },
+        write: async (value) => {
+          deviceState.temperature = value;
+          logEvent(tdLog, 'TD Write', `temperature = ${value}`);
+        }
+      }
+    };
+    
+    // Apply TD properties
+    document.getElementById('td-toggle').tdProperty = tdProperties.toggle;
+    document.getElementById('td-slider').tdProperty = tdProperties.slider;
+    
+    // TD simulation functions
+    function simulateTDRead(type) {
+      if (type === 'toggle') {
+        deviceState.lightSwitch = !deviceState.lightSwitch;
+        document.getElementById('td-toggle').tdProperty = { ...tdProperties.toggle };
+      } else if (type === 'slider') {
+        deviceState.temperature = Math.floor(Math.random() * 15) + 15;
+        document.getElementById('td-slider').tdProperty = { ...tdProperties.slider };
+      }
+    }
+    
+    // Initial log message
+    logEvent(toggleLog, 'Demo', 'Toggle component events will appear here');
+    logEvent(sliderLog, 'Demo', 'Slider component events will appear here');
+    logEvent(tdLog, 'Demo', 'TD binding events will appear here');
+  </script>
+</body>
+</html>

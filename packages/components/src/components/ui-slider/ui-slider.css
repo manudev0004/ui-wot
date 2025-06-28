@@ -1,0 +1,195 @@
+/**
+ * UI Slider Component Styles
+ * 
+ * Supports theming via CSS variables and variant classes
+ */
+
+:host {
+  /* CSS Variables for theming */
+  --ui-slider-track-color: var(--ui-slider-track-color-default, #e5e7eb);
+  --ui-slider-fill-color: var(--ui-slider-fill-color-default, #3b82f6);
+  --ui-slider-thumb-color: var(--ui-slider-thumb-color-default, #ffffff);
+  --ui-slider-thumb-border: var(--ui-slider-thumb-border-default, 2px solid #3b82f6);
+  --ui-slider-shadow: var(--ui-slider-shadow-default, 0 2px 4px rgba(0, 0, 0, 0.1));
+  
+  /* Sizing */
+  --ui-slider-height: 6px;
+  --ui-slider-thumb-size: 20px;
+  --ui-slider-container-height: 40px;
+  
+  /* Transitions */
+  --ui-slider-transition: all 0.2s ease-in-out;
+  
+  display: block;
+  width: 100%;
+}
+
+.ui-slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.ui-slider-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.ui-slider {
+  position: relative;
+  width: 100%;
+  height: var(--ui-slider-container-height);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  outline: none;
+}
+
+.ui-slider:focus-visible {
+  outline: 2px solid var(--ui-slider-fill-color);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ui-slider__track {
+  position: relative;
+  width: 100%;
+  height: var(--ui-slider-height);
+  background: var(--ui-slider-track-color);
+  border-radius: calc(var(--ui-slider-height) / 2);
+  overflow: hidden;
+}
+
+.ui-slider__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--ui-slider-fill-color);
+  border-radius: inherit;
+  transition: var(--ui-slider-transition);
+}
+
+.ui-slider__thumb {
+  position: absolute;
+  top: 50%;
+  width: var(--ui-slider-thumb-size);
+  height: var(--ui-slider-thumb-size);
+  background: var(--ui-slider-thumb-color);
+  border: var(--ui-slider-thumb-border);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: var(--ui-slider-transition);
+  box-shadow: var(--ui-slider-shadow);
+  cursor: grab;
+}
+
+.ui-slider__thumb:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.ui-slider--dragging .ui-slider__thumb {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.ui-slider-value {
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+  min-width: 40px;
+  font-weight: 500;
+}
+
+/* Disabled state */
+.ui-slider--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ui-slider--disabled .ui-slider__thumb {
+  cursor: not-allowed;
+}
+
+.ui-slider--disabled .ui-slider__thumb:hover {
+  transform: translate(-50%, -50%);
+}
+
+/* Variant styles */
+.ui-slider--primary {
+  --ui-slider-fill-color: var(--ui-slider-fill-color-primary, #3b82f6);
+  --ui-slider-thumb-border: var(--ui-slider-thumb-border-primary, 2px solid #3b82f6);
+}
+
+.ui-slider--secondary {
+  --ui-slider-fill-color: var(--ui-slider-fill-color-secondary, #6b7280);
+  --ui-slider-thumb-border: var(--ui-slider-thumb-border-secondary, 2px solid #6b7280);
+}
+
+.ui-slider--accent {
+  --ui-slider-fill-color: var(--ui-slider-fill-color-accent, #f59e0b);
+  --ui-slider-thumb-border: var(--ui-slider-thumb-border-accent, 2px solid #f59e0b);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .ui-slider__track {
+    border: 1px solid currentColor;
+  }
+  
+  .ui-slider__thumb {
+    border: 3px solid currentColor;
+    box-shadow: 0 0 0 1px white inset;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ui-slider__fill,
+  .ui-slider__thumb {
+    transition: none;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  :host {
+    --ui-slider-thumb-size: 24px;
+    --ui-slider-container-height: 44px;
+  }
+  
+  .ui-slider__thumb {
+    /* Larger touch target for mobile */
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Vertical orientation support (future enhancement) */
+.ui-slider--vertical {
+  width: var(--ui-slider-container-height);
+  height: 200px;
+  flex-direction: column;
+}
+
+.ui-slider--vertical .ui-slider__track {
+  width: var(--ui-slider-height);
+  height: 100%;
+}
+
+.ui-slider--vertical .ui-slider__fill {
+  width: 100%;
+  height: var(--percentage, 0%);
+  top: auto;
+  bottom: 0;
+}
+
+.ui-slider--vertical .ui-slider__thumb {
+  left: 50%;
+  top: auto;
+  bottom: var(--percentage, 0%);
+  transform: translate(-50%, 50%);
+}

@@ -1,0 +1,128 @@
+/**
+ * UI Toggle Component Styles
+ * 
+ * Supports theming via CSS variables and variant classes
+ */
+
+:host {
+  /* CSS Variables for theming */
+  --ui-toggle-bg: var(--ui-toggle-bg-default, #e5e7eb);
+  --ui-toggle-bg-checked: var(--ui-toggle-bg-checked-default, #3b82f6);
+  --ui-toggle-thumb-bg: var(--ui-toggle-thumb-bg-default, #ffffff);
+  --ui-toggle-border: var(--ui-toggle-border-default, transparent);
+  --ui-toggle-shadow: var(--ui-toggle-shadow-default, 0 2px 4px rgba(0, 0, 0, 0.1));
+  
+  /* Sizing */
+  --ui-toggle-width: 48px;
+  --ui-toggle-height: 24px;
+  --ui-toggle-thumb-size: 20px;
+  --ui-toggle-padding: 2px;
+  
+  /* Transitions */
+  --ui-toggle-transition: all 0.2s ease-in-out;
+  
+  display: inline-block;
+}
+
+.ui-toggle {
+  position: relative;
+  width: var(--ui-toggle-width);
+  height: var(--ui-toggle-height);
+  background: var(--ui-toggle-bg);
+  border: 1px solid var(--ui-toggle-border);
+  border-radius: calc(var(--ui-toggle-height) / 2);
+  cursor: pointer;
+  transition: var(--ui-toggle-transition);
+  outline: none;
+  padding: 0;
+  box-shadow: var(--ui-toggle-shadow);
+}
+
+.ui-toggle:focus-visible {
+  outline: 2px solid var(--ui-toggle-bg-checked);
+  outline-offset: 2px;
+}
+
+.ui-toggle__track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.ui-toggle__thumb {
+  position: absolute;
+  top: var(--ui-toggle-padding);
+  left: var(--ui-toggle-padding);
+  width: var(--ui-toggle-thumb-size);
+  height: var(--ui-toggle-thumb-size);
+  background: var(--ui-toggle-thumb-bg);
+  border-radius: 50%;
+  transition: var(--ui-toggle-transition);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Checked state */
+.ui-toggle--checked {
+  background: var(--ui-toggle-bg-checked);
+}
+
+.ui-toggle--checked .ui-toggle__thumb {
+  transform: translateX(calc(var(--ui-toggle-width) - var(--ui-toggle-thumb-size) - 2 * var(--ui-toggle-padding)));
+}
+
+/* Disabled state */
+.ui-toggle--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ui-toggle--disabled:hover {
+  background: var(--ui-toggle-bg);
+}
+
+.ui-toggle--disabled.ui-toggle--checked:hover {
+  background: var(--ui-toggle-bg-checked);
+}
+
+/* Variant styles */
+.ui-toggle--primary {
+  --ui-toggle-bg-checked: var(--ui-toggle-bg-checked-primary, #3b82f6);
+}
+
+.ui-toggle--secondary {
+  --ui-toggle-bg-checked: var(--ui-toggle-bg-checked-secondary, #6b7280);
+}
+
+.ui-toggle--accent {
+  --ui-toggle-bg-checked: var(--ui-toggle-bg-checked-accent, #f59e0b);
+}
+
+/* Hover effects */
+.ui-toggle:not(.ui-toggle--disabled):hover {
+  transform: scale(1.05);
+}
+
+.ui-toggle:not(.ui-toggle--disabled):active {
+  transform: scale(0.95);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .ui-toggle {
+    border: 2px solid currentColor;
+  }
+  
+  .ui-toggle__thumb {
+    border: 1px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ui-toggle,
+  .ui-toggle__thumb {
+    transition: none;
+  }
+}
