@@ -24,7 +24,7 @@ export class UiToggle {
   /**
    * Variant style for the toggle
    */
-  @Prop() variant: 'default' | 'primary' | 'secondary' | 'accent' = 'default';
+  @Prop() variant: 'default' | 'primary' | 'secondary' | 'accent' | 'rocker' | 'paddle' | 'lever' | 'industrial' | 'vintage' = 'default';
 
   /**
    * Initial checked state or controlled value

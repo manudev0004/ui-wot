@@ -98,7 +98,7 @@ export namespace Components {
           * Variant style for the toggle
           * @default 'default'
          */
-        "variant": 'default' | 'primary' | 'secondary' | 'accent';
+        "variant": 'default' | 'primary' | 'secondary' | 'accent' | 'rocker' | 'paddle' | 'lever' | 'industrial' | 'vintage';
     }
 }
 export interface UiSliderCustomEvent<T> extends CustomEvent<T> {
@@ -270,7 +270,7 @@ declare namespace LocalJSX {
           * Variant style for the toggle
           * @default 'default'
          */
-        "variant"?: 'default' | 'primary' | 'secondary' | 'accent';
+        "variant"?: 'default' | 'primary' | 'secondary' | 'accent' | 'rocker' | 'paddle' | 'lever' | 'industrial' | 'vintage';
     }
     interface IntrinsicElements {
         "my-component": MyComponent;
