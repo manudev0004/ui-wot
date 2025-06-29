@@ -158,20 +158,19 @@ export class UiToggle {
     };
 
     return (
-      <button
+      <div
         class={classes}
         role="switch"
         aria-checked={this.isChecked.toString()}
         aria-disabled={this.disabled.toString()}
-        disabled={this.disabled}
+        tabindex={this.disabled ? -1 : 0}
         onClick={() => this.handleToggle()}
         onKeyDown={this.handleKeyDown}
-        tabindex={this.disabled ? -1 : 0}
       >
-        <span class="ui-toggle__track">
-          <span class="ui-toggle__thumb"></span>
-        </span>
-      </button>
+        <div class="ui-toggle__track">
+          <div class="ui-toggle__thumb"></div>
+        </div>
+      </div>
     );
   }
 }

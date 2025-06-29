@@ -22,9 +22,12 @@
   --ui-toggle-transition: all 0.2s ease-in-out;
   
   display: inline-block;
+  vertical-align: middle;
 }
 
 .ui-toggle {
+  /* Toggle container styling */
+  display: inline-block;
   position: relative;
   width: var(--ui-toggle-width);
   height: var(--ui-toggle-height);
@@ -34,8 +37,8 @@
   cursor: pointer;
   transition: var(--ui-toggle-transition);
   outline: none;
-  padding: 0;
   box-shadow: var(--ui-toggle-shadow);
+  user-select: none;
 }
 
 .ui-toggle:focus-visible {

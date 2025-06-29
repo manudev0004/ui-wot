@@ -5,6 +5,10 @@
  * It contains typing information for all components that exist in this project.
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
+import { TDSliderProperty } from "./components/ui-slider/ui-slider";
+import { TDProperty } from "./components/ui-toggle/ui-toggle";
+export { TDSliderProperty } from "./components/ui-slider/ui-slider";
+export { TDProperty } from "./components/ui-toggle/ui-toggle";
 export namespace Components {
     interface MyComponent {
         /**
@@ -23,6 +27,87 @@ export namespace Components {
     interface UiHeading {
         "text": string;
     }
+    /**
+     * UI Slider Component
+     * A customizable range slider component with WoT TD binding support.
+     * Supports variants, theming, accessibility, and lazy loading.
+     */
+    interface UiSlider {
+        /**
+          * Disabled state
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Label for accessibility
+         */
+        "label"?: string;
+        /**
+          * Maximum value
+          * @default 100
+         */
+        "max": number;
+        /**
+          * Minimum value
+          * @default 0
+         */
+        "min": number;
+        /**
+          * Step increment
+          * @default 1
+         */
+        "step": number;
+        /**
+          * TD Property binding for Web of Things integration
+         */
+        "tdProperty"?: TDSliderProperty;
+        /**
+          * Current value of the slider
+         */
+        "value"?: number;
+        /**
+          * Variant style for the slider
+          * @default 'default'
+         */
+        "variant": 'default' | 'primary' | 'secondary' | 'accent';
+    }
+    /**
+     * UI Toggle Component
+     * A customizable toggle switch component with WoT TD binding support.
+     * Supports variants, theming, accessibility, and lazy loading.
+     */
+    interface UiToggle {
+        /**
+          * Initial checked state or controlled value
+         */
+        "checked"?: boolean;
+        /**
+          * Disabled state
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * TD Property binding for Web of Things integration
+         */
+        "tdProperty"?: TDProperty;
+        /**
+          * Initial value (alias for checked for consistency)
+         */
+        "value"?: boolean;
+        /**
+          * Variant style for the toggle
+          * @default 'default'
+         */
+        "variant": 'default' | 'primary' | 'secondary' | 'accent';
+    }
+}
+export interface UiSliderCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiSliderElement;
+}
+export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiToggleElement;
 }
 declare global {
     interface HTMLMyComponentElement extends Components.MyComponent, HTMLStencilElement {
@@ -37,9 +122,55 @@ declare global {
         prototype: HTMLUiHeadingElement;
         new (): HTMLUiHeadingElement;
     };
+    interface HTMLUiSliderElementEventMap {
+        "change": number;
+    }
+    /**
+     * UI Slider Component
+     * A customizable range slider component with WoT TD binding support.
+     * Supports variants, theming, accessibility, and lazy loading.
+     */
+    interface HTMLUiSliderElement extends Components.UiSlider, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiSliderElementEventMap>(type: K, listener: (this: HTMLUiSliderElement, ev: UiSliderCustomEvent<HTMLUiSliderElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiSliderElementEventMap>(type: K, listener: (this: HTMLUiSliderElement, ev: UiSliderCustomEvent<HTMLUiSliderElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiSliderElement: {
+        prototype: HTMLUiSliderElement;
+        new (): HTMLUiSliderElement;
+    };
+    interface HTMLUiToggleElementEventMap {
+        "toggle": boolean;
+    }
+    /**
+     * UI Toggle Component
+     * A customizable toggle switch component with WoT TD binding support.
+     * Supports variants, theming, accessibility, and lazy loading.
+     */
+    interface HTMLUiToggleElement extends Components.UiToggle, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiToggleElement: {
+        prototype: HTMLUiToggleElement;
+        new (): HTMLUiToggleElement;
+    };
     interface HTMLElementTagNameMap {
         "my-component": HTMLMyComponentElement;
         "ui-heading": HTMLUiHeadingElement;
+        "ui-slider": HTMLUiSliderElement;
+        "ui-toggle": HTMLUiToggleElement;
     }
 }
 declare namespace LocalJSX {
@@ -60,9 +191,92 @@ declare namespace LocalJSX {
     interface UiHeading {
         "text"?: string;
     }
+    /**
+     * UI Slider Component
+     * A customizable range slider component with WoT TD binding support.
+     * Supports variants, theming, accessibility, and lazy loading.
+     */
+    interface UiSlider {
+        /**
+          * Disabled state
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Label for accessibility
+         */
+        "label"?: string;
+        /**
+          * Maximum value
+          * @default 100
+         */
+        "max"?: number;
+        /**
+          * Minimum value
+          * @default 0
+         */
+        "min"?: number;
+        /**
+          * Event emitted when slider value changes
+         */
+        "onChange"?: (event: UiSliderCustomEvent<number>) => void;
+        /**
+          * Step increment
+          * @default 1
+         */
+        "step"?: number;
+        /**
+          * TD Property binding for Web of Things integration
+         */
+        "tdProperty"?: TDSliderProperty;
+        /**
+          * Current value of the slider
+         */
+        "value"?: number;
+        /**
+          * Variant style for the slider
+          * @default 'default'
+         */
+        "variant"?: 'default' | 'primary' | 'secondary' | 'accent';
+    }
+    /**
+     * UI Toggle Component
+     * A customizable toggle switch component with WoT TD binding support.
+     * Supports variants, theming, accessibility, and lazy loading.
+     */
+    interface UiToggle {
+        /**
+          * Initial checked state or controlled value
+         */
+        "checked"?: boolean;
+        /**
+          * Disabled state
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Event emitted when toggle state changes
+         */
+        "onToggle"?: (event: UiToggleCustomEvent<boolean>) => void;
+        /**
+          * TD Property binding for Web of Things integration
+         */
+        "tdProperty"?: TDProperty;
+        /**
+          * Initial value (alias for checked for consistency)
+         */
+        "value"?: boolean;
+        /**
+          * Variant style for the toggle
+          * @default 'default'
+         */
+        "variant"?: 'default' | 'primary' | 'secondary' | 'accent';
+    }
     interface IntrinsicElements {
         "my-component": MyComponent;
         "ui-heading": UiHeading;
+        "ui-slider": UiSlider;
+        "ui-toggle": UiToggle;
     }
 }
 export { LocalJSX as JSX };
@@ -71,6 +285,18 @@ declare module "@stencil/core" {
         interface IntrinsicElements {
             "my-component": LocalJSX.MyComponent & JSXBase.HTMLAttributes<HTMLMyComponentElement>;
             "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
+            /**
+             * UI Slider Component
+             * A customizable range slider component with WoT TD binding support.
+             * Supports variants, theming, accessibility, and lazy loading.
+             */
+            "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
+            /**
+             * UI Toggle Component
+             * A customizable toggle switch component with WoT TD binding support.
+             * Supports variants, theming, accessibility, and lazy loading.
+             */
+            "ui-toggle": LocalJSX.UiToggle & JSXBase.HTMLAttributes<HTMLUiToggleElement>;
         }
     }
 }
