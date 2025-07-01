@@ -1,16 +1,20 @@
 import { Component, Prop, State, Event, EventEmitter, h, Watch, Element } from '@stencil/core';
 
-// TD Property interface for Web of Things binding
+/**
+ * TD Property interface for Web of Things binding
+ */
 export interface TDSliderProperty {
   name: string;
   read?: () => Promise<number> | number;
   write?: (value: number) => Promise<void> | void;
 }
 
-// UI Slider Component
-//
-// A customizable range slider component with WoT TD binding support.
-// Supports variants, theming, accessibility, and lazy loading.
+/**
+ * UI Slider Component
+ * 
+ * A customizable range slider component with WoT TD binding support.
+ * Supports variants, theming, accessibility, and lazy loading.
+ */
 @Component({
   tag: 'ui-slider',
   styleUrl: 'ui-slider.css',
@@ -19,42 +23,66 @@ export interface TDSliderProperty {
 export class UiSlider {
   @Element() hostElement: HTMLElement;
 
-  // Variant style for the slider
+  /**
+   * Variant style for the slider
+   */
   @Prop() variant: 'default' | 'primary' | 'secondary' | 'accent' = 'default';
 
-  // Current value of the slider
+  /**
+   * Current value of the slider
+   */
   @Prop() value?: number;
 
-  // Minimum value
+  /**
+   * Minimum value
+   */
   @Prop() min: number = 0;
 
-  // Maximum value
+  /**
+   * Maximum value
+   */
   @Prop() max: number = 100;
 
-  // Step increment
+  /**
+   * Step increment
+   */
   @Prop() step: number = 1;
 
-  // Disabled state
+  /**
+   * Disabled state
+   */
   @Prop() disabled: boolean = false;
 
-  // Label for accessibility
+  /**
+   * Label for accessibility
+   */
   @Prop() label?: string;
 
-  // TD Property binding for Web of Things integration
+  /**
+   * TD Property binding for Web of Things integration
+   */
   @Prop() tdProperty?: TDSliderProperty;
 
-  // Internal state for slider value
+  /**
+   * Internal state for slider value
+   */
   @State() currentValue: number = 0;
 
-  // State for tracking drag interaction
+  /**
+   * State for tracking drag interaction
+   */
   @State() isDragging: boolean = false;
 
-  // Event emitted when slider value changes
+  /**
+   * Event emitted when slider value changes
+   */
   @Event() change: EventEmitter<number>;
 
   private sliderRef: HTMLDivElement;
 
-  // Watch for changes in value prop to update internal state
+  /**
+   * Watch for changes in value prop to update internal state
+   */
   @Watch('value')
   watchValue(newValue: number | undefined) {
     if (newValue !== undefined) {
@@ -62,20 +90,26 @@ export class UiSlider {
     }
   }
 
-  // Watch for changes in min/max to ensure value is within bounds
+  /**
+   * Watch for changes in min/max to ensure value is within bounds
+   */
   @Watch('min')
   @Watch('max')
   watchBounds() {
     this.currentValue = this.clampValue(this.currentValue);
   }
 
-  // Watch for changes in tdProperty to initialize from TD
+  /**
+   * Watch for changes in tdProperty to initialize from TD
+   */
   @Watch('tdProperty')
   async watchTdProperty() {
     await this.initializeFromTD();
   }
 
-  // Component lifecycle - initialize state and TD binding
+  /**
+   * Component lifecycle - initialize state and TD binding
+   */
   async componentWillLoad() {
     // Initialize from props
     if (this.value !== undefined) {
@@ -88,7 +122,9 @@ export class UiSlider {
     await this.initializeFromTD();
   }
 
-  // Initialize slider value from TD property
+  /**
+   * Initialize slider value from TD property
+   */
   private async initializeFromTD() {
     if (this.tdProperty?.read) {
       try {
@@ -102,21 +138,27 @@ export class UiSlider {
     }
   }
 
-  // Clamp value within min/max bounds and align to step
+  /**
+   * Clamp value within min/max bounds and align to step
+   */
   private clampValue(value: number): number {
     const clamped = Math.max(this.min, Math.min(this.max, value));
     return Math.round(clamped / this.step) * this.step;
   }
 
-  // Calculate percentage for styling
+  /**
+   * Calculate percentage for styling
+   */
   private getPercentage(): number {
     return ((this.currentValue - this.min) / (this.max - this.min)) * 100;
   }
 
-  // Update value and emit events
+  /**
+   * Update value and emit events
+   */
   private async updateValue(newValue: number) {
     const clampedValue = this.clampValue(newValue);
-
+    
     if (clampedValue === this.currentValue) return;
 
     this.currentValue = clampedValue;
@@ -134,7 +176,9 @@ export class UiSlider {
     }
   }
 
-  // Calculate value from mouse/touch position
+  /**
+   * Calculate value from mouse/touch position
+   */
   private getValueFromPosition(clientX: number): number {
     if (!this.sliderRef) return this.currentValue;
 
@@ -143,13 +187,15 @@ export class UiSlider {
     return this.min + (this.max - this.min) * percentage;
   }
 
-  // Handle mouse down
+  /**
+   * Handle mouse down
+   */
   private handleMouseDown = (event: MouseEvent) => {
     if (this.disabled) return;
 
     event.preventDefault();
     this.isDragging = true;
-
+    
     const newValue = this.getValueFromPosition(event.clientX);
     this.updateValue(newValue);
 
@@ -157,7 +203,9 @@ export class UiSlider {
     document.addEventListener('mouseup', this.handleMouseUp);
   };
 
-  // Handle mouse move during drag
+  /**
+   * Handle mouse move during drag
+   */
   private handleMouseMove = (event: MouseEvent) => {
     if (!this.isDragging) return;
 
@@ -165,20 +213,24 @@ export class UiSlider {
     this.updateValue(newValue);
   };
 
-  // Handle mouse up
+  /**
+   * Handle mouse up
+   */
   private handleMouseUp = () => {
     this.isDragging = false;
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.handleMouseUp);
   };
 
-  // Handle touch start
+  /**
+   * Handle touch start
+   */
   private handleTouchStart = (event: TouchEvent) => {
     if (this.disabled) return;
 
     event.preventDefault();
     this.isDragging = true;
-
+    
     const touch = event.touches[0];
     const newValue = this.getValueFromPosition(touch.clientX);
     this.updateValue(newValue);
@@ -187,7 +239,9 @@ export class UiSlider {
     document.addEventListener('touchend', this.handleTouchEnd);
   };
 
-  // Handle touch move during drag
+  /**
+   * Handle touch move during drag
+   */
   private handleTouchMove = (event: TouchEvent) => {
     if (!this.isDragging) return;
 
@@ -197,14 +251,18 @@ export class UiSlider {
     this.updateValue(newValue);
   };
 
-  // Handle touch end
+  /**
+   * Handle touch end
+   */
   private handleTouchEnd = () => {
     this.isDragging = false;
     document.removeEventListener('touchmove', this.handleTouchMove);
     document.removeEventListener('touchend', this.handleTouchEnd);
   };
 
-  // Handle keyboard interaction
+  /**
+   * Handle keyboard interaction
+   */
   private handleKeyDown = (event: KeyboardEvent) => {
     if (this.disabled) return;
 
@@ -240,7 +298,9 @@ export class UiSlider {
     this.updateValue(newValue);
   };
 
-  // Cleanup event listeners on disconnect
+  /**
+   * Cleanup event listeners on disconnect
+   */
   disconnectedCallback() {
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.handleMouseUp);
@@ -250,7 +310,7 @@ export class UiSlider {
 
   render() {
     const percentage = this.getPercentage();
-
+    
     const classes = {
       'ui-slider': true,
       [`ui-slider--${this.variant}`]: true,
@@ -274,7 +334,7 @@ export class UiSlider {
           </label>
         )}
         <div
-          ref={el => (this.sliderRef = el)}
+          ref={(el) => (this.sliderRef = el)}
           class={classes}
           role="slider"
           aria-valuemin={this.min}

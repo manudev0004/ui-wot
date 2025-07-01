@@ -1,40 +1,64 @@
 import { Component, Prop, State, Event, EventEmitter, h, Watch } from '@stencil/core';
 
-// TD Property interface for Web of Things binding
+/**
+ * TD Property interface for Web of Things binding
+ */
 export interface TDProperty {
   name: string;
   read?: () => Promise<boolean> | boolean;
   write?: (value: boolean) => Promise<void> | void;
 }
 
+/**
+ * UI Toggle Component
+ * 
+ * A customizable toggle switch component with WoT TD binding support.
+ * Supports variants, theming, accessibility, and lazy loading.
+ */
 @Component({
   tag: 'ui-toggle',
   styleUrl: 'ui-toggle.css',
   shadow: true,
 })
 export class UiToggle {
-  // Variant style for the toggle
-  @Prop() variant: 'default' | 'square' | 'checkbox' | 'apple' | 'rocker' = 'default';
+  /**
+   * Variant style for the toggle
+   */
+  @Prop() variant: 'default' | 'primary' | 'secondary' | 'accent' | 'rocker' | 'paddle' | 'lever' | 'industrial' | 'vintage' = 'default';
 
-  // Initial checked state or controlled value
+  /**
+   * Initial checked state or controlled value
+   */
   @Prop() checked?: boolean;
 
-  // Initial value (alias for checked for consistency)
+  /**
+   * Initial value (alias for checked for consistency)
+   */
   @Prop() value?: boolean;
 
-  // Disabled state
+  /**
+   * Disabled state
+   */
   @Prop() disabled: boolean = false;
 
-  // TD Property binding for Web of Things integration
+  /**
+   * TD Property binding for Web of Things integration
+   */
   @Prop() tdProperty?: TDProperty;
 
-  // Internal state for toggle value
+  /**
+   * Internal state for toggle value
+   */
   @State() isChecked: boolean = false;
 
-  // Event emitted when toggle state changes
+  /**
+   * Event emitted when toggle state changes
+   */
   @Event() toggle: EventEmitter<boolean>;
 
-  // Watch for changes in checked prop to update internal state
+  /**
+   * Watch for changes in checked prop to update internal state
+   */
   @Watch('checked')
   watchChecked(newValue: boolean | undefined) {
     if (newValue !== undefined) {
@@ -42,7 +66,9 @@ export class UiToggle {
     }
   }
 
-  // Watch for changes in value prop to update internal state
+  /**
+   * Watch for changes in value prop to update internal state
+   */
   @Watch('value')
   watchValue(newValue: boolean | undefined) {
     if (newValue !== undefined) {
@@ -50,13 +76,17 @@ export class UiToggle {
     }
   }
 
-  // Watch for changes in tdProperty to initialize from TD
+  /**
+   * Watch for changes in tdProperty to initialize from TD
+   */
   @Watch('tdProperty')
   async watchTdProperty() {
     await this.initializeFromTD();
   }
 
-  // Component lifecycle - initialize state and TD binding
+  /**
+   * Component lifecycle - initialize state and TD binding
+   */
   async componentWillLoad() {
     // Initialize from props
     if (this.checked !== undefined) {
@@ -69,7 +99,9 @@ export class UiToggle {
     await this.initializeFromTD();
   }
 
-  // Initialize toggle state from TD property
+  /**
+   * Initialize toggle state from TD property
+   */
   private async initializeFromTD() {
     if (this.tdProperty?.read) {
       try {
@@ -83,7 +115,9 @@ export class UiToggle {
     }
   }
 
-  // Handle toggle interaction
+  /**
+   * Handle toggle interaction
+   */
   private async handleToggle() {
     if (this.disabled) return;
 
@@ -105,7 +139,9 @@ export class UiToggle {
     }
   }
 
-  // Handle keyboard interaction
+  /**
+   * Handle keyboard interaction
+   */
   private handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();

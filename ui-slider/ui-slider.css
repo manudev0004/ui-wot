@@ -1,19 +1,25 @@
+/**
+ * UI Slider Component Styles
+ * 
+ * Supports theming via CSS variables and variant classes
+ */
+
 :host {
-  /* CSS Variables */
+  /* CSS Variables for theming */
   --ui-slider-track-color: var(--ui-slider-track-color-default, #e5e7eb);
   --ui-slider-fill-color: var(--ui-slider-fill-color-default, #3b82f6);
   --ui-slider-thumb-color: var(--ui-slider-thumb-color-default, #ffffff);
   --ui-slider-thumb-border: var(--ui-slider-thumb-border-default, 2px solid #3b82f6);
   --ui-slider-shadow: var(--ui-slider-shadow-default, 0 2px 4px rgba(0, 0, 0, 0.1));
-
+  
   /* Sizing */
   --ui-slider-height: 6px;
   --ui-slider-thumb-size: 20px;
   --ui-slider-container-height: 40px;
-
+  
   /* Transitions */
   --ui-slider-transition: all 0.2s ease-in-out;
-
+  
   display: block;
   width: 100%;
 }
@@ -128,10 +134,62 @@
   --ui-slider-thumb-border: var(--ui-slider-thumb-border-accent, 2px solid #f59e0b);
 }
 
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .ui-slider__track {
+    border: 1px solid currentColor;
+  }
+  
+  .ui-slider__thumb {
+    border: 3px solid currentColor;
+    box-shadow: 0 0 0 1px white inset;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ui-slider__fill,
+  .ui-slider__thumb {
+    transition: none;
+  }
+}
+
 /* Mobile optimizations */
 @media (max-width: 768px) {
   :host {
     --ui-slider-thumb-size: 24px;
     --ui-slider-container-height: 44px;
   }
+  
+  .ui-slider__thumb {
+    /* Larger touch target for mobile */
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Vertical orientation support (future enhancement) */
+.ui-slider--vertical {
+  width: var(--ui-slider-container-height);
+  height: 200px;
+  flex-direction: column;
+}
+
+.ui-slider--vertical .ui-slider__track {
+  width: var(--ui-slider-height);
+  height: 100%;
+}
+
+.ui-slider--vertical .ui-slider__fill {
+  width: 100%;
+  height: var(--percentage, 0%);
+  top: auto;
+  bottom: 0;
+}
+
+.ui-slider--vertical .ui-slider__thumb {
+  left: 50%;
+  top: auto;
+  bottom: var(--percentage, 0%);
+  transform: translate(-50%, 50%);
 }
