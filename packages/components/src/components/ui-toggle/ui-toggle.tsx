@@ -203,104 +203,43 @@ export class UiToggle {
    * @returns {object} Object containing CSS classes for inactive, active, and thumb colors
    * @description Returns CSS classes for inactive, active, and thumb colors
    */
-  private getColorClasses() {
-    // Special handling for neon variant
-    if (this.variant === 'neon' && this.state === 'active') {
-      const neonClass = this.color === 'secondary' ? 'neon-secondary' : 'neon-primary';
-      return {
-        inactive: 'bg-neutral-light',
-        active: neonClass,
-        thumb: 'bg-white'
-      };
-    }
-
-    const colorMap = {
-      primary: this.theme === 'dark' 
-        ? { inactive: 'bg-neutral-dark', active: 'bg-primary-dark', thumb: 'bg-white' }
-        : { inactive: 'bg-neutral-light', active: 'bg-primary', thumb: 'bg-white' },
-      secondary: { 
-        inactive: 'bg-neutral-light', 
-        active: 'bg-secondary', 
-        thumb: 'bg-white' 
-      },
-      neutral: { 
-        inactive: 'bg-neutral-light', 
-        active: 'bg-neutral', 
-        thumb: 'bg-white' 
-      }
-    };
-    return colorMap[this.color];
-  }
 
   /**
-   * Gets CSS classes for the specific toggle variant
-   * @private
-   * @returns {string} Combined CSS classes for the variant
-   * @description Includes base styling and variant-specific appearance
+   * Gets all toggle classes in one method
    */
-  private getVariantClasses() {
-    const baseClasses = 'relative inline-block cursor-pointer transition-all duration-300 ease-in-out';
+  private getToggleClasses() {
+    const baseClasses = 'relative inline-block cursor-pointer transition-all duration-300 ease-in-out w-12 h-6';
+    const isDisabled = this.state === 'disabled';
+    const isActive = this.state === 'active';
     
-    if (this.state === 'disabled') {
-      const variantMap = {
-        circle: 'rounded-full',
-        square: 'rounded-md',
-        apple: 'rounded-full shadow-inner',
-        cross: 'rounded-lg border-2',
-        neon: 'rounded-full'
-      };
-      return `${baseClasses} disabled-state ${variantMap[this.variant]}`;
+    // Shape based on variant
+    let shapeClass = 'rounded-full'; // default for circle/neon
+    if (this.variant === 'square' || this.variant === 'cross') shapeClass = 'rounded-md';
+    if (this.variant === 'apple') shapeClass = 'rounded-full shadow-inner';
+    
+    // Color based on state and color scheme
+    let colorClass = 'bg-neutral-light'; // default inactive
+    if (isActive) {
+      if (this.variant === 'neon') {
+        colorClass = this.color === 'secondary' ? 'neon-secondary' : 'neon-primary';
+      } else {
+        colorClass = this.color === 'secondary' ? 'bg-secondary' : 'bg-primary';
+      }
     }
-
-    const variantMap = {
-      circle: 'rounded-full',
-      square: 'rounded-md',
-      apple: 'rounded-full shadow-inner',
-      cross: 'rounded-lg border-2',
-      neon: 'rounded-full'
-    };
-
-    return `${baseClasses} ${variantMap[this.variant]}`;
+    
+    const disabledClass = isDisabled ? 'disabled-state' : '';
+    
+    return `${baseClasses} ${shapeClass} ${colorClass} ${disabledClass}`.trim();
   }
 
   /**
-   * Gets size classes for different toggle variants
-   * @private
-   * @returns {string} CSS classes for width and height
-   * @description Each variant has optimized dimensions for best visual appearance
-   */
-  private getSizeClasses() {
-    const sizeMap = {
-      circle: 'w-12 h-6',
-      square: 'w-12 h-6', 
-      apple: 'w-14 h-8',
-      cross: 'w-12 h-6',
-      neon: 'w-12 h-6'
-    };
-    return sizeMap[this.variant];
-  }
-
-  /**
-   * Builds thumb/knob styling classes with proper positioning
-   * @private
-   * @returns {string} Combined CSS classes for the thumb element
-   * @description Handles the sliding animation when toggle state changes
+   * Gets thumb classes
    */
   private getThumbClasses() {
-    const colors = this.getColorClasses();
-    const baseThumbClasses = `absolute top-1 left-1 transition-transform duration-300 ease-in-out ${colors.thumb} shadow-sm`;
+    const baseClasses = 'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ease-in-out shadow-sm';
+    const position = this.state === 'active' ? 'translate-x-6' : 'translate-x-0';
     
-    const thumbSizeMap = {
-      circle: 'w-4 h-4 rounded-full',
-      square: 'w-4 h-4 rounded-sm',
-      apple: 'w-6 h-6 rounded-full',
-      cross: 'w-4 h-4 rounded-sm',
-      neon: 'w-4 h-4 rounded-full'
-    };
-
-    const thumbPosition = this.state === 'active' ? 'translate-x-6' : 'translate-x-0';
-
-    return `${baseThumbClasses} ${thumbSizeMap[this.variant]} ${thumbPosition}`;
+    return `${baseClasses} ${position}`;
   }
 
   /**
@@ -324,32 +263,13 @@ export class UiToggle {
   }
 
   /**
-   * Builds inline styles for the label text
-   * @private
-   * @returns {object} Inline styles object for the label
-   * @description Handles disabled state styling
-   */
-  private getLabelStyles() {
-    return {
-      color: this.state === 'disabled' ? '#9ca3af' : 'inherit',
-      cursor: this.state === 'disabled' ? 'not-allowed' : 'pointer'
-    };
-  }
-
-  /**
    * Renders the toggle component with all styling and interactions
    * @returns {JSX.Element} Complete toggle component JSX
    * @description Combines variant styling, color scheme, and custom overrides
    * Includes accessibility attributes and keyboard event handling
    */
   render() {
-    const colors = this.getColorClasses();
-    const toggleClasses = `
-      ${this.getVariantClasses()}
-      ${this.getSizeClasses()}
-      ${this.state === 'active' ? colors.active : colors.inactive}
-    `.trim();
-
+    const toggleClasses = this.getToggleClasses();
     const thumbClasses = this.getThumbClasses();
     const isDisabled = this.state === 'disabled';
 
@@ -369,14 +289,12 @@ export class UiToggle {
         </span>
         {this.label && (
           <label
-            class={`select-none ml-3 ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-            style={this.getLabelStyles()}
+            class={`select-none ml-3 ${isDisabled ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer'}`}
             onClick={() => !isDisabled && this.handleToggle()}
           >
             {this.label}
           </label>
         )}
-        <slot></slot>
       </div>
     );
   }

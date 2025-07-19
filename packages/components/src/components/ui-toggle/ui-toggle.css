@@ -134,6 +134,7 @@
 /** Text color utilities */
 .text-neutral { color: var(--color-neutral); }
 .text-white { color: var(--color-white); }
+.text-gray-400 { color: #9ca3af; }
 
 /**
  * Dark mode color overrides
@@ -152,25 +153,43 @@
 .border-2 { border-width: 2px; }
 
 /**
- * Neon variant simple styling - no animation
- * @description Simple bright colors without glow effects
+ * Neon variant with glowing effects
+ * @description Bright colors with multiple layered glow effects for maximum visibility
  */
-/** Primary color neon - simple bright styling */
+/** Primary color neon - intense teal glow */
 .neon-primary {
-  background-color: var(--color-primary);
-  border: 2px solid var(--color-primary);
+  background-color: var(--color-primary) !important;
+  border: 2px solid var(--color-primary) !important;
+  box-shadow: 
+    0 0 5px rgba(6, 115, 98, 0.6),
+    0 0 15px rgba(6, 115, 98, 0.5),
+    0 0 25px rgba(6, 115, 98, 0.4),
+    0 0 35px rgba(6, 115, 98, 0.2) !important;
+  filter: brightness(1.1) saturate(1.2);
 }
 
-/** Secondary color neon - simple bright styling */
+/** Secondary color neon - intense pink glow */
 .neon-secondary {
-  background-color: var(--color-secondary);
-  border: 2px solid var(--color-secondary);
+  background-color: var(--color-secondary) !important;
+  border: 2px solid var(--color-secondary) !important;
+  box-shadow: 
+    0 0 5px rgba(184, 74, 145, 0.6),
+    0 0 15px rgba(184, 74, 145, 0.5),
+    0 0 25px rgba(184, 74, 145, 0.4),
+    0 0 35px rgba(184, 74, 145, 0.2) !important;
+  filter: brightness(1.1) saturate(1.2);
 }
 
 /** Dark mode neon override for primary color */
 .dark .neon-primary {
-  background-color: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
+  background-color: var(--color-primary-dark) !important;
+  border-color: var(--color-primary-dark) !important;
+  box-shadow: 
+    0 0 5px rgba(51, 184, 164, 0.7),
+    0 0 15px rgba(51, 184, 164, 0.6),
+    0 0 25px rgba(51, 184, 164, 0.5),
+    0 0 35px rgba(51, 184, 164, 0.3) !important;
+  filter: brightness(1.2) saturate(1.3);
 }
 
 /**
