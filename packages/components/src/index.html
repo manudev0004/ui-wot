@@ -1,373 +1,230 @@
 <!DOCTYPE html>
-<html dir="ltr" lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
-    <title>UI WoT Components Demo</title>
-    <script type="module" src="/build/ui-wot-components.esm.js"></script>
-    <script nomodule src="/build/ui-wot-components.js"></script>
-    <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        margin: 0;
-        padding: 2rem;
-        background: #f9fafb;
-        line-height: 1.6;
-      }
-      
-      .demo-section {
-        background: white;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-      }
-      
-      .demo-section h2 {
-        margin-top: 0;
-        color: #1f2937;
-        border-bottom: 2px solid #e5e7eb;
-        padding-bottom: 0.5rem;
-      }
-      
-      .demo-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.5rem;
-        margin: 1.5rem 0;
-      }
-      
-      .demo-item {
-        padding: 1.5rem;
-        border: 2px solid #e5e7eb;
-        border-radius: 8px;
-        background: #f9fafb;
-        transition: all 0.2s ease;
-      }
-      
-      .demo-item:hover {
-        border-color: #3b82f6;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-      }
-      
-      .demo-item h4 {
-        margin: 0 0 1rem 0;
-        color: #374151;
-        font-size: 16px;
-        font-weight: 600;
-      }
-      
-      .demo-item p {
-        margin: 0.5rem 0;
-        color: #6b7280;
-        font-size: 14px;
-      }
-      
-      .demo-controls {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin: 1rem 0;
-      }
-      
-      .demo-controls label {
-        font-weight: 500;
-        color: #374151;
-        min-width: 80px;
-      }
-      
-      .event-log {
-        background: #1f2937;
-        color: #f9fafb;
-        padding: 1rem;
-        border-radius: 6px;
-        font-family: 'Courier New', monospace;
-        font-size: 12px;
-        max-height: 200px;
-        overflow-y: auto;
-        margin-top: 1rem;
-        border-left: 4px solid #3b82f6;
-      }
-      
-      .color-picker-section {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin: 1rem 0;
-      }
-      
-      .color-control {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-      
-      .color-control label {
-        font-size: 12px;
-        font-weight: 500;
-        color: #6b7280;
-      }
-      
-      .color-control input[type="color"] {
-        width: 100%;
-        height: 40px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      }
-      
-      /* Custom themed toggles */
-      .green-toggle {
-        --ui-toggle-bg: #f3f4f6;
-        --ui-toggle-bg-checked: #10b981;
-        --ui-toggle-thumb-bg: #ffffff;
-      }
-      
-      .purple-toggle {
-        --ui-toggle-bg: #f3f4f6;
-        --ui-toggle-bg-checked: #8b5cf6;
-        --ui-toggle-thumb-bg: #ffffff;
-      }
-      
-      .orange-toggle {
-        --ui-toggle-bg: #fef3c7;
-        --ui-toggle-bg-checked: #f59e0b;
-        --ui-toggle-thumb-bg: #ffffff;
-      }
-      
-      .custom-size-toggle {
-        --ui-toggle-width: 60px;
-        --ui-toggle-height: 32px;
-        --ui-toggle-thumb-size: 28px;
-      }
-      
-      .neon-toggle {
-        --ui-toggle-bg: #1f2937;
-        --ui-toggle-bg-checked: #06ffa5;
-        --ui-toggle-thumb-bg: #ffffff;
-        --ui-toggle-shadow: 0 0 20px rgba(6, 255, 165, 0.5);
-      }
-    </style>
-  </head>
-  <body>
-    <h1>🎛️ UI WoT Components Interactive Demo</h1>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI Toggle Component Demo</title>
+  <script type="module" src="/build/ui-wot-components.esm.js"></script>
+  <script nomodule src="/build/ui-wot-components.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     
-    <!-- Toggle Component Demo -->
-    <div class="demo-section">
-      <h2>🎚️ UI Toggle Component</h2>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      padding: 2rem;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #067362;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    
+    .section {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 0.5rem;
+    }
+    
+    .section h2 {
+      color: #333;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+    }
+    
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+    }
+    
+    .toggle-label {
+      min-width: 120px;
+      font-weight: 500;
+    }
+    
+    .theme-toggle {
+      text-align: center;
+      margin: 2rem 0;
+      padding: 1rem;
+      background: #e9ecef;
+      border-radius: 0.5rem;
+    }
+    
+    /* Dark theme */
+    body.dark {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      color: #e4e6e6;
+    }
+    
+    body.dark .container {
+      background: #2d2d2d;
+      color: #e4e6e6;
+    }
+    
+    body.dark .section {
+      background: #3a3a3a;
+    }
+    
+    body.dark .theme-toggle {
+      background: #404040;
+    }
+    
+    body.dark h1 {
+      color: #33b8a4;
+    }
+    
+    body.dark h2 {
+      color: #e4e6e6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎛️ UI Toggle Component</h1>
+    
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+      <span>Light Mode</span>
+      <ui-toggle id="theme-toggle" variant="apple" style="margin: 0 1rem;"></ui-toggle>
+      <span>Dark Mode</span>
+    </div>
+    
+    <!-- Variants -->
+    <div class="section">
+      <h2>🎨 Variants</h2>
       
-      <div class="demo-grid">
-        <!-- Basic Variants -->
-        <div class="demo-item">
-          <h4>🎨 Visual Variants</h4>
-          <p>Completely different visual styles</p>
-          <div class="demo-controls">
-            <label>Default (Pill):</label>
-            <ui-toggle id="toggle-default"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Primary (Switch):</label>
-            <ui-toggle variant="primary" id="toggle-primary"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Secondary (Checkbox):</label>
-            <ui-toggle variant="secondary" id="toggle-secondary"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Accent (iOS Style):</label>
-            <ui-toggle variant="accent" id="toggle-accent"></ui-toggle>
-          </div>
-        </div>
-        
-        <!-- Physical Switch Variants -->
-        <div class="demo-item">
-          <h4>🔌 Physical Switch Styles</h4>
-          <p>Realistic physical switch designs</p>
-          <div class="demo-controls">
-            <label>Rocker (Wall Switch):</label>
-            <ui-toggle variant="rocker" id="toggle-rocker"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Paddle (Large Switch):</label>
-            <ui-toggle variant="paddle" id="toggle-paddle"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Lever (Red Handle):</label>
-            <ui-toggle variant="lever" id="toggle-lever"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Industrial (Heavy Duty):</label>
-            <ui-toggle variant="industrial" id="toggle-industrial"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Vintage (Brass Toggle):</label>
-            <ui-toggle variant="vintage" id="toggle-vintage"></ui-toggle>
-          </div>
-        </div>
-        
-        <!-- Custom Colors -->
-        <div class="demo-item">
-          <h4>🌈 Custom Colors</h4>
-          <p>Using CSS variables for theming</p>
-          <div class="demo-controls">
-            <label>Green:</label>
-            <ui-toggle class="green-toggle" id="toggle-green"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Purple:</label>
-            <ui-toggle class="purple-toggle" id="toggle-purple"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Orange:</label>
-            <ui-toggle class="orange-toggle" id="toggle-orange"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Neon:</label>
-            <ui-toggle class="neon-toggle" id="toggle-neon"></ui-toggle>
-          </div>
-        </div>
-        
-        <!-- States -->
-        <div class="demo-item">
-          <h4>🔄 Different States</h4>
-          <p>Various toggle states</p>
-          <div class="demo-controls">
-            <label>Unchecked:</label>
-            <ui-toggle id="toggle-unchecked"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Checked:</label>
-            <ui-toggle checked id="toggle-checked"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Disabled:</label>
-            <ui-toggle disabled id="toggle-disabled"></ui-toggle>
-          </div>
-          <div class="demo-controls">
-            <label>Large:</label>
-            <ui-toggle class="custom-size-toggle" id="toggle-large"></ui-toggle>
-          </div>
-        </div>
-        
-        <!-- Interactive Customizer -->
-        <div class="demo-item">
-          <h4>🎛️ Live Color Customizer</h4>
-          <p>Change colors in real-time</p>
-          <div class="demo-controls">
-            <label>Custom:</label>
-            <ui-toggle id="custom-toggle"></ui-toggle>
-          </div>
-          
-          <div class="color-picker-section">
-            <div class="color-control">
-              <label>Background Color</label>
-              <input type="color" id="bg-color" value="#e5e7eb">
-            </div>
-            <div class="color-control">
-              <label>Active Color</label>
-              <input type="color" id="active-color" value="#3b82f6">
-            </div>
-            <div class="color-control">
-              <label>Thumb Color</label>
-              <input type="color" id="thumb-color" value="#ffffff">
-            </div>
-          </div>
-        </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Circle:</span>
+        <ui-toggle variant="circle"></ui-toggle>
+        <ui-toggle variant="circle" state="active"></ui-toggle>
+        <ui-toggle variant="circle" state="disabled"></ui-toggle>
       </div>
       
-      <div class="event-log" id="toggle-events">
-        🎯 Toggle Events: Click any toggle to see events here...
+      <div class="toggle-row">
+        <span class="toggle-label">Square:</span>
+        <ui-toggle variant="square"></ui-toggle>
+        <ui-toggle variant="square" state="active"></ui-toggle>
+        <ui-toggle variant="square" state="disabled"></ui-toggle>
+      </div>
+      
+      <div class="toggle-row">
+        <span class="toggle-label">Apple:</span>
+        <ui-toggle variant="apple"></ui-toggle>
+        <ui-toggle variant="apple" state="active"></ui-toggle>
+        <ui-toggle variant="apple" state="disabled"></ui-toggle>
+      </div>
+      
+      <div class="toggle-row">
+        <span class="toggle-label">Cross:</span>
+        <ui-toggle variant="cross"></ui-toggle>
+        <ui-toggle variant="cross" state="active"></ui-toggle>
+        <ui-toggle variant="cross" state="disabled"></ui-toggle>
+      </div>
+      
+      <div class="toggle-row">
+        <span class="toggle-label">Neon:</span>
+        <ui-toggle variant="neon"></ui-toggle>
+        <ui-toggle variant="neon" state="active"></ui-toggle>
+        <ui-toggle variant="neon" state="disabled"></ui-toggle>
       </div>
     </div>
     
-    <!-- Slider Component Demo -->
-    <div class="demo-section">
-      <h2>🎚️ UI Slider Component</h2>
+    <!-- Colors -->
+    <div class="section">
+      <h2>🌈 Colors</h2>
       
-      <div class="demo-grid">
-        <div class="demo-item">
-          <h4>🎨 Slider Variants</h4>
-          <p>Different slider styles</p>
-          <ui-slider label="Default" value="50" id="slider-default"></ui-slider>
-          <ui-slider label="Primary" variant="primary" value="75" id="slider-primary"></ui-slider>
-          <ui-slider label="Secondary" variant="secondary" value="25" id="slider-secondary"></ui-slider>
-          <ui-slider label="Accent" variant="accent" value="90" id="slider-accent"></ui-slider>
-        </div>
-        
-        <div class="demo-item">
-          <h4>⚙️ Custom Ranges</h4>
-          <p>Different min/max/step values</p>
-          <ui-slider label="Volume (0-10)" min="0" max="10" step="0.5" value="5" id="slider-volume"></ui-slider>
-          <ui-slider label="Temperature (15-30°C)" min="15" max="30" value="22" id="slider-temp"></ui-slider>
-          <ui-slider label="Percentage" min="0" max="100" step="5" value="45" id="slider-percent"></ui-slider>
-        </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Primary:</span>
+        <ui-toggle color="primary" state="active"></ui-toggle>
+        <ui-toggle color="primary" variant="apple" state="active"></ui-toggle>
+        <ui-toggle color="primary" variant="neon" state="active"></ui-toggle>
       </div>
       
-      <div class="event-log" id="slider-events">
-        🎯 Slider Events: Move any slider to see events here...
+      <div class="toggle-row">
+        <span class="toggle-label">Secondary:</span>
+        <ui-toggle color="secondary" state="active"></ui-toggle>
+        <ui-toggle color="secondary" variant="apple" state="active"></ui-toggle>
+        <ui-toggle color="secondary" variant="neon" state="active"></ui-toggle>
+      </div>
+      
+      <div class="toggle-row">
+        <span class="toggle-label">Neutral:</span>
+        <ui-toggle color="neutral" state="active"></ui-toggle>
+        <ui-toggle color="neutral" variant="apple" state="active"></ui-toggle>
+        <ui-toggle color="neutral" variant="neon" state="active"></ui-toggle>
       </div>
     </div>
+    
+    <!-- With Labels -->
+    <div class="section">
+      <h2>🏷️ With Labels</h2>
+      
+      <div class="toggle-row">
+        <ui-toggle label="Enable notifications" state="active"></ui-toggle>
+      </div>
+      
+      <div class="toggle-row">
+        <ui-toggle variant="apple" label="Dark mode" color="primary"></ui-toggle>
+      </div>
+      
+      <div class="toggle-row">
+        <ui-toggle variant="neon" label="Turbo mode" color="secondary" state="active"></ui-toggle>
+      </div>
+      
+      <div class="toggle-row">
+        <ui-toggle variant="cross" label="Enable feature" color="neutral"></ui-toggle>
+      </div>
+    </div>
+  </div>
 
-    <script>
-      // Event logging functionality
-      const toggleLog = document.getElementById('toggle-events');
-      const sliderLog = document.getElementById('slider-events');
-      
-      function logEvent(log, message) {
-        const time = new Date().toLocaleTimeString();
-        const newLine = document.createElement('div');
-        newLine.textContent = `[${time}] ${message}`;
-        log.appendChild(newLine);
-        log.scrollTop = log.scrollHeight;
-        
-        // Keep only last 10 messages
-        while (log.children.length > 10) {
-          log.removeChild(log.children[0]);
-        }
+  <script>
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+    
+    // Check for system dark mode preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      body.classList.add('dark');
+      themeToggle.state = 'active';
+    }
+
+    // Listen for theme toggle changes
+    themeToggle.addEventListener('toggle', (event) => {
+      if (event.detail.active) {
+        body.classList.add('dark');
+      } else {
+        body.classList.remove('dark');
       }
-      
-      // Add event listeners to all toggles
-      document.querySelectorAll('ui-toggle').forEach(toggle => {
-        toggle.addEventListener('toggle', (e) => {
-          const state = e.detail ? 'ON' : 'OFF';
-          const variant = toggle.getAttribute('variant') || 'default';
-          logEvent(toggleLog, `🎚️ Toggle ${toggle.id} (${variant}): ${state}`);
+    });
+    
+    // Add click interactivity to all toggles
+    document.querySelectorAll('ui-toggle').forEach(toggle => {
+      if (toggle.id !== 'theme-toggle' && toggle.state !== 'disabled') {
+        toggle.addEventListener('toggle', (event) => {
+          console.log(`Toggle state changed: ${event.detail.active}`);
         });
-      });
-      
-      // Add event listeners to all sliders
-      document.querySelectorAll('ui-slider').forEach(slider => {
-        slider.addEventListener('change', (e) => {
-          const variant = slider.getAttribute('variant') || 'default';
-          const label = slider.getAttribute('label') || 'Slider';
-          logEvent(sliderLog, `🎚️ ${label} (${variant}): ${e.detail}`);
-        });
-      });
-      
-      // Live color customizer
-      const customToggle = document.getElementById('custom-toggle');
-      const bgColorPicker = document.getElementById('bg-color');
-      const activeColorPicker = document.getElementById('active-color');
-      const thumbColorPicker = document.getElementById('thumb-color');
-      
-      function updateCustomToggle() {
-        customToggle.style.setProperty('--ui-toggle-bg', bgColorPicker.value);
-        customToggle.style.setProperty('--ui-toggle-bg-checked', activeColorPicker.value);
-        customToggle.style.setProperty('--ui-toggle-thumb-bg', thumbColorPicker.value);
       }
-      
-      bgColorPicker.addEventListener('input', updateCustomToggle);
-      activeColorPicker.addEventListener('input', updateCustomToggle);
-      thumbColorPicker.addEventListener('input', updateCustomToggle);
-      
-      // Initialize custom toggle
-      updateCustomToggle();
-      
-      // Welcome message
-      setTimeout(() => {
-        logEvent(toggleLog, '👋 Welcome! Try clicking the toggles above');
-        logEvent(sliderLog, '👋 Welcome! Try moving the sliders above');
-      }, 1000);
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI Toggle Component Demo</title>
+  
+  <!-- Google Fonts for Josefin Sans -->
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Load the UI Toggle component -->
+  <script type="module" src="../../loader/index.esm.js"></script>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Josefin Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      transition: all 0.3s ease-in-out;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    /* Light theme (default) */
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      color: #333;
+    }
+
+    /* Dark theme */
+    body.dark {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      color: #e4e6e6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #067362, #33b8a4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.8;
+      margin-bottom: 1rem;
+    }
+
+    .theme-toggle-section {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .dark .theme-toggle-section {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .demo-section {
+      margin-bottom: 3rem;
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 1rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .dark .demo-section {
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: #067362;
+    }
+
+    .dark .section-title {
+      color: #33b8a4;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .demo-item {
+      padding: 1.5rem;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease-in-out;
+    }
+
+    .dark .demo-item {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .demo-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .demo-item h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-transform: capitalize;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .dark .toggle-row {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .toggle-row:last-child {
+      border-bottom: none;
+    }
+
+    .toggle-label {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    .feature-demo {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .color-demo {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .code-snippet {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+      overflow-x: auto;
+    }
+
+    .dark .code-snippet {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 2rem;
+      }
+      
+      .demo-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .color-demo {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <header class="header">
+      <h1>UI Toggle Component</h1>
+      <p>A comprehensive toggle switch component with multiple variants, themes, and customization options</p>
+      
+      <!-- Theme Toggle -->
+      <div class="theme-toggle-section">
+        <span>Light</span>
+        <ui-toggle 
+          id="theme-toggle"
+          variant="apple" 
+          color="primary"
+          label=""
+          state="default">
+        </ui-toggle>
+        <span>Dark</span>
+      </div>
+    </header>
+
+    <!-- Variants Demo -->
+    <section class="demo-section">
+      <h2 class="section-title">🧩 Toggle Variants</h2>
+      <div class="demo-grid">
+        
+        <!-- Circle Variant -->
+        <div class="demo-item">
+          <h3>Circle (Default)</h3>
+          <div class="toggle-row">
+            <span class="toggle-label">Default State:</span>
+            <ui-toggle variant="circle" state="default"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Active State:</span>
+            <ui-toggle variant="circle" state="active"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Disabled:</span>
+            <ui-toggle variant="circle" state="disabled"></ui-toggle>
+          </div>
+          <div class="code-snippet">
+&lt;ui-toggle variant="circle" state="active"&gt;&lt;/ui-toggle&gt;
+          </div>
+        </div>
+
+        <!-- Square Variant -->
+        <div class="demo-item">
+          <h3>Square</h3>
+          <div class="toggle-row">
+            <span class="toggle-label">Default State:</span>
+            <ui-toggle variant="square" state="default"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Active State:</span>
+            <ui-toggle variant="square" state="active"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Disabled:</span>
+            <ui-toggle variant="square" state="disabled"></ui-toggle>
+          </div>
+          <div class="code-snippet">
+&lt;ui-toggle variant="square" state="active"&gt;&lt;/ui-toggle&gt;
+          </div>
+        </div>
+
+        <!-- Apple Variant -->
+        <div class="demo-item">
+          <h3>Apple (iOS Style)</h3>
+          <div class="toggle-row">
+            <span class="toggle-label">Default State:</span>
+            <ui-toggle variant="apple" state="default"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Active State:</span>
+            <ui-toggle variant="apple" state="active"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Disabled:</span>
+            <ui-toggle variant="apple" state="disabled"></ui-toggle>
+          </div>
+          <div class="code-snippet">
+&lt;ui-toggle variant="apple" state="active"&gt;&lt;/ui-toggle&gt;
+          </div>
+        </div>
+
+        <!-- Cross Variant -->
+        <div class="demo-item">
+          <h3>Cross</h3>
+          <div class="toggle-row">
+            <span class="toggle-label">Default State (×):</span>
+            <ui-toggle variant="cross" state="default"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Active State (✓):</span>
+            <ui-toggle variant="cross" state="active"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Disabled:</span>
+            <ui-toggle variant="cross" state="disabled"></ui-toggle>
+          </div>
+          <div class="code-snippet">
+&lt;ui-toggle variant="cross" state="active"&gt;&lt;/ui-toggle&gt;
+          </div>
+        </div>
+
+        <!-- Neon Variant -->
+        <div class="demo-item">
+          <h3>Neon (Glowing)</h3>
+          <div class="toggle-row">
+            <span class="toggle-label">Default State:</span>
+            <ui-toggle variant="neon" state="default"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Active State:</span>
+            <ui-toggle variant="neon" state="active"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Disabled:</span>
+            <ui-toggle variant="neon" state="disabled"></ui-toggle>
+          </div>
+          <div class="code-snippet">
+&lt;ui-toggle variant="neon" state="active"&gt;&lt;/ui-toggle&gt;
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Color Schemes Demo -->
+    <section class="demo-section">
+      <h2 class="section-title">🎨 Color Schemes</h2>
+      <div class="color-demo">
+        
+        <!-- Primary Color -->
+        <div class="demo-item">
+          <h3>Primary</h3>
+          <div class="toggle-row">
+            <span class="toggle-label">Circle:</span>
+            <ui-toggle variant="circle" color="primary" state="active"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Apple:</span>
+            <ui-toggle variant="apple" color="primary" state="active"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Neon:</span>
+            <ui-toggle variant="neon" color="primary" state="active"></ui-toggle>
+          </div>
+        </div>
+
+        <!-- Secondary Color -->
+        <div class="demo-item">
+          <h3>Secondary</h3>
+          <div class="toggle-row">
+            <span class="toggle-label">Circle:</span>
+            <ui-toggle variant="circle" color="secondary" state="active"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Apple:</span>
+            <ui-toggle variant="apple" color="secondary" state="active"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Neon:</span>
+            <ui-toggle variant="neon" color="secondary" state="active"></ui-toggle>
+          </div>
+        </div>
+
+        <!-- Neutral Color -->
+        <div class="demo-item">
+          <h3>Neutral</h3>
+          <div class="toggle-row">
+            <span class="toggle-label">Circle:</span>
+            <ui-toggle variant="circle" color="neutral" state="active"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Apple:</span>
+            <ui-toggle variant="apple" color="neutral" state="active"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Neon:</span>
+            <ui-toggle variant="neon" color="neutral" state="active"></ui-toggle>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Labels and Customization Demo -->
+    <section class="demo-section">
+      <h2 class="section-title">🏷️ Labels & Customization</h2>
+      <div class="feature-demo">
+        <ui-toggle 
+          variant="circle" 
+          state="active" 
+          label="Enable notifications"
+          label-size="16px">
+        </ui-toggle>
+        
+        <ui-toggle 
+          variant="apple" 
+          state="default" 
+          label="Dark mode"
+          label-size="lg">
+        </ui-toggle>
+        
+        <ui-toggle 
+          variant="square" 
+          state="active" 
+          label="Auto-save"
+          label-size="sm">
+        </ui-toggle>
+
+        <ui-toggle 
+          variant="neon" 
+          state="active" 
+          label="Turbo mode"
+          label-size="md">
+        </ui-toggle>
+      </div>
+
+      <div class="code-snippet">
+&lt;ui-toggle 
+  variant="circle" 
+  state="active" 
+  label="Enable notifications"
+  label-size="16px"&gt;
+&lt;/ui-toggle&gt;
+      </div>
+    </section>
+
+    <!-- Custom Colors Demo -->
+    <section class="demo-section">
+      <h2 class="section-title">🌈 Custom Colors</h2>
+      <div class="feature-demo">
+        <ui-toggle 
+          variant="circle" 
+          state="active" 
+          fill-color-active="#ff6b6b"
+          thumb-color="#ffffff"
+          label="Custom Red">
+        </ui-toggle>
+        
+        <ui-toggle 
+          variant="apple" 
+          state="active" 
+          fill-color-active="#4ecdc4"
+          thumb-color="#ffffff"
+          label="Custom Teal">
+        </ui-toggle>
+        
+        <ui-toggle 
+          variant="square" 
+          state="active" 
+          fill-color-active="#45b7d1"
+          fill-color-inactive="#f0f0f0"
+          label="Custom Blue">
+        </ui-toggle>
+      </div>
+
+      <div class="code-snippet">
+&lt;ui-toggle 
+  variant="circle" 
+  state="active" 
+  fill-color-active="#ff6b6b"
+  thumb-color="#ffffff"
+  label="Custom Red"&gt;
+&lt;/ui-toggle&gt;
+      </div>
+    </section>
+
+    <!-- Interactive Demo -->
+    <section class="demo-section">
+      <h2 class="section-title">⚡ Interactive Demo</h2>
+      <p style="margin-bottom: 1rem; opacity: 0.8;">Click any toggle below to see state changes and event handling:</p>
+      <div class="demo-grid">
+        <div class="demo-item">
+          <h3>Click to Toggle</h3>
+          <div class="toggle-row">
+            <span class="toggle-label">Clickable Circle:</span>
+            <ui-toggle id="interactive-1" variant="circle" label="Click me"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Clickable Apple:</span>
+            <ui-toggle id="interactive-2" variant="apple" label="Toggle me"></ui-toggle>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Clickable Neon:</span>
+            <ui-toggle id="interactive-3" variant="neon" label="Activate me"></ui-toggle>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <h3>Event Output</h3>
+          <div id="event-output" style="min-height: 100px; background: rgba(0,0,0,0.05); padding: 1rem; border-radius: 0.5rem; font-family: monospace; font-size: 0.8rem; white-space: pre-wrap;"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+    
+    // Initialize theme based on system preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      body.classList.add('dark');
+      themeToggle.state = 'active';
+    }
+
+    // Listen for theme toggle changes
+    themeToggle.addEventListener('toggle', (event) => {
+      if (event.detail.active) {
+        body.classList.add('dark');
+      } else {
+        body.classList.remove('dark');
+      }
+    });
+
+    // Interactive demo event handling
+    const eventOutput = document.getElementById('event-output');
+    const interactiveToggles = ['interactive-1', 'interactive-2', 'interactive-3'];
+    
+    interactiveToggles.forEach(id => {
+      const toggle = document.getElementById(id);
+      if (toggle) {
+        toggle.addEventListener('toggle', (event) => {
+          const timestamp = new Date().toLocaleTimeString();
+          const message = `[${timestamp}] ${id}: ${event.detail.active ? 'ON' : 'OFF'} (state: ${event.detail.state})\n`;
+          eventOutput.textContent = message + eventOutput.textContent;
+          
+          // Keep only last 10 events
+          const lines = eventOutput.textContent.split('\n');
+          if (lines.length > 20) {
+            eventOutput.textContent = lines.slice(0, 20).join('\n');
+          }
+        });
+      }
+    });
+
+    // Add some demo text to event output
+    eventOutput.textContent = 'Click any toggle above to see events appear here...\n';
+  </script>
+</body>
+</html>

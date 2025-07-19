@@ -5,108 +5,87 @@
  * It contains typing information for all components that exist in this project.
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
-import { TDSliderProperty } from "./components/ui-slider/ui-slider";
 import { TDProperty } from "./components/ui-toggle/ui-toggle";
-export { TDSliderProperty } from "./components/ui-slider/ui-slider";
 export { TDProperty } from "./components/ui-toggle/ui-toggle";
 export namespace Components {
-    interface MyComponent {
-        /**
-          * The first name
-         */
-        "first": string;
-        /**
-          * The last name
-         */
-        "last": string;
-        /**
-          * The middle name
-         */
-        "middle": string;
-    }
     interface UiHeading {
         "text": string;
     }
-    interface UiSlider {
+    /**
+     * UI Toggle Component
+     * @component 
+     * @description A modern, accessible toggle switch with multiple visual styles and themes.
+     * Perfect for forms, settings panels, and IoT device controls.
+     * Features smooth animations and Web of Things integration.
+     * @example <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     */
+    interface UiToggle {
         /**
-          * @default false
+          * Color scheme for the toggle appearance
+          * @type {'primary' | 'secondary' | 'neutral'}
+          * @default 'primary'
+          * @description - primary: Teal/green professional color - secondary: Pink/purple accent color - neutral: Grayscale minimal appearance
          */
-        "disabled": boolean;
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label displayed next to the toggle
+          * @type {string}
+          * @optional 
+          * @description When provided, clicking the label will also toggle the switch
+         */
         "label"?: string;
         /**
-          * @default 100
-         */
-        "max": number;
-        /**
-          * @default 0
-         */
-        "min": number;
-        /**
-          * @default 1
-         */
-        "step": number;
-        "tdProperty"?: TDSliderProperty;
-        "value"?: number;
-        /**
+          * Current operational state of the toggle
+          * @type {'default' | 'active' | 'disabled'}
           * @default 'default'
+          * @description - default: Toggle is off/inactive - active: Toggle is on/active   - disabled: Toggle cannot be interacted with
          */
-        "variant": 'default' | 'primary' | 'secondary' | 'accent';
-    }
-    interface UiToggle {
-        "checked"?: boolean;
+        "state": 'default' | 'active' | 'disabled';
         /**
-          * @default false
+          * Web of Things Thing Description property binding
+          * @type {TDProperty}
+          * @optional 
+          * @description Enables automatic synchronization with IoT devices and services Provides read/write methods for remote device integration
          */
-        "disabled": boolean;
         "tdProperty"?: TDProperty;
-        "value"?: boolean;
         /**
-          * @default 'default'
+          * Visual theme for the component
+          * @type {'light' | 'dark'}
+          * @default 'light'
+          * @description - light: Bright colors suitable for light backgrounds - dark: Muted colors suitable for dark backgrounds
          */
-        "variant": 'default' | 'square' | 'checkbox' | 'apple' | 'rocker';
+        "theme": 'light' | 'dark';
+        /**
+          * Visual style variant of the toggle switch
+          * @type {'circle' | 'square' | 'apple' | 'cross' | 'neon'}
+          * @default 'circle'
+          * @description - circle: Standard pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch with inner shadow - cross: Shows × when off, ✓ when on - neon: Glowing effect when active
+         */
+        "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
     }
-}
-export interface UiSliderCustomEvent<T> extends CustomEvent<T> {
-    detail: T;
-    target: HTMLUiSliderElement;
 }
 export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiToggleElement;
 }
 declare global {
-    interface HTMLMyComponentElement extends Components.MyComponent, HTMLStencilElement {
-    }
-    var HTMLMyComponentElement: {
-        prototype: HTMLMyComponentElement;
-        new (): HTMLMyComponentElement;
-    };
     interface HTMLUiHeadingElement extends Components.UiHeading, HTMLStencilElement {
     }
     var HTMLUiHeadingElement: {
         prototype: HTMLUiHeadingElement;
         new (): HTMLUiHeadingElement;
     };
-    interface HTMLUiSliderElementEventMap {
-        "change": number;
-    }
-    interface HTMLUiSliderElement extends Components.UiSlider, HTMLStencilElement {
-        addEventListener<K extends keyof HTMLUiSliderElementEventMap>(type: K, listener: (this: HTMLUiSliderElement, ev: UiSliderCustomEvent<HTMLUiSliderElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
-        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
-        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
-        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
-        removeEventListener<K extends keyof HTMLUiSliderElementEventMap>(type: K, listener: (this: HTMLUiSliderElement, ev: UiSliderCustomEvent<HTMLUiSliderElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
-        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
-        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
-        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
-    }
-    var HTMLUiSliderElement: {
-        prototype: HTMLUiSliderElement;
-        new (): HTMLUiSliderElement;
-    };
     interface HTMLUiToggleElementEventMap {
-        "toggle": boolean;
+        "toggle": { active: boolean; state: string };
     }
+    /**
+     * UI Toggle Component
+     * @component 
+     * @description A modern, accessible toggle switch with multiple visual styles and themes.
+     * Perfect for forms, settings panels, and IoT device controls.
+     * Features smooth animations and Web of Things integration.
+     * @example <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     */
     interface HTMLUiToggleElement extends Components.UiToggle, HTMLStencilElement {
         addEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
         addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
@@ -122,74 +101,75 @@ declare global {
         new (): HTMLUiToggleElement;
     };
     interface HTMLElementTagNameMap {
-        "my-component": HTMLMyComponentElement;
         "ui-heading": HTMLUiHeadingElement;
-        "ui-slider": HTMLUiSliderElement;
         "ui-toggle": HTMLUiToggleElement;
     }
 }
 declare namespace LocalJSX {
-    interface MyComponent {
-        /**
-          * The first name
-         */
-        "first"?: string;
-        /**
-          * The last name
-         */
-        "last"?: string;
-        /**
-          * The middle name
-         */
-        "middle"?: string;
-    }
     interface UiHeading {
         "text"?: string;
     }
-    interface UiSlider {
+    /**
+     * UI Toggle Component
+     * @component 
+     * @description A modern, accessible toggle switch with multiple visual styles and themes.
+     * Perfect for forms, settings panels, and IoT device controls.
+     * Features smooth animations and Web of Things integration.
+     * @example <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     */
+    interface UiToggle {
         /**
-          * @default false
+          * Color scheme for the toggle appearance
+          * @type {'primary' | 'secondary' | 'neutral'}
+          * @default 'primary'
+          * @description - primary: Teal/green professional color - secondary: Pink/purple accent color - neutral: Grayscale minimal appearance
          */
-        "disabled"?: boolean;
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label displayed next to the toggle
+          * @type {string}
+          * @optional 
+          * @description When provided, clicking the label will also toggle the switch
+         */
         "label"?: string;
         /**
-          * @default 100
+          * Custom event emitted when toggle state changes
+          * @event toggle
+          * @type {EventEmitter<{ active: boolean; state: string }>}
+          * @description Contains both boolean active state and string state name Use this to react to user interactions and state changes
          */
-        "max"?: number;
+        "onToggle"?: (event: UiToggleCustomEvent<{ active: boolean; state: string }>) => void;
         /**
-          * @default 0
-         */
-        "min"?: number;
-        "onChange"?: (event: UiSliderCustomEvent<number>) => void;
-        /**
-          * @default 1
-         */
-        "step"?: number;
-        "tdProperty"?: TDSliderProperty;
-        "value"?: number;
-        /**
+          * Current operational state of the toggle
+          * @type {'default' | 'active' | 'disabled'}
           * @default 'default'
+          * @description - default: Toggle is off/inactive - active: Toggle is on/active   - disabled: Toggle cannot be interacted with
          */
-        "variant"?: 'default' | 'primary' | 'secondary' | 'accent';
-    }
-    interface UiToggle {
-        "checked"?: boolean;
+        "state"?: 'default' | 'active' | 'disabled';
         /**
-          * @default false
+          * Web of Things Thing Description property binding
+          * @type {TDProperty}
+          * @optional 
+          * @description Enables automatic synchronization with IoT devices and services Provides read/write methods for remote device integration
          */
-        "disabled"?: boolean;
-        "onToggle"?: (event: UiToggleCustomEvent<boolean>) => void;
         "tdProperty"?: TDProperty;
-        "value"?: boolean;
         /**
-          * @default 'default'
+          * Visual theme for the component
+          * @type {'light' | 'dark'}
+          * @default 'light'
+          * @description - light: Bright colors suitable for light backgrounds - dark: Muted colors suitable for dark backgrounds
          */
-        "variant"?: 'default' | 'square' | 'checkbox' | 'apple' | 'rocker';
+        "theme"?: 'light' | 'dark';
+        /**
+          * Visual style variant of the toggle switch
+          * @type {'circle' | 'square' | 'apple' | 'cross' | 'neon'}
+          * @default 'circle'
+          * @description - circle: Standard pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch with inner shadow - cross: Shows × when off, ✓ when on - neon: Glowing effect when active
+         */
+        "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
     }
     interface IntrinsicElements {
-        "my-component": MyComponent;
         "ui-heading": UiHeading;
-        "ui-slider": UiSlider;
         "ui-toggle": UiToggle;
     }
 }
@@ -197,9 +177,15 @@ export { LocalJSX as JSX };
 declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
-            "my-component": LocalJSX.MyComponent & JSXBase.HTMLAttributes<HTMLMyComponentElement>;
             "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
-            "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
+            /**
+             * UI Toggle Component
+             * @component 
+             * @description A modern, accessible toggle switch with multiple visual styles and themes.
+             * Perfect for forms, settings panels, and IoT device controls.
+             * Features smooth animations and Web of Things integration.
+             * @example <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+             */
             "ui-toggle": LocalJSX.UiToggle & JSXBase.HTMLAttributes<HTMLUiToggleElement>;
         }
     }
