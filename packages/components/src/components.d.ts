@@ -5,8 +5,8 @@
  * It contains typing information for all components that exist in this project.
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
-import { TDProperty } from "./components/ui-toggle/ui-toggle";
-export { TDProperty } from "./components/ui-toggle/ui-toggle";
+import { ThingProperty } from "./components/ui-toggle/ui-toggle";
+export { ThingProperty } from "./components/ui-toggle/ui-toggle";
 export namespace Components {
     interface UiHeading {
         "text": string;
@@ -42,19 +42,17 @@ export namespace Components {
          */
         "state": 'default' | 'active' | 'disabled';
         /**
-          * Web of Things Thing Description property binding
-          * @type {TDProperty}
-          * @optional 
-          * @description Enables automatic synchronization with IoT devices and services Provides read/write methods for remote device integration
-         */
-        "tdProperty"?: TDProperty;
-        /**
           * Visual theme for the component
           * @type {'light' | 'dark'}
           * @default 'light'
           * @description - light: Bright colors suitable for light backgrounds - dark: Muted colors suitable for dark backgrounds
          */
         "theme": 'light' | 'dark';
+        /**
+          * Connect to IoT devices and services via Thing Web
+          * @optional
+         */
+        "thingProperty"?: ThingProperty;
         /**
           * Visual style variant of the toggle switch
           * @type {'circle' | 'square' | 'apple' | 'cross' | 'neon'}
@@ -147,19 +145,17 @@ declare namespace LocalJSX {
          */
         "state"?: 'default' | 'active' | 'disabled';
         /**
-          * Web of Things Thing Description property binding
-          * @type {TDProperty}
-          * @optional 
-          * @description Enables automatic synchronization with IoT devices and services Provides read/write methods for remote device integration
-         */
-        "tdProperty"?: TDProperty;
-        /**
           * Visual theme for the component
           * @type {'light' | 'dark'}
           * @default 'light'
           * @description - light: Bright colors suitable for light backgrounds - dark: Muted colors suitable for dark backgrounds
          */
         "theme"?: 'light' | 'dark';
+        /**
+          * Connect to IoT devices and services via Thing Web
+          * @optional
+         */
+        "thingProperty"?: ThingProperty;
         /**
           * Visual style variant of the toggle switch
           * @type {'circle' | 'square' | 'apple' | 'cross' | 'neon'}

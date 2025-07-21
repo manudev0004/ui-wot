@@ -1,11 +1,9 @@
 import { Component, Prop, State, Event, EventEmitter, h, Watch } from '@stencil/core';
 
 /**
- * TD Property interface for Web of Things binding
- * @interface TDProperty
- * @description Defines the contract for Web of Things Thing Description property binding
+ * Simple interface for connecting toggles to IoT devices via Thing Web
  */
-export interface TDProperty {
+export interface ThingProperty {
   name: string;
   read?: () => Promise<boolean> | boolean;
   write?: (value: boolean) => Promise<void> | void;
@@ -82,13 +80,10 @@ export class UiToggle {
 
 
   /**
-   * Web of Things Thing Description property binding
-   * @type {TDProperty}
+   * Connect to IoT devices and services via Thing Web
    * @optional
-   * @description Enables automatic synchronization with IoT devices and services
-   * Provides read/write methods for remote device integration
    */
-  @Prop() tdProperty?: TDProperty;
+  @Prop() thingProperty?: ThingProperty;
 
   /**
    * Internal reactive state tracking whether toggle is active
@@ -108,55 +103,40 @@ export class UiToggle {
   @Event() toggle: EventEmitter<{ active: boolean; state: string }>;
 
   /**
-   * Reactive watcher for TD Property changes
-   * @description Re-initializes connection when tdProperty binding changes
+   * Watch for Thing Property changes
    */
-  @Watch('tdProperty')
-  async watchTdProperty() {
-    await this.initializeFromTD();
+  @Watch('thingProperty')
+  async watchThingProperty() {
+    await this.initializeFromThing();
   }
 
   /**
-   * Component lifecycle hook - runs before component renders
-   * @lifecycle
-   * @description Handles initial state setup and TD property initialization
+   * Initialize component before first render
    */
   async componentWillLoad() {
-    /** Initialize internal state based on current state prop */
     this.isActive = this.state === 'active';
-
-    /** Initialize from TD property if available */
-    await this.initializeFromTD();
+    await this.initializeFromThing();
   }
 
-
-
   /**
-   * Initializes toggle state from Web of Things TD property
-   * @private
-   * @async
-   * @description Attempts to read current value from connected IoT device
+   * Read initial state from connected IoT device
    */
-  private async initializeFromTD() {
-    if (this.tdProperty?.read) {
+  private async initializeFromThing() {
+    if (this.thingProperty?.read) {
       try {
-        const tdValue = await this.tdProperty.read();
-        if (typeof tdValue === 'boolean') {
-          this.isActive = tdValue;
-          this.state = tdValue ? 'active' : 'default';
+        const value = await this.thingProperty.read();
+        if (typeof value === 'boolean') {
+          this.isActive = value;
+          this.state = value ? 'active' : 'default';
         }
       } catch (error) {
-        console.warn('Failed to read TD property:', error);
+        console.warn('Failed to read from IoT device:', error);
       }
     }
   }
 
   /**
-   * Handles toggle click/tap interaction
-   * @private
-   * @async
-   * @description Updates internal state and emits change event
-   * Attempts to write to TD property if configured
+   * Handle user click/tap on the toggle
    */
   private async handleToggle() {
     if (this.state === 'disabled') return;
@@ -165,19 +145,19 @@ export class UiToggle {
     this.isActive = newActive;
     this.state = newActive ? 'active' : 'default';
 
-    /** Emit toggle event with both boolean and state */
+    // Notify listeners of the change
     this.toggle.emit({ 
       active: newActive, 
       state: this.state 
     });
 
-    /** Write to TD property if available */
-    if (this.tdProperty?.write) {
+    // Update connected IoT device if available
+    if (this.thingProperty?.write) {
       try {
-        await this.tdProperty.write(newActive);
+        await this.thingProperty.write(newActive);
       } catch (error) {
-        console.warn('Failed to write TD property:', error);
-        /** Revert state on write failure */
+        console.warn('Failed to write to IoT device:', error);
+        // Revert on failure
         this.isActive = !newActive;
         this.state = !newActive ? 'active' : 'default';
       }
@@ -185,10 +165,7 @@ export class UiToggle {
   }
 
   /**
-   * Handles keyboard accessibility (Space and Enter keys)
-   * @private
-   * @param {KeyboardEvent} event - The keyboard event
-   * @description Provides keyboard alternative to mouse/touch interaction
+   * Handle keyboard navigation (Space and Enter keys)
    */
   private handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === ' ' || event.key === 'Enter') {
@@ -198,14 +175,9 @@ export class UiToggle {
   };
 
   /**
-   * Gets simplified color classes based on color scheme
+   * Gets all CSS classes for the toggle background using Tailwind utilities
    * @private
-   * @returns {object} Object containing CSS classes for inactive, active, and thumb colors
-   * @description Returns CSS classes for inactive, active, and thumb colors
-   */
-
-  /**
-   * Gets all toggle classes using Tailwind utilities
+   * @returns {string} Combined CSS classes for the toggle container
    */
   private getToggleClasses() {
     const isDisabled = this.state === 'disabled';
@@ -221,32 +193,52 @@ export class UiToggle {
     if (this.variant === 'square') shapeClass = 'rounded-md';
     if (this.variant === 'apple') shapeClass = 'rounded-full shadow-inner border-2 border-gray-500';
 
-    // Color based on state and color scheme - mix Tailwind + custom
-    let colorClass = this.color === 'neutral' ? 'bg-gray-300' : 'bg-neutral-light'; // neutral uses gray, others use custom
-    if (this.variant === 'cross' && !isActive) {
-      colorClass = 'bg-red-500'; // red background when cross variant is off
-    } else if (this.variant === 'apple' && !isActive) {
-      colorClass = 'bg-gray-700'; // dark grey for off (iOS style)
-    } else if (this.variant === 'neon' && !isActive) {
-      colorClass = 'neon-red'; // red neon effect when off
+    // Color scheme based on current state and variant
+    let backgroundColorClass = 'bg-neutral-light'; // default inactive state
+    
+    if (this.color === 'neutral') {
+      backgroundColorClass = isActive ? 'bg-gray-500' : 'bg-gray-300';
+    } else if (this.variant === 'cross') {
+      backgroundColorClass = isActive ? this.getActiveColor() : 'bg-red-500';
+    } else if (this.variant === 'apple') {
+      backgroundColorClass = isActive ? 'bg-green-500' : 'bg-gray-700';
+    } else if (this.variant === 'neon') {
+      backgroundColorClass = isActive ? this.getNeonColor() : 'neon-red';
     } else if (isActive) {
-      if (this.variant === 'neon') {
-        colorClass = this.color === 'secondary' ? 'neon-secondary' : 'neon-primary';
-      } else if (this.variant === 'apple') {
-        colorClass = 'bg-green-500'; // iOS-style green when on
-      } else {
-        colorClass = this.color === 'secondary' ? 'bg-secondary' : 
-                    this.color === 'neutral' ? 'bg-gray-500' : 'bg-primary';
-      }
+      backgroundColorClass = this.getActiveColor();
     }
 
     const disabledClass = isDisabled ? 'disabled-state' : '';
 
-    return `${baseClasses} ${shapeClass} ${colorClass} ${disabledClass}`.trim();
+    return `${baseClasses} ${shapeClass} ${backgroundColorClass} ${disabledClass}`.trim();
   }
 
   /**
-   * Gets thumb classes using Tailwind utilities
+   * Gets the active color class based on color scheme
+   * @private
+   * @returns {string} CSS class for active state
+   */
+  private getActiveColor(): string {
+    switch (this.color) {
+      case 'secondary': return 'bg-secondary';
+      case 'neutral': return 'bg-gray-500';
+      default: return 'bg-primary';
+    }
+  }
+
+  /**
+   * Gets the neon color class based on color scheme
+   * @private
+   * @returns {string} CSS class for neon variant active state
+   */
+  private getNeonColor(): string {
+    return this.color === 'secondary' ? 'neon-secondary' : 'neon-primary';
+  }
+
+  /**
+   * Gets all CSS classes for the toggle thumb using Tailwind utilities
+   * @private
+   * @returns {string} Combined CSS classes for the movable thumb element
    */
   private getThumbClasses() {
     const isActive = this.state === 'active';
@@ -279,7 +271,9 @@ export class UiToggle {
   }
 
   /**
-   * Renders special content for the cross variant using Tailwind classes
+   * Renders special icons (✓ and ×) for the cross variant
+   * @private
+   * @returns {JSX.Element | null} Icon content or null for other variants
    */
   private renderCrossContent() {
     if (this.variant !== 'cross') return null;

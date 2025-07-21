@@ -99,14 +99,4 @@
   filter: brightness(1.2) saturate(1.3);
 }
 
-/* Accessibility */
-:host(:focus-visible) {
-  outline: none;
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .transition-all,
-  .transition-transform {
-    transition: none;
-  }
-}
