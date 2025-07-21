@@ -1,162 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /**
  * UI Toggle Component Styles
- * 
- * Pure CSS implementation with Tailwind-inspired utilities.
- * Supports multiple variants: circle, square, apple, cross, and neon.
+ * Using Tailwind CSS utilities with custom color variables
  */
 
 :host {
-  /* Simplified color scheme - center values only */
+  /* Custom color scheme */
   --color-neutral: #7E807F;
   --color-neutral-light: #CACCCC;
   --color-neutral-dark: #4C4D4C;
   --color-white: #FFFFFF;
-  
-  /* Primary color (teal) */
   --color-primary: #067362;
   --color-primary-dark: #33b8a4;
-  
-  /* Secondary color (pink) */
   --color-secondary: #B84A91;
   
   display: inline-block;
 }
 
-/* Utility classes inspired by Tailwind */
-.inline-flex { display: inline-flex; }
-.items-center { align-items: center; }
-.space-x-3 > * + * { margin-left: 0.75rem; }
-.space-x-2 > * + * { margin-left: 0.5rem; }
-.relative { position: relative; }
-.absolute { position: absolute; }
-.inline-block { display: inline-block; }
-.cursor-pointer { cursor: pointer; }
-.cursor-not-allowed { cursor: not-allowed; }
-.select-none { user-select: none; }
-
-/* Spacing utilities for label positioning */
-.ml-3 { margin-left: 0.75rem; }
-.mr-3 { margin-right: 0.75rem; }
-
-/* Border radius utilities - ensure consistent shape */
-.rounded-full { border-radius: 9999px; }
-.rounded-md { border-radius: 0.375rem; }
-.rounded-lg { border-radius: 0.5rem; }
-
-/* Transition utilities */
-.transition-all { transition: all 0.3s ease-in-out; }
-.transition-transform { transition: transform 0.3s ease-in-out; }
-.duration-300 { transition-duration: 300ms; }
-.ease-in-out { transition-timing-function: ease-in-out; }
-
-/* Spacing utilities */
-.top-1 { top: 0.25rem; }
-.left-1 { left: 0.25rem; }
-.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
-
-/* Size utilities */
-.w-12 { width: 3rem; }
-.w-14 { width: 3.5rem; }
-.h-6 { height: 1.5rem; }
-.h-8 { height: 2rem; }
-.w-4 { width: 1rem; }
-.h-4 { height: 1rem; }
-.w-6 { width: 1.5rem; }
-
-/* Transform utilities for thumb positioning */
-.translate-x-0 { transform: translateX(0); }
-.translate-x-6 { transform: translateX(1.5rem); }
-.translate-x-7 { transform: translateX(1.75rem); }
-
-/* Border radius utilities */
-.rounded-full { border-radius: 9999px; }
-.rounded-md { border-radius: 0.375rem; }
-.rounded-lg { border-radius: 0.5rem; }
-.rounded-sm { border-radius: 0.125rem; }
-
-/* Shadow utilities */
-.shadow-sm { box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
-.shadow-inner { box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05); }
-.shadow-lg { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1); }
-
-/* Transform utilities */
-.translate-x-0 { transform: translateX(0); }
-.translate-x-6 { transform: translateX(1.5rem); }
-
-/**
- * Visual effect utilities
- * @description Opacity and visual state modifiers
- */
-/** Disabled state styling - maintains shape and adds proper cursor */
-.disabled-state { 
-  opacity: 0.5; 
-  cursor: not-allowed !important;
-  pointer-events: none;
-}
-
-/** Ensure disabled state preserves all variant styling */
-.disabled-state.rounded-full { border-radius: 9999px !important; }
-.disabled-state.rounded-md { border-radius: 0.375rem !important; }  
-.disabled-state.rounded-lg { border-radius: 0.5rem !important; }
-.disabled-state.shadow-inner { box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05) !important; }
-
-/* Flexbox utilities */
-.flex { display: flex; }
-.justify-center { justify-content: center; }
-.pointer-events-none { pointer-events: none; }
-
-/**
- * Typography utilities
- * @description Text styling for cross variant symbols and labels
- */
-/** Large text for cross variant × symbol */
-.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
-
-/** Small text for cross variant ✓ symbol */
-.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-
-/** Bold font weight for cross symbols */
-.font-bold { font-weight: 700; }
-
-/**
- * Color utilities
- * @description Background and text color classes using CSS custom properties
- */
-/** Background color utilities */
+/* Custom color utilities using CSS variables */
 .bg-neutral-light { background-color: var(--color-neutral-light); }
 .bg-neutral { background-color: var(--color-neutral); }
 .bg-neutral-dark { background-color: var(--color-neutral-dark); }
 .bg-primary { background-color: var(--color-primary); }
 .bg-primary-dark { background-color: var(--color-primary-dark); }
 .bg-secondary { background-color: var(--color-secondary); }
-.bg-white { background-color: var(--color-white); }
 
-/** Text color utilities */
 .text-neutral { color: var(--color-neutral); }
-.text-white { color: var(--color-white); }
-.text-gray-400 { color: #9ca3af; }
 
-/**
- * Dark mode color overrides
- * @description Color adjustments for dark theme support
- */
-.dark .bg-neutral-light { background-color: var(--color-neutral-dark); }
-.dark .bg-neutral { background-color: var(--color-neutral); }
-.dark .bg-neutral-dark { background-color: var(--color-neutral-light); }
-.dark .bg-primary { background-color: var(--color-primary-dark); }
-.dark .bg-white { background-color: var(--color-white); }
+/* Disabled state */
+.disabled-state { 
+  opacity: 0.5; 
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
 
-/**
- * Border utilities
- * @description Border styling for cross variant
- */
-.border-2 { border-width: 2px; }
-
-/**
- * Neon variant with glowing effects
- * @description Bright colors with multiple layered glow effects for maximum visibility
- */
-/** Primary color neon - intense teal glow */
+/* Neon effects */
 .neon-primary {
   background-color: var(--color-primary) !important;
   border: 2px solid var(--color-primary) !important;
@@ -168,7 +49,6 @@
   filter: brightness(1.1) saturate(1.2);
 }
 
-/** Secondary color neon - intense pink glow */
 .neon-secondary {
   background-color: var(--color-secondary) !important;
   border: 2px solid var(--color-secondary) !important;
@@ -180,7 +60,23 @@
   filter: brightness(1.1) saturate(1.2);
 }
 
-/** Dark mode neon override for primary color */
+.neon-red {
+  background-color: #ef4444 !important;
+  border: 2px solid #ef4444 !important;
+  box-shadow: 
+    0 0 5px rgba(239, 68, 68, 0.6),
+    0 0 15px rgba(239, 68, 68, 0.5),
+    0 0 25px rgba(239, 68, 68, 0.4),
+    0 0 35px rgba(239, 68, 68, 0.2) !important;
+  filter: brightness(1.1) saturate(1.2);
+}
+
+/* Dark mode overrides */
+.dark .bg-neutral-light { background-color: var(--color-neutral-dark); }
+.dark .bg-neutral { background-color: var(--color-neutral); }
+.dark .bg-neutral-dark { background-color: var(--color-neutral-light); }
+.dark .bg-primary { background-color: var(--color-primary-dark); }
+
 .dark .neon-primary {
   background-color: var(--color-primary-dark) !important;
   border-color: var(--color-primary-dark) !important;
@@ -192,27 +88,23 @@
   filter: brightness(1.2) saturate(1.3);
 }
 
-/**
- * Focus and accessibility styles
- * @description Keyboard navigation and focus indicators for accessibility compliance
- */
-/** Remove default outline from host element */
+.dark .neon-red {
+  background-color: #f87171 !important;
+  border-color: #f87171 !important;
+  box-shadow: 
+    0 0 5px rgba(248, 113, 113, 0.7),
+    0 0 15px rgba(248, 113, 113, 0.6),
+    0 0 25px rgba(248, 113, 113, 0.5),
+    0 0 35px rgba(248, 113, 113, 0.3) !important;
+  filter: brightness(1.2) saturate(1.3);
+}
+
+/* Accessibility */
 :host(:focus-visible) {
   outline: none;
 }
 
-/** Custom focus ring for keyboard navigation */
-.focus-ring:focus-visible {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-}
-
-/**
- * Responsive design and accessibility considerations
- * @description Media queries for reduced motion and responsive behavior
- */
 @media (prefers-reduced-motion: reduce) {
-  /** Disable transitions for users who prefer reduced motion */
   .transition-all,
   .transition-transform {
     transition: none;

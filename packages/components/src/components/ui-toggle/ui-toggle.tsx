@@ -205,68 +205,106 @@ export class UiToggle {
    */
 
   /**
-   * Gets all toggle classes in one method
+   * Gets all toggle classes using Tailwind utilities
    */
   private getToggleClasses() {
-    const baseClasses = 'relative inline-block cursor-pointer transition-all duration-300 ease-in-out w-12 h-6';
     const isDisabled = this.state === 'disabled';
     const isActive = this.state === 'active';
     
-    // Shape based on variant
-    let shapeClass = 'rounded-full'; // default for circle/neon
-    if (this.variant === 'square' || this.variant === 'cross') shapeClass = 'rounded-md';
-    if (this.variant === 'apple') shapeClass = 'rounded-full shadow-inner';
-    
-    // Color based on state and color scheme
-    let colorClass = 'bg-neutral-light'; // default inactive
-    if (isActive) {
+    // Size based on variant - Apple variant is bigger for iOS feel
+    const baseClasses = this.variant === 'apple' 
+      ? 'relative inline-block cursor-pointer transition-all duration-200 ease-in-out w-11 h-7' 
+      : 'relative inline-block cursor-pointer transition-all duration-300 ease-in-out w-12 h-6';
+
+    // Shape based on variant - use Tailwind classes
+    let shapeClass = 'rounded-full'; // default for circle/neon/cross
+    if (this.variant === 'square') shapeClass = 'rounded-md';
+    if (this.variant === 'apple') shapeClass = 'rounded-full shadow-inner border-2 border-gray-500';
+
+    // Color based on state and color scheme - mix Tailwind + custom
+    let colorClass = this.color === 'neutral' ? 'bg-gray-300' : 'bg-neutral-light'; // neutral uses gray, others use custom
+    if (this.variant === 'cross' && !isActive) {
+      colorClass = 'bg-red-500'; // red background when cross variant is off
+    } else if (this.variant === 'apple' && !isActive) {
+      colorClass = 'bg-gray-700'; // dark grey for off (iOS style)
+    } else if (this.variant === 'neon' && !isActive) {
+      colorClass = 'neon-red'; // red neon effect when off
+    } else if (isActive) {
       if (this.variant === 'neon') {
         colorClass = this.color === 'secondary' ? 'neon-secondary' : 'neon-primary';
+      } else if (this.variant === 'apple') {
+        colorClass = 'bg-green-500'; // iOS-style green when on
       } else {
-        colorClass = this.color === 'secondary' ? 'bg-secondary' : 'bg-primary';
+        colorClass = this.color === 'secondary' ? 'bg-secondary' : 
+                    this.color === 'neutral' ? 'bg-gray-500' : 'bg-primary';
       }
     }
-    
+
     const disabledClass = isDisabled ? 'disabled-state' : '';
-    
+
     return `${baseClasses} ${shapeClass} ${colorClass} ${disabledClass}`.trim();
   }
 
   /**
-   * Gets thumb classes
+   * Gets thumb classes using Tailwind utilities
    */
   private getThumbClasses() {
-    const baseClasses = 'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ease-in-out shadow-sm';
-    const position = this.state === 'active' ? 'translate-x-6' : 'translate-x-0';
+    const isActive = this.state === 'active';
     
-    return `${baseClasses} ${position}`;
+    // Apple variant gets special styling for iOS feel
+    if (this.variant === 'apple') {
+      const baseClasses = 'absolute w-6 h-6 bg-white transition-all duration-200 ease-in-out shadow-md rounded-full';
+      // Move thumb up slightly and left flush for perfect vertical/horizontal centering
+      const positionClass = 'top-0 left-0';
+      const translateClass = isActive ? 'translate-x-4' : 'translate-x-0';
+      return `${baseClasses} ${positionClass} ${translateClass}`;
+    }
+    
+    // Standard styling for other variants
+    const baseClasses = 'absolute w-4 h-4 bg-white transition-transform duration-300 ease-in-out shadow-sm';
+    
+    // Shape based on variant
+    const shapeClass = this.variant === 'square' ? 'rounded-sm' : 'rounded-full';
+    
+    // Position adjustment for neon variant - keep consistent alignment
+    let positionClass = 'top-1 left-1'; // consistent position for all variants
+    if (this.variant === 'neon') {
+      // Use same vertical positioning for both on/off to maintain alignment
+      positionClass = isActive ? 'top-0.5 left-0.5' : 'top-0.5 left-1';
+    }
+    
+    const translateClass = isActive ? 'translate-x-6' : 'translate-x-0';
+    
+    return `${baseClasses} ${shapeClass} ${positionClass} ${translateClass}`;
   }
 
   /**
-   * Renders special content for the cross variant
-   * @private
-   * @returns {JSX.Element | null} JSX element for cross symbols or null
-   * @description Shows × symbol when inactive, ✓ when active
+   * Renders special content for the cross variant using Tailwind classes
    */
   private renderCrossContent() {
     if (this.variant !== 'cross') return null;
     
+    const isActive = this.state === 'active';
+    
     return (
       <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {this.state === 'default' ? (
-          <span class="text-neutral text-lg font-bold">×</span>
+        {!isActive ? (
+          // Cross (×) on right when off
+          <div class="absolute top-0 right-0 w-6 h-6 flex items-center justify-center">
+            <span class="text-white text-xl font-bold">×</span>
+          </div>
         ) : (
-          <span class="text-white text-sm">✓</span>
+          // Checkmark (✓) on left when on
+          <div class="absolute top-0 left-0 w-6 h-6 flex items-center justify-center">
+            <span class="text-white text-lg font-bold">✓</span>
+          </div>
         )}
       </div>
     );
   }
 
   /**
-   * Renders the toggle component with all styling and interactions
-   * @returns {JSX.Element} Complete toggle component JSX
-   * @description Combines variant styling, color scheme, and custom overrides
-   * Includes accessibility attributes and keyboard event handling
+   * Renders the toggle component with Tailwind CSS classes
    */
   render() {
     const toggleClasses = this.getToggleClasses();
@@ -274,7 +312,15 @@ export class UiToggle {
     const isDisabled = this.state === 'disabled';
 
     return (
-      <div class="inline-flex items-center space-x-2">
+      <div class="inline-flex items-center space-x-3">
+        {this.label && (
+          <label
+            class={`select-none mr-2 ${isDisabled ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer'}`}
+            onClick={() => !isDisabled && this.handleToggle()}
+          >
+            {this.label}
+          </label>
+        )}
         <span
           class={toggleClasses}
           role="switch"
@@ -287,14 +333,6 @@ export class UiToggle {
           <span class={thumbClasses}></span>
           {this.renderCrossContent()}
         </span>
-        {this.label && (
-          <label
-            class={`select-none ml-3 ${isDisabled ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer'}`}
-            onClick={() => !isDisabled && this.handleToggle()}
-          >
-            {this.label}
-          </label>
-        )}
       </div>
     );
   }
