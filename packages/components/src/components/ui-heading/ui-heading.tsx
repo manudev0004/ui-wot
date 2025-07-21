@@ -9,6 +9,6 @@ export class UiHeading {
   @Prop() text: string;
 
   render() {
-    return <h1>{this.text}</h1>;
+    return <h1 class="text-4xl font-bold text-red-800 mb-4">{this.text}</h1>;
   }
 }

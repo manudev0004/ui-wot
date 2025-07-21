@@ -195,6 +195,33 @@
         <ui-toggle variant="cross" label="Enable feature" color="neutral"></ui-toggle>
       </div>
     </div>
+
+    <!-- Tailwind Example -->
+    <div class="section">
+      <h2>🎨 Tailwind CSS Integration</h2>
+      <p style="margin-bottom: 1rem; color: #666;">Example components built with Tailwind utility classes:</p>
+      
+      <!-- Tailwind styled heading component -->
+      <ui-heading text="Welcome to UI-WOT Components!"></ui-heading>
+      
+      <!-- Custom Tailwind component -->
+      <tailwind-component></tailwind-component>
+      
+      <!-- Advanced Tailwind card components -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-top: 2rem;">
+        <ui-card card-title="Default Card" subtitle="Clean and simple design">
+          <p>This card uses Tailwind's default styling with shadow and border utilities.</p>
+        </ui-card>
+        
+        <ui-card card-title="Gradient Magic" subtitle="Eye-catching gradient background" variant="gradient">
+          <p>Beautiful gradient from purple to red with white text overlay.</p>
+        </ui-card>
+        
+        <ui-card card-title="Outlined Style" subtitle="Minimalist border design" variant="outlined">
+          <p>Clean outlined design perfect for modern interfaces.</p>
+        </ui-card>
+      </div>
+    </div>
   </div>
 
   <script>

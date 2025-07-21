@@ -8,6 +8,19 @@ import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 import { TDProperty } from "./components/ui-toggle/ui-toggle";
 export { TDProperty } from "./components/ui-toggle/ui-toggle";
 export namespace Components {
+    interface TailwindComponent {
+    }
+    interface UiCard {
+        /**
+          * @default 'Card Title'
+         */
+        "cardTitle": string;
+        "subtitle"?: string;
+        /**
+          * @default 'default'
+         */
+        "variant": 'default' | 'gradient' | 'outlined';
+    }
     interface UiHeading {
         "text": string;
     }
@@ -69,6 +82,18 @@ export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
     target: HTMLUiToggleElement;
 }
 declare global {
+    interface HTMLTailwindComponentElement extends Components.TailwindComponent, HTMLStencilElement {
+    }
+    var HTMLTailwindComponentElement: {
+        prototype: HTMLTailwindComponentElement;
+        new (): HTMLTailwindComponentElement;
+    };
+    interface HTMLUiCardElement extends Components.UiCard, HTMLStencilElement {
+    }
+    var HTMLUiCardElement: {
+        prototype: HTMLUiCardElement;
+        new (): HTMLUiCardElement;
+    };
     interface HTMLUiHeadingElement extends Components.UiHeading, HTMLStencilElement {
     }
     var HTMLUiHeadingElement: {
@@ -101,11 +126,26 @@ declare global {
         new (): HTMLUiToggleElement;
     };
     interface HTMLElementTagNameMap {
+        "tailwind-component": HTMLTailwindComponentElement;
+        "ui-card": HTMLUiCardElement;
         "ui-heading": HTMLUiHeadingElement;
         "ui-toggle": HTMLUiToggleElement;
     }
 }
 declare namespace LocalJSX {
+    interface TailwindComponent {
+    }
+    interface UiCard {
+        /**
+          * @default 'Card Title'
+         */
+        "cardTitle"?: string;
+        "subtitle"?: string;
+        /**
+          * @default 'default'
+         */
+        "variant"?: 'default' | 'gradient' | 'outlined';
+    }
     interface UiHeading {
         "text"?: string;
     }
@@ -169,6 +209,8 @@ declare namespace LocalJSX {
         "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
     }
     interface IntrinsicElements {
+        "tailwind-component": TailwindComponent;
+        "ui-card": UiCard;
         "ui-heading": UiHeading;
         "ui-toggle": UiToggle;
     }
@@ -177,6 +219,8 @@ export { LocalJSX as JSX };
 declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
+            "tailwind-component": LocalJSX.TailwindComponent & JSXBase.HTMLAttributes<HTMLTailwindComponentElement>;
+            "ui-card": LocalJSX.UiCard & JSXBase.HTMLAttributes<HTMLUiCardElement>;
             "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
             /**
              * UI Toggle Component
