@@ -250,11 +250,10 @@ export class UiToggle {
    */
   private getThumbClasses() {
     const isActive = this.state === 'active';
-    const colors = this.getColors();
     
     // Apple variant gets special styling for iOS feel
     if (this.variant === 'apple') {
-      const baseClasses = `absolute w-6 h-6 ${colors.thumb} transition-all duration-200 ease-in-out shadow-md rounded-full`;
+      const baseClasses = 'absolute w-6 h-6 bg-white transition-all duration-200 ease-in-out shadow-md rounded-full';
       // Move thumb up slightly and left flush for perfect vertical/horizontal centering
       const positionClass = 'top-0 left-0';
       const translateClass = isActive ? 'translate-x-4' : 'translate-x-0';
@@ -262,7 +261,7 @@ export class UiToggle {
     }
     
     // Standard styling for other variants
-    const baseClasses = `absolute w-4 h-4 ${colors.thumb} transition-transform duration-300 ease-in-out shadow-sm`;
+    const baseClasses = 'absolute w-4 h-4 bg-white transition-transform duration-300 ease-in-out shadow-sm';
     
     // Shape based on variant
     const shapeClass = this.variant === 'square' ? 'rounded-sm' : 'rounded-full';
