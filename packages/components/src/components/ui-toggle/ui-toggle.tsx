@@ -1,30 +1,13 @@
-import { Component, Prop, State, Event, EventEmitter, h, Watch } from '@stencil/core';
+import { Component, Prop, State, h, Watch } from '@stencil/core';
 
 /**
- * Interface for connecting to IoT devices
- */
-export interface IoTDevice {
-  name: string;
-  url: string;
-  type?: string;
-}
-
-/**
- * UI Toggle - A Smart Switch for Web and IoT
- * 
- * Simple toggle component that can control anything from UI state to smart lights!
- * Just give it a device URL and property name - it handles the rest.
- * 
+ * UI Toggle Component
+ * @component
+ * @description A modern, accessible toggle switch with multiple visual styles and IoT integration.
+ * Simply provide a direct property URL for plug-and-play device control.
  * @example
- * <!-- Basic toggle -->
- * <ui-toggle label="Dark mode"></ui-toggle>
- * 
- * <!-- Smart device control -->
- * <ui-toggle 
- *   device-url="https://my-lamp.local/td" 
- *   property="power"
- *   label="Living room lamp">
- * </ui-toggle>
+ * <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+ * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
  */
 @Component({
   tag: 'ui-toggle',
@@ -33,272 +16,201 @@ export interface IoTDevice {
 })
 export class UiToggle {
   /**
-   * How the toggle looks
-   * circle = standard pill shape
-   * square = rectangular with rounded corners  
-   * apple = iOS style with shadow
-   * cross = shows × and ✓ icons
-   * neon = glowing effect
+   * Visual style variant of the toggle switch
+   * @type {'circle' | 'square' | 'apple' | 'cross' | 'neon'}
+   * @default 'circle'
+   * @description
+   * - circle: Standard pill-shaped toggle (default)
+   * - square: Rectangular toggle with square thumb
+   * - apple: iOS-style switch with inner shadow
+   * - cross: Shows × when off, ✓ when on
+   * - neon: Glowing effect when active
    */
   @Prop() variant: 'circle' | 'square' | 'apple' | 'cross' | 'neon' = 'circle';
 
   /**
-   * Is the toggle on or off?
-   * default = off/inactive
-   * active = on/active  
-   * disabled = can't be clicked
+   * Current state of the toggle
+   * @type {'active' | 'disabled'}
+   * @default 'active'
+   * @description
+   * - active: Toggle is on/active (default)
+   * - disabled: Toggle cannot be interacted with
    */
-  @Prop({ mutable: true }) state: 'default' | 'active' | 'disabled' = 'default';
+  @Prop({ mutable: true }) state: 'active' | 'disabled' = 'active';
 
   /**
-   * Light or dark appearance
+   * Visual theme for the component
+   * @type {'light' | 'dark'}
+   * @default 'light'
+   * @description
+   * - light: Bright colors suitable for light backgrounds
+   * - dark: Muted colors suitable for dark backgrounds
    */
   @Prop() theme: 'light' | 'dark' = 'light';
 
   /**
-   * Color scheme
-   * primary = teal/green
-   * secondary = pink/purple  
-   * neutral = gray
+   * Color scheme for the toggle appearance
+   * @type {'primary' | 'secondary' | 'neutral'}
+   * @default 'primary'
+   * @description
+   * - primary: Teal/green professional color
+   * - secondary: Pink/purple accent color
+   * - neutral: Grayscale minimal appearance
    */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
   /**
-   * Text shown next to toggle (clickable)
+   * Optional text label displayed next to the toggle
+   * @type {string}
+   * @optional
+   * @description When provided, clicking the label will also toggle the switch
    */
   @Prop() label?: string;
 
   /**
-   * URL to your smart device's description file
-   * Makes the toggle control real IoT devices!
+   * Direct URL to the device property for IoT integration
+   * @type {string}
+   * @optional
+   * @description Provide the complete property URL for automatic device control
+   * @example td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
    */
-  @Prop() deviceUrl?: string;
+  @Prop() tdUrl?: string;
 
   /**
-   * Which device property to control (default: "switch")
-   * Common names: "power", "state", "on", "enabled"
+   * Internal state tracking if toggle is on/off
+   * @type {boolean}
+   * @default true
    */
-  @Prop() property: string = 'switch';
+  @State() isActive: boolean = true;
 
   /**
-   * Legacy way to connect devices (use device-url instead)
-   * @deprecated
+   * Watch for TD URL changes and reconnect
    */
-  @Prop() device?: IoTDevice;
-
-  // Internal state
-  @State() isOn: boolean = false;
-  @State() deviceInfo: any = null;
-  @State() deviceBaseUrl: string = '';
-
-  // Event when toggle changes
-  @Event() toggle: EventEmitter<{ active: boolean; state: string }>;
-
-  // Watch for device URL changes
-  @Watch('deviceUrl')
-  async onDeviceUrlChange() {
-    await this.connectToDevice();
+  @Watch('tdUrl')
+  async watchTdUrl() {
+    await this.readDeviceState();
   }
 
-  // Watch for property name changes  
-  @Watch('property')
-  async onPropertyChange() {
-    if (this.deviceInfo) {
-      await this.readDeviceState();
-    }
-  }
-
-  // Watch for legacy device prop
-  @Watch('device')
-  async onDeviceChange() {
-    console.warn('device prop is deprecated. Use device-url instead!');
-  }
-
-  // Setup component
+  /**
+   * Initialize component
+   */
   async componentWillLoad() {
-    this.isOn = this.state === 'active';
-    if (this.deviceUrl) {
-      await this.connectToDevice();
-    }
-  }
-
-  // Connect to smart device
-  async connectToDevice() {
-    if (!this.deviceUrl) return;
-
-    try {
-      console.log(`Connecting to device: ${this.deviceUrl}`);
-      const response = await fetch(this.deviceUrl);
-      
-      if (!response.ok) {
-        throw new Error(`Can't reach device: ${response.status}`);
-      }
-
-      this.deviceInfo = await response.json();
-      
-      // Get device's base URL
-      const url = new URL(this.deviceUrl);
-      this.deviceBaseUrl = `${url.protocol}//${url.host}`;
-      
-      console.log(`Connected to: ${this.deviceInfo.title || 'Smart Device'}`);
-      
-      // Read current state
+    this.isActive = this.state === 'active';
+    if (this.tdUrl) {
       await this.readDeviceState();
-    } catch (error) {
-      console.error('Failed to connect to device:', error);
     }
   }
 
-  // Read what the device is currently doing
-  async readDeviceState() {
-    if (!this.deviceInfo || !this.deviceBaseUrl) return;
+  /**
+   * Read current state from device
+   * @private
+   */
+  private async readDeviceState() {
+    if (!this.tdUrl) return;
 
     try {
-      const deviceProperty = this.deviceInfo.properties?.[this.property];
-      if (!deviceProperty) {
-        console.warn(`Device doesn't have '${this.property}' property`);
-        return;
-      }
-
-      const endpoint = deviceProperty.forms?.[0];
-      if (!endpoint?.href) {
-        console.warn(`No endpoint found for '${this.property}'`);
-        return;
-      }
-
-      // Build full URL
-      const fullUrl = endpoint.href.startsWith('http') 
-        ? endpoint.href 
-        : `${this.deviceBaseUrl}${endpoint.href}`;
-
-      console.log(`Reading from: ${fullUrl}`);
-      const response = await fetch(fullUrl);
+      console.log(`Reading from: ${this.tdUrl}`);
+      const response = await fetch(this.tdUrl);
       
       if (response.ok) {
         const value = await response.json();
-        const isOn = typeof value === 'boolean' ? value : Boolean(value);
+        const booleanValue = typeof value === 'boolean' ? value : Boolean(value);
         
-        this.isOn = isOn;
-        this.state = isOn ? 'active' : 'default';
-        console.log(`Device is ${isOn ? 'ON' : 'OFF'}`);
+        this.isActive = booleanValue;
+        console.log(`Read value: ${booleanValue}`);
       }
     } catch (error) {
       console.warn('Failed to read device state:', error);
     }
   }
 
-  // Tell the device to change state
-  async updateDevice(turnOn: boolean) {
-    if (!this.deviceInfo || !this.deviceBaseUrl) return;
+  /**
+   * Write new state to device
+   * @private
+   */
+  private async updateDevice(value: boolean) {
+    if (!this.tdUrl) return;
 
     try {
-      const deviceProperty = this.deviceInfo.properties?.[this.property];
-      if (!deviceProperty) {
-        console.warn(`Device doesn't have '${this.property}' property`);
-        return;
-      }
-
-      // Find endpoint that accepts writes
-      const writeEndpoint = deviceProperty.forms?.find((form: any) => 
-        !form.op || form.op.includes('writeproperty') || form.op.includes('readproperty')
-      );
-
-      if (!writeEndpoint?.href) {
-        console.warn(`Can't write to '${this.property}' property`);
-        return;
-      }
-
-      // Build full URL
-      const fullUrl = writeEndpoint.href.startsWith('http') 
-        ? writeEndpoint.href 
-        : `${this.deviceBaseUrl}${writeEndpoint.href}`;
-
-      console.log(`Updating device: ${turnOn ? 'ON' : 'OFF'}`);
+      console.log(`Writing ${value} to: ${this.tdUrl}`);
       
-      const response = await fetch(fullUrl, {
+      const response = await fetch(this.tdUrl, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(turnOn),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(value),
       });
 
       if (response.ok) {
-        console.log(`Device updated successfully!`);
+        console.log(`Successfully wrote ${value}`);
       } else {
-        throw new Error(`Update failed: ${response.status}`);
+        throw new Error(`Write failed: ${response.status}`);
       }
     } catch (error) {
-      console.warn('Failed to update device:', error);
-      throw error; // Let caller handle reversion
+      console.warn('Failed to write to device:', error);
+      throw error;
     }
   }
 
-  // When user clicks the toggle
-  async handleToggle() {
+  /**
+   * Handle toggle click
+   * @private
+   */
+  private async handleToggle() {
     if (this.state === 'disabled') return;
 
-    const willBeOn = !this.isOn;
-    this.isOn = willBeOn;
-    this.state = willBeOn ? 'active' : 'default';
+    const newActive = !this.isActive;
+    this.isActive = newActive;
 
-    // Tell anyone listening that we changed
-    this.toggle.emit({ 
-      active: willBeOn, 
-      state: this.state 
-    });
-
-    // Update connected device if we have one
-    if (this.deviceUrl && this.deviceInfo) {
+    // Update device if connected
+    if (this.tdUrl) {
       try {
-        await this.updateDevice(willBeOn);
+        await this.updateDevice(newActive);
       } catch (error) {
-        console.warn('Device update failed, reverting:', error);
-        // Undo the change
-        this.isOn = !willBeOn;
-        this.state = !willBeOn ? 'active' : 'default';
+        // Revert on failure
+        this.isActive = !newActive;
+        console.warn('Reverted due to device write failure');
       }
-    }
-
-    // Show warning for old device prop
-    if (this.device) {
-      console.warn('device prop is deprecated. Use device-url instead!');
     }
   }
 
-  // Handle keyboard presses
-  handleKeyDown = (event: KeyboardEvent) => {
+  /**
+   * Handle keyboard input
+   * @private
+   */
+  private handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
       this.handleToggle();
     }
   };
 
-  // Figure out how the toggle background should look
+  // Get toggle background style
   getToggleStyle() {
     const isDisabled = this.state === 'disabled';
-    const isActive = this.state === 'active';
+    const isOn = this.isActive;
     
-    // Size - Apple is bigger for that iOS feel
-    const size = this.variant === 'apple' 
-      ? 'w-11 h-7' 
-      : 'w-12 h-6';
+    // Size
+    const size = this.variant === 'apple' ? 'w-11 h-7' : 'w-12 h-6';
 
     // Shape
-    let shape = 'rounded-full'; // most toggles are round
+    let shape = 'rounded-full';
     if (this.variant === 'square') shape = 'rounded-md';
     if (this.variant === 'apple') shape = 'rounded-full shadow-inner border-2 border-gray-500';
 
-    // Color when active/inactive
-    let bgColor = 'bg-neutral-light'; // default = off
+    // Background color
+    let bgColor = 'bg-gray-300'; // default off
     
     if (this.color === 'neutral') {
-      bgColor = isActive ? 'bg-gray-500' : 'bg-gray-300';
+      bgColor = isOn ? 'bg-gray-500' : 'bg-gray-300';
     } else if (this.variant === 'cross') {
-      bgColor = isActive ? this.getActiveColor() : 'bg-red-500';
+      bgColor = isOn ? this.getActiveColor() : 'bg-red-500';
     } else if (this.variant === 'apple') {
-      bgColor = isActive ? 'bg-green-500' : 'bg-gray-700';
+      bgColor = isOn ? 'bg-green-500' : 'bg-gray-700';
     } else if (this.variant === 'neon') {
-      bgColor = isActive ? this.getNeonColor() : 'neon-red';
-    } else if (isActive) {
+      bgColor = isOn ? this.getNeonColor() : 'neon-red';
+    } else if (isOn) {
       bgColor = this.getActiveColor();
     }
 
@@ -308,53 +220,52 @@ export class UiToggle {
     return `${base} ${size} ${shape} ${bgColor} ${disabled}`.trim();
   }
 
-  // Get color for active state
+  // Get active color
   getActiveColor() {
     if (this.color === 'secondary') return 'bg-secondary';
     if (this.color === 'neutral') return 'bg-gray-500';
-    return 'bg-primary'; // default
+    return 'bg-primary';
   }
 
-  // Get neon color for active state
+  // Get neon color
   getNeonColor() {
     return this.color === 'secondary' ? 'neon-secondary' : 'neon-primary';
   }
 
-  // Figure out how the sliding thumb should look
+  // Get thumb style
   getThumbStyle() {
-    const isActive = this.state === 'active';
+    const isOn = this.isActive;
     
-    // Apple variant is special (bigger and different positioning)
+    // Apple variant
     if (this.variant === 'apple') {
       const baseStyle = 'absolute w-6 h-6 bg-white transition-all duration-200 ease-in-out shadow-md rounded-full top-0 left-0';
-      const movement = isActive ? 'translate-x-4' : 'translate-x-0';
+      const movement = isOn ? 'translate-x-4' : 'translate-x-0';
       return `${baseStyle} ${movement}`;
     }
     
-    // Standard thumb for other variants
+    // Standard thumb
     const baseStyle = 'absolute w-4 h-4 bg-white transition-transform duration-300 ease-in-out shadow-sm';
     const shape = this.variant === 'square' ? 'rounded-sm' : 'rounded-full';
     
-    // Position the thumb properly
     let position = 'top-1 left-1';
     if (this.variant === 'neon') {
-      position = 'top-0.5 left-1'; // neon needs special alignment
+      position = 'top-0.5 left-1';
     }
     
-    const movement = isActive ? 'translate-x-6' : 'translate-x-0';
+    const movement = isOn ? 'translate-x-6' : 'translate-x-0';
     
     return `${baseStyle} ${shape} ${position} ${movement}`;
   }
 
-  // Show × and ✓ for cross variant
+  // Show cross icons
   showCrossIcons() {
     if (this.variant !== 'cross') return null;
     
-    const isActive = this.state === 'active';
+    const isOn = this.isActive;
     
     return (
       <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {!isActive ? (
+        {!isOn ? (
           <div class="absolute top-0 right-0 w-6 h-6 flex items-center justify-center">
             <span class="text-white text-xl font-bold">×</span>
           </div>
@@ -367,7 +278,7 @@ export class UiToggle {
     );
   }
 
-  // Render the toggle component
+  // Render component
   render() {
     const toggleStyle = this.getToggleStyle();
     const thumbStyle = this.getThumbStyle();
@@ -386,7 +297,7 @@ export class UiToggle {
         <span
           class={toggleStyle}
           role="switch"
-          aria-checked={this.state === 'active' ? 'true' : 'false'}
+          aria-checked={this.isActive ? 'true' : 'false'}
           aria-disabled={isDisabled ? 'true' : 'false'}
           tabindex={isDisabled ? -1 : 0}
           onClick={() => !isDisabled && this.handleToggle()}

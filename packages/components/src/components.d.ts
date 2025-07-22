@@ -5,69 +5,63 @@
  * It contains typing information for all components that exist in this project.
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
-import { IoTDevice } from "./components/ui-toggle/ui-toggle";
-export { IoTDevice } from "./components/ui-toggle/ui-toggle";
 export namespace Components {
     interface UiHeading {
         "text": string;
     }
     /**
-     * UI Toggle - A Smart Switch for Web and IoT
-     * Simple toggle component that can control anything from UI state to smart lights!
-     * Just give it a device URL and property name - it handles the rest.
-     * @example <!-- Basic toggle -->
-     * <ui-toggle label="Dark mode"></ui-toggle>
-     * <!-- Smart device control -->
-     * <ui-toggle 
-     *   device-url="https://my-lamp.local/td" 
-     *   property="power"
-     *   label="Living room lamp">
-     * </ui-toggle>
+     * UI Toggle Component
+     * @component 
+     * @description A modern, accessible toggle switch with multiple visual styles and IoT integration.
+     * Simply provide a direct property URL for plug-and-play device control.
+     * @example <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
      */
     interface UiToggle {
         /**
-          * Color scheme primary = teal/green secondary = pink/purple   neutral = gray
+          * Color scheme for the toggle appearance
+          * @type {'primary' | 'secondary' | 'neutral'}
           * @default 'primary'
+          * @description - primary: Teal/green professional color - secondary: Pink/purple accent color - neutral: Grayscale minimal appearance
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
-          * Legacy way to connect devices (use device-url instead)
-          * @deprecated
-         */
-        "device"?: IoTDevice;
-        /**
-          * URL to your smart device's description file Makes the toggle control real IoT devices!
-         */
-        "deviceUrl"?: string;
-        /**
-          * Text shown next to toggle (clickable)
+          * Optional text label displayed next to the toggle
+          * @type {string}
+          * @optional 
+          * @description When provided, clicking the label will also toggle the switch
          */
         "label"?: string;
         /**
-          * Which device property to control (default: "switch") Common names: "power", "state", "on", "enabled"
-          * @default 'switch'
+          * Current state of the toggle
+          * @type {'active' | 'disabled'}
+          * @default 'active'
+          * @description - active: Toggle is on/active (default) - disabled: Toggle cannot be interacted with
          */
-        "property": string;
+        "state": 'active' | 'disabled';
         /**
-          * Is the toggle on or off? default = off/inactive active = on/active   disabled = can't be clicked
-          * @default 'default'
+          * Direct URL to the device property for IoT integration
+          * @type {string}
+          * @optional 
+          * @description Provide the complete property URL for automatic device control
+          * @example td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
          */
-        "state": 'default' | 'active' | 'disabled';
+        "tdUrl"?: string;
         /**
-          * Light or dark appearance
+          * Visual theme for the component
+          * @type {'light' | 'dark'}
           * @default 'light'
+          * @description - light: Bright colors suitable for light backgrounds - dark: Muted colors suitable for dark backgrounds
          */
         "theme": 'light' | 'dark';
         /**
-          * How the toggle looks circle = standard pill shape square = rectangular with rounded corners   apple = iOS style with shadow cross = shows × and ✓ icons neon = glowing effect
+          * Visual style variant of the toggle switch
+          * @type {'circle' | 'square' | 'apple' | 'cross' | 'neon'}
           * @default 'circle'
+          * @description - circle: Standard pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch with inner shadow - cross: Shows × when off, ✓ when on - neon: Glowing effect when active
          */
         "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
     }
-}
-export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
-    detail: T;
-    target: HTMLUiToggleElement;
 }
 declare global {
     interface HTMLUiHeadingElement extends Components.UiHeading, HTMLStencilElement {
@@ -76,31 +70,15 @@ declare global {
         prototype: HTMLUiHeadingElement;
         new (): HTMLUiHeadingElement;
     };
-    interface HTMLUiToggleElementEventMap {
-        "toggle": { active: boolean; state: string };
-    }
     /**
-     * UI Toggle - A Smart Switch for Web and IoT
-     * Simple toggle component that can control anything from UI state to smart lights!
-     * Just give it a device URL and property name - it handles the rest.
-     * @example <!-- Basic toggle -->
-     * <ui-toggle label="Dark mode"></ui-toggle>
-     * <!-- Smart device control -->
-     * <ui-toggle 
-     *   device-url="https://my-lamp.local/td" 
-     *   property="power"
-     *   label="Living room lamp">
-     * </ui-toggle>
+     * UI Toggle Component
+     * @component 
+     * @description A modern, accessible toggle switch with multiple visual styles and IoT integration.
+     * Simply provide a direct property URL for plug-and-play device control.
+     * @example <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
      */
     interface HTMLUiToggleElement extends Components.UiToggle, HTMLStencilElement {
-        addEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
-        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
-        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
-        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
-        removeEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
-        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
-        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
-        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
     }
     var HTMLUiToggleElement: {
         prototype: HTMLUiToggleElement;
@@ -116,56 +94,55 @@ declare namespace LocalJSX {
         "text"?: string;
     }
     /**
-     * UI Toggle - A Smart Switch for Web and IoT
-     * Simple toggle component that can control anything from UI state to smart lights!
-     * Just give it a device URL and property name - it handles the rest.
-     * @example <!-- Basic toggle -->
-     * <ui-toggle label="Dark mode"></ui-toggle>
-     * <!-- Smart device control -->
-     * <ui-toggle 
-     *   device-url="https://my-lamp.local/td" 
-     *   property="power"
-     *   label="Living room lamp">
-     * </ui-toggle>
+     * UI Toggle Component
+     * @component 
+     * @description A modern, accessible toggle switch with multiple visual styles and IoT integration.
+     * Simply provide a direct property URL for plug-and-play device control.
+     * @example <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
      */
     interface UiToggle {
         /**
-          * Color scheme primary = teal/green secondary = pink/purple   neutral = gray
+          * Color scheme for the toggle appearance
+          * @type {'primary' | 'secondary' | 'neutral'}
           * @default 'primary'
+          * @description - primary: Teal/green professional color - secondary: Pink/purple accent color - neutral: Grayscale minimal appearance
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
-          * Legacy way to connect devices (use device-url instead)
-          * @deprecated
-         */
-        "device"?: IoTDevice;
-        /**
-          * URL to your smart device's description file Makes the toggle control real IoT devices!
-         */
-        "deviceUrl"?: string;
-        /**
-          * Text shown next to toggle (clickable)
+          * Optional text label displayed next to the toggle
+          * @type {string}
+          * @optional 
+          * @description When provided, clicking the label will also toggle the switch
          */
         "label"?: string;
-        "onToggle"?: (event: UiToggleCustomEvent<{ active: boolean; state: string }>) => void;
         /**
-          * Which device property to control (default: "switch") Common names: "power", "state", "on", "enabled"
-          * @default 'switch'
+          * Current state of the toggle
+          * @type {'active' | 'disabled'}
+          * @default 'active'
+          * @description - active: Toggle is on/active (default) - disabled: Toggle cannot be interacted with
          */
-        "property"?: string;
+        "state"?: 'active' | 'disabled';
         /**
-          * Is the toggle on or off? default = off/inactive active = on/active   disabled = can't be clicked
-          * @default 'default'
+          * Direct URL to the device property for IoT integration
+          * @type {string}
+          * @optional 
+          * @description Provide the complete property URL for automatic device control
+          * @example td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
          */
-        "state"?: 'default' | 'active' | 'disabled';
+        "tdUrl"?: string;
         /**
-          * Light or dark appearance
+          * Visual theme for the component
+          * @type {'light' | 'dark'}
           * @default 'light'
+          * @description - light: Bright colors suitable for light backgrounds - dark: Muted colors suitable for dark backgrounds
          */
         "theme"?: 'light' | 'dark';
         /**
-          * How the toggle looks circle = standard pill shape square = rectangular with rounded corners   apple = iOS style with shadow cross = shows × and ✓ icons neon = glowing effect
+          * Visual style variant of the toggle switch
+          * @type {'circle' | 'square' | 'apple' | 'cross' | 'neon'}
           * @default 'circle'
+          * @description - circle: Standard pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch with inner shadow - cross: Shows × when off, ✓ when on - neon: Glowing effect when active
          */
         "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
     }
@@ -180,17 +157,12 @@ declare module "@stencil/core" {
         interface IntrinsicElements {
             "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
             /**
-             * UI Toggle - A Smart Switch for Web and IoT
-             * Simple toggle component that can control anything from UI state to smart lights!
-             * Just give it a device URL and property name - it handles the rest.
-             * @example <!-- Basic toggle -->
-             * <ui-toggle label="Dark mode"></ui-toggle>
-             * <!-- Smart device control -->
-             * <ui-toggle 
-             *   device-url="https://my-lamp.local/td" 
-             *   property="power"
-             *   label="Living room lamp">
-             * </ui-toggle>
+             * UI Toggle Component
+             * @component 
+             * @description A modern, accessible toggle switch with multiple visual styles and IoT integration.
+             * Simply provide a direct property URL for plug-and-play device control.
+             * @example <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+             * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
              */
             "ui-toggle": LocalJSX.UiToggle & JSXBase.HTMLAttributes<HTMLUiToggleElement>;
         }

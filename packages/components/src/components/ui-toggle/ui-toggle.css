@@ -4,11 +4,10 @@
 
 /**
  * UI Toggle Component Styles
- * Using Tailwind CSS utilities with custom color variables
  */
 
 :host {
-  /* Custom color scheme */
+  /* Custom color scheme to match ThingsWeb  */
   --color-neutral: #7E807F;
   --color-neutral-light: #CACCCC;
   --color-neutral-dark: #4C4D4C;
