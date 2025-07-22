@@ -166,7 +166,7 @@
     <div id="slider-content" class="tab-content hidden">
       <!-- Slider TD Integration -->
       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Slider TD Integration</h2>
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">TD Integration</h2>
         <div class="space-y-4 max-w-md">
           <ui-slider 
             td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int"
@@ -174,7 +174,7 @@
             max="100"
             variant="neon" 
             color="primary" 
-            label="Test Device Value">
+            label="Test Thing Int">
           </ui-slider>
         </div>
       </div>
@@ -185,27 +185,27 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
             <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Narrow (Default)</h3>
-            <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Slider"></ui-slider>
+            <ui-slider variant="narrow" min="0" max="100" value="30" label="Brightness"></ui-slider>
           </div>
           
           <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
             <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Wide</h3>
-            <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Slider"></ui-slider>
+            <ui-slider variant="wide" min="0" max="100" value="60" label="Volume"></ui-slider>
           </div>
           
           <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
             <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Rainbow</h3>
-            <ui-slider variant="rainbow" min="0" max="360" value="180" label="Hue Selector"></ui-slider>
+            <ui-slider variant="rainbow" min="0" max="360" value="180" label="Hue"></ui-slider>
           </div>
           
           <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
             <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Neon</h3>
-            <ui-slider variant="neon" min="0" max="100" value="75" label="Neon Slider"></ui-slider>
+            <ui-slider variant="neon" min="0" max="100" value="75" label="Intensity"></ui-slider>
           </div>
           
           <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
             <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Stepped</h3>
-            <ui-slider variant="stepped" min="0" max="20" step="5" value="10" label="Stepped Slider"></ui-slider>
+            <ui-slider variant="stepped" min="0" max="20" step="5" value="10" label="Steps"></ui-slider>
           </div>
         </div>
       </div>
@@ -215,28 +215,23 @@
         <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Thumb Shapes</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
           <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Circle (Default)</h3>
-            <ui-slider thumb-shape="circle" min="0" max="100" value="50" label="Circle Thumb"></ui-slider>
+            <ui-slider thumb-shape="circle" min="0" max="100" value="50" label="Circle (Default)"></ui-slider>
           </div>
           
           <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Square</h3>
-            <ui-slider thumb-shape="square" min="0" max="100" value="40" label="Square Thumb"></ui-slider>
+            <ui-slider thumb-shape="square" min="0" max="100" value="40" label="Square"></ui-slider>
           </div>
           
           <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Arrow (<>)</h3>
-            <ui-slider thumb-shape="arrow" min="0" max="100" value="60" label="Arrow Thumb"></ui-slider>
+            <ui-slider thumb-shape="arrow" min="0" max="100" value="60" label="Arrow"></ui-slider>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">        
+            <ui-slider thumb-shape="triangle" min="0" max="100" value="30" label="Triangle"></ui-slider>
           </div>
           
           <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Triangle</h3>
-            <ui-slider thumb-shape="triangle" min="0" max="100" value="30" label="Triangle Thumb"></ui-slider>
-          </div>
-          
-          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Diamond</h3>
-            <ui-slider thumb-shape="diamond" min="0" max="100" value="80" label="Diamond Thumb"></ui-slider>
+            <ui-slider thumb-shape="diamond" min="0" max="100" value="80" label="Diamond"></ui-slider>
           </div>
         </div>
       </div>
@@ -246,18 +241,15 @@
         <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Slider Colors</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Primary</h3>
-            <ui-slider color="primary" min="0" max="100" value="70" label="Primary Color"></ui-slider>
+            <ui-slider color="primary" min="0" max="100" value="70" label="Primary"></ui-slider>
           </div>
           
           <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Secondary</h3>
-            <ui-slider color="secondary" min="0" max="100" value="70" label="Secondary Color"></ui-slider>
+            <ui-slider color="secondary" min="0" max="100" value="70" label="Secondary"></ui-slider>
           </div>
           
           <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Neutral</h3>
-            <ui-slider color="neutral" min="0" max="100" value="70" label="Neutral Color"></ui-slider>
+            <ui-slider color="neutral" min="0" max="100" value="70" label="Neutral"></ui-slider>
           </div>
         </div>
       </div>
@@ -266,10 +258,10 @@
       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
         <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Mixed Examples</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ui-slider variant="wide" thumb-shape="square" color="secondary" min="0" max="255" value="128" label="RGB Red Channel"></ui-slider>
-          <ui-slider variant="neon" thumb-shape="arrow" color="primary" min="-50" max="50" value="0" label="Temperature Offset"></ui-slider>
-          <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Volume Level"></ui-slider>
-          <ui-slider state="disabled" min="0" max="100" value="25" label="Disabled Slider"></ui-slider>
+          <ui-slider variant="wide" thumb-shape="square" color="secondary" min="0" max="255" value="128" label="Color"></ui-slider>
+          <ui-slider variant="neon" thumb-shape="arrow" color="primary" min="-50" max="50" value="0" label="Temperature"></ui-slider>
+          <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Volume"></ui-slider>
+          <ui-slider state="disabled" min="0" max="100" value="25" label="Disabled"></ui-slider>
         </div>
       </div>
     </div>

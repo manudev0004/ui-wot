@@ -281,29 +281,22 @@ export class UiSlider {
     if (this.thumbShape === 'square') {
       shape = 'rounded-sm';
     } else if (this.thumbShape === 'arrow') {
-      // Arrow shape needs wider space for both triangles
       size = 'w-8 h-6';
       shape = '';
     } else if (this.thumbShape === 'triangle' || this.thumbShape === 'diamond') {
-      // Triangle and diamond need square space
       size = 'w-6 h-6';
       shape = '';
     }
 
     let bgColor = 'bg-white';
-    if (this.variant === 'neon') {
-      bgColor = 'bg-white';
-    }
-
-    const border = this.variant === 'neon' ? 'border-2 border-gray-400' : 'border border-gray-300';
-    const shadow = 'shadow-md';
+    const border = 'border border-gray-300';
 
     // For custom shapes, don't add background and border as they're handled by SVG
     if (this.thumbShape === 'arrow' || this.thumbShape === 'triangle' || this.thumbShape === 'diamond') {
-      return `${size} cursor-pointer transition-transform hover:scale-110 flex items-center justify-center`;
+      return `${size} cursor-pointer flex items-center justify-center`;
     }
 
-    return `${size} ${shape} ${bgColor} ${border} ${shadow} cursor-pointer transition-transform hover:scale-110`;
+    return `${size} ${shape} ${bgColor} ${border} cursor-pointer`;
   }
 
   /** Fetch current active color */
@@ -434,7 +427,7 @@ export class UiSlider {
       <div class="w-full">
         {this.label && (
           <label
-            class={`block text-sm font-medium mb-2 ${isDisabled ? 'text-gray-400' : ''} ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+            class={`block text-sm font-medium mb-4 ${isDisabled ? 'text-gray-400' : ''} ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
           >
             {this.label}
           </label>
