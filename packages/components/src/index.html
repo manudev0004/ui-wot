@@ -268,55 +268,41 @@
   </div>
 
   <script>
-    const themeToggle = document.getElementById('theme-toggle');
     const html = document.documentElement;
-    const toggleTab = document.getElementById('toggle-tab');
-    const sliderTab = document.getElementById('slider-tab');
-    const toggleContent = document.getElementById('toggle-content');
-    const sliderContent = document.getElementById('slider-content');
+    const themeToggle = document.getElementById('theme-toggle');
+    const tabs = [
+      { tab: document.getElementById('toggle-tab'), content: document.getElementById('toggle-content') },
+      { tab: document.getElementById('slider-tab'), content: document.getElementById('slider-content') }
+    ];
 
     function setTheme(isDark) {
       html.classList.toggle('dark', isDark);
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      document.querySelectorAll('ui-toggle, ui-slider').forEach(component => {
-        component.theme = isDark ? 'dark' : 'light';
-      });
+      localStorage.theme = isDark ? 'dark' : 'light';
+      document.querySelectorAll('ui-toggle, ui-slider').forEach(c => c.theme = isDark ? 'dark' : 'light');
       themeToggle.state = isDark ? 'active' : 'default';
     }
 
-    function switchTab(activeTab, activeContent, inactiveTab, inactiveContent) {
-      activeTab.classList.add('active', 'border-primary', 'text-primary');
-      activeTab.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
-      
-      inactiveTab.classList.remove('active', 'border-primary', 'text-primary');
-      inactiveTab.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
-      
-      activeContent.classList.remove('hidden');
-      inactiveContent.classList.add('hidden');
-    }
-
-    // Tab switching
-    toggleTab.addEventListener('click', () => {
-      switchTab(toggleTab, toggleContent, sliderTab, sliderContent);
-    });
-
-    sliderTab.addEventListener('click', () => {
-      switchTab(sliderTab, sliderContent, toggleTab, toggleContent);
-    });
-
-    // Initialize theme
-    const savedTheme = localStorage.getItem('theme');
-    setTheme(savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches));
-
-    themeToggle.addEventListener('toggle', e => setTheme(e.detail.active));
-
-    // Add event listeners to see slider values change
-    document.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll('ui-slider').forEach(slider => {
-        slider.addEventListener('valueChange', (e) => {
-          console.log(`Slider value changed to: ${e.detail.value}`);
+    tabs.forEach(({ tab }, i) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(({ tab, content }, j) => {
+          tab.classList.toggle('active', i === j);
+          tab.classList.toggle('border-primary', i === j);
+          tab.classList.toggle('text-primary', i === j);
+          tab.classList.toggle('border-transparent', i !== j);
+          tab.classList.toggle('text-gray-500', i !== j);
+          tab.classList.toggle('dark:text-gray-400', i !== j);
+          content.classList.toggle('hidden', i !== j);
         });
       });
+    });
+
+    setTheme(localStorage.theme === 'dark' || (!localStorage.theme && window.matchMedia('(prefers-color-scheme: dark)').matches));
+    themeToggle.addEventListener('toggle', e => setTheme(e.detail.active));
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('ui-slider').forEach(slider =>
+        slider.addEventListener('valueChange', e => console.log(`Slider value changed to: ${e.detail.value}`))
+      );
     });
   </script>
 

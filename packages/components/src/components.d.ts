@@ -9,6 +9,125 @@ export namespace Components {
     interface UiHeading {
         "text": string;
     }
+    /**
+     * Slider component with various features, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-slider td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int" min="0" max="100" label="Device Brightness"></ui-slider>
+     * ```
+     */
+    interface UiSlider {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label, to display text above the slider.
+         */
+        "label"?: string;
+        /**
+          * Maximum value of the slider.
+          * @default 100
+         */
+        "max": number;
+        /**
+          * Minimum value of the slider.
+          * @default 0
+         */
+        "min": number;
+        /**
+          * Current state of the slider. - disabled: Slider cannot be clicked or interacted with - default: Slider is interactive (default)
+          * @default 'default'
+         */
+        "state": 'disabled' | 'default';
+        /**
+          * Step increment for the slider.
+          * @default 1
+         */
+        "step": number;
+        /**
+          * Direct URL of TD number/integer properties to auto connect and interact with the device.
+          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int" ```
+         */
+        "tdUrl"?: string;
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme": 'light' | 'dark';
+        /**
+          * Shape of the slider thumb. - circle: Round thumb (default) - square: Square thumb - arrow: Arrow-shaped thumb pointing right - triangle: Triangle-shaped thumb - diamond: Diamond-shaped thumb (<> style)
+          * @default 'circle'
+         */
+        "thumbShape": 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond';
+        /**
+          * Current value of the slider.
+          * @default 0
+         */
+        "value": number;
+        /**
+          * Visual style variant of the slider. - narrow: Thin slider track (default) - wide: Thick slider track - rainbow: Gradient color track - neon: Glowing effect - stepped: Shows step marks
+          * @default 'narrow'
+         */
+        "variant": 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
+    }
+    /**
+     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-toggle td-url="http://plugfest.thingweb.io/http-data-schema-thing/properties/bool" label="Test Device"></ui-toggle>
+     * ```
+     */
+    interface UiToggle {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
+         */
+        "label"?: string;
+        /**
+          * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
+          * @default 'default'
+         */
+        "state": 'active' | 'disabled' | 'default';
+        /**
+          * Direct URL of TD boolean properties to auto connect and interact with the device.
+          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" ```
+         */
+        "tdUrl"?: string;
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme": 'light' | 'dark';
+        /**
+          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
+          * @default 'circle'
+         */
+        "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
+    }
+}
+export interface UiSliderCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiSliderElement;
+}
+export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiToggleElement;
 }
 declare global {
     interface HTMLUiHeadingElement extends Components.UiHeading, HTMLStencilElement {
@@ -17,16 +136,197 @@ declare global {
         prototype: HTMLUiHeadingElement;
         new (): HTMLUiHeadingElement;
     };
+    interface HTMLUiSliderElementEventMap {
+        "valueChange": { value: number };
+    }
+    /**
+     * Slider component with various features, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-slider td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int" min="0" max="100" label="Device Brightness"></ui-slider>
+     * ```
+     */
+    interface HTMLUiSliderElement extends Components.UiSlider, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiSliderElementEventMap>(type: K, listener: (this: HTMLUiSliderElement, ev: UiSliderCustomEvent<HTMLUiSliderElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiSliderElementEventMap>(type: K, listener: (this: HTMLUiSliderElement, ev: UiSliderCustomEvent<HTMLUiSliderElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiSliderElement: {
+        prototype: HTMLUiSliderElement;
+        new (): HTMLUiSliderElement;
+    };
+    interface HTMLUiToggleElementEventMap {
+        "toggle": { active: boolean };
+    }
+    /**
+     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-toggle td-url="http://plugfest.thingweb.io/http-data-schema-thing/properties/bool" label="Test Device"></ui-toggle>
+     * ```
+     */
+    interface HTMLUiToggleElement extends Components.UiToggle, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiToggleElement: {
+        prototype: HTMLUiToggleElement;
+        new (): HTMLUiToggleElement;
+    };
     interface HTMLElementTagNameMap {
         "ui-heading": HTMLUiHeadingElement;
+        "ui-slider": HTMLUiSliderElement;
+        "ui-toggle": HTMLUiToggleElement;
     }
 }
 declare namespace LocalJSX {
     interface UiHeading {
         "text"?: string;
     }
+    /**
+     * Slider component with various features, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-slider td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int" min="0" max="100" label="Device Brightness"></ui-slider>
+     * ```
+     */
+    interface UiSlider {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label, to display text above the slider.
+         */
+        "label"?: string;
+        /**
+          * Maximum value of the slider.
+          * @default 100
+         */
+        "max"?: number;
+        /**
+          * Minimum value of the slider.
+          * @default 0
+         */
+        "min"?: number;
+        /**
+          * Event emitted when slider value changes
+         */
+        "onValueChange"?: (event: UiSliderCustomEvent<{ value: number }>) => void;
+        /**
+          * Current state of the slider. - disabled: Slider cannot be clicked or interacted with - default: Slider is interactive (default)
+          * @default 'default'
+         */
+        "state"?: 'disabled' | 'default';
+        /**
+          * Step increment for the slider.
+          * @default 1
+         */
+        "step"?: number;
+        /**
+          * Direct URL of TD number/integer properties to auto connect and interact with the device.
+          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int" ```
+         */
+        "tdUrl"?: string;
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme"?: 'light' | 'dark';
+        /**
+          * Shape of the slider thumb. - circle: Round thumb (default) - square: Square thumb - arrow: Arrow-shaped thumb pointing right - triangle: Triangle-shaped thumb - diamond: Diamond-shaped thumb (<> style)
+          * @default 'circle'
+         */
+        "thumbShape"?: 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond';
+        /**
+          * Current value of the slider.
+          * @default 0
+         */
+        "value"?: number;
+        /**
+          * Visual style variant of the slider. - narrow: Thin slider track (default) - wide: Thick slider track - rainbow: Gradient color track - neon: Glowing effect - stepped: Shows step marks
+          * @default 'narrow'
+         */
+        "variant"?: 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
+    }
+    /**
+     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-toggle td-url="http://plugfest.thingweb.io/http-data-schema-thing/properties/bool" label="Test Device"></ui-toggle>
+     * ```
+     */
+    interface UiToggle {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
+         */
+        "label"?: string;
+        /**
+          * Event emitted when toggle state changes
+         */
+        "onToggle"?: (event: UiToggleCustomEvent<{ active: boolean }>) => void;
+        /**
+          * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
+          * @default 'default'
+         */
+        "state"?: 'active' | 'disabled' | 'default';
+        /**
+          * Direct URL of TD boolean properties to auto connect and interact with the device.
+          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" ```
+         */
+        "tdUrl"?: string;
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme"?: 'light' | 'dark';
+        /**
+          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
+          * @default 'circle'
+         */
+        "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
+    }
     interface IntrinsicElements {
         "ui-heading": UiHeading;
+        "ui-slider": UiSlider;
+        "ui-toggle": UiToggle;
     }
 }
 export { LocalJSX as JSX };
@@ -34,6 +334,32 @@ declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
             "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
+            /**
+             * Slider component with various features, multiple visual styles and TD integration.
+             * Link a direct property URL for plug-and-play device control.
+             * @example Basic Usage
+             * ```html
+             * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+             * ```
+             * @example TD Integration
+             * ```html
+             * <ui-slider td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int" min="0" max="100" label="Device Brightness"></ui-slider>
+             * ```
+             */
+            "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
+            /**
+             * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+             * Link a direct property URL for plug-and-play device control.
+             * @example Basic Usage
+             * ```html
+             * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+             * ```
+             * @example TD Integration
+             * ```html
+             * <ui-toggle td-url="http://plugfest.thingweb.io/http-data-schema-thing/properties/bool" label="Test Device"></ui-toggle>
+             * ```
+             */
+            "ui-toggle": LocalJSX.UiToggle & JSXBase.HTMLAttributes<HTMLUiToggleElement>;
         }
     }
 }
