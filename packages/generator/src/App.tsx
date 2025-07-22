@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { renderHeading } from "ui-wot-components";
-import { defineCustomElements } from "ui-wot-components/loader";
+import { renderHeading } from "@thingweb/ui-wot-components";
+import { defineCustomElements } from "@thingweb/ui-wot-components/loader";
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
