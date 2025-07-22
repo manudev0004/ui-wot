@@ -35,136 +35,304 @@
   </nav>
 
   <div class="max-w-6xl mx-auto p-6">
-    <!-- TD Integration -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">TD Integration</h2>
-      <div class="space-y-4">
-
-        <ui-toggle 
-          td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
-          variant="neon" 
-          color="primary" 
-          label="Test Thing">
-        </ui-toggle>
-
+    <!-- Tabs -->
+    <div class="mb-6">
+      <div class="border-b border-gray-200 dark:border-gray-700">
+        <nav class="-mb-px flex space-x-8">
+          <button id="toggle-tab" class="tab-button active border-b-2 border-primary text-primary font-medium py-2 px-1 text-sm">
+            UI Toggle
+          </button>
+          <button id="slider-tab" class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm">
+            UI Slider
+          </button>
+        </nav>
       </div>
     </div>
 
-    <!-- Variants -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Variants</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Toggle Content -->
+    <div id="toggle-content" class="tab-content">
+      <!-- TD Integration -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">TD Integration</h2>
+        <div class="space-y-4">
+          <ui-toggle 
+            td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
+            variant="neon" 
+            color="primary" 
+            label="Test Thing">
+          </ui-toggle>
+        </div>
+      </div>
 
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Circle</h3>
-          <div class="flex gap-2">
-            <ui-toggle variant="circle" state="default"></ui-toggle>
-            <ui-toggle variant="circle" state="active"></ui-toggle>
-            <ui-toggle variant="circle" state="disabled"></ui-toggle>
+      <!-- Variants -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Toggle Variants</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Circle</h3>
+            <div class="flex gap-2">
+              <ui-toggle variant="circle" state="default"></ui-toggle>
+              <ui-toggle variant="circle" state="active"></ui-toggle>
+              <ui-toggle variant="circle" state="disabled"></ui-toggle>
+            </div>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Square</h3>
+            <div class="flex gap-2">
+              <ui-toggle variant="square" state="default"></ui-toggle>
+              <ui-toggle variant="square" state="active"></ui-toggle>
+              <ui-toggle variant="square" state="disabled"></ui-toggle>
+            </div>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Apple</h3>
+            <div class="flex gap-2">
+              <ui-toggle variant="apple" state="default"></ui-toggle>
+              <ui-toggle variant="apple" state="active"></ui-toggle>
+              <ui-toggle variant="apple" state="disabled"></ui-toggle>
+            </div>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cross</h3>
+            <div class="flex gap-2">
+              <ui-toggle variant="cross" state="default"></ui-toggle>
+              <ui-toggle variant="cross" state="active"></ui-toggle>
+              <ui-toggle variant="cross" state="disabled"></ui-toggle>
+            </div>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Neon</h3>
+            <div class="flex gap-2">
+              <ui-toggle variant="neon" state="default"></ui-toggle>
+              <ui-toggle variant="neon" state="active"></ui-toggle>
+              <ui-toggle variant="neon" state="disabled"></ui-toggle>
+            </div>
           </div>
         </div>
-        
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Square</h3>
-          <div class="flex gap-2">
-            <ui-toggle variant="square" state="default"></ui-toggle>
-            <ui-toggle variant="square" state="active"></ui-toggle>
-            <ui-toggle variant="square" state="disabled"></ui-toggle>
+      </div>
+
+      <!-- Toggle Colors -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Toggle Colors</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Primary</h3>
+            <div class="flex gap-2">
+              <ui-toggle color="primary" state="active"></ui-toggle>
+              <ui-toggle color="primary" variant="square" state="active"></ui-toggle>
+              <ui-toggle color="primary" variant="apple" state="active"></ui-toggle>
+              <ui-toggle color="primary" variant="neon" state="active"></ui-toggle>
+            </div>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Secondary</h3>
+            <div class="flex gap-2">
+              <ui-toggle color="secondary" state="active"></ui-toggle>
+              <ui-toggle color="secondary" variant="square" state="active"></ui-toggle>
+              <ui-toggle color="secondary" variant="apple" state="active"></ui-toggle>
+              <ui-toggle color="secondary" variant="neon" state="active"></ui-toggle>
+            </div>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Neutral</h3>
+            <div class="flex gap-2">
+              <ui-toggle color="neutral" state="active"></ui-toggle>
+              <ui-toggle color="neutral" variant="square" state="active"></ui-toggle>
+              <ui-toggle color="neutral" variant="apple" state="active"></ui-toggle>
+            </div>
           </div>
         </div>
-        
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Apple</h3>
-          <div class="flex gap-2">
-            <ui-toggle variant="apple" state="default"></ui-toggle>
-            <ui-toggle variant="apple" state="active"></ui-toggle>
-            <ui-toggle variant="apple" state="disabled"></ui-toggle>
-          </div>
-        </div>
-        
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cross</h3>
-          <div class="flex gap-2">
-            <ui-toggle variant="cross" state="default"></ui-toggle>
-            <ui-toggle variant="cross" state="active"></ui-toggle>
-            <ui-toggle variant="cross" state="disabled"></ui-toggle>
-          </div>
-        </div>
-        
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Neon</h3>
-          <div class="flex gap-2">
-            <ui-toggle variant="neon" state="default"></ui-toggle>
-            <ui-toggle variant="neon" state="active"></ui-toggle>
-            <ui-toggle variant="neon" state="disabled"></ui-toggle>
-          </div>
+      </div>
+
+      <!-- Toggle Labels -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Toggle Labels</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ui-toggle label="Switch" state="default" variant="circle"></ui-toggle>
+          <ui-toggle label="Fan" variant="apple" color="primary" state="default"></ui-toggle>
+          <ui-toggle label="Turbo mode" variant="neon" color="secondary" state="active"></ui-toggle>
+          <ui-toggle label="Coffee Machine" variant="cross" color="neutral" state="active"></ui-toggle>
         </div>
       </div>
     </div>
 
-    <!-- Colors -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Colors</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Primary</h3>
-          <div class="flex gap-2">
-            <ui-toggle color="primary" state="active"></ui-toggle>
-            <ui-toggle color="primary" variant="square" state="active"></ui-toggle>
-            <ui-toggle color="primary" variant="apple" state="active"></ui-toggle>
-            <ui-toggle color="primary" variant="neon" state="active"></ui-toggle>
-          </div>
+    <!-- Slider Content -->
+    <div id="slider-content" class="tab-content hidden">
+      <!-- Slider TD Integration -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Slider TD Integration</h2>
+        <div class="space-y-4 max-w-md">
+          <ui-slider 
+            td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int"
+            min="0" 
+            max="100"
+            variant="neon" 
+            color="primary" 
+            label="Test Device Value">
+          </ui-slider>
         </div>
-        
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Secondary</h3>
-          <div class="flex gap-2">
-            <ui-toggle color="secondary" state="active"></ui-toggle>
-            <ui-toggle color="secondary" variant="square" state="active"></ui-toggle>
-            <ui-toggle color="secondary" variant="apple" state="active"></ui-toggle>
-            <ui-toggle color="secondary" variant="neon" state="active"></ui-toggle>
-          </div>
-        </div>
-        
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Neutral</h3>
-          <div class="flex gap-2">
-            <ui-toggle color="neutral" state="active"></ui-toggle>
-            <ui-toggle color="neutral" variant="square" state="active"></ui-toggle>
-            <ui-toggle color="neutral" variant="apple" state="active"></ui-toggle>
+      </div>
 
+      <!-- Slider Variants -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Slider Variants</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Narrow (Default)</h3>
+            <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Slider"></ui-slider>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Wide</h3>
+            <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Slider"></ui-slider>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Rainbow</h3>
+            <ui-slider variant="rainbow" min="0" max="360" value="180" label="Hue Selector"></ui-slider>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Neon</h3>
+            <ui-slider variant="neon" min="0" max="100" value="75" label="Neon Slider"></ui-slider>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Stepped</h3>
+            <ui-slider variant="stepped" min="0" max="20" step="5" value="10" label="Stepped Slider"></ui-slider>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Labels -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Labels</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ui-toggle label="Switch" state="default" variant="circle"></ui-toggle>
-        <ui-toggle label="Fan" variant="apple" color="primary" state="default"></ui-toggle>
-        <ui-toggle label="Turbo mode" variant="neon" color="secondary" state="active"></ui-toggle>
-        <ui-toggle label="Coffee Machine" variant="cross" color="neutral" state="active"></ui-toggle>
+      <!-- Thumb Shapes -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Thumb Shapes</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Circle (Default)</h3>
+            <ui-slider thumb-shape="circle" min="0" max="100" value="50" label="Circle Thumb"></ui-slider>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Square</h3>
+            <ui-slider thumb-shape="square" min="0" max="100" value="40" label="Square Thumb"></ui-slider>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Arrow (<>)</h3>
+            <ui-slider thumb-shape="arrow" min="0" max="100" value="60" label="Arrow Thumb"></ui-slider>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Triangle</h3>
+            <ui-slider thumb-shape="triangle" min="0" max="100" value="30" label="Triangle Thumb"></ui-slider>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Diamond</h3>
+            <ui-slider thumb-shape="diamond" min="0" max="100" value="80" label="Diamond Thumb"></ui-slider>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slider Colors -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Slider Colors</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Primary</h3>
+            <ui-slider color="primary" min="0" max="100" value="70" label="Primary Color"></ui-slider>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Secondary</h3>
+            <ui-slider color="secondary" min="0" max="100" value="70" label="Secondary Color"></ui-slider>
+          </div>
+          
+          <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Neutral</h3>
+            <ui-slider color="neutral" min="0" max="100" value="70" label="Neutral Color"></ui-slider>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mixed Examples -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Mixed Examples</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ui-slider variant="wide" thumb-shape="square" color="secondary" min="0" max="255" value="128" label="RGB Red Channel"></ui-slider>
+          <ui-slider variant="neon" thumb-shape="arrow" color="primary" min="-50" max="50" value="0" label="Temperature Offset"></ui-slider>
+          <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Volume Level"></ui-slider>
+          <ui-slider state="disabled" min="0" max="100" value="25" label="Disabled Slider"></ui-slider>
+        </div>
       </div>
     </div>
   </div>
+
   <script>
     const themeToggle = document.getElementById('theme-toggle');
     const html = document.documentElement;
+    const toggleTab = document.getElementById('toggle-tab');
+    const sliderTab = document.getElementById('slider-tab');
+    const toggleContent = document.getElementById('toggle-content');
+    const sliderContent = document.getElementById('slider-content');
 
     function setTheme(isDark) {
       html.classList.toggle('dark', isDark);
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      document.querySelectorAll('ui-toggle').forEach(t => t.theme = isDark ? 'dark' : 'light');
+      document.querySelectorAll('ui-toggle, ui-slider').forEach(component => {
+        component.theme = isDark ? 'dark' : 'light';
+      });
       themeToggle.state = isDark ? 'active' : 'default';
     }
+
+    function switchTab(activeTab, activeContent, inactiveTab, inactiveContent) {
+      activeTab.classList.add('active', 'border-primary', 'text-primary');
+      activeTab.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+      
+      inactiveTab.classList.remove('active', 'border-primary', 'text-primary');
+      inactiveTab.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+      
+      activeContent.classList.remove('hidden');
+      inactiveContent.classList.add('hidden');
+    }
+
+    // Tab switching
+    toggleTab.addEventListener('click', () => {
+      switchTab(toggleTab, toggleContent, sliderTab, sliderContent);
+    });
+
+    sliderTab.addEventListener('click', () => {
+      switchTab(sliderTab, sliderContent, toggleTab, toggleContent);
+    });
 
     // Initialize theme
     const savedTheme = localStorage.getItem('theme');
     setTheme(savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches));
 
     themeToggle.addEventListener('toggle', e => setTheme(e.detail.active));
+
+    // Add event listeners to see slider values change
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('ui-slider').forEach(slider => {
+        slider.addEventListener('valueChange', (e) => {
+          console.log(`Slider value changed to: ${e.detail.value}`);
+        });
+      });
+    });
   </script>
+
+  <style>
+    .tab-button.active {
+      border-color: #067362 !important;
+      color: #067362 !important;
+    }
+  </style>
 </body>
 </html>
