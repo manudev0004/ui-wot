@@ -57,6 +57,7 @@ tsconfig.tsbuildinfo
 # Additional ignores for stencil
 www/
 loader/
+components.d.ts
 *~
 *.sw[mnpcod]
 *.lock
