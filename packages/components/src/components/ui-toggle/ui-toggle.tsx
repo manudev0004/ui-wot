@@ -1,13 +1,18 @@
 import { Component, Prop, State, h, Watch } from '@stencil/core';
 
 /**
- * UI Toggle Component
- * @component
- * @description A modern, accessible toggle switch with multiple visual styles and IoT integration.
+ * Modern, accessible toggle switch with multiple visual styles and IoT integration.
  * Simply provide a direct property URL for plug-and-play device control.
- * @example
+ * 
+ * @example Basic Usage
+ * ```html
  * <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+ * ```
+ * 
+ * @example IoT Integration
+ * ```html
  * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
+ * ```
  */
 @Component({
   tag: 'ui-toggle',
@@ -16,10 +21,7 @@ import { Component, Prop, State, h, Watch } from '@stencil/core';
 })
 export class UiToggle {
   /**
-   * Visual style variant of the toggle switch
-   * @type {'circle' | 'square' | 'apple' | 'cross' | 'neon'}
-   * @default 'circle'
-   * @description
+   * Visual style variant of the toggle switch.
    * - circle: Standard pill-shaped toggle (default)
    * - square: Rectangular toggle with square thumb
    * - apple: iOS-style switch with inner shadow
@@ -29,30 +31,21 @@ export class UiToggle {
   @Prop() variant: 'circle' | 'square' | 'apple' | 'cross' | 'neon' = 'circle';
 
   /**
-   * Current state of the toggle
-   * @type {'active' | 'disabled'}
-   * @default 'active'
-   * @description
+   * Current state of the toggle.
    * - active: Toggle is on/active (default)
    * - disabled: Toggle cannot be interacted with
    */
   @Prop({ mutable: true }) state: 'active' | 'disabled' = 'active';
 
   /**
-   * Visual theme for the component
-   * @type {'light' | 'dark'}
-   * @default 'light'
-   * @description
+   * Visual theme for the component.
    * - light: Bright colors suitable for light backgrounds
    * - dark: Muted colors suitable for dark backgrounds
    */
   @Prop() theme: 'light' | 'dark' = 'light';
 
   /**
-   * Color scheme for the toggle appearance
-   * @type {'primary' | 'secondary' | 'neutral'}
-   * @default 'primary'
-   * @description
+   * Color scheme for the toggle appearance.
    * - primary: Teal/green professional color
    * - secondary: Pink/purple accent color
    * - neutral: Grayscale minimal appearance
@@ -60,40 +53,32 @@ export class UiToggle {
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
   /**
-   * Optional text label displayed next to the toggle
-   * @type {string}
-   * @optional
-   * @description When provided, clicking the label will also toggle the switch
+   * Optional text label displayed next to the toggle.
+   * When provided, clicking the label will also toggle the switch.
    */
   @Prop() label?: string;
 
   /**
-   * Direct URL to the device property for IoT integration
-   * @type {string}
-   * @optional
-   * @description Provide the complete property URL for automatic device control
-   * @example td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
+   * Direct URL to the device property for IoT integration.
+   * Provide the complete property URL for automatic device control.
+   * 
+   * @example
+   * ```
+   * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
+   * ```
    */
   @Prop() tdUrl?: string;
 
-  /**
-   * Internal state tracking if toggle is on/off
-   * @type {boolean}
-   * @default true
-   */
+  /** Internal state tracking if toggle is on/off */
   @State() isActive: boolean = true;
 
-  /**
-   * Watch for TD URL changes and reconnect
-   */
+  /** Watch for TD URL changes and reconnect */
   @Watch('tdUrl')
   async watchTdUrl() {
     await this.readDeviceState();
   }
 
-  /**
-   * Initialize component
-   */
+  /** Initialize component */
   async componentWillLoad() {
     this.isActive = this.state === 'active';
     if (this.tdUrl) {
@@ -101,10 +86,7 @@ export class UiToggle {
     }
   }
 
-  /**
-   * Read current state from device
-   * @private
-   */
+  /** Read current state from device */
   private async readDeviceState() {
     if (!this.tdUrl) return;
 
@@ -124,10 +106,7 @@ export class UiToggle {
     }
   }
 
-  /**
-   * Write new state to device
-   * @private
-   */
+  /** Write new state to device */
   private async updateDevice(value: boolean) {
     if (!this.tdUrl) return;
 
@@ -153,10 +132,7 @@ export class UiToggle {
     }
   }
 
-  /**
-   * Handle toggle click
-   * @private
-   */
+  /** Handle toggle click */
   private async handleToggle() {
     if (this.state === 'disabled') return;
 
@@ -175,10 +151,7 @@ export class UiToggle {
     }
   }
 
-  /**
-   * Handle keyboard input
-   * @private
-   */
+  /** Handle keyboard input */
   private handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
@@ -186,7 +159,7 @@ export class UiToggle {
     }
   };
 
-  // Get toggle background style
+  /** Get toggle background style */
   getToggleStyle() {
     const isDisabled = this.state === 'disabled';
     const isOn = this.isActive;
@@ -220,19 +193,19 @@ export class UiToggle {
     return `${base} ${size} ${shape} ${bgColor} ${disabled}`.trim();
   }
 
-  // Get active color
+  /** Get active color */
   getActiveColor() {
     if (this.color === 'secondary') return 'bg-secondary';
     if (this.color === 'neutral') return 'bg-gray-500';
     return 'bg-primary';
   }
 
-  // Get neon color
+  /** Get neon color */
   getNeonColor() {
     return this.color === 'secondary' ? 'neon-secondary' : 'neon-primary';
   }
 
-  // Get thumb style
+  /** Get thumb style */
   getThumbStyle() {
     const isOn = this.isActive;
     
@@ -257,7 +230,7 @@ export class UiToggle {
     return `${baseStyle} ${shape} ${position} ${movement}`;
   }
 
-  // Show cross icons
+  /** Show cross icons */
   showCrossIcons() {
     if (this.variant !== 'cross') return null;
     
@@ -278,7 +251,7 @@ export class UiToggle {
     );
   }
 
-  // Render component
+  /** Render component */
   render() {
     const toggleStyle = this.getToggleStyle();
     const thumbStyle = this.getThumbStyle();

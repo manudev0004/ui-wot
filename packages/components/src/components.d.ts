@@ -10,55 +10,45 @@ export namespace Components {
         "text": string;
     }
     /**
-     * UI Toggle Component
-     * @component 
-     * @description A modern, accessible toggle switch with multiple visual styles and IoT integration.
+     * Modern, accessible toggle switch with multiple visual styles and IoT integration.
      * Simply provide a direct property URL for plug-and-play device control.
-     * @example <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     * @example Basic Usage
+     * ```html
+     * <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     * ```
+     * @example IoT Integration
+     * ```html
      * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
+     * ```
      */
     interface UiToggle {
         /**
-          * Color scheme for the toggle appearance
-          * @type {'primary' | 'secondary' | 'neutral'}
+          * Color scheme for the toggle appearance. - primary: Teal/green professional color - secondary: Pink/purple accent color - neutral: Grayscale minimal appearance
           * @default 'primary'
-          * @description - primary: Teal/green professional color - secondary: Pink/purple accent color - neutral: Grayscale minimal appearance
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
-          * Optional text label displayed next to the toggle
-          * @type {string}
-          * @optional 
-          * @description When provided, clicking the label will also toggle the switch
+          * Optional text label displayed next to the toggle. When provided, clicking the label will also toggle the switch.
          */
         "label"?: string;
         /**
-          * Current state of the toggle
-          * @type {'active' | 'disabled'}
+          * Current state of the toggle. - active: Toggle is on/active (default) - disabled: Toggle cannot be interacted with
           * @default 'active'
-          * @description - active: Toggle is on/active (default) - disabled: Toggle cannot be interacted with
          */
         "state": 'active' | 'disabled';
         /**
-          * Direct URL to the device property for IoT integration
-          * @type {string}
-          * @optional 
-          * @description Provide the complete property URL for automatic device control
-          * @example td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
+          * Direct URL to the device property for IoT integration. Provide the complete property URL for automatic device control.
+          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" ```
          */
         "tdUrl"?: string;
         /**
-          * Visual theme for the component
-          * @type {'light' | 'dark'}
+          * Visual theme for the component. - light: Bright colors suitable for light backgrounds - dark: Muted colors suitable for dark backgrounds
           * @default 'light'
-          * @description - light: Bright colors suitable for light backgrounds - dark: Muted colors suitable for dark backgrounds
          */
         "theme": 'light' | 'dark';
         /**
-          * Visual style variant of the toggle switch
-          * @type {'circle' | 'square' | 'apple' | 'cross' | 'neon'}
+          * Visual style variant of the toggle switch. - circle: Standard pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch with inner shadow - cross: Shows × when off, ✓ when on - neon: Glowing effect when active
           * @default 'circle'
-          * @description - circle: Standard pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch with inner shadow - cross: Shows × when off, ✓ when on - neon: Glowing effect when active
          */
         "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
     }
@@ -71,12 +61,16 @@ declare global {
         new (): HTMLUiHeadingElement;
     };
     /**
-     * UI Toggle Component
-     * @component 
-     * @description A modern, accessible toggle switch with multiple visual styles and IoT integration.
+     * Modern, accessible toggle switch with multiple visual styles and IoT integration.
      * Simply provide a direct property URL for plug-and-play device control.
-     * @example <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     * @example Basic Usage
+     * ```html
+     * <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     * ```
+     * @example IoT Integration
+     * ```html
      * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
+     * ```
      */
     interface HTMLUiToggleElement extends Components.UiToggle, HTMLStencilElement {
     }
@@ -94,55 +88,45 @@ declare namespace LocalJSX {
         "text"?: string;
     }
     /**
-     * UI Toggle Component
-     * @component 
-     * @description A modern, accessible toggle switch with multiple visual styles and IoT integration.
+     * Modern, accessible toggle switch with multiple visual styles and IoT integration.
      * Simply provide a direct property URL for plug-and-play device control.
-     * @example <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     * @example Basic Usage
+     * ```html
+     * <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     * ```
+     * @example IoT Integration
+     * ```html
      * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
+     * ```
      */
     interface UiToggle {
         /**
-          * Color scheme for the toggle appearance
-          * @type {'primary' | 'secondary' | 'neutral'}
+          * Color scheme for the toggle appearance. - primary: Teal/green professional color - secondary: Pink/purple accent color - neutral: Grayscale minimal appearance
           * @default 'primary'
-          * @description - primary: Teal/green professional color - secondary: Pink/purple accent color - neutral: Grayscale minimal appearance
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
-          * Optional text label displayed next to the toggle
-          * @type {string}
-          * @optional 
-          * @description When provided, clicking the label will also toggle the switch
+          * Optional text label displayed next to the toggle. When provided, clicking the label will also toggle the switch.
          */
         "label"?: string;
         /**
-          * Current state of the toggle
-          * @type {'active' | 'disabled'}
+          * Current state of the toggle. - active: Toggle is on/active (default) - disabled: Toggle cannot be interacted with
           * @default 'active'
-          * @description - active: Toggle is on/active (default) - disabled: Toggle cannot be interacted with
          */
         "state"?: 'active' | 'disabled';
         /**
-          * Direct URL to the device property for IoT integration
-          * @type {string}
-          * @optional 
-          * @description Provide the complete property URL for automatic device control
-          * @example td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
+          * Direct URL to the device property for IoT integration. Provide the complete property URL for automatic device control.
+          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" ```
          */
         "tdUrl"?: string;
         /**
-          * Visual theme for the component
-          * @type {'light' | 'dark'}
+          * Visual theme for the component. - light: Bright colors suitable for light backgrounds - dark: Muted colors suitable for dark backgrounds
           * @default 'light'
-          * @description - light: Bright colors suitable for light backgrounds - dark: Muted colors suitable for dark backgrounds
          */
         "theme"?: 'light' | 'dark';
         /**
-          * Visual style variant of the toggle switch
-          * @type {'circle' | 'square' | 'apple' | 'cross' | 'neon'}
+          * Visual style variant of the toggle switch. - circle: Standard pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch with inner shadow - cross: Shows × when off, ✓ when on - neon: Glowing effect when active
           * @default 'circle'
-          * @description - circle: Standard pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch with inner shadow - cross: Shows × when off, ✓ when on - neon: Glowing effect when active
          */
         "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
     }
@@ -157,12 +141,16 @@ declare module "@stencil/core" {
         interface IntrinsicElements {
             "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
             /**
-             * UI Toggle Component
-             * @component 
-             * @description A modern, accessible toggle switch with multiple visual styles and IoT integration.
+             * Modern, accessible toggle switch with multiple visual styles and IoT integration.
              * Simply provide a direct property URL for plug-and-play device control.
-             * @example <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+             * @example Basic Usage
+             * ```html
+             * <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+             * ```
+             * @example IoT Integration
+             * ```html
              * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
+             * ```
              */
             "ui-toggle": LocalJSX.UiToggle & JSXBase.HTMLAttributes<HTMLUiToggleElement>;
         }
