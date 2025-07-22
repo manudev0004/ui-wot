@@ -2,13 +2,28 @@
   "name": "@thingweb/ui-wot-components",
   "version": "0.1.0",
   "description": "Independent UI components library to build interfaces for IoT applications",
-  "main": "index.js",
-  "scripts": {},
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.js",
+  "types": "dist/types/index.d.ts",
+  "collection": "dist/collection/collection-manifest.json",
+  "collection:main": "dist/collection/index.js",
+  "unpkg": "dist/ui-wot-components/ui-wot-components.esm.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs.js"
+    },
+    "./loader": {
+      "import": "./loader/index.js",
+      "require": "./loader/index.cjs",
+      "types": "./loader/index.d.ts"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eclipse-thingweb/ui-wot.git"
   },
-  "keywords": [
+    "keywords": [
     "ui-components",
     "iot",
     "dashboard"
@@ -18,5 +33,32 @@
   "bugs": {
     "url": "https://github.com/eclipse-thingweb/ui-wot/issues"
   },
-  "homepage": "https://github.com/eclipse-thingweb/ui-wot/packages/components#readme"
+  "homepage": "https://github.com/eclipse-thingweb/ui-wot/packages/components#readme",
+  "files": [
+    "dist/",
+    "loader/"
+  ],
+  "scripts": {
+    "build": "stencil build",
+    "start": "stencil build --dev --watch --serve",
+    "test": "stencil test --spec --e2e",
+    "test.watch": "stencil test --spec --e2e --watchAll",
+    "generate": "stencil generate"
+  },
+  "devDependencies": {
+    "@stencil/core": "^4.27.1",
+    "@types/aria-query": "^5.0.4",
+    "@types/chai": "^5.2.2",
+    "@types/deep-eql": "^4.0.2",
+    "@types/estree": "^1.0.8",
+    "@types/jest": "^29.5.14",
+    "@types/json-schema": "^7.0.15",
+    "@types/node": "^22.13.5",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@types/use-sync-external-store": "^1.5.0",
+    "jest": "^29.7.0",
+    "jest-cli": "^29.7.0",
+    "puppeteer": "^24.3.0"
+  }
 }

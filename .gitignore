@@ -53,3 +53,23 @@ packages/*
 
 # tsc build info
 tsconfig.tsbuildinfo
+
+# Additional ignores for stencil
+www/
+loader/
+*~
+*.sw[mnpcod]
+*.lock
+*.tmp
+*.tmp.*
+log.txt
+*.sublime-project
+*.sublime-workspace
+.stencil/
+.sass-cache/
+.versions/
+$RECYCLE.BIN/
+.DS_Store
+Thumbs.db
+UserInterfaceState.xcuserstate
+.env
