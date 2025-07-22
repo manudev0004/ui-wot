@@ -44,10 +44,67 @@
     <!-- Thing Web Integration -->
     <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
       <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-        🌐 Thing Web Integration
+        🌐 Smart Device Control Made Simple
       </h2>
       <p class="text-gray-600 mb-4">
-        Connected to: <code class="bg-gray-100 px-2 py-1 rounded">plugfest.thingweb.io</code>
+        Just provide a device URL and property name - the toggle handles everything else!
+      </p>
+
+      <!-- Smart Device Examples -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <!-- Smart Lamp Example -->
+        <div class="border border-gray-200 rounded-lg p-4">
+          <h3 class="font-semibold text-gray-700 mb-2">💡 Smart Lamp</h3>
+          <p class="text-sm text-gray-500 mb-3">Controls the power of a smart lamp</p>
+          <ui-toggle 
+            label="Smart Lamp" 
+            device-url="https://plugfest.thingweb.io/smart-lamp" 
+            property="power"
+            variant="neon" 
+            color="primary">
+          </ui-toggle>
+        </div>
+
+        <!-- Smart Switch Example -->
+        <div class="border border-gray-200 rounded-lg p-4">
+          <h3 class="font-semibold text-gray-700 mb-2">🔌 Smart Switch</h3>
+          <p class="text-sm text-gray-500 mb-3">Controls a generic IoT switch</p>
+          <ui-toggle 
+            label="Power Switch" 
+            device-url="https://plugfest.thingweb.io/switch" 
+            property="switch"
+            variant="apple" 
+            color="secondary">
+          </ui-toggle>
+        </div>
+      </div>
+
+      <!-- Local Development Example -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <h3 class="font-semibold text-blue-800 mb-2">🖥️ Local Development</h3>
+        <p class="text-sm text-blue-600 mb-3">
+          Connect to your local device running on localhost:
+        </p>
+        <ui-toggle 
+          label="My Local Device" 
+          device-url="http://localhost:8080/my-thing" 
+          property="state"
+          variant="cross" 
+          color="primary">
+        </ui-toggle>
+      </div>
+
+      <!-- Usage Instructions -->
+      <div class="bg-gray-50 rounded-lg p-4">
+        <h3 class="font-semibold text-gray-700 mb-2">📖 How to Use</h3>
+        <div class="text-sm text-gray-600 space-y-2">
+          <p><strong>1.</strong> Set <code>device-url</code> to your device's description file</p>
+          <p><strong>2.</strong> Set <code>property</code> to the boolean property name (default: "switch")</p>
+          <p><strong>3.</strong> The toggle automatically connects and syncs with your device</p>
+          <p><strong>4.</strong> No JavaScript needed - it just works! 🎉</p>
+        </div>
+      </div>
+    </div>
       </p>
       
       <div class="bg-blue-50 rounded-lg p-4 mb-4">
