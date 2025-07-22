@@ -10,48 +10,52 @@ export namespace Components {
         "text": string;
     }
     /**
-     * Modern, accessible toggle switch with multiple visual styles and IoT integration.
-     * Simply provide a direct property URL for plug-and-play device control.
+     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
      * @example Basic Usage
      * ```html
-     * <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
      * ```
-     * @example IoT Integration
+     * @example TD Integration
      * ```html
-     * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
+     * <ui-toggle td-url="http://plugfest.thingweb.io/http-data-schema-thing/properties/bool" label="Test Device"></ui-toggle>
      * ```
      */
     interface UiToggle {
         /**
-          * Color scheme for the toggle appearance. - primary: Teal/green professional color - secondary: Pink/purple accent color - neutral: Grayscale minimal appearance
+          * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
-          * Optional text label displayed next to the toggle. When provided, clicking the label will also toggle the switch.
+          * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
          */
         "label"?: string;
         /**
-          * Current state of the toggle. - active: Toggle is on/active (default) - disabled: Toggle cannot be interacted with
-          * @default 'active'
+          * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
+          * @default 'default'
          */
-        "state": 'active' | 'disabled';
+        "state": 'active' | 'disabled' | 'default';
         /**
-          * Direct URL to the device property for IoT integration. Provide the complete property URL for automatic device control.
+          * Direct URL of TD boolean properties to auto connect and interact with the device.
           * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" ```
          */
         "tdUrl"?: string;
         /**
-          * Visual theme for the component. - light: Bright colors suitable for light backgrounds - dark: Muted colors suitable for dark backgrounds
+          * Theme for the component.
           * @default 'light'
          */
         "theme": 'light' | 'dark';
         /**
-          * Visual style variant of the toggle switch. - circle: Standard pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch with inner shadow - cross: Shows × when off, ✓ when on - neon: Glowing effect when active
+          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
           * @default 'circle'
          */
         "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
     }
+}
+export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiToggleElement;
 }
 declare global {
     interface HTMLUiHeadingElement extends Components.UiHeading, HTMLStencilElement {
@@ -60,19 +64,30 @@ declare global {
         prototype: HTMLUiHeadingElement;
         new (): HTMLUiHeadingElement;
     };
+    interface HTMLUiToggleElementEventMap {
+        "toggle": { active: boolean };
+    }
     /**
-     * Modern, accessible toggle switch with multiple visual styles and IoT integration.
-     * Simply provide a direct property URL for plug-and-play device control.
+     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
      * @example Basic Usage
      * ```html
-     * <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
      * ```
-     * @example IoT Integration
+     * @example TD Integration
      * ```html
-     * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
+     * <ui-toggle td-url="http://plugfest.thingweb.io/http-data-schema-thing/properties/bool" label="Test Device"></ui-toggle>
      * ```
      */
     interface HTMLUiToggleElement extends Components.UiToggle, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
     }
     var HTMLUiToggleElement: {
         prototype: HTMLUiToggleElement;
@@ -88,44 +103,48 @@ declare namespace LocalJSX {
         "text"?: string;
     }
     /**
-     * Modern, accessible toggle switch with multiple visual styles and IoT integration.
-     * Simply provide a direct property URL for plug-and-play device control.
+     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
      * @example Basic Usage
      * ```html
-     * <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+     * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
      * ```
-     * @example IoT Integration
+     * @example TD Integration
      * ```html
-     * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
+     * <ui-toggle td-url="http://plugfest.thingweb.io/http-data-schema-thing/properties/bool" label="Test Device"></ui-toggle>
      * ```
      */
     interface UiToggle {
         /**
-          * Color scheme for the toggle appearance. - primary: Teal/green professional color - secondary: Pink/purple accent color - neutral: Grayscale minimal appearance
+          * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
-          * Optional text label displayed next to the toggle. When provided, clicking the label will also toggle the switch.
+          * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
          */
         "label"?: string;
         /**
-          * Current state of the toggle. - active: Toggle is on/active (default) - disabled: Toggle cannot be interacted with
-          * @default 'active'
+          * Event emitted when toggle state changes
          */
-        "state"?: 'active' | 'disabled';
+        "onToggle"?: (event: UiToggleCustomEvent<{ active: boolean }>) => void;
         /**
-          * Direct URL to the device property for IoT integration. Provide the complete property URL for automatic device control.
+          * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
+          * @default 'default'
+         */
+        "state"?: 'active' | 'disabled' | 'default';
+        /**
+          * Direct URL of TD boolean properties to auto connect and interact with the device.
           * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" ```
          */
         "tdUrl"?: string;
         /**
-          * Visual theme for the component. - light: Bright colors suitable for light backgrounds - dark: Muted colors suitable for dark backgrounds
+          * Theme for the component.
           * @default 'light'
          */
         "theme"?: 'light' | 'dark';
         /**
-          * Visual style variant of the toggle switch. - circle: Standard pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch with inner shadow - cross: Shows × when off, ✓ when on - neon: Glowing effect when active
+          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
           * @default 'circle'
          */
         "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
@@ -141,15 +160,15 @@ declare module "@stencil/core" {
         interface IntrinsicElements {
             "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
             /**
-             * Modern, accessible toggle switch with multiple visual styles and IoT integration.
-             * Simply provide a direct property URL for plug-and-play device control.
+             * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+             * Link a direct property URL for plug-and-play device control.
              * @example Basic Usage
              * ```html
-             * <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+             * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
              * ```
-             * @example IoT Integration
+             * @example TD Integration
              * ```html
-             * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
+             * <ui-toggle td-url="http://plugfest.thingweb.io/http-data-schema-thing/properties/bool" label="Test Device"></ui-toggle>
              * ```
              */
             "ui-toggle": LocalJSX.UiToggle & JSXBase.HTMLAttributes<HTMLUiToggleElement>;

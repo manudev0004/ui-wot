@@ -1,17 +1,17 @@
-import { Component, Prop, State, h, Watch } from '@stencil/core';
+import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
 
 /**
- * Modern, accessible toggle switch with multiple visual styles and IoT integration.
- * Simply provide a direct property URL for plug-and-play device control.
+ * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+ * Link a direct property URL for plug-and-play device control.
  * 
  * @example Basic Usage
  * ```html
- * <ui-toggle variant="circle" state="active" label="Enable notifications"></ui-toggle>
+ * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
  * ```
  * 
- * @example IoT Integration
+ * @example TD Integration
  * ```html
- * <ui-toggle td-url="http://device.com/properties/switch" label="Smart Device"></ui-toggle>
+ * <ui-toggle td-url="http://plugfest.thingweb.io/http-data-schema-thing/properties/bool" label="Test Device"></ui-toggle>
  * ```
  */
 @Component({
@@ -21,47 +21,41 @@ import { Component, Prop, State, h, Watch } from '@stencil/core';
 })
 export class UiToggle {
   /**
-   * Visual style variant of the toggle switch.
-   * - circle: Standard pill-shaped toggle (default)
+   * Visual style variant of the toggle.
+   * - circle: Common pill-shaped toggle (default)
    * - square: Rectangular toggle with square thumb
-   * - apple: iOS-style switch with inner shadow
-   * - cross: Shows × when off, ✓ when on
+   * - apple: iOS-style switch (bigger size, rounded edges)
+   * - cross: Shows × when off, ✓ when on with red background when off and green when on
    * - neon: Glowing effect when active
    */
   @Prop() variant: 'circle' | 'square' | 'apple' | 'cross' | 'neon' = 'circle';
 
   /**
    * Current state of the toggle.
-   * - active: Toggle is on/active (default)
-   * - disabled: Toggle cannot be interacted with
+   * - active: Toggle is on/active
+   * - disabled: Toggle cannot be clicked or interacted with
+   * - default: Toggle is off/inactive (default)
    */
-  @Prop({ mutable: true }) state: 'active' | 'disabled' = 'active';
+  @Prop({ mutable: true }) state: 'active' | 'disabled' | 'default' = 'default';
 
   /**
-   * Visual theme for the component.
-   * - light: Bright colors suitable for light backgrounds
-   * - dark: Muted colors suitable for dark backgrounds
+   * Theme for the component.
    */
   @Prop() theme: 'light' | 'dark' = 'light';
 
   /**
-   * Color scheme for the toggle appearance.
-   * - primary: Teal/green professional color
-   * - secondary: Pink/purple accent color
-   * - neutral: Grayscale minimal appearance
+   * Color scheme to match thingsweb webpage 
    */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
   /**
-   * Optional text label displayed next to the toggle.
-   * When provided, clicking the label will also toggle the switch.
+   * Optional text label, to display text left to the toggle.
+   * When given, clicking the label will also toggle the switch.
    */
   @Prop() label?: string;
 
   /**
-   * Direct URL to the device property for IoT integration.
-   * Provide the complete property URL for automatic device control.
-   * 
+   * Direct URL of TD boolean properties to auto connect and interact with the device.
    * @example
    * ```
    * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
@@ -71,6 +65,9 @@ export class UiToggle {
 
   /** Internal state tracking if toggle is on/off */
   @State() isActive: boolean = true;
+
+  /** Event emitted when toggle state changes */
+  @Event() toggle: EventEmitter<{ active: boolean }>;
 
   /** Watch for TD URL changes and reconnect */
   @Watch('tdUrl')
@@ -102,11 +99,11 @@ export class UiToggle {
         console.log(`Read value: ${booleanValue}`);
       }
     } catch (error) {
-      console.warn('Failed to read device state:', error);
+      console.warn('Failed to read state:', error);
     }
   }
 
-  /** Write new state to device */
+  /** Write new state to TD device */
   private async updateDevice(value: boolean) {
     if (!this.tdUrl) return;
 
@@ -122,22 +119,25 @@ export class UiToggle {
       });
 
       if (response.ok) {
-        console.log(`Successfully wrote ${value}`);
+        console.log(`Successfully wrote: ${value}`);
       } else {
         throw new Error(`Write failed: ${response.status}`);
       }
     } catch (error) {
-      console.warn('Failed to write to device:', error);
+      console.warn('Failed to write:', error);
       throw error;
     }
   }
 
-  /** Handle toggle click */
+  /** Toggle click handle */
   private async handleToggle() {
     if (this.state === 'disabled') return;
 
     const newActive = !this.isActive;
     this.isActive = newActive;
+
+    // Emit toggle event
+    this.toggle.emit({ active: newActive });
 
     // Update device if connected
     if (this.tdUrl) {
@@ -146,12 +146,14 @@ export class UiToggle {
       } catch (error) {
         // Revert on failure
         this.isActive = !newActive;
-        console.warn('Reverted due to device write failure');
+        console.warn('Change failed, reverted state');
+        // Emit revert event
+        this.toggle.emit({ active: !newActive });
       }
     }
   }
 
-  /** Handle keyboard input */
+  /** Handle keyboard 'enter' and 'spacebar' input to toggle switch state */
   private handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
@@ -159,31 +161,31 @@ export class UiToggle {
     }
   };
 
-  /** Get toggle background style */
+  /** Fetch current toggle background style */
   getToggleStyle() {
     const isDisabled = this.state === 'disabled';
-    const isOn = this.isActive;
+    const isActive = this.isActive;
     
-    // Size
+    // Bigger sixe for apple variant
     const size = this.variant === 'apple' ? 'w-11 h-7' : 'w-12 h-6';
 
-    // Shape
+    // Different shapes of thumb
     let shape = 'rounded-full';
     if (this.variant === 'square') shape = 'rounded-md';
     if (this.variant === 'apple') shape = 'rounded-full shadow-inner border-2 border-gray-500';
 
     // Background color
-    let bgColor = 'bg-gray-300'; // default off
+    let bgColor = 'bg-gray-300';
     
     if (this.color === 'neutral') {
-      bgColor = isOn ? 'bg-gray-500' : 'bg-gray-300';
+      bgColor = isActive ? 'bg-gray-500' : 'bg-gray-300';
     } else if (this.variant === 'cross') {
-      bgColor = isOn ? this.getActiveColor() : 'bg-red-500';
+      bgColor = isActive ? this.getActiveColor() : 'bg-red-500';
     } else if (this.variant === 'apple') {
-      bgColor = isOn ? 'bg-green-500' : 'bg-gray-700';
+      bgColor = isActive ? 'bg-green-500' : 'bg-gray-700';
     } else if (this.variant === 'neon') {
-      bgColor = isOn ? this.getNeonColor() : 'neon-red';
-    } else if (isOn) {
+      bgColor = isActive ? this.getNeonColor() : 'neon-red';
+    } else if (isActive) {
       bgColor = this.getActiveColor();
     }
 
@@ -193,26 +195,26 @@ export class UiToggle {
     return `${base} ${size} ${shape} ${bgColor} ${disabled}`.trim();
   }
 
-  /** Get active color */
+  /** Fetch current active color */
   getActiveColor() {
     if (this.color === 'secondary') return 'bg-secondary';
     if (this.color === 'neutral') return 'bg-gray-500';
     return 'bg-primary';
   }
 
-  /** Get neon color */
+  /** Fetch current neon color */
   getNeonColor() {
     return this.color === 'secondary' ? 'neon-secondary' : 'neon-primary';
   }
 
-  /** Get thumb style */
+  /** Fetch current thumb style */
   getThumbStyle() {
-    const isOn = this.isActive;
+    const isActive = this.isActive;
     
     // Apple variant
     if (this.variant === 'apple') {
       const baseStyle = 'absolute w-6 h-6 bg-white transition-all duration-200 ease-in-out shadow-md rounded-full top-0 left-0';
-      const movement = isOn ? 'translate-x-4' : 'translate-x-0';
+      const movement = isActive ? 'translate-x-4' : 'translate-x-0';
       return `${baseStyle} ${movement}`;
     }
     
@@ -225,20 +227,20 @@ export class UiToggle {
       position = 'top-0.5 left-1';
     }
     
-    const movement = isOn ? 'translate-x-6' : 'translate-x-0';
+    const movement = isActive ? 'translate-x-6' : 'translate-x-0';
     
     return `${baseStyle} ${shape} ${position} ${movement}`;
   }
 
-  /** Show cross icons */
+  /** Tick and cross icons for cross variant */
   showCrossIcons() {
     if (this.variant !== 'cross') return null;
     
-    const isOn = this.isActive;
+    const isActive = this.isActive;
     
     return (
       <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {!isOn ? (
+        {!isActive ? (
           <div class="absolute top-0 right-0 w-6 h-6 flex items-center justify-center">
             <span class="text-white text-xl font-bold">×</span>
           </div>
@@ -251,7 +253,7 @@ export class UiToggle {
     );
   }
 
-  /** Render component */
+  /** Render final component */
   render() {
     const toggleStyle = this.getToggleStyle();
     const thumbStyle = this.getThumbStyle();
@@ -261,7 +263,7 @@ export class UiToggle {
       <div class="inline-flex items-center space-x-3">
         {this.label && (
           <label
-            class={`select-none mr-2 ${isDisabled ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer'}`}
+            class={`select-none mr-2 ${isDisabled ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer'} ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
             onClick={() => !isDisabled && this.handleToggle()}
           >
             {this.label}

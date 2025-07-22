@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UI Toggle Component - Thing Web Integration</title>
+  <title>Wot-Components</title>
   <script type="module" src="/build/ui-wot-components.esm.js"></script>
   <script nomodule src="/build/ui-wot-components.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
@@ -20,288 +21,150 @@
     }
   </script>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen font-sans">
-  <div class="max-w-4xl mx-auto p-8">
-    <!-- Header -->
-    <div class="text-center mb-12">
-      <h1 class="text-4xl font-bold text-gray-800 mb-4">
-        🎛️ UI Toggle Component
-      </h1>
-      <p class="text-gray-600 text-lg">
-        Modern toggle switches with Thing Web integration
-      </p>
-    </div>
-
-    <!-- Theme Toggle -->
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-8 text-center">
-      <div class="flex items-center justify-center gap-4">
-        <span class="text-gray-700">☀️ Light</span>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen font-sans transition-colors duration-300">
+  <!-- Navigation -->
+  <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 transition-colors duration-300">
+    <div class="flex justify-between items-center max-w-6xl mx-auto">
+      <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Wot-Components</h1>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-600 dark:text-gray-300">Light</span>
         <ui-toggle id="theme-toggle" variant="apple"></ui-toggle>
-        <span class="text-gray-700">🌙 Dark</span>
+        <span class="text-sm text-gray-600 dark:text-gray-300">Dark</span>
       </div>
     </div>
+  </nav>
 
-    <!-- Thing Web Integration -->
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-      <h2 class="text-2xl font-semibold text-gray-800 mb-4">🌐 Simplified IoT Integration</h2>
-      <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-        <p class="text-blue-800">
-          <strong>Plug & Play:</strong> Just provide the direct property URL - no configuration needed!
-        </p>
-      </div>
-      
+  <div class="max-w-6xl mx-auto p-6">
+    <!-- TD Integration -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+      <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">TD Integration</h2>
       <div class="space-y-4">
+
         <ui-toggle 
           td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
           variant="neon" 
           color="primary" 
-          label="Thing Web Boolean Property">
+          label="Test Thing">
         </ui-toggle>
+
+      </div>
+    </div>
+
+    <!-- Variants -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+      <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Variants</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Circle</h3>
+          <div class="flex gap-2">
+            <ui-toggle variant="circle" state="default"></ui-toggle>
+            <ui-toggle variant="circle" state="active"></ui-toggle>
+            <ui-toggle variant="circle" state="disabled"></ui-toggle>
+          </div>
+        </div>
         
-        <div class="text-sm text-gray-600">
-          Direct property URL approach - much simpler than before!
-        </div>
-      </div>
-    </div>
-
-      <!-- Local Development Example -->
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <h3 class="font-semibold text-blue-800 mb-2">🖥️ Local Development</h3>
-        <p class="text-sm text-blue-600 mb-3">
-          Connect to your local device running on localhost:
-        </p>
-        <ui-toggle 
-          label="My Local Device" 
-          td-url="http://localhost:8080/my-thing" 
-          property-name="state"
-          variant="cross" 
-          color="primary">
-        </ui-toggle>
-      </div>
-
-      <!-- Usage Instructions -->
-      <div class="bg-gray-50 rounded-lg p-4">
-        <h3 class="font-semibold text-gray-700 mb-2">📖 How to Use</h3>
-        <div class="text-sm text-gray-600 space-y-2">
-          <p><strong>1.</strong> Set <code>td-url</code> to your device's Thing Description file</p>
-          <p><strong>2.</strong> Set <code>property-name</code> to the boolean property name (default: "switch")</p>
-          <p><strong>3.</strong> The toggle automatically connects and syncs with your device</p>
-          <p><strong>4.</strong> No JavaScript needed - it just works! 🎉</p>
-        </div>
-      </div>
-    </div>
-      </p>
-      
-      <div class="bg-blue-50 rounded-lg p-4 mb-4">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="font-semibold text-blue-900">Boolean Property</h3>
-            <p class="text-blue-700 text-sm">
-              Real-time sync with HTTP data schema thing
-            </p>
-            <span id="thing-status" class="text-xs text-gray-500">Connecting...</span>
+        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Square</h3>
+          <div class="flex gap-2">
+            <ui-toggle variant="square" state="default"></ui-toggle>
+            <ui-toggle variant="square" state="active"></ui-toggle>
+            <ui-toggle variant="square" state="disabled"></ui-toggle>
           </div>
-          <ui-toggle id="thing-toggle" variant="neon" color="primary"></ui-toggle>
         </div>
-      </div>
-    </div>
-
-    <!-- Component Showcase -->
-    <div class="grid md:grid-cols-2 gap-8 mb-8">
-      <!-- Variants -->
-      <div class="bg-white rounded-xl shadow-lg p-6">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-6">🎨 Variants</h2>
         
-        <div class="space-y-4">
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span class="font-medium text-gray-700">Circle</span>
-            <div class="flex gap-2">
-              <ui-toggle variant="circle"></ui-toggle>
-              <ui-toggle variant="circle" state="active"></ui-toggle>
-              <ui-toggle variant="circle" state="disabled"></ui-toggle>
-            </div>
-          </div>
-          
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span class="font-medium text-gray-700">Square</span>
-            <div class="flex gap-2">
-              <ui-toggle variant="square"></ui-toggle>
-              <ui-toggle variant="square" state="active"></ui-toggle>
-              <ui-toggle variant="square" state="disabled"></ui-toggle>
-            </div>
-          </div>
-          
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span class="font-medium text-gray-700">Apple</span>
-            <div class="flex gap-2">
-              <ui-toggle variant="apple"></ui-toggle>
-              <ui-toggle variant="apple" state="active"></ui-toggle>
-              <ui-toggle variant="apple" state="disabled"></ui-toggle>
-            </div>
-          </div>
-          
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span class="font-medium text-gray-700">Cross</span>
-            <div class="flex gap-2">
-              <ui-toggle variant="cross"></ui-toggle>
-              <ui-toggle variant="cross" state="active"></ui-toggle>
-              <ui-toggle variant="cross" state="disabled"></ui-toggle>
-            </div>
-          </div>
-          
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span class="font-medium text-gray-700">Neon</span>
-            <div class="flex gap-2">
-              <ui-toggle variant="neon"></ui-toggle>
-              <ui-toggle variant="neon" state="active"></ui-toggle>
-              <ui-toggle variant="neon" state="disabled"></ui-toggle>
-            </div>
+        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Apple</h3>
+          <div class="flex gap-2">
+            <ui-toggle variant="apple" state="default"></ui-toggle>
+            <ui-toggle variant="apple" state="active"></ui-toggle>
+            <ui-toggle variant="apple" state="disabled"></ui-toggle>
           </div>
         </div>
-      </div>
-
-      <!-- Colors -->
-      <div class="bg-white rounded-xl shadow-lg p-6">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-6">🌈 Colors</h2>
         
-        <div class="space-y-4">
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span class="font-medium text-gray-700">Primary</span>
-            <div class="flex gap-2">
-              <ui-toggle color="primary" state="active"></ui-toggle>
-              <ui-toggle color="primary" variant="apple" state="active"></ui-toggle>
-              <ui-toggle color="primary" variant="neon" state="active"></ui-toggle>
-            </div>
+        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cross</h3>
+          <div class="flex gap-2">
+            <ui-toggle variant="cross" state="default"></ui-toggle>
+            <ui-toggle variant="cross" state="active"></ui-toggle>
+            <ui-toggle variant="cross" state="disabled"></ui-toggle>
           </div>
-          
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span class="font-medium text-gray-700">Secondary</span>
-            <div class="flex gap-2">
-              <ui-toggle color="secondary" state="active"></ui-toggle>
-              <ui-toggle color="secondary" variant="apple" state="active"></ui-toggle>
-              <ui-toggle color="secondary" variant="neon" state="active"></ui-toggle>
-            </div>
-          </div>
-          
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span class="font-medium text-gray-700">Neutral</span>
-            <div class="flex gap-2">
-              <ui-toggle color="neutral" state="active"></ui-toggle>
-              <ui-toggle color="neutral" variant="apple" state="active"></ui-toggle>
-              <ui-toggle color="neutral" variant="neon" state="active"></ui-toggle>
-            </div>
+        </div>
+        
+        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Neon</h3>
+          <div class="flex gap-2">
+            <ui-toggle variant="neon" state="default"></ui-toggle>
+            <ui-toggle variant="neon" state="active"></ui-toggle>
+            <ui-toggle variant="neon" state="disabled"></ui-toggle>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- With Labels -->
-    <div class="bg-white rounded-xl shadow-lg p-6">
-      <h2 class="text-2xl font-semibold text-gray-800 mb-6">🏷️ Labeled Toggles</h2>
-      
-      <div class="grid md:grid-cols-2 gap-4">
-        <ui-toggle label="Enable notifications" state="active" variant="circle"></ui-toggle>
-        <ui-toggle label="Dark mode" variant="apple" color="primary"></ui-toggle>
+    <!-- Colors -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+      <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Colors</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Primary</h3>
+          <div class="flex gap-2">
+            <ui-toggle color="primary" state="active"></ui-toggle>
+            <ui-toggle color="primary" variant="square" state="active"></ui-toggle>
+            <ui-toggle color="primary" variant="apple" state="active"></ui-toggle>
+            <ui-toggle color="primary" variant="neon" state="active"></ui-toggle>
+          </div>
+        </div>
+        
+        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Secondary</h3>
+          <div class="flex gap-2">
+            <ui-toggle color="secondary" state="active"></ui-toggle>
+            <ui-toggle color="secondary" variant="square" state="active"></ui-toggle>
+            <ui-toggle color="secondary" variant="apple" state="active"></ui-toggle>
+            <ui-toggle color="secondary" variant="neon" state="active"></ui-toggle>
+          </div>
+        </div>
+        
+        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Neutral</h3>
+          <div class="flex gap-2">
+            <ui-toggle color="neutral" state="active"></ui-toggle>
+            <ui-toggle color="neutral" variant="square" state="active"></ui-toggle>
+            <ui-toggle color="neutral" variant="apple" state="active"></ui-toggle>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Labels -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+      <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Labels</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ui-toggle label="Switch" state="default" variant="circle"></ui-toggle>
+        <ui-toggle label="Fan" variant="apple" color="primary" state="default"></ui-toggle>
         <ui-toggle label="Turbo mode" variant="neon" color="secondary" state="active"></ui-toggle>
-        <ui-toggle label="Feature toggle" variant="cross" color="neutral"></ui-toggle>
+        <ui-toggle label="Coffee Machine" variant="cross" color="neutral" state="active"></ui-toggle>
       </div>
     </div>
   </div>
-
   <script>
-    // Thing Web API configuration
-    const THING_BASE_URL = 'http://plugfest.thingweb.io/http-data-schema-thing';
-    const BOOL_PROPERTY_URL = `${THING_BASE_URL}/properties/bool`;
-
-    // Theme toggle functionality
     const themeToggle = document.getElementById('theme-toggle');
-    const body = document.body;
-    
-    // Check for system dark mode preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      body.classList.add('dark');
-      themeToggle.state = 'active';
+    const html = document.documentElement;
+
+    function setTheme(isDark) {
+      html.classList.toggle('dark', isDark);
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      document.querySelectorAll('ui-toggle').forEach(t => t.theme = isDark ? 'dark' : 'light');
+      themeToggle.state = isDark ? 'active' : 'default';
     }
 
-    // Listen for theme toggle changes
-    themeToggle.addEventListener('toggle', (event) => {
-      if (event.detail.active) {
-        body.classList.add('dark');
-        document.documentElement.classList.add('dark');
-      } else {
-        body.classList.remove('dark');
-        document.documentElement.classList.remove('dark');
-      }
-    });
+    // Initialize theme
+    const savedTheme = localStorage.getItem('theme');
+    setTheme(savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches));
 
-    // Thing Web Integration
-    const thingToggle = document.getElementById('thing-toggle');
-    const thingStatus = document.getElementById('thing-status');
-
-    // Create TDProperty for Thing Web integration
-    const thingTDProperty = {
-      name: 'bool',
-      read: async () => {
-        try {
-          thingStatus.textContent = 'Reading...';
-          const response = await fetch(BOOL_PROPERTY_URL);
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-          const value = await response.json();
-          thingStatus.textContent = 'Connected ✅';
-          return value;
-        } catch (error) {
-          thingStatus.textContent = 'Connection Error ❌';
-          console.error('Read error:', error);
-          return false;
-        }
-      },
-      write: async (value) => {
-        try {
-          thingStatus.textContent = 'Writing...';
-          const response = await fetch(BOOL_PROPERTY_URL, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(value)
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-          thingStatus.textContent = 'Connected ✅';
-        } catch (error) {
-          thingStatus.textContent = 'Connection Error ❌';
-          console.error('Write error:', error);
-          throw error;
-        }
-      }
-    };
-
-    // Bind Thing Web property to toggle
-    thingToggle.tdProperty = thingTDProperty;
-    
-    // Initialize by reading current value
-    setTimeout(() => {
-      thingTDProperty.read().then(value => {
-        thingToggle.state = value ? 'active' : 'default';
-      });
-    }, 1000);
-
-    // Add click interactivity to demo toggles
-    document.querySelectorAll('ui-toggle').forEach(toggle => {
-      if (toggle.id !== 'theme-toggle' && toggle.id !== 'thing-toggle' && toggle.state !== 'disabled') {
-        toggle.addEventListener('toggle', (event) => {
-          console.log(`Toggle state changed: ${event.detail.active}`);
-        });
-      }
-    });
-
-    // Add Thing Web toggle listener for debugging
-    thingToggle.addEventListener('toggle', (event) => {
-      console.log(`Thing Web boolean property changed to: ${event.detail.active}`);
-    });
+    themeToggle.addEventListener('toggle', e => setTheme(e.detail.active));
   </script>
 </body>
 </html>
