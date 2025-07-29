@@ -3,7 +3,11 @@
   "private": true,
   "version": "0.1.0",
   "description": "A set of packages to build user interfaces for IoT applications using Web of Things (WoT) standards.",
-  "scripts": {},
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "start:components": "npm run start --workspace packages/components",
+    "start:generator": "npm run preview --workspace packages/generator"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eclipse-thingweb/ui-wot.git"
