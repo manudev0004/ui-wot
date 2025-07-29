@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WoT UI Components - Demo</title>
+  
+  <!-- Load components directly -->
+  <script type="module" src="./build/ui-wot-components.esm.js"></script>
+  <script nomodule src="./build/ui-wot-components.js"></script>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    
+    .demo {
+      margin: 2rem 0;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    
+    .code {
+      background: #f3f4f6;
+      padding: 1rem;
+      border-radius: 4px;
+      margin: 1rem 0;
+      font-family: monospace;
+      font-size: 14px;
+      overflow-x: auto;
+    }
+    
+    h1, h2 { color: #1f2937; }
+    h2 { border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
+  </style>
+</head>
+
+<body>
+  <h1>WoT UI Components</h1>
+
+  <div class="demo">
+    <h2>Number Picker</h2>
+    <ui-number-picker value="5" label="Quantity" variant="outlined" color="primary"></ui-number-picker>
+    
+    <div class="code">&lt;ui-number-picker value="5" label="Quantity" variant="outlined" color="primary"&gt;&lt;/ui-number-picker&gt;</div>
+  </div>
+
+  <div class="demo">
+    <h2>Toggle</h2>
+    <ui-toggle label="Enable Feature" variant="apple" color="primary"></ui-toggle>
+    
+    <div class="code">&lt;ui-toggle label="Enable Feature" variant="apple" color="primary"&gt;&lt;/ui-toggle&gt;</div>
+  </div>
+
+  <div class="demo">
+    <h2>IoT Device Integration</h2>
+    <ui-number-picker 
+      td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int"
+      protocol="http"
+      mode="readwrite"
+      label="Device Value"
+      color="secondary">
+    </ui-number-picker>
+    
+    <div class="code">&lt;ui-number-picker 
+  td-url="http://device.local/value"
+  protocol="http"
+  label="Device Value"&gt;
+&lt;/ui-number-picker&gt;</div>
+  </div>
+
+  <div class="demo">
+    <h2>Custom Callback</h2>
+    <ui-number-picker 
+      value="10" 
+      on-change="myHandler" 
+      label="Custom Handler"
+      variant="filled"
+      color="primary">
+    </ui-number-picker>
+    
+    <div class="code">window.myHandler = function(data) {
+  console.log('Value changed:', data.value);
+};
+
+&lt;ui-number-picker on-change="myHandler"&gt;&lt;/ui-number-picker&gt;</div>
+  </div>
+
+  <script>
+    window.myHandler = function(data) {
+      console.log('Value changed:', data.value);
+      alert('New value: ' + data.value);
+    };
+  </script>
+</body>
+</html>

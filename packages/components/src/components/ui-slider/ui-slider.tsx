@@ -11,7 +11,13 @@ import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/
  * 
  * @example TD Integration
  * ```html
- * <ui-slider td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int" min="0" max="100" label="Device Brightness"></ui-slider>
+ * <ui-slider 
+ *   td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
+ *   min="0" 
+ *   max="100" 
+ *   label="Device Brightness"
+ *   enable-manual-control="true">
+ * </ui-slider>
  * ```
  */
 @Component({
@@ -83,85 +89,81 @@ export class UiSlider {
   @Prop() thumbShape: 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond' = 'circle';
 
   /**
-   * Direct URL of TD number/integer properties to auto connect and interact with the device.
-   * @example
-   * ```
-   * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int"
-   * ```
+   * Thing Description URL for device control.
    */
   @Prop() tdUrl?: string;
 
-  /** Internal state tracking current value */
+  /**
+   * Enable manual control interface.
+   */
+  @Prop() enableManualControl: boolean = false;
+
+  /** Current value */
   @State() currentValue: number = 0;
 
-  /** Event emitted when slider value changes */
+  /** Manual input value */
+  @State() manualInputValue: string = '';
+
+  /** Event emitted when value changes */
   @Event() valueChange: EventEmitter<{ value: number }>;
 
-  /** Watch for TD URL changes and reconnect */
+  /** Watch for TD URL changes */
   @Watch('tdUrl')
   async watchTdUrl() {
-    await this.readDeviceState();
+    if (this.tdUrl) {
+      await this.readDevice();
+    }
   }
 
   /** Watch for value prop changes */
   @Watch('value')
   watchValue() {
     this.currentValue = this.value;
+    this.manualInputValue = String(this.value);
   }
 
   /** Initialize component */
   async componentWillLoad() {
     this.currentValue = this.value;
+    this.manualInputValue = String(this.value);
     if (this.tdUrl) {
-      await this.readDeviceState();
+      await this.readDevice();
     }
   }
 
-  /** Read current state from device */
-  private async readDeviceState() {
+  /** Read from TD device */
+  private async readDevice() {
     if (!this.tdUrl) return;
-
+    
     try {
-      console.log(`Reading from: ${this.tdUrl}`);
       const response = await fetch(this.tdUrl);
-      
       if (response.ok) {
         const value = await response.json();
-        const numericValue = typeof value === 'number' ? value : Number(value);
-        
-        if (!isNaN(numericValue)) {
-          this.currentValue = Math.max(this.min, Math.min(this.max, numericValue));
-          console.log(`Read value: ${this.currentValue}`);
+        const num = Number(value);
+        if (!isNaN(num)) {
+          this.currentValue = Math.max(this.min, Math.min(this.max, num));
+          this.manualInputValue = String(this.currentValue);
         }
       }
     } catch (error) {
-      console.warn('Failed to read state:', error);
+      // Log error but continue with local value
+      console.warn('Device read failed:', error);
     }
   }
 
-  /** Write new state to TD device */
-  private async updateDevice(value: number) {
+  /** Write to TD device */
+  private async writeDevice(value: number) {
     if (!this.tdUrl) return;
-
+    
     try {
-      console.log(`Writing ${value} to: ${this.tdUrl}`);
-      
-      const response = await fetch(this.tdUrl, {
+      await fetch(this.tdUrl, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(value),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(value)
       });
-
-      if (response.ok) {
-        console.log(`Successfully wrote: ${value}`);
-      } else {
-        throw new Error(`Write failed: ${response.status}`);
-      }
     } catch (error) {
-      console.warn('Failed to write:', error);
-      throw error;
+      // Log error but don't interrupt user experience
+      console.warn('Device update failed:', error);
     }
   }
 
@@ -171,27 +173,49 @@ export class UiSlider {
 
     const target = event.target as HTMLInputElement;
     const newValue = Number(target.value);
-    const oldValue = this.currentValue;
     
     this.currentValue = newValue;
-
-    // Emit valueChange event
+    this.manualInputValue = String(newValue);
     this.valueChange.emit({ value: newValue });
 
-    // Update device if connected
+    // Update TD device if URL provided
     if (this.tdUrl) {
-      try {
-        await this.updateDevice(newValue);
-      } catch (error) {
-        // Revert on failure
-        this.currentValue = oldValue;
-        target.value = String(oldValue);
-        console.warn('Change failed, reverted value');
-        // Emit revert event
-        this.valueChange.emit({ value: oldValue });
-      }
+      this.writeDevice(newValue).catch(() => {
+        // Silently ignore network errors for smooth UX
+      });
     }
   }
+
+  /** Handle manual input */
+  private handleManualInput = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    this.manualInputValue = target.value;
+  };
+
+  /** Handle manual submit */
+  private handleManualSubmit = async (event: Event) => {
+    event.preventDefault();
+    if (this.state === 'disabled') return;
+
+    const newValue = Number(this.manualInputValue);
+    if (isNaN(newValue)) {
+      this.manualInputValue = String(this.currentValue);
+      return;
+    }
+
+    const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
+    
+    this.currentValue = clampedValue;
+    this.manualInputValue = String(clampedValue);
+    this.valueChange.emit({ value: clampedValue });
+
+    // Update TD device if URL provided
+    if (this.tdUrl) {
+      this.writeDevice(clampedValue).catch(() => {
+        // Silently ignore network errors for smooth UX
+      });
+    }
+  };
 
   /** Handle keyboard navigation */
   private handleKeyDown = (event: KeyboardEvent) => {
@@ -232,13 +256,12 @@ export class UiSlider {
 
     if (newValue !== this.currentValue) {
       this.currentValue = newValue;
+      this.manualInputValue = String(newValue);
       this.valueChange.emit({ value: newValue });
       
-      // Update device if connected
       if (this.tdUrl) {
-        this.updateDevice(newValue).catch(() => {
-          // Revert on failure
-          this.currentValue = this.currentValue;
+        this.writeDevice(newValue).catch(() => {
+          // Silently handle errors in keyboard navigation
         });
       }
     }
@@ -432,6 +455,8 @@ export class UiSlider {
             {this.label}
           </label>
         )}
+
+        {/* Slider Interface */}
         <div 
           class="relative"
           tabindex={isDisabled ? -1 : 0}
@@ -472,6 +497,44 @@ export class UiSlider {
             {this.renderCustomThumb()}
           </div>
         </div>
+
+        {/* Manual Control Interface */}
+        {this.enableManualControl && (
+          <div class={`mt-4 p-3 border rounded-lg ${this.theme === 'dark' ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-50'}`}>
+            <h4 class={`text-sm font-medium mb-2 ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              Manual Control
+            </h4>
+            <form onSubmit={this.handleManualSubmit} class="flex gap-2 items-center">
+              <input
+                type="number"
+                min={this.min}
+                max={this.max}
+                step={this.step}
+                value={this.manualInputValue}
+                disabled={isDisabled}
+                class={`flex-1 px-2 py-1 text-sm border rounded ${
+                  this.theme === 'dark' 
+                    ? 'border-gray-600 bg-gray-700 text-white' 
+                    : 'border-gray-300 bg-white text-gray-900'
+                } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onInput={this.handleManualInput}
+                placeholder="Enter value"
+              />
+              <button
+                type="submit"
+                disabled={isDisabled}
+                class={`px-3 py-1 text-sm font-medium rounded transition-colors ${
+                  isDisabled 
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                    : 'bg-primary text-white hover:bg-primary-dark'
+                }`}
+              >
+                Set
+              </button>
+            </form>
+          </div>
+        )}
+
         <div class={`flex justify-between text-xs mt-3 ${this.theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
           <span>{this.min}</span>
           <span>{this.currentValue}</span>

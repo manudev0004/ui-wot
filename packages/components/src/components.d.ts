@@ -9,6 +9,345 @@ export namespace Components {
     interface UiHeading {
         "text": string;
     }
+    /**
+     * Number picker component with various visual styles, TD integration and customizable range.
+     * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+     * @example Basic Usage
+     * ```html
+     * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+     * ```
+     * @example TD Integration with HTTP
+     * ```html
+     * <ui-number-picker 
+     * td-url="http://device.local/properties/volume"
+     * label="Device Volume"
+     * protocol="http"
+     * mode="readwrite"
+     * min="0"
+     * max="100">
+     * </ui-number-picker>
+     * ```
+     * @example TD Integration with MQTT
+     * ```html
+     * <ui-number-picker 
+     * td-url="mqtt://device"
+     * mqtt-host="localhost:1883"
+     * mqtt-topic="device/volume"
+     * label="MQTT Volume"
+     * protocol="mqtt"
+     * mode="readwrite">
+     * </ui-number-picker>
+     * ```
+     * @example TD Device Read-Only (shows value only)
+     * ```html
+     * <ui-number-picker 
+     * td-url="http://sensor.local/temperature"
+     * label="Temperature Sensor"
+     * mode="read">
+     * </ui-number-picker>
+     * ```
+     * @example Local Control with Custom Handler
+     * ```html
+     * <ui-number-picker 
+     * value="3"
+     * on-change="handleNumberChange"
+     * variant="filled"
+     * label="Custom Counter">
+     * </ui-number-picker>
+     * ```
+     * @example Event Handling
+     * ```javascript
+     * window.handleNumberChange = function(data) {
+     * console.log('Number changed:', data.value);
+     * console.log('Label:', data.label);
+     * // Your custom logic here
+     * };
+     * ```
+     */
+    interface UiNumberPicker {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label, to display above the number picker.
+         */
+        "label"?: string;
+        /**
+          * Maximum allowed value.
+          * @default 100
+         */
+        "max"?: number;
+        /**
+          * Minimum allowed value.
+          * @default 0
+         */
+        "min"?: number;
+        /**
+          * Device interaction mode. - read: Only read from device (display current value, no interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
+          * @default 'readwrite'
+         */
+        "mode": 'read' | 'write' | 'readwrite';
+        /**
+          * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
+         */
+        "mqttHost"?: string;
+        /**
+          * MQTT topic path for MQTT protocol (e.g., "device/volume")
+         */
+        "mqttTopic"?: string;
+        /**
+          * Function name to call when value changes. User defines this function in their code, component will invoke it.
+          * @example "handleNumberChange"
+         */
+        "onChange"?: string;
+        /**
+          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
+          * @default 'http'
+         */
+        "protocol": 'http' | 'coap' | 'mqtt';
+        /**
+          * Current state of the number picker. - active: Number picker is enabled (default) - disabled: Number picker cannot be interacted with
+          * @default 'active'
+         */
+        "state": 'active' | 'disabled';
+        /**
+          * Step increment/decrement amount.
+          * @default 1
+         */
+        "step": number;
+        /**
+          * Direct URL of TD number properties to auto connect and interact with the device.
+          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number" ```
+         */
+        "tdUrl"?: string;
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme": 'light' | 'dark';
+        /**
+          * Current value of the number picker (for local control mode). When no td-url is provided and value is set, this controls the picker state.
+          * @example 5, 10, 25
+          * @default 0
+         */
+        "value": number;
+        /**
+          * Visual style variant of the number picker. - minimal: Clean buttons with subtle background (default) - outlined: Buttons with border outline - filled: Solid filled buttons
+          * @default 'minimal'
+         */
+        "variant": 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Slider component with various features, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-slider 
+     * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
+     * min="0" 
+     * max="100" 
+     * label="Device Brightness"
+     * enable-manual-control="true">
+     * </ui-slider>
+     * ```
+     */
+    interface UiSlider {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Enable manual control interface.
+          * @default false
+         */
+        "enableManualControl": boolean;
+        /**
+          * Optional text label, to display text above the slider.
+         */
+        "label"?: string;
+        /**
+          * Maximum value of the slider.
+          * @default 100
+         */
+        "max": number;
+        /**
+          * Minimum value of the slider.
+          * @default 0
+         */
+        "min": number;
+        /**
+          * Current state of the slider. - disabled: Slider cannot be clicked or interacted with - default: Slider is interactive (default)
+          * @default 'default'
+         */
+        "state": 'disabled' | 'default';
+        /**
+          * Step increment for the slider.
+          * @default 1
+         */
+        "step": number;
+        /**
+          * Thing Description URL for device control.
+         */
+        "tdUrl"?: string;
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme": 'light' | 'dark';
+        /**
+          * Shape of the slider thumb. - circle: Round thumb (default) - square: Square thumb - arrow: Arrow-shaped thumb pointing right - triangle: Triangle-shaped thumb - diamond: Diamond-shaped thumb (<> style)
+          * @default 'circle'
+         */
+        "thumbShape": 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond';
+        /**
+          * Current value of the slider.
+          * @default 0
+         */
+        "value": number;
+        /**
+          * Visual style variant of the slider. - narrow: Thin slider track (default) - wide: Thick slider track - rainbow: Gradient color track - neon: Glowing effect - stepped: Shows step marks
+          * @default 'narrow'
+         */
+        "variant": 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
+    }
+    /**
+     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+     * ```
+     * @example TD Integration with HTTP
+     * ```html
+     * <ui-toggle 
+     * td-url="http://device.local/properties/power"
+     * label="Smart Light"
+     * protocol="http"
+     * mode="readwrite">
+     * </ui-toggle>
+     * ```
+     * @example TD Integration with MQTT
+     * ```html
+     * <ui-toggle 
+     * td-url="mqtt://device"
+     * mqtt-host="localhost:1883"
+     * mqtt-topic="device/toggle"
+     * label="MQTT Device"
+     * protocol="mqtt"
+     * mode="readwrite">
+     * </ui-toggle>
+     * ```
+     * @example TD Device Read-Only (shows colored circle)
+     * ```html
+     * <ui-toggle 
+     * td-url="http://sensor.local/status"
+     * label="Door Sensor"
+     * mode="read">
+     * </ui-toggle>
+     * ```
+     * @example Local Control with Custom Handler
+     * ```html
+     * <ui-toggle 
+     * value="true"
+     * on-change="myToggleHandler"
+     * label="Custom Toggle">
+     * </ui-toggle>
+     * ```
+     * @example User's JavaScript Handler
+     * ```javascript
+     * window.myToggleHandler = function(data) {
+     * console.log('Toggle changed:', data.active);
+     * console.log('New value:', data.value);
+     * console.log('Label:', data.label);
+     * // Your custom logic here
+     * };
+     * ```
+     * @example Event Handling
+     * ```javascript
+     * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
+     * console.log('Toggle state:', event.detail.active);
+     * // Your custom logic here
+     * });
+     * ```
+     */
+    interface UiToggle {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
+         */
+        "label"?: string;
+        /**
+          * Device interaction mode. - read: Only read from device (display current state as colored circle) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
+          * @default 'readwrite'
+         */
+        "mode": 'read' | 'write' | 'readwrite';
+        /**
+          * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
+         */
+        "mqttHost"?: string;
+        /**
+          * MQTT topic path for MQTT protocol (e.g., "device/toggle")
+         */
+        "mqttTopic"?: string;
+        /**
+          * Function name to call when toggle state changes (for local control). User defines this function in their code, component will invoke it.
+          * @example "handleMyToggle"
+         */
+        "onChange"?: string;
+        /**
+          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
+          * @default 'http'
+         */
+        "protocol": 'http' | 'coap' | 'mqtt';
+        /**
+          * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
+          * @default 'default'
+         */
+        "state": 'active' | 'disabled' | 'default';
+        /**
+          * Direct URL of TD boolean properties to auto connect and interact with the device.
+          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" ```
+         */
+        "tdUrl"?: string;
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme": 'light' | 'dark';
+        /**
+          * Current value for local control mode (true/false, on/off, 1/0). When no td-url is provided and value is set, this controls the toggle state.
+          * @example "true", "false", "on", "off", "1", "0"
+         */
+        "value"?: string;
+        /**
+          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
+          * @default 'circle'
+         */
+        "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
+    }
+}
+export interface UiNumberPickerCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiNumberPickerElement;
+}
+export interface UiSliderCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiSliderElement;
+}
+export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiToggleElement;
 }
 declare global {
     interface HTMLUiHeadingElement extends Components.UiHeading, HTMLStencilElement {
@@ -17,16 +356,545 @@ declare global {
         prototype: HTMLUiHeadingElement;
         new (): HTMLUiHeadingElement;
     };
+    interface HTMLUiNumberPickerElementEventMap {
+        "valueChange": { value: number; label?: string };
+    }
+    /**
+     * Number picker component with various visual styles, TD integration and customizable range.
+     * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+     * @example Basic Usage
+     * ```html
+     * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+     * ```
+     * @example TD Integration with HTTP
+     * ```html
+     * <ui-number-picker 
+     * td-url="http://device.local/properties/volume"
+     * label="Device Volume"
+     * protocol="http"
+     * mode="readwrite"
+     * min="0"
+     * max="100">
+     * </ui-number-picker>
+     * ```
+     * @example TD Integration with MQTT
+     * ```html
+     * <ui-number-picker 
+     * td-url="mqtt://device"
+     * mqtt-host="localhost:1883"
+     * mqtt-topic="device/volume"
+     * label="MQTT Volume"
+     * protocol="mqtt"
+     * mode="readwrite">
+     * </ui-number-picker>
+     * ```
+     * @example TD Device Read-Only (shows value only)
+     * ```html
+     * <ui-number-picker 
+     * td-url="http://sensor.local/temperature"
+     * label="Temperature Sensor"
+     * mode="read">
+     * </ui-number-picker>
+     * ```
+     * @example Local Control with Custom Handler
+     * ```html
+     * <ui-number-picker 
+     * value="3"
+     * on-change="handleNumberChange"
+     * variant="filled"
+     * label="Custom Counter">
+     * </ui-number-picker>
+     * ```
+     * @example Event Handling
+     * ```javascript
+     * window.handleNumberChange = function(data) {
+     * console.log('Number changed:', data.value);
+     * console.log('Label:', data.label);
+     * // Your custom logic here
+     * };
+     * ```
+     */
+    interface HTMLUiNumberPickerElement extends Components.UiNumberPicker, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiNumberPickerElementEventMap>(type: K, listener: (this: HTMLUiNumberPickerElement, ev: UiNumberPickerCustomEvent<HTMLUiNumberPickerElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiNumberPickerElementEventMap>(type: K, listener: (this: HTMLUiNumberPickerElement, ev: UiNumberPickerCustomEvent<HTMLUiNumberPickerElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiNumberPickerElement: {
+        prototype: HTMLUiNumberPickerElement;
+        new (): HTMLUiNumberPickerElement;
+    };
+    interface HTMLUiSliderElementEventMap {
+        "valueChange": { value: number };
+    }
+    /**
+     * Slider component with various features, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-slider 
+     * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
+     * min="0" 
+     * max="100" 
+     * label="Device Brightness"
+     * enable-manual-control="true">
+     * </ui-slider>
+     * ```
+     */
+    interface HTMLUiSliderElement extends Components.UiSlider, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiSliderElementEventMap>(type: K, listener: (this: HTMLUiSliderElement, ev: UiSliderCustomEvent<HTMLUiSliderElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiSliderElementEventMap>(type: K, listener: (this: HTMLUiSliderElement, ev: UiSliderCustomEvent<HTMLUiSliderElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiSliderElement: {
+        prototype: HTMLUiSliderElement;
+        new (): HTMLUiSliderElement;
+    };
+    interface HTMLUiToggleElementEventMap {
+        "toggle": { active: boolean };
+    }
+    /**
+     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+     * ```
+     * @example TD Integration with HTTP
+     * ```html
+     * <ui-toggle 
+     * td-url="http://device.local/properties/power"
+     * label="Smart Light"
+     * protocol="http"
+     * mode="readwrite">
+     * </ui-toggle>
+     * ```
+     * @example TD Integration with MQTT
+     * ```html
+     * <ui-toggle 
+     * td-url="mqtt://device"
+     * mqtt-host="localhost:1883"
+     * mqtt-topic="device/toggle"
+     * label="MQTT Device"
+     * protocol="mqtt"
+     * mode="readwrite">
+     * </ui-toggle>
+     * ```
+     * @example TD Device Read-Only (shows colored circle)
+     * ```html
+     * <ui-toggle 
+     * td-url="http://sensor.local/status"
+     * label="Door Sensor"
+     * mode="read">
+     * </ui-toggle>
+     * ```
+     * @example Local Control with Custom Handler
+     * ```html
+     * <ui-toggle 
+     * value="true"
+     * on-change="myToggleHandler"
+     * label="Custom Toggle">
+     * </ui-toggle>
+     * ```
+     * @example User's JavaScript Handler
+     * ```javascript
+     * window.myToggleHandler = function(data) {
+     * console.log('Toggle changed:', data.active);
+     * console.log('New value:', data.value);
+     * console.log('Label:', data.label);
+     * // Your custom logic here
+     * };
+     * ```
+     * @example Event Handling
+     * ```javascript
+     * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
+     * console.log('Toggle state:', event.detail.active);
+     * // Your custom logic here
+     * });
+     * ```
+     */
+    interface HTMLUiToggleElement extends Components.UiToggle, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiToggleElement: {
+        prototype: HTMLUiToggleElement;
+        new (): HTMLUiToggleElement;
+    };
     interface HTMLElementTagNameMap {
         "ui-heading": HTMLUiHeadingElement;
+        "ui-number-picker": HTMLUiNumberPickerElement;
+        "ui-slider": HTMLUiSliderElement;
+        "ui-toggle": HTMLUiToggleElement;
     }
 }
 declare namespace LocalJSX {
     interface UiHeading {
         "text"?: string;
     }
+    /**
+     * Number picker component with various visual styles, TD integration and customizable range.
+     * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+     * @example Basic Usage
+     * ```html
+     * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+     * ```
+     * @example TD Integration with HTTP
+     * ```html
+     * <ui-number-picker 
+     * td-url="http://device.local/properties/volume"
+     * label="Device Volume"
+     * protocol="http"
+     * mode="readwrite"
+     * min="0"
+     * max="100">
+     * </ui-number-picker>
+     * ```
+     * @example TD Integration with MQTT
+     * ```html
+     * <ui-number-picker 
+     * td-url="mqtt://device"
+     * mqtt-host="localhost:1883"
+     * mqtt-topic="device/volume"
+     * label="MQTT Volume"
+     * protocol="mqtt"
+     * mode="readwrite">
+     * </ui-number-picker>
+     * ```
+     * @example TD Device Read-Only (shows value only)
+     * ```html
+     * <ui-number-picker 
+     * td-url="http://sensor.local/temperature"
+     * label="Temperature Sensor"
+     * mode="read">
+     * </ui-number-picker>
+     * ```
+     * @example Local Control with Custom Handler
+     * ```html
+     * <ui-number-picker 
+     * value="3"
+     * on-change="handleNumberChange"
+     * variant="filled"
+     * label="Custom Counter">
+     * </ui-number-picker>
+     * ```
+     * @example Event Handling
+     * ```javascript
+     * window.handleNumberChange = function(data) {
+     * console.log('Number changed:', data.value);
+     * console.log('Label:', data.label);
+     * // Your custom logic here
+     * };
+     * ```
+     */
+    interface UiNumberPicker {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label, to display above the number picker.
+         */
+        "label"?: string;
+        /**
+          * Maximum allowed value.
+          * @default 100
+         */
+        "max"?: number;
+        /**
+          * Minimum allowed value.
+          * @default 0
+         */
+        "min"?: number;
+        /**
+          * Device interaction mode. - read: Only read from device (display current value, no interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
+          * @default 'readwrite'
+         */
+        "mode"?: 'read' | 'write' | 'readwrite';
+        /**
+          * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
+         */
+        "mqttHost"?: string;
+        /**
+          * MQTT topic path for MQTT protocol (e.g., "device/volume")
+         */
+        "mqttTopic"?: string;
+        /**
+          * Function name to call when value changes. User defines this function in their code, component will invoke it.
+          * @example "handleNumberChange"
+         */
+        "onChange"?: string;
+        /**
+          * Event emitted when value changes
+         */
+        "onValueChange"?: (event: UiNumberPickerCustomEvent<{ value: number; label?: string }>) => void;
+        /**
+          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
+          * @default 'http'
+         */
+        "protocol"?: 'http' | 'coap' | 'mqtt';
+        /**
+          * Current state of the number picker. - active: Number picker is enabled (default) - disabled: Number picker cannot be interacted with
+          * @default 'active'
+         */
+        "state"?: 'active' | 'disabled';
+        /**
+          * Step increment/decrement amount.
+          * @default 1
+         */
+        "step"?: number;
+        /**
+          * Direct URL of TD number properties to auto connect and interact with the device.
+          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number" ```
+         */
+        "tdUrl"?: string;
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme"?: 'light' | 'dark';
+        /**
+          * Current value of the number picker (for local control mode). When no td-url is provided and value is set, this controls the picker state.
+          * @example 5, 10, 25
+          * @default 0
+         */
+        "value"?: number;
+        /**
+          * Visual style variant of the number picker. - minimal: Clean buttons with subtle background (default) - outlined: Buttons with border outline - filled: Solid filled buttons
+          * @default 'minimal'
+         */
+        "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Slider component with various features, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-slider 
+     * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
+     * min="0" 
+     * max="100" 
+     * label="Device Brightness"
+     * enable-manual-control="true">
+     * </ui-slider>
+     * ```
+     */
+    interface UiSlider {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Enable manual control interface.
+          * @default false
+         */
+        "enableManualControl"?: boolean;
+        /**
+          * Optional text label, to display text above the slider.
+         */
+        "label"?: string;
+        /**
+          * Maximum value of the slider.
+          * @default 100
+         */
+        "max"?: number;
+        /**
+          * Minimum value of the slider.
+          * @default 0
+         */
+        "min"?: number;
+        /**
+          * Event emitted when value changes
+         */
+        "onValueChange"?: (event: UiSliderCustomEvent<{ value: number }>) => void;
+        /**
+          * Current state of the slider. - disabled: Slider cannot be clicked or interacted with - default: Slider is interactive (default)
+          * @default 'default'
+         */
+        "state"?: 'disabled' | 'default';
+        /**
+          * Step increment for the slider.
+          * @default 1
+         */
+        "step"?: number;
+        /**
+          * Thing Description URL for device control.
+         */
+        "tdUrl"?: string;
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme"?: 'light' | 'dark';
+        /**
+          * Shape of the slider thumb. - circle: Round thumb (default) - square: Square thumb - arrow: Arrow-shaped thumb pointing right - triangle: Triangle-shaped thumb - diamond: Diamond-shaped thumb (<> style)
+          * @default 'circle'
+         */
+        "thumbShape"?: 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond';
+        /**
+          * Current value of the slider.
+          * @default 0
+         */
+        "value"?: number;
+        /**
+          * Visual style variant of the slider. - narrow: Thin slider track (default) - wide: Thick slider track - rainbow: Gradient color track - neon: Glowing effect - stepped: Shows step marks
+          * @default 'narrow'
+         */
+        "variant"?: 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
+    }
+    /**
+     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+     * ```
+     * @example TD Integration with HTTP
+     * ```html
+     * <ui-toggle 
+     * td-url="http://device.local/properties/power"
+     * label="Smart Light"
+     * protocol="http"
+     * mode="readwrite">
+     * </ui-toggle>
+     * ```
+     * @example TD Integration with MQTT
+     * ```html
+     * <ui-toggle 
+     * td-url="mqtt://device"
+     * mqtt-host="localhost:1883"
+     * mqtt-topic="device/toggle"
+     * label="MQTT Device"
+     * protocol="mqtt"
+     * mode="readwrite">
+     * </ui-toggle>
+     * ```
+     * @example TD Device Read-Only (shows colored circle)
+     * ```html
+     * <ui-toggle 
+     * td-url="http://sensor.local/status"
+     * label="Door Sensor"
+     * mode="read">
+     * </ui-toggle>
+     * ```
+     * @example Local Control with Custom Handler
+     * ```html
+     * <ui-toggle 
+     * value="true"
+     * on-change="myToggleHandler"
+     * label="Custom Toggle">
+     * </ui-toggle>
+     * ```
+     * @example User's JavaScript Handler
+     * ```javascript
+     * window.myToggleHandler = function(data) {
+     * console.log('Toggle changed:', data.active);
+     * console.log('New value:', data.value);
+     * console.log('Label:', data.label);
+     * // Your custom logic here
+     * };
+     * ```
+     * @example Event Handling
+     * ```javascript
+     * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
+     * console.log('Toggle state:', event.detail.active);
+     * // Your custom logic here
+     * });
+     * ```
+     */
+    interface UiToggle {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
+         */
+        "label"?: string;
+        /**
+          * Device interaction mode. - read: Only read from device (display current state as colored circle) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
+          * @default 'readwrite'
+         */
+        "mode"?: 'read' | 'write' | 'readwrite';
+        /**
+          * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
+         */
+        "mqttHost"?: string;
+        /**
+          * MQTT topic path for MQTT protocol (e.g., "device/toggle")
+         */
+        "mqttTopic"?: string;
+        /**
+          * Function name to call when toggle state changes (for local control). User defines this function in their code, component will invoke it.
+          * @example "handleMyToggle"
+         */
+        "onChange"?: string;
+        /**
+          * Event emitted when toggle state changes
+         */
+        "onToggle"?: (event: UiToggleCustomEvent<{ active: boolean }>) => void;
+        /**
+          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
+          * @default 'http'
+         */
+        "protocol"?: 'http' | 'coap' | 'mqtt';
+        /**
+          * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
+          * @default 'default'
+         */
+        "state"?: 'active' | 'disabled' | 'default';
+        /**
+          * Direct URL of TD boolean properties to auto connect and interact with the device.
+          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" ```
+         */
+        "tdUrl"?: string;
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme"?: 'light' | 'dark';
+        /**
+          * Current value for local control mode (true/false, on/off, 1/0). When no td-url is provided and value is set, this controls the toggle state.
+          * @example "true", "false", "on", "off", "1", "0"
+         */
+        "value"?: string;
+        /**
+          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
+          * @default 'circle'
+         */
+        "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
+    }
     interface IntrinsicElements {
         "ui-heading": UiHeading;
+        "ui-number-picker": UiNumberPicker;
+        "ui-slider": UiSlider;
+        "ui-toggle": UiToggle;
     }
 }
 export { LocalJSX as JSX };
@@ -34,6 +902,142 @@ declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
             "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
+            /**
+             * Number picker component with various visual styles, TD integration and customizable range.
+             * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+             * @example Basic Usage
+             * ```html
+             * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+             * ```
+             * @example TD Integration with HTTP
+             * ```html
+             * <ui-number-picker 
+             * td-url="http://device.local/properties/volume"
+             * label="Device Volume"
+             * protocol="http"
+             * mode="readwrite"
+             * min="0"
+             * max="100">
+             * </ui-number-picker>
+             * ```
+             * @example TD Integration with MQTT
+             * ```html
+             * <ui-number-picker 
+             * td-url="mqtt://device"
+             * mqtt-host="localhost:1883"
+             * mqtt-topic="device/volume"
+             * label="MQTT Volume"
+             * protocol="mqtt"
+             * mode="readwrite">
+             * </ui-number-picker>
+             * ```
+             * @example TD Device Read-Only (shows value only)
+             * ```html
+             * <ui-number-picker 
+             * td-url="http://sensor.local/temperature"
+             * label="Temperature Sensor"
+             * mode="read">
+             * </ui-number-picker>
+             * ```
+             * @example Local Control with Custom Handler
+             * ```html
+             * <ui-number-picker 
+             * value="3"
+             * on-change="handleNumberChange"
+             * variant="filled"
+             * label="Custom Counter">
+             * </ui-number-picker>
+             * ```
+             * @example Event Handling
+             * ```javascript
+             * window.handleNumberChange = function(data) {
+             * console.log('Number changed:', data.value);
+             * console.log('Label:', data.label);
+             * // Your custom logic here
+             * };
+             * ```
+             */
+            "ui-number-picker": LocalJSX.UiNumberPicker & JSXBase.HTMLAttributes<HTMLUiNumberPickerElement>;
+            /**
+             * Slider component with various features, multiple visual styles and TD integration.
+             * Link a direct property URL for plug-and-play device control.
+             * @example Basic Usage
+             * ```html
+             * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+             * ```
+             * @example TD Integration
+             * ```html
+             * <ui-slider 
+             * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
+             * min="0" 
+             * max="100" 
+             * label="Device Brightness"
+             * enable-manual-control="true">
+             * </ui-slider>
+             * ```
+             */
+            "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
+            /**
+             * Toogle switch component with various fetueres, multiple visual styles and TD integration.
+             * Link a direct property URL for plug-and-play device control.
+             * @example Basic Usage
+             * ```html
+             * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+             * ```
+             * @example TD Integration with HTTP
+             * ```html
+             * <ui-toggle 
+             * td-url="http://device.local/properties/power"
+             * label="Smart Light"
+             * protocol="http"
+             * mode="readwrite">
+             * </ui-toggle>
+             * ```
+             * @example TD Integration with MQTT
+             * ```html
+             * <ui-toggle 
+             * td-url="mqtt://device"
+             * mqtt-host="localhost:1883"
+             * mqtt-topic="device/toggle"
+             * label="MQTT Device"
+             * protocol="mqtt"
+             * mode="readwrite">
+             * </ui-toggle>
+             * ```
+             * @example TD Device Read-Only (shows colored circle)
+             * ```html
+             * <ui-toggle 
+             * td-url="http://sensor.local/status"
+             * label="Door Sensor"
+             * mode="read">
+             * </ui-toggle>
+             * ```
+             * @example Local Control with Custom Handler
+             * ```html
+             * <ui-toggle 
+             * value="true"
+             * on-change="myToggleHandler"
+             * label="Custom Toggle">
+             * </ui-toggle>
+             * ```
+             * @example User's JavaScript Handler
+             * ```javascript
+             * window.myToggleHandler = function(data) {
+             * console.log('Toggle changed:', data.active);
+             * console.log('New value:', data.value);
+             * console.log('Label:', data.label);
+             * // Your custom logic here
+             * };
+             * ```
+             * @example Event Handling
+             * ```javascript
+             * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
+             * console.log('Toggle state:', event.detail.active);
+             * // Your custom logic here
+             * });
+             * ```
+             */
+            "ui-toggle": LocalJSX.UiToggle & JSXBase.HTMLAttributes<HTMLUiToggleElement>;
         }
     }
 }
