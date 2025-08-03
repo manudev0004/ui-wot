@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WoT UI Components - Demo</title>
+  
+  <script type="module" src="./build/ui-wot-components.esm.js"></script>
+  <script nomodule src="./build/ui-wot-components.js"></script>
+  
+  <!-- Tailwind CSS for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#067362',
+            secondary: '#B84A91',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    /* Custom styles for better presentation */
+    .code-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      overflow-x: auto;
+      border: 1px solid #334155;
+    }
+    
+    .tag { color: #60a5fa; }
+    .attr { color: #c084fc; }
+    .string { color: #34d399; }
+    .comment { color: #fbbf24; }
+    .bracket { color: #94a3b8; }
+    
+    .demo-section {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .dark .demo-section {
+      background: #1f2937;
+      border-color: #374151;
+    }
+    
+    .component-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .component-example {
+      text-align: center;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      background: #f9fafb;
+    }
+    
+    .dark .component-example {
+      background: #111827;
+      border-color: #374151;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen font-sans transition-colors duration-300">
+  <!-- Header -->
+  <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">WoT UI Components</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-300">Web Components for IoT Device Integration</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-600 dark:text-gray-300">Light</span>
+        <ui-toggle id="theme-toggle" variant="apple" color="primary"></ui-toggle>
+        <span class="text-sm text-gray-600 dark:text-gray-300">Dark</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-6">
+    <section class="demo-section">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Getting Started</h2>
+      <p class="text-gray-600 dark:text-gray-300 mb-4">
+        Include the script and start using the components in any HTML page.
+      </p>
+      
+      <div class="code-block">
+        <span class="bracket">&lt;</span><span class="tag">script</span> <span class="attr">type</span><span class="bracket">=</span><span class="string">"module"</span> <span class="attr">src</span><span class="bracket">=</span><span class="string">"./build/ui-wot-components.esm.js"</span><span class="bracket">&gt;&lt;/</span><span class="tag">script</span><span class="bracket">&gt;</span><br>
+        <br>
+        <span class="bracket">&lt;</span><span class="tag">ui-number-picker</span> <span class="attr">value</span><span class="bracket">=</span><span class="string">"5"</span> <span class="attr">label</span><span class="bracket">=</span><span class="string">"Quantity"</span><span class="bracket">&gt;&lt;/</span><span class="tag">ui-number-picker</span><span class="bracket">&gt;</span><br>
+        <span class="bracket">&lt;</span><span class="tag">ui-toggle</span> <span class="attr">label</span><span class="bracket">=</span><span class="string">"Switch"</span><span class="bracket">&gt;&lt;/</span><span class="tag">ui-toggle</span><span class="bracket">&gt;</span><br>
+      </div>
+    </section>
+    <section class="demo-section">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Number Picker</h2>
+      
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Variants</h3>
+      <div class="component-grid">
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Minimal</h4>
+          <ui-number-picker variant="minimal" value="3" min="0" max="10" color="primary" label="Minimal Style"></ui-number-picker>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-number-picker</span><br>
+&nbsp;&nbsp;<span class="attr">variant</span><span class="bracket">=</span><span class="string">"minimal"</span><br>
+&nbsp;&nbsp;<span class="attr">value</span><span class="bracket">=</span><span class="string">"3"</span><br>
+&nbsp;&nbsp;<span class="attr">label</span><span class="bracket">=</span><span class="string">"Minimal Style"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-number-picker</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Outlined</h4>
+          <ui-number-picker variant="outlined" value="5" min="0" max="10" color="primary" label="Outlined Style"></ui-number-picker>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-number-picker</span><br>
+&nbsp;&nbsp;<span class="attr">variant</span><span class="bracket">=</span><span class="string">"outlined"</span><br>
+&nbsp;&nbsp;<span class="attr">value</span><span class="bracket">=</span><span class="string">"5"</span><br>
+&nbsp;&nbsp;<span class="attr">label</span><span class="bracket">=</span><span class="string">"Outlined Style"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-number-picker</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Filled</h4>
+          <ui-number-picker variant="filled" value="7" min="0" max="10" color="primary" label="Filled Style"></ui-number-picker>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-number-picker</span><br>
+&nbsp;&nbsp;<span class="attr">variant</span><span class="bracket">=</span><span class="string">"filled"</span><br>
+&nbsp;&nbsp;<span class="attr">value</span><span class="bracket">=</span><span class="string">"7"</span><br>
+&nbsp;&nbsp;<span class="attr">label</span><span class="bracket">=</span><span class="string">"Filled Style"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-number-picker</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Colors</h3>
+      <div class="component-grid">
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Primary Color</h4>
+          <div class="space-y-3">
+            <ui-number-picker variant="minimal" value="1" color="primary" label="Primary Minimal"></ui-number-picker>
+            <ui-number-picker variant="outlined" value="2" color="primary" label="Primary Outlined"></ui-number-picker>
+            <ui-number-picker variant="filled" value="3" color="primary" label="Primary Filled"></ui-number-picker>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Secondary Color</h4>
+          <div class="space-y-3">
+            <ui-number-picker variant="minimal" value="1" color="secondary" label="Secondary Minimal"></ui-number-picker>
+            <ui-number-picker variant="outlined" value="2" color="secondary" label="Secondary Outlined"></ui-number-picker>
+            <ui-number-picker variant="filled" value="3" color="secondary" label="Secondary Filled"></ui-number-picker>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Neutral Color</h4>
+          <div class="space-y-3">
+            <ui-number-picker variant="minimal" value="1" color="neutral" label="Neutral Minimal"></ui-number-picker>
+            <ui-number-picker variant="outlined" value="2" color="neutral" label="Neutral Outlined"></ui-number-picker>
+            <ui-number-picker variant="filled" value="3" color="neutral" label="Neutral Filled"></ui-number-picker>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Options</h3>
+      <div class="component-grid">
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">With Constraints</h4>
+          <ui-number-picker 
+            variant="outlined" 
+            value="5" 
+            min="0" 
+            max="10" 
+            step="1"
+            color="primary" 
+            label="Range: 0-10">
+          </ui-number-picker>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-number-picker</span><br>
+&nbsp;&nbsp;<span class="attr">min</span><span class="bracket">=</span><span class="string">"0"</span><br>
+&nbsp;&nbsp;<span class="attr">max</span><span class="bracket">=</span><span class="string">"10"</span><br>
+&nbsp;&nbsp;<span class="attr">step</span><span class="bracket">=</span><span class="string">"1"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-number-picker</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Disabled State</h4>
+          <ui-number-picker 
+            variant="filled" 
+            value="5" 
+            state="disabled"
+            color="primary" 
+            label="Disabled">
+          </ui-number-picker>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-number-picker</span><br>
+&nbsp;&nbsp;<span class="attr">state</span><span class="bracket">=</span><span class="string">"disabled"</span><br>
+&nbsp;&nbsp;<span class="attr">value</span><span class="bracket">=</span><span class="string">"5"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-number-picker</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Custom Step</h4>
+          <ui-number-picker 
+            variant="outlined" 
+            value="10" 
+            min="0" 
+            max="100" 
+            step="5"
+            color="secondary" 
+            label="Step: 5">
+          </ui-number-picker>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-number-picker</span><br>
+&nbsp;&nbsp;<span class="attr">step</span><span class="bracket">=</span><span class="string">"5"</span><br>
+&nbsp;&nbsp;<span class="attr">min</span><span class="bracket">=</span><span class="string">"0"</span><br>
+&nbsp;&nbsp;<span class="attr">max</span><span class="bracket">=</span><span class="string">"100"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-number-picker</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Toggle</h2>
+      
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Variants</h3>
+      <div class="component-grid">
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Circle (Default)</h4>
+          <ui-toggle variant="circle" label="Circle Toggle" color="primary"></ui-toggle>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-toggle</span><br>
+&nbsp;&nbsp;<span class="attr">variant</span><span class="bracket">=</span><span class="string">"circle"</span><br>
+&nbsp;&nbsp;<span class="attr">label</span><span class="bracket">=</span><span class="string">"Circle Toggle"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-toggle</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Square</h4>
+          <ui-toggle variant="square" label="Square Toggle" color="primary"></ui-toggle>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-toggle</span><br>
+&nbsp;&nbsp;<span class="attr">variant</span><span class="bracket">=</span><span class="string">"square"</span><br>
+&nbsp;&nbsp;<span class="attr">label</span><span class="bracket">=</span><span class="string">"Square Toggle"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-toggle</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Apple Style</h4>
+          <ui-toggle variant="apple" label="Apple Toggle" color="primary"></ui-toggle>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-toggle</span><br>
+&nbsp;&nbsp;<span class="attr">variant</span><span class="bracket">=</span><span class="string">"apple"</span><br>
+&nbsp;&nbsp;<span class="attr">label</span><span class="bracket">=</span><span class="string">"Apple Toggle"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-toggle</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Neon Style</h4>
+          <ui-toggle variant="neon" label="Neon Toggle" color="primary"></ui-toggle>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-toggle</span><br>
+&nbsp;&nbsp;<span class="attr">variant</span><span class="bracket">=</span><span class="string">"neon"</span><br>
+&nbsp;&nbsp;<span class="attr">label</span><span class="bracket">=</span><span class="string">"Neon Toggle"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-toggle</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Cross Style</h4>
+          <ui-toggle variant="cross" label="Cross Toggle" color="primary"></ui-toggle>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-toggle</span><br>
+&nbsp;&nbsp;<span class="attr">variant</span><span class="bracket">=</span><span class="string">"cross"</span><br>
+&nbsp;&nbsp;<span class="attr">label</span><span class="bracket">=</span><span class="string">"Cross Toggle"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-toggle</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Colors</h3>
+      <div class="component-grid">
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Primary Colors</h4>
+          <div class="flex gap-3 justify-center mb-3">
+            <ui-toggle color="primary" variant="circle"></ui-toggle>
+            <ui-toggle color="primary" variant="square"></ui-toggle>
+            <ui-toggle color="primary" variant="apple"></ui-toggle>
+            <ui-toggle color="primary" variant="neon"></ui-toggle>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Secondary Colors</h4>
+          <div class="flex gap-3 justify-center mb-3">
+            <ui-toggle color="secondary" variant="circle"></ui-toggle>
+            <ui-toggle color="secondary" variant="square"></ui-toggle>
+            <ui-toggle color="secondary" variant="apple"></ui-toggle>
+            <ui-toggle color="secondary" variant="neon"></ui-toggle>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Neutral Colors</h4>
+          <div class="flex gap-3 justify-center mb-3">
+            <ui-toggle color="neutral" variant="circle"></ui-toggle>
+            <ui-toggle color="neutral" variant="square"></ui-toggle>
+            <ui-toggle color="neutral" variant="apple"></ui-toggle>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Device Integration</h2>
+      
+      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+        <h3 class="text-blue-800 dark:text-blue-200 font-medium mb-2">Connect to IoT Devices</h3>
+        <p class="text-blue-700 dark:text-blue-300 text-sm">
+          Use Thing Description URLs to connect directly to devices via HTTP, CoAP, or MQTT.
+        </p>
+      </div>
+
+      <div class="component-grid">
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">HTTP Device</h4>
+          <ui-number-picker 
+            td-url="http://plugfest.thingweb.io:8080/http-data-schema-thing/properties/int"
+            protocol="http"
+            mode="readwrite"
+            variant="outlined"
+            color="primary"
+            label="HTTP Device"
+            min="0"
+            max="100">
+          </ui-number-picker>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-number-picker</span><br>
+&nbsp;&nbsp;<span class="attr">td-url</span><span class="bracket">=</span><span class="string">"http://device.local/temp"</span><br>
+&nbsp;&nbsp;<span class="attr">protocol</span><span class="bracket">=</span><span class="string">"http"</span><br>
+&nbsp;&nbsp;<span class="attr">mode</span><span class="bracket">=</span><span class="string">"readwrite"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-number-picker</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Read-Only Sensor</h4>
+          <ui-number-picker 
+            td-url="http://plugfest.thingweb.io:8080/http-data-schema-thing/properties/int"
+            protocol="http"
+            mode="read"
+            color="secondary"
+            label="Temperature Sensor">
+          </ui-number-picker>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-number-picker</span><br>
+&nbsp;&nbsp;<span class="attr">td-url</span><span class="bracket">=</span><span class="string">"http://sensor.local/temp"</span><br>
+&nbsp;&nbsp;<span class="attr">mode</span><span class="bracket">=</span><span class="string">"read"</span><br>
+&nbsp;&nbsp;<span class="attr">label</span><span class="bracket">=</span><span class="string">"Temperature"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-number-picker</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Toggle Device</h4>
+          <ui-toggle 
+            td-url="http://plugfest.thingweb.io:8080/http-data-schema-thing/properties/bool"
+            protocol="http"
+            mode="readwrite"
+            variant="neon"
+            color="primary"
+            label="Smart Light">
+          </ui-toggle>
+          <div class="code-block mt-3 text-left">
+<span class="bracket">&lt;</span><span class="tag">ui-toggle</span><br>
+&nbsp;&nbsp;<span class="attr">td-url</span><span class="bracket">=</span><span class="string">"http://light.local/power"</span><br>
+&nbsp;&nbsp;<span class="attr">protocol</span><span class="bracket">=</span><span class="string">"http"</span><br>
+&nbsp;&nbsp;<span class="attr">mode</span><span class="bracket">=</span><span class="string">"readwrite"</span><span class="bracket">&gt;</span><br>
+<span class="bracket">&lt;/</span><span class="tag">ui-toggle</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Custom Events</h2>
+      
+      <div class="component-grid">
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Number Picker with Callback</h4>
+          <ui-number-picker 
+            variant="filled"
+            value="5"
+            on-change="handleNumberChange"
+            color="primary"
+            label="Custom Handler">
+          </ui-number-picker>
+          <div id="number-output" class="mt-2 text-sm text-gray-600 dark:text-gray-300">Value: 5</div>
+          <div class="code-block mt-3 text-left">
+<span class="attr">window.handleNumberChange</span> = <span class="bracket">function(</span><span class="attr">data</span><span class="bracket">) {</span><br>
+&nbsp;&nbsp;<span class="attr">console.log</span><span class="bracket">(</span><span class="string">'Value:'</span>, <span class="attr">data.value</span><span class="bracket">);</span><br>
+<span class="bracket">};</span><br><br>
+<span class="bracket">&lt;</span><span class="tag">ui-number-picker</span><br>
+&nbsp;&nbsp;<span class="attr">on-change</span><span class="bracket">=</span><span class="string">"handleNumberChange"</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <h4 class="font-medium mb-3 text-gray-700 dark:text-gray-300">Toggle with Callback</h4>
+          <ui-toggle 
+            variant="apple"
+            on-change="handleToggleChange"
+            color="secondary"
+            label="Custom Handler">
+          </ui-toggle>
+          <div id="toggle-output" class="mt-2 text-sm text-gray-600 dark:text-gray-300">State: false</div>
+          <div class="code-block mt-3 text-left">
+<span class="attr">window.handleToggleChange</span> = <span class="bracket">function(</span><span class="attr">data</span><span class="bracket">) {</span><br>
+&nbsp;&nbsp;<span class="attr">console.log</span><span class="bracket">(</span><span class="string">'State:'</span>, <span class="attr">data.active</span><span class="bracket">);</span><br>
+<span class="bracket">};</span><br><br>
+<span class="bracket">&lt;</span><span class="tag">ui-toggle</span><br>
+&nbsp;&nbsp;<span class="attr">on-change</span><span class="bracket">=</span><span class="string">"handleToggleChange"</span><span class="bracket">&gt;</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-8 mt-12">
+    <div class="max-w-6xl mx-auto text-center">
+      <p class="text-gray-600 dark:text-gray-300">
+        WoT UI Components - Web Components for IoT
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    const themeToggle = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement;
+    
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    htmlElement.classList.toggle('dark', savedTheme === 'dark');
+    
+    function updateComponentsTheme(isDark) {
+      const theme = isDark ? 'dark' : 'light';
+      document.querySelectorAll('ui-number-picker, ui-toggle').forEach(component => {
+        component.theme = theme;
+      });
+    }
+    
+    updateComponentsTheme(savedTheme === 'dark');
+    if (savedTheme === 'dark') {
+      themeToggle.state = 'active';
+    }
+    
+    themeToggle.addEventListener('toggleChange', (event) => {
+      const isDark = event.detail.state;
+      htmlElement.classList.toggle('dark', isDark);
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      updateComponentsTheme(isDark);
+    });
+
+    window.handleNumberChange = function(data) {
+      console.log('Number changed:', data);
+      const output = document.getElementById('number-output');
+      if (output) {
+        output.textContent = `Value: ${data.value}`;
+      }
+    };
+
+    window.handleToggleChange = function(data) {
+      console.log('Toggle changed:', data);
+      const output = document.getElementById('toggle-output');
+      if (output) {
+        output.textContent = `State: ${data.active}`;
+      }
+    };
+  </script>
+</body>
+</html>

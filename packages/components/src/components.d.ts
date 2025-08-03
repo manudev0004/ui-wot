@@ -183,6 +183,11 @@ export namespace Components {
          */
         "min": number;
         /**
+          * Orientation of the slider. - horizontal: Left to right slider (default) - vertical: Bottom to top slider
+          * @default 'horizontal'
+         */
+        "orientation": 'horizontal' | 'vertical';
+        /**
           * Current state of the slider. - disabled: Slider cannot be clicked or interacted with - default: Slider is interactive (default)
           * @default 'default'
          */
@@ -732,6 +737,11 @@ declare namespace LocalJSX {
           * Event emitted when value changes
          */
         "onValueChange"?: (event: UiSliderCustomEvent<{ value: number }>) => void;
+        /**
+          * Orientation of the slider. - horizontal: Left to right slider (default) - vertical: Bottom to top slider
+          * @default 'horizontal'
+         */
+        "orientation"?: 'horizontal' | 'vertical';
         /**
           * Current state of the slider. - disabled: Slider cannot be clicked or interacted with - default: Slider is interactive (default)
           * @default 'default'

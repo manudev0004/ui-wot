@@ -536,6 +536,38 @@
           </div>
         </div>
 
+        <!-- Orientation -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Orientation</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Horizontal (Default)</h3>
+              <div class="space-y-4">
+                <ui-slider orientation="horizontal" variant="narrow" min="0" max="100" value="30" label="Narrow"></ui-slider>
+                <ui-slider orientation="horizontal" variant="wide" min="0" max="100" value="60" label="Wide"></ui-slider>
+                <ui-slider orientation="horizontal" variant="rainbow" min="0" max="360" value="180" label="Rainbow"></ui-slider>
+                <ui-slider orientation="horizontal" variant="stepped" min="0" max="20" step="5" value="15" label="Stepped"></ui-slider>
+              </div>
+              <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider 
+  orientation="horizontal"
+  variant="narrow"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Vertical</h3>
+              <div class="flex justify-around items-end h-80 pt-4">
+                <ui-slider orientation="vertical" variant="narrow" min="0" max="100" value="30" label="Narrow"></ui-slider>
+                <ui-slider orientation="vertical" variant="wide" min="0" max="100" value="60" label="Wide"></ui-slider>
+                <ui-slider orientation="vertical" variant="rainbow" min="0" max="360" value="180" label="Rainbow"></ui-slider>
+                <ui-slider orientation="vertical" variant="stepped" min="0" max="20" step="5" value="15" label="Stepped"></ui-slider>
+              </div>
+              <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider 
+  orientation="vertical"
+  variant="narrow"&gt;</pre>
+            </div>
+          </div>
+        </div>
+
         <!-- Slider Colors -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Slider Colors</h2>
