@@ -493,7 +493,7 @@ export class UiSlider {
     const percent = ((this.currentValue - this.min) / (this.max - this.min)) * 100;
 
     return (
-      <div class={isVertical ? 'flex flex-col items-center w-20' : 'w-full'}>
+      <div class={isVertical ? 'flex flex-col items-center w-24 mx-2' : 'w-full'}>
         {this.label && (
           <label
             class={`block text-sm font-medium ${isVertical ? 'mb-4 text-center' : 'mb-4'} ${isDisabled ? 'text-gray-400' : ''} ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
@@ -558,7 +558,7 @@ export class UiSlider {
         {/* Value labels for vertical - current value box and min at bottom */}
         {isVertical && (
           <div class={`flex flex-col items-center mt-6 space-y-4 text-xs ${this.theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-            <div class={`px-3 py-2 rounded-md text-center font-medium border ${this.theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`}>
+            <div class={`px-3 py-2 rounded-md text-center font-medium border min-w-12 ${this.theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`}>
               {this.currentValue}
             </div>
             <span class="mt-2">{this.min}</span>
