@@ -381,36 +381,6 @@
           </div>
         </div>
 
-        <!-- Advanced Features -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Advanced Features</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Range Control -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Range Control (Min: 0, Max: 10, Step: 2)</h3>
-              <ui-number-picker id="rangeCounter" variant="outlined" value="4" min="0" max="10" step="2" color="primary" label="Even Numbers Only"> </ui-number-picker>
-              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-number-picker
-  min="0" max="10" step="2"
-  variant="outlined"&gt;
-&lt;/ui-number-picker&gt;</pre>
-            </div>
-
-            <!-- Custom Function -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Custom Function Handler</h3>
-              <ui-number-picker id="customCounter" variant="filled" value="5" on-change="handleCounterChange" color="secondary" label="Custom Counter"> </ui-number-picker>
-              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-number-picker
-  on-change="handleCounterChange"
-  variant="filled"&gt;
-&lt;/ui-number-picker&gt;</pre>
-              <div class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                <div id="counterStatus" class="text-blue-800 dark:text-blue-200 font-mono">Current value: 5</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-       
         <!-- States -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Component States</h2>
@@ -442,27 +412,32 @@
 
       <!-- Slider Content -->
       <div id="slider-content" class="tab-content hidden">
-        <!-- Slider TD Integration -->
+        <!-- Slider Examples -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Protocol Support & Manual Control</h2>
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Slider Examples</h2>
           <div class="space-y-6 max-w-md">
             <ui-slider
-              td-base-url="http://plugfest.thingweb.io:80/http-data-schema-thing"
-              td-property="properties/num"
-              td-protocol="http"
+              td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number"
               min="0"
               max="100"
               variant="neon"
               color="primary"
-              label="HTTP Device"
+              label="Connected Device Slider"
+            >
+            </ui-slider>
+            <ui-slider
+              min="0"
+              max="100"
+              value="50"
+              variant="narrow"
+              color="secondary"
+              label="Local Control Slider"
             >
             </ui-slider>
             <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-slider
-  td-base-url="http://device.local"
-  td-property="properties/brightness"
-  td-protocol="http"
+  td-url="http://device.local/properties/value"
   variant="neon"
-  label="HTTP Device"&gt;
+  label="Connected Device"&gt;
 &lt;/ui-slider&gt;</pre>
           </div>
         </div>
@@ -573,11 +548,23 @@
 
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Vertical</h3>
-              <div class="flex justify-around items-end h-80 pt-4">
-                <ui-slider orientation="vertical" variant="narrow" min="0" max="100" value="30" label="Narrow"></ui-slider>
-                <ui-slider orientation="vertical" variant="wide" min="0" max="100" value="60" label="Wide"></ui-slider>
-                <ui-slider orientation="vertical" variant="rainbow" min="0" max="360" value="180" label="Rainbow"></ui-slider>
-                <ui-slider orientation="vertical" variant="stepped" min="0" max="20" step="5" value="15" label="Stepped"></ui-slider>
+              <div class="flex justify-around items-start h-80 pt-4 pb-8">
+                <div class="flex flex-col items-center">
+                  <ui-slider orientation="vertical" variant="narrow" min="0" max="100" value="30" label=""></ui-slider>
+                  <span class="text-xs text-gray-600 dark:text-gray-400 mt-2">Narrow</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <ui-slider orientation="vertical" variant="wide" min="0" max="100" value="60" label=""></ui-slider>
+                  <span class="text-xs text-gray-600 dark:text-gray-400 mt-2">Wide</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <ui-slider orientation="vertical" variant="rainbow" min="0" max="360" value="180" label=""></ui-slider>
+                  <span class="text-xs text-gray-600 dark:text-gray-400 mt-2">Rainbow</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <ui-slider orientation="vertical" variant="stepped" min="0" max="20" step="5" value="15" label=""></ui-slider>
+                  <span class="text-xs text-gray-600 dark:text-gray-400 mt-2">Stepped</span>
+                </div>
               </div>
               <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider 
   orientation="vertical"
@@ -748,37 +735,6 @@
           </div>
         </div>
 
-        <!-- Interactive Examples -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Interactive Examples</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Custom Handler -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Custom Click Handler</h3>
-              <ui-button id="customButton" variant="filled" on-click="handleButtonClick" color="secondary" label="Click Me!"></ui-button>
-              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-button
-  on-click="handleButtonClick"
-  variant="filled"&gt;
-&lt;/ui-button&gt;</pre>
-              <div class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                <div id="buttonStatus" class="text-blue-800 dark:text-blue-200 font-mono">Click the button to see the event!</div>
-              </div>
-            </div>
-
-            <!-- Different Labels -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Different Labels</h3>
-              <div class="space-y-3 flex flex-col items-start">
-                <ui-button variant="outlined" color="primary" label="Save Changes"></ui-button>
-                <ui-button variant="filled" color="secondary" label="Delete Item"></ui-button>
-                <ui-button variant="minimal" color="neutral" label="Cancel"></ui-button>
-              </div>
-              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-button 
-  label="Save Changes"&gt;
-&lt;/ui-button&gt;</pre>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- Checkbox Content -->
@@ -921,136 +877,81 @@
           </div>
         </div>
 
-        <!-- Interactive Examples -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Interactive Examples</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Custom Handler -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Custom Change Handler</h3>
-              <ui-checkbox id="customCheckbox" variant="filled" on-change="handleCheckboxChange" color="secondary" label="Toggle me!"></ui-checkbox>
-              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-checkbox
-  on-change="handleCheckboxChange"
-  variant="filled"&gt;
-&lt;/ui-checkbox&gt;</pre>
-              <div class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                <div id="checkboxStatus" class="text-blue-800 dark:text-blue-200 font-mono">Status: Unchecked</div>
-              </div>
-            </div>
+        </div>
+      </div>
 
-            <!-- Different Use Cases -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Common Use Cases</h3>
-              <div class="space-y-3 flex flex-col items-start">
-                <ui-checkbox variant="outlined" color="primary" label="I agree to the terms and conditions"></ui-checkbox>
-                <ui-checkbox variant="filled" color="secondary" label="Subscribe to newsletter"></ui-checkbox>
-                <ui-checkbox variant="minimal" color="neutral" label="Remember me"></ui-checkbox>
-                <ui-checkbox variant="outlined" color="primary" label="Enable notifications" checked></ui-checkbox>
-              </div>
-              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-checkbox 
-  label="I agree to terms"&gt;
-&lt;/ui-checkbox&gt;</pre>
+      <!-- Thing Description Integration -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Thing Description Integration</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Working Components -->
+          <div>
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Connected Device Controls</h3>
+            <div class="space-y-3">
+              <ui-slider 
+                td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number"
+                min="0" 
+                max="100" 
+                label="Device Value"
+                variant="neon"
+                color="primary">
+              </ui-slider>
+              <ui-number-picker 
+                td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number"
+                label="Number Control"
+                protocol="http"
+                mode="readwrite"
+                min="0"
+                max="100">
+              </ui-number-picker>
+              <ui-checkbox 
+                td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
+                label="Boolean Property"
+                variant="filled"
+                color="primary">
+              </ui-checkbox>
+              <ui-button 
+                td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/actions/reset"
+                action-data='"default"'
+                label="Reset Action"
+                variant="filled"
+                color="primary">
+              </ui-button>
+            </div>
+          </div>
+
+          <!-- Local Controls -->
+          <div>
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Local Controls</h3>
+            <div class="space-y-3">
+              <ui-slider 
+                min="0" 
+                max="100" 
+                value="50"
+                label="Local Slider"
+                variant="narrow"
+                color="secondary">
+              </ui-slider>
+              <ui-number-picker 
+                value="25"
+                label="Local Counter"
+                min="0"
+                max="100">
+              </ui-number-picker>
+              <ui-checkbox 
+                label="Local Checkbox"
+                variant="outlined"
+                color="secondary">
+              </ui-checkbox>
+              <ui-button 
+                label="Local Button"
+                variant="outlined"
+                color="secondary">
+              </ui-button>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Error Handling & Status Indicators Demo -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Error Handling & Status Indicators</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Working Device Example -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Working Device (Success Indicators)</h3>
-              <div class="space-y-3">
-                <ui-slider 
-                  td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number"
-                  min="0" 
-                  max="100" 
-                  label="Working Slider"
-                  variant="neon"
-                  color="primary">
-                </ui-slider>
-                <ui-number-picker 
-                  td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number"
-                  label="Working Number Picker"
-                  protocol="http"
-                  mode="readwrite"
-                  min="0"
-                  max="100">
-                </ui-number-picker>
-                <ui-button 
-                  td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/actions/reset"
-                  action-data='"default"'
-                  label="Working Action Button"
-                  variant="filled"
-                  color="primary">
-                </ui-button>
-                <ui-checkbox 
-                  td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
-                  label="Working Checkbox"
-                  variant="filled"
-                  color="primary">
-                </ui-checkbox>
-              </div>
-              <div class="mt-3 p-3 bg-green-50 dark:bg-green-900 rounded-lg border border-green-200 dark:border-green-700">
-                <p class="text-sm text-green-800 dark:text-green-200">✓ These components show success indicators (green checkmark) when operations complete successfully.</p>
-              </div>
-            </div>
-
-            <!-- Failed Device Example -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Offline Device (Error Indicators)</h3>
-              <div class="space-y-3">
-                <ui-slider 
-                  td-url="http://nonexistent-device.local:8080/properties/brightness"
-                  min="0" 
-                  max="100" 
-                  label="Offline Slider"
-                  variant="rainbow"
-                  color="secondary">
-                </ui-slider>
-                <ui-number-picker 
-                  td-url="http://nonexistent-device.local:8080/properties/volume"
-                  label="Offline Number Picker"
-                  protocol="http"
-                  mode="readwrite"
-                  min="0"
-                  max="100">
-                </ui-number-picker>
-                <ui-button 
-                  td-url="http://nonexistent-device.local:8080/actions/power"
-                  action-data='{"state": "on"}'
-                  label="Failed Action Button"
-                  variant="outlined"
-                  color="secondary">
-                </ui-button>
-                <ui-checkbox 
-                  td-url="http://nonexistent-device.local:8080/properties/enabled"
-                  label="Offline Checkbox"
-                  variant="outlined"
-                  color="secondary">
-                </ui-checkbox>
-              </div>
-              <div class="mt-3 p-3 bg-red-50 dark:bg-red-900 rounded-lg border border-red-200 dark:border-red-700">
-                <p class="text-sm text-red-800 dark:text-red-200">✕ These components show error indicators (red X) when operations fail and automatically revert changes.</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Error Handling Features -->
-          <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-700">
-            <h3 class="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">🛡️ Robust Error Handling Features</h3>
-            <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-              <li>• <strong>Automatic Retry:</strong> Failed operations are retried with exponential backoff</li>
-              <li>• <strong>Value Confirmation:</strong> Write operations are confirmed by reading back the value</li>
-              <li>• <strong>State Reversion:</strong> UI automatically reverts to previous state on write failures</li>
-              <li>• <strong>Visual Feedback:</strong> Status indicators show loading, success, and error states</li>
-              <li>• <strong>Timeout Handling:</strong> Operations timeout after 5 seconds to prevent hanging</li>
-              <li>• <strong>User-Friendly Messages:</strong> Clear error descriptions for different failure types</li>
-            </ul>
-          </div>
-        </div>
     </div>
 
       <!-- Text Content -->
@@ -1098,34 +999,30 @@ Features:
             </div>
           </div>
 
-          <!-- Error Handling Demo -->
-          <div class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900 rounded-lg border border-yellow-200 dark:border-yellow-700">
-            <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">🔄 Error Handling Demo</h3>
+          <!-- Local Text Controls -->
+          <div class="mt-6">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Local Text Controls</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ui-text
-                id="demo-text-success"
+                id="local-text-single"
                 variant="edit"
                 text-type="single"
-                label="Simulated Success"
-                placeholder="Type here for success feedback"
-                value="Success example"
-                td-url="mock://success"
+                label="Local Single Line"
+                placeholder="Enter text here"
+                value="Local example"
                 change-handler="handleTextChange"
               ></ui-text>
               <ui-text
-                id="demo-text-error"
+                id="local-text-multi"
                 variant="edit"
-                text-type="single"
-                label="Simulated Error"
-                placeholder="Type here for error feedback"
-                value="Error example"
-                td-url="mock://error"
+                text-type="multi"
+                label="Local Multi Line"
+                placeholder="Enter multi-line text..."
+                value="Local multi-line example"
+                rows="3"
                 change-handler="handleTextChange"
               ></ui-text>
             </div>
-            <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-2">
-              First field simulates successful operations, second simulates failures with automatic retry and state reversion.
-            </p>
           </div>
         </div>
 
@@ -1437,23 +1334,21 @@ For support, visit [our website](https://example.com/support) or call **1-800-SU
                 <li><code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">textChange</code>: Emitted on value change</li>
                 <li><code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">change-handler</code>: Custom callback function</li>
                 <li>📊 Character/line counting in edit mode</li>
-                <li>🔄 Loading/success/error status indicators</li>
+                <li>✅ Success/error status indicators</li>
                 <li>⚡ Real-time validation and feedback</li>
-                <li>🛡️ Error handling with automatic retry</li>
+                <li>🎨 Consistent visual feedback design</li>
               </ul>
             </div>
           </div>
 
-          <!-- Error Handling Features -->
+          <!-- Error Handling -->
           <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-700">
-            <h3 class="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">🛡️ Robust Error Handling Features</h3>
+            <h3 class="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">✅ Simple Error Handling</h3>
             <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-              <li>• <strong>Automatic Retry:</strong> Failed operations are retried with exponential backoff</li>
-              <li>• <strong>Value Confirmation:</strong> Write operations are confirmed by reading back the value</li>
-              <li>• <strong>State Reversion:</strong> UI automatically reverts to previous state on write failures</li>
-              <li>• <strong>Visual Feedback:</strong> Status indicators show loading, success, and error states</li>
-              <li>• <strong>Timeout Handling:</strong> Operations timeout after 5 seconds to prevent hanging</li>
-              <li>• <strong>User-Friendly Messages:</strong> Clear error descriptions for different failure types</li>
+              <li>• <strong>Success Feedback:</strong> Green checkmark appears on successful operations</li>
+              <li>• <strong>Error Messages:</strong> Clear error text appears below component on failure</li>
+              <li>• <strong>User-Friendly:</strong> Simple status indicators without complex state management</li>
+              <li>• <strong>Consistent Design:</strong> All components use the same error/success pattern</li>
             </ul>
           </div>
         </div>
@@ -1515,70 +1410,7 @@ For support, visit [our website](https://example.com/support) or call **1-800-SU
         logEvent('Fan Toggle', data);
       };
 
-      // Number picker custom handler
-      window.handleCounterChange = function (data) {
-        logEvent('Counter Change', data);
-        const statusElement = document.getElementById('counterStatus');
-        if (statusElement) {
-          statusElement.textContent = `Current value: ${data.value}`;
-        }
-      };
-
-      // Button custom handler
-      window.handleButtonClick = function (data) {
-        logEvent('Button Click', data);
-        const statusElement = document.getElementById('buttonStatus');
-        if (statusElement) {
-          statusElement.textContent = 'Button was clicked at ' + new Date().toLocaleTimeString();
-        }
-      };
-
-      // Checkbox custom handler
-      window.handleCheckboxChange = function (data) {
-        logEvent('Checkbox Change', data);
-        const statusElement = document.getElementById('checkboxStatus');
-        if (statusElement) {
-          statusElement.textContent = `Status: ${data.checked ? 'Checked' : 'Unchecked'}`;
-        }
-      };
-
-      // Button click handler
-      window.handleButtonClick = function (data) {
-        logEvent('Button Click', data);
-        const statusElement = document.getElementById('buttonStatus');
-        if (statusElement) {
-          statusElement.textContent = `Button clicked!`;
-        }
-      };
-
-      // Checkbox change handler
-      window.handleCheckboxChange = function (data) {
-        logEvent('Checkbox Change', data);
-        const statusElement = document.getElementById('checkboxStatus');
-        if (statusElement) {
-          statusElement.textContent = `Status: ${data.checked ? 'Checked' : 'Unchecked'}`;
-        }
-      };
-
-      // Button custom handler
-      window.handleButtonClick = function (data) {
-        logEvent('Button Click', data);
-        const statusElement = document.getElementById('buttonStatus');
-        if (statusElement) {
-          statusElement.textContent = `Button clicked at ${new Date().toLocaleTimeString()}!`;
-        }
-      };
-
-      // Checkbox custom handler
-      window.handleCheckboxChange = function (data) {
-        logEvent('Checkbox Change', data);
-        const statusElement = document.getElementById('checkboxStatus');
-        if (statusElement) {
-          statusElement.textContent = `Status: ${data.checked ? 'Checked' : 'Unchecked'}`;
-        }
-      };
-
-      // Text custom handler
+      // Text change handler
       window.handleTextChange = function (data) {
         logEvent('Text Change', data);
         console.log('Text component value changed:', data.value);

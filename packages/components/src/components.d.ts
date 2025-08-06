@@ -332,8 +332,9 @@ export namespace Components {
         "variant": 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
     /**
-     * Simple text component for displaying and editing text data.
-     * Supports single-line input and multi-line textarea with Thing Description integration.
+     * Comprehensive text component for displaying and editing text data.
+     * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
+     * expandable content, and Thing Description integration.
      * @example Basic Text Display
      * ```html
      * <ui-text variant="display" value="Hello World"></ui-text>
@@ -349,6 +350,15 @@ export namespace Components {
      * text-type="multi" 
      * value="Line 1\nLine 2" 
      * label="Description">
+     * </ui-text>
+     * ```
+     * @example Structured Text with Highlighting
+     * ```html
+     * <ui-text 
+     * variant="display" 
+     * text-type="multi" 
+     * structure="json" 
+     * value='{"key": "value"}'>
      * </ui-text>
      * ```
      * @example TD Integration
@@ -371,9 +381,19 @@ export namespace Components {
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
+          * Enable expandable/collapsible display for long text.
+          * @default false
+         */
+        "expandable": boolean;
+        /**
           * Optional text label for the component.
          */
         "label"?: string;
+        /**
+          * Maximum height before showing expand/collapse controls (in pixels).
+          * @default 200
+         */
+        "maxHeight": number;
         /**
           * Maximum length for text input (edit mode only).
          */
@@ -382,6 +402,11 @@ export namespace Components {
           * Placeholder text for edit mode.
          */
         "placeholder"?: string;
+        /**
+          * Whether the text area should be resizable (edit mode only).
+          * @default false
+         */
+        "resizable": boolean;
         /**
           * Number of rows for multi-line text area.
           * @default 4
@@ -392,6 +417,11 @@ export namespace Components {
           * @default 'default'
          */
         "state": 'disabled' | 'active' | 'default';
+        /**
+          * Structure type for syntax highlighting in display mode. - unstructured: Plain text (default) - json: JSON syntax highlighting - yaml: YAML syntax highlighting - xml: XML syntax highlighting - markdown: Markdown syntax highlighting
+          * @default 'unstructured'
+         */
+        "structure": 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown';
         /**
           * Thing Description URL for property control.
          */
@@ -740,8 +770,9 @@ declare global {
         "textChange": { value: string };
     }
     /**
-     * Simple text component for displaying and editing text data.
-     * Supports single-line input and multi-line textarea with Thing Description integration.
+     * Comprehensive text component for displaying and editing text data.
+     * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
+     * expandable content, and Thing Description integration.
      * @example Basic Text Display
      * ```html
      * <ui-text variant="display" value="Hello World"></ui-text>
@@ -757,6 +788,15 @@ declare global {
      * text-type="multi" 
      * value="Line 1\nLine 2" 
      * label="Description">
+     * </ui-text>
+     * ```
+     * @example Structured Text with Highlighting
+     * ```html
+     * <ui-text 
+     * variant="display" 
+     * text-type="multi" 
+     * structure="json" 
+     * value='{"key": "value"}'>
      * </ui-text>
      * ```
      * @example TD Integration
@@ -1212,8 +1252,9 @@ declare namespace LocalJSX {
         "variant"?: 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
     /**
-     * Simple text component for displaying and editing text data.
-     * Supports single-line input and multi-line textarea with Thing Description integration.
+     * Comprehensive text component for displaying and editing text data.
+     * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
+     * expandable content, and Thing Description integration.
      * @example Basic Text Display
      * ```html
      * <ui-text variant="display" value="Hello World"></ui-text>
@@ -1229,6 +1270,15 @@ declare namespace LocalJSX {
      * text-type="multi" 
      * value="Line 1\nLine 2" 
      * label="Description">
+     * </ui-text>
+     * ```
+     * @example Structured Text with Highlighting
+     * ```html
+     * <ui-text 
+     * variant="display" 
+     * text-type="multi" 
+     * structure="json" 
+     * value='{"key": "value"}'>
      * </ui-text>
      * ```
      * @example TD Integration
@@ -1251,9 +1301,19 @@ declare namespace LocalJSX {
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
+          * Enable expandable/collapsible display for long text.
+          * @default false
+         */
+        "expandable"?: boolean;
+        /**
           * Optional text label for the component.
          */
         "label"?: string;
+        /**
+          * Maximum height before showing expand/collapse controls (in pixels).
+          * @default 200
+         */
+        "maxHeight"?: number;
         /**
           * Maximum length for text input (edit mode only).
          */
@@ -1267,6 +1327,11 @@ declare namespace LocalJSX {
          */
         "placeholder"?: string;
         /**
+          * Whether the text area should be resizable (edit mode only).
+          * @default false
+         */
+        "resizable"?: boolean;
+        /**
           * Number of rows for multi-line text area.
           * @default 4
          */
@@ -1276,6 +1341,11 @@ declare namespace LocalJSX {
           * @default 'default'
          */
         "state"?: 'disabled' | 'active' | 'default';
+        /**
+          * Structure type for syntax highlighting in display mode. - unstructured: Plain text (default) - json: JSON syntax highlighting - yaml: YAML syntax highlighting - xml: XML syntax highlighting - markdown: Markdown syntax highlighting
+          * @default 'unstructured'
+         */
+        "structure"?: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown';
         /**
           * Thing Description URL for property control.
          */
@@ -1544,8 +1614,9 @@ declare module "@stencil/core" {
              */
             "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
             /**
-             * Simple text component for displaying and editing text data.
-             * Supports single-line input and multi-line textarea with Thing Description integration.
+             * Comprehensive text component for displaying and editing text data.
+             * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
+             * expandable content, and Thing Description integration.
              * @example Basic Text Display
              * ```html
              * <ui-text variant="display" value="Hello World"></ui-text>
@@ -1561,6 +1632,15 @@ declare module "@stencil/core" {
              * text-type="multi" 
              * value="Line 1\nLine 2" 
              * label="Description">
+             * </ui-text>
+             * ```
+             * @example Structured Text with Highlighting
+             * ```html
+             * <ui-text 
+             * variant="display" 
+             * text-type="multi" 
+             * structure="json" 
+             * value='{"key": "value"}'>
              * </ui-text>
              * ```
              * @example TD Integration

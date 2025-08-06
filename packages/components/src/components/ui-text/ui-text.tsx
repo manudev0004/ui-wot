@@ -2,8 +2,9 @@ import { Component, Prop, State, h, Event, EventEmitter, Watch } from '@stencil/
 import { DataHandler } from '../../utils/data-handler';
 
 /**
- * Simple text component for displaying and editing text data.
- * Supports single-line input and multi-line textarea with Thing Description integration.
+ * Comprehensive text component for displaying and editing text data.
+ * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
+ * expandable content, and Thing Description integration.
  * 
  * @example Basic Text Display
  * ```html
@@ -22,6 +23,16 @@ import { DataHandler } from '../../utils/data-handler';
  *   text-type="multi" 
  *   value="Line 1\nLine 2" 
  *   label="Description">
+ * </ui-text>
+ * ```
+ * 
+ * @example Structured Text with Highlighting
+ * ```html
+ * <ui-text 
+ *   variant="display" 
+ *   text-type="multi" 
+ *   structure="json" 
+ *   value='{"key": "value"}'>
  * </ui-text>
  * ```
  * 
@@ -52,6 +63,31 @@ export class UiText {
    * - multi: Multi-line text area
    */
   @Prop() textType: 'single' | 'multi' = 'single';
+
+  /**
+   * Structure type for syntax highlighting in display mode.
+   * - unstructured: Plain text (default)
+   * - json: JSON syntax highlighting
+   * - yaml: YAML syntax highlighting
+   * - xml: XML syntax highlighting
+   * - markdown: Markdown syntax highlighting
+   */
+  @Prop() structure: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown' = 'unstructured';
+
+  /**
+   * Whether the text area should be resizable (edit mode only).
+   */
+  @Prop() resizable: boolean = false;
+
+  /**
+   * Enable expandable/collapsible display for long text.
+   */
+  @Prop() expandable: boolean = false;
+
+  /**
+   * Maximum height before showing expand/collapse controls (in pixels).
+   */
+  @Prop() maxHeight: number = 200;
 
   /**
    * Current state of the text component.
@@ -117,6 +153,11 @@ export class UiText {
    * Last error message.
    */
   @State() errorMessage?: string;
+
+  /**
+   * Whether expandable text is currently expanded.
+   */
+  @State() isExpanded: boolean = false;
 
   /**
    * Event emitted when text value changes.
@@ -316,6 +357,84 @@ export class UiText {
     return classes;
   }
 
+  private highlightSyntax(text: string, structure: string): string {
+    if (structure === 'unstructured' || !text) {
+      return text;
+    }
+
+    try {
+      switch (structure) {
+        case 'json':
+          return this.highlightJson(text);
+        case 'yaml':
+          return this.highlightYaml(text);
+        case 'xml':
+          return this.highlightXml(text);
+        case 'markdown':
+          return this.highlightMarkdown(text);
+        default:
+          return text;
+      }
+    } catch (error) {
+      console.warn('Syntax highlighting failed:', error);
+      return text;
+    }
+  }
+
+  private highlightJson(text: string): string {
+    // Basic JSON highlighting
+    return text
+      .replace(/"([^"]+)":/g, '<span style="color: #0066cc; font-weight: 500;">"$1"</span>:')
+      .replace(/:\s*"([^"]+)"/g, ': <span style="color: #008000;">"$1"</span>')
+      .replace(/:\s*(\d+(?:\.\d+)?)/g, ': <span style="color: #ff6600;">$1</span>')
+      .replace(/:\s*(true|false|null)/g, ': <span style="color: #cc0066;">$1</span>')
+      .replace(/([{}[\],])/g, '<span style="color: #666;">$1</span>');
+  }
+
+  private highlightYaml(text: string): string {
+    // Basic YAML highlighting
+    return text
+      .replace(/^(\s*)([a-zA-Z_][a-zA-Z0-9_]*):(?=\s|$)/gm, '$1<span style="color: #0066cc; font-weight: 500;">$2</span>:')
+      .replace(/:\s*'([^']+)'/g, ': <span style="color: #008000;">\'$1\'</span>')
+      .replace(/:\s*"([^"]+)"/g, ': <span style="color: #008000;">"$1"</span>')
+      .replace(/:\s*(\d+(?:\.\d+)?)/g, ': <span style="color: #ff6600;">$1</span>')
+      .replace(/:\s*(true|false|null|enabled|disabled)/g, ': <span style="color: #cc0066;">$1</span>')
+      .replace(/^\s*#.*$/gm, '<span style="color: #999; font-style: italic;">$&</span>');
+  }
+
+  private highlightXml(text: string): string {
+    // Basic XML highlighting
+    return text
+      .replace(/(&lt;\/?)([a-zA-Z0-9_-]+)([^&]*?)(&gt;)/g, '<span style="color: #666;">$1</span><span style="color: #0066cc; font-weight: 500;">$2</span><span style="color: #cc0066;">$3</span><span style="color: #666;">$4</span>')
+      .replace(/(<\/?)([a-zA-Z0-9_-]+)([^>]*?)(>)/g, '<span style="color: #666;">$1</span><span style="color: #0066cc; font-weight: 500;">$2</span><span style="color: #cc0066;">$3</span><span style="color: #666;">$4</span>')
+      .replace(/([a-zA-Z0-9_-]+)="([^"]+)"/g, '<span style="color: #cc0066;">$1</span>=<span style="color: #008000;">"$2"</span>');
+  }
+
+  private highlightMarkdown(text: string): string {
+    // Basic Markdown highlighting
+    return text
+      .replace(/^(#{1,6})\s+(.+)$/gm, '<span style="color: #0066cc; font-weight: bold;">$1</span> <span style="color: #333; font-weight: 600;">$2</span>')
+      .replace(/\*\*([^*]+)\*\*/g, '<span style="font-weight: bold; color: #333;">$1</span>')
+      .replace(/\*([^*]+)\*/g, '<span style="font-style: italic; color: #666;">$1</span>')
+      .replace(/`([^`]+)`/g, '<span style="background: #f5f5f5; color: #cc0066; padding: 1px 3px; border-radius: 3px; font-family: monospace;">$1</span>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<span style="color: #0066cc; text-decoration: underline;">$1</span>')
+      .replace(/^(\s*[-*+]|\s*\d+\.)\s+/gm, '<span style="color: #666; font-weight: 500;">$1</span> ')
+      .replace(/^>\s+(.+)$/gm, '<span style="border-left: 3px solid #ddd; padding-left: 8px; color: #666; font-style: italic;">$1</span>');
+  }
+
+  private shouldShowExpandButton(): boolean {
+    if (!this.expandable || this.textType === 'single') return false;
+    
+    // Check if content exceeds maxHeight (rough estimation)
+    const lines = this.currentValue.split('\n').length;
+    const estimatedHeight = lines * 20; // Rough estimation of line height
+    return estimatedHeight > this.maxHeight;
+  }
+
+  private toggleExpand = () => {
+    this.isExpanded = !this.isExpanded;
+  };
+
   render() {
     const containerStyles = this.getContainerStyles();
     const inputStyles = this.getInputStyles();
@@ -360,7 +479,7 @@ export class UiText {
               />
             ) : (
               <textarea
-                class={`${inputStyles} resize-vertical`}
+                class={`${inputStyles} ${this.resizable ? 'resize-vertical' : 'resize-none'}`}
                 value={this.currentValue}
                 placeholder={this.placeholder}
                 maxLength={this.maxLength}
@@ -376,11 +495,38 @@ export class UiText {
               {this.textType === 'single' ? (
                 <span class="block truncate">{this.currentValue || '\u00A0'}</span>
               ) : (
-                <pre class="whitespace-pre-wrap m-0 font-sans text-sm overflow-auto">
-                  {this.currentValue || '\u00A0'}
-                </pre>
+                <div
+                  class={`overflow-auto ${this.expandable && !this.isExpanded ? 'max-h-48' : ''}`}
+                  style={this.expandable && !this.isExpanded ? { maxHeight: `${this.maxHeight}px` } : {}}
+                >
+                  {this.structure === 'unstructured' ? (
+                    <pre class="whitespace-pre-wrap m-0 font-sans text-sm">
+                      {this.currentValue || '\u00A0'}
+                    </pre>
+                  ) : (
+                    <pre 
+                      class="whitespace-pre-wrap m-0 font-mono text-sm"
+                      innerHTML={this.highlightSyntax(this.currentValue || '\u00A0', this.structure)}
+                    ></pre>
+                  )}
+                </div>
               )}
             </div>
+          )}
+
+          {/* Expand/Collapse Button */}
+          {this.shouldShowExpandButton() && (
+            <button
+              type="button"
+              class={`mt-2 text-xs font-medium transition-colors ${
+                this.theme === 'dark'
+                  ? 'text-blue-400 hover:text-blue-300'
+                  : 'text-blue-600 hover:text-blue-500'
+              }`}
+              onClick={this.toggleExpand}
+            >
+              {this.isExpanded ? '▲ Show Less' : '▼ Show More'}
+            </button>
           )}
 
           {/* Character/Line Count for Edit Mode */}

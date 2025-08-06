@@ -543,7 +543,7 @@ export class UiSlider {
     const percent = ((this.currentValue - this.min) / (this.max - this.min)) * 100;
 
     return (
-      <div class={isVertical ? 'flex flex-col items-center w-24 mx-2' : 'w-full'}>
+      <div class={isVertical ? 'flex flex-col items-center w-24 mx-2 mb-8' : 'w-full'}>
         {this.label && (
           <label
             class={`block text-sm font-medium ${isVertical ? 'mb-4 text-center' : 'mb-4'} ${isDisabled ? 'text-gray-400' : ''} ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
