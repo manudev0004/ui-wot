@@ -77,37 +77,45 @@ export class UiCheckbox {
     const isDisabled = this.state === 'disabled';
     const isActive = this.state === 'active' || this.isChecked;
     
-    let baseClasses = 'w-5 h-5 rounded cursor-pointer transition-all duration-200 flex items-center justify-center';
+    let baseClasses = 'transition-all duration-300 flex items-center justify-center cursor-pointer';
     
     if (isDisabled) {
       baseClasses += ' opacity-50 cursor-not-allowed';
     }
 
-    // Color and variant styling
+    // Variant-specific styling with creative differences
     if (this.variant === 'minimal') {
+      // Minimal: Simple circle that fills with color when checked
+      baseClasses += ' w-4 h-4 rounded-full border-2';
       if (isActive) {
-        baseClasses += this.color === 'primary' ? ' bg-primary text-white' :
-                      this.color === 'secondary' ? ' bg-secondary text-white' :
-                      ' bg-neutral text-white';
+        baseClasses += this.color === 'primary' ? ' bg-primary border-primary text-white scale-110' :
+                      this.color === 'secondary' ? ' bg-secondary border-secondary text-white scale-110' :
+                      ' bg-neutral border-neutral text-white scale-110';
       } else {
-        baseClasses += this.theme === 'dark' ? ' bg-gray-700 border border-gray-600' : ' bg-gray-100 border border-gray-300';
+        baseClasses += this.theme === 'dark' ? ' border-gray-500 bg-transparent hover:border-gray-400' : 
+                      ' border-gray-400 bg-transparent hover:border-gray-600';
       }
     } else if (this.variant === 'outlined') {
-      baseClasses += ' border-2';
+      // Outlined: Square with thick border and checkmark
+      baseClasses += ' w-5 h-5 rounded border-2';
       if (isActive) {
-        baseClasses += this.color === 'primary' ? ' border-primary bg-primary text-white' :
-                      this.color === 'secondary' ? ' border-secondary bg-secondary text-white' :
-                      ' border-neutral bg-neutral text-white';
+        baseClasses += this.color === 'primary' ? ' border-primary bg-white text-primary shadow-md' :
+                      this.color === 'secondary' ? ' border-secondary bg-white text-secondary shadow-md' :
+                      ' border-neutral bg-white text-neutral shadow-md';
       } else {
-        baseClasses += this.theme === 'dark' ? ' border-gray-600 bg-transparent' : ' border-gray-300 bg-white';
+        baseClasses += this.theme === 'dark' ? ' border-gray-600 bg-gray-800 hover:border-gray-500' : 
+                      ' border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm';
       }
     } else { // filled
+      // Filled: Traditional square checkbox with solid fill when checked
+      baseClasses += ' w-5 h-5 rounded';
       if (isActive) {
         baseClasses += this.color === 'primary' ? ' bg-primary text-white border border-primary' :
                       this.color === 'secondary' ? ' bg-secondary text-white border border-secondary' :
                       ' bg-neutral text-white border border-neutral';
       } else {
-        baseClasses += this.theme === 'dark' ? ' bg-gray-700 border border-gray-600' : ' bg-gray-50 border border-gray-300';
+        baseClasses += this.theme === 'dark' ? ' bg-gray-700 border border-gray-600 hover:bg-gray-600' : 
+                      ' bg-gray-50 border border-gray-300 hover:bg-gray-100';
       }
     }
 
@@ -149,20 +157,7 @@ export class UiCheckbox {
             }
           }}
         >
-          {this.isChecked && (
-            <svg
-              class="w-3 h-3"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clip-rule="evenodd"
-              />
-            </svg>
-          )}
+          {this.isChecked && this.renderCheckmark()}
         </div>
         {this.label && (
           <label class={labelStyles} onClick={this.handleClick}>
@@ -171,5 +166,46 @@ export class UiCheckbox {
         )}
       </div>
     );
+  }
+
+  private renderCheckmark() {
+    if (this.variant === 'minimal') {
+      // Simple dot for minimal variant
+      return (
+        <div class="w-2 h-2 rounded-full bg-current"></div>
+      );
+    } else if (this.variant === 'outlined') {
+      // Classic checkmark for outlined variant
+      return (
+        <svg
+          class="w-3 h-3"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      );
+    } else {
+      // Traditional checkmark for filled variant
+      return (
+        <svg
+          class="w-3 h-3"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      );
+    }
   }
 }

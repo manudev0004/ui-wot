@@ -33,9 +33,32 @@
 
 .border-primary { border-color: var(--color-primary); }
 .border-secondary { border-color: var(--color-secondary); }
+.border-neutral { border-color: var(--color-neutral); }
 
 .ring-primary { --tw-ring-color: var(--color-primary); }
 .ring-secondary { --tw-ring-color: var(--color-secondary); }
+
+/* Gradient utilities for filled variant */
+.bg-gradient-to-r.from-primary.to-primary-dark {
+  background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark));
+}
+
+.bg-gradient-to-r.from-secondary.to-pink-600 {
+  background: linear-gradient(to right, var(--color-secondary), #db2777);
+}
+
+.bg-gradient-to-r.from-neutral.to-gray-600 {
+  background: linear-gradient(to right, var(--color-neutral), #4b5563);
+}
+
+/* Hover gradients */
+.hover\:from-gray-600.hover\:to-gray-500:hover {
+  background: linear-gradient(to right, #4b5563, #6b7280);
+}
+
+.hover\:from-gray-200.hover\:to-gray-300:hover {
+  background: linear-gradient(to right, #e5e7eb, #d1d5db);
+}
 
 /* Focus styles */
 :host(:focus-within) {

@@ -780,43 +780,49 @@
         <!-- Checkbox Variants -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Checkbox Variants</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <!-- Minimal Variant -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Minimal</h3>
-              <div class="flex flex-col items-center space-y-3">
-                <ui-checkbox variant="minimal" color="primary" label="Unchecked"></ui-checkbox>
-                <ui-checkbox variant="minimal" color="primary" label="Checked" checked></ui-checkbox>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Minimal (Circle)</h3>
+              <div class="flex flex-col items-center space-y-4">
+                <ui-checkbox variant="minimal" color="primary" label="Unchecked Circle"></ui-checkbox>
+                <ui-checkbox variant="minimal" color="primary" label="Checked Circle" checked></ui-checkbox>
+                <ui-checkbox variant="minimal" color="secondary" label="Secondary" checked></ui-checkbox>
+                <ui-checkbox variant="minimal" color="neutral" label="Neutral" checked></ui-checkbox>
               </div>
               <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
   variant="minimal"
-  label="Minimal Checkbox"&gt;
+  label="Circle Style"&gt;
 &lt;/ui-checkbox&gt;</pre>
             </div>
 
             <!-- Outlined Variant -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Outlined (Default)</h3>
-              <div class="flex flex-col items-center space-y-3">
-                <ui-checkbox variant="outlined" color="primary" label="Unchecked"></ui-checkbox>
-                <ui-checkbox variant="outlined" color="primary" label="Checked" checked></ui-checkbox>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Outlined (Classic)</h3>
+              <div class="flex flex-col items-center space-y-4">
+                <ui-checkbox variant="outlined" color="primary" label="Unchecked Square"></ui-checkbox>
+                <ui-checkbox variant="outlined" color="primary" label="Checked Square" checked></ui-checkbox>
+                <ui-checkbox variant="outlined" color="secondary" label="Secondary" checked></ui-checkbox>
+                <ui-checkbox variant="outlined" color="neutral" label="Neutral" checked></ui-checkbox>
               </div>
               <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
   variant="outlined"
-  label="Outlined Checkbox"&gt;
+  label="Classic Style"&gt;
 &lt;/ui-checkbox&gt;</pre>
             </div>
 
             <!-- Filled Variant -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Filled</h3>
-              <div class="flex flex-col items-center space-y-3">
-                <ui-checkbox variant="filled" color="primary" label="Unchecked"></ui-checkbox>
-                <ui-checkbox variant="filled" color="primary" label="Checked" checked></ui-checkbox>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Filled (Modern Toggle)</h3>
+              <div class="flex flex-col items-center space-y-4">
+                <ui-checkbox variant="filled" color="primary" label="Unchecked Toggle"></ui-checkbox>
+                <ui-checkbox variant="filled" color="primary" label="Checked Toggle" checked></ui-checkbox>
+                <ui-checkbox variant="filled" color="secondary" label="Secondary" checked></ui-checkbox>
+                <ui-checkbox variant="filled" color="neutral" label="Neutral" checked></ui-checkbox>
               </div>
               <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
   variant="filled"
-  label="Filled Checkbox"&gt;
+  label="Modern Toggle"&gt;
 &lt;/ui-checkbox&gt;</pre>
             </div>
           </div>

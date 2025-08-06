@@ -1,72 +1,34 @@
 # ui-checkbox
 
-A checkbox component with various visual styles, consistent with the component family design system.
 
-## Basic Usage
 
-```html
-<ui-checkbox label="Accept Terms"></ui-checkbox>
-```
+<!-- Auto Generated Below -->
+
+
+## Overview
+
+Checkbox component with consistent styling to match the design system.
 
 ## Properties
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `variant` | `'minimal' \| 'outlined' \| 'filled'` | `'outlined'` | Visual style variant |
-| `state` | `'disabled' \| 'default' \| 'active'` | `'default'` | Current state |
-| `theme` | `'light' \| 'dark'` | `'light'` | Theme |
-| `color` | `'primary' \| 'secondary' \| 'neutral'` | `'primary'` | Color scheme |
-| `label` | `string` | - | Text label |
-| `checked` | `boolean` | `false` | Whether checked |
-| `onChange` | `string` | - | Custom function name to call on change |
+| Property           | Attribute            | Description                           | Type                                    | Default      |
+| ------------------ | -------------------- | ------------------------------------- | --------------------------------------- | ------------ |
+| `checked`          | `checked`            | Whether the checkbox is checked.      | `boolean`                               | `false`      |
+| `color`            | `color`              | Color scheme to match design system.  | `"neutral" \| "primary" \| "secondary"` | `'primary'`  |
+| `label`            | `label`              | Optional text label for the checkbox. | `string`                                | `undefined`  |
+| `onChangeCallback` | `on-change-callback` | Custom callback function name.        | `string`                                | `undefined`  |
+| `state`            | `state`              | Current state of the checkbox.        | `"active" \| "default" \| "disabled"`   | `'default'`  |
+| `theme`            | `theme`              | Theme for the component.              | `"dark" \| "light"`                     | `'light'`    |
+| `variant`          | `variant`            | Visual style variant of the checkbox. | `"filled" \| "minimal" \| "outlined"`   | `'outlined'` |
+
 
 ## Events
 
-| Event | Detail | Description |
-|-------|--------|-------------|
-| `change` | `{ checked: boolean }` | Emitted when checkbox state changes |
+| Event            | Description                                | Type                                 |
+| ---------------- | ------------------------------------------ | ------------------------------------ |
+| `checkboxChange` | Event emitted when checkbox state changes. | `CustomEvent<{ checked: boolean; }>` |
 
-## Examples
 
-### Variants
+----------------------------------------------
 
-```html
-<ui-checkbox variant="minimal" label="Minimal Style"></ui-checkbox>
-<ui-checkbox variant="outlined" label="Outlined Style"></ui-checkbox>
-<ui-checkbox variant="filled" label="Filled Style"></ui-checkbox>
-```
-
-### Colors
-
-```html
-<ui-checkbox color="primary" label="Primary Color"></ui-checkbox>
-<ui-checkbox color="secondary" label="Secondary Color"></ui-checkbox>
-<ui-checkbox color="neutral" label="Neutral Color"></ui-checkbox>
-```
-
-### States
-
-```html
-<ui-checkbox state="default" label="Default State"></ui-checkbox>
-<ui-checkbox state="active" label="Active State"></ui-checkbox>
-<ui-checkbox state="disabled" label="Disabled State"></ui-checkbox>
-```
-
-### Custom Handler
-
-```html
-<ui-checkbox on-change="handleCheckboxChange" label="Custom Handler"></ui-checkbox>
-
-<script>
-window.handleCheckboxChange = function(data) {
-  console.log('Checkbox changed:', data.checked);
-};
-</script>
-```
-
-## Accessibility
-
-- Full keyboard navigation support (Space/Enter to toggle)
-- ARIA attributes for screen readers
-- Focus management
-- High contrast support
+*Built with [StencilJS](https://stenciljs.com/)*
