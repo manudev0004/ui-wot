@@ -1,6 +1,5 @@
 import { Component, Prop, State, h, Event, EventEmitter, Watch } from '@stencil/core';
 import { DataHandler } from '../../utils/data-handler';
-import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 
 /**
  * Simple text component for displaying and editing text data.
@@ -110,14 +109,14 @@ export class UiText {
   @State() currentValue: string = '';
 
   /**
-   * Operation status for user feedback.
+   * Success feedback state.
    */
-  @State() operationStatus: OperationStatus = 'idle';
+  @State() showSuccess: boolean = false;
 
   /**
    * Last error message.
    */
-  @State() lastError?: string;
+  @State() errorMessage?: string;
 
   /**
    * Event emitted when text value changes.
@@ -150,69 +149,60 @@ export class UiText {
   private async readFromDevice() {
     if (!this.tdUrl) return;
     
-    this.operationStatus = 'loading';
+    // Clear previous state
+    this.showSuccess = false;
+    this.errorMessage = undefined;
     
-    const result = await DataHandler.readFromDevice(this.tdUrl, {
-      expectedValueType: 'string',
-      retryCount: 2,
-      timeout: 5000
-    });
+    const result = await DataHandler.readFromDevice(this.tdUrl);
 
     if (result.success && typeof result.value === 'string') {
       this.currentValue = result.value;
       this.value = result.value;
-      this.operationStatus = 'success';
-      this.lastError = undefined;
+      this.showSuccess = true;
       
-      // Clear success indicator after 2 seconds
+      // Clear success indicator after 3 seconds
       setTimeout(() => {
-        this.operationStatus = 'idle';
-      }, 2000);
+        this.showSuccess = false;
+      }, 3000);
     } else {
-      this.operationStatus = 'error';
-      this.lastError = DataHandler.getErrorMessage(result);
+      this.errorMessage = result.error || 'Failed to read text value';
       
-      // Clear error indicator after 5 seconds
+      // Clear error indicator after 8 seconds
       setTimeout(() => {
-        this.operationStatus = 'idle';
-        this.lastError = undefined;
-      }, 5000);
+        this.errorMessage = undefined;
+      }, 8000);
       
-      console.warn('Text read failed:', this.lastError);
+      console.warn('Text read failed:', result.error);
     }
   }
 
   private async writeToDevice(value: string): Promise<boolean> {
     if (!this.tdUrl) return true; // Local control, always succeeds
     
-    this.operationStatus = 'loading';
+    // Clear previous state
+    this.showSuccess = false;
+    this.errorMessage = undefined;
     
-    const result = await DataHandler.writeToDevice(this.tdUrl, value, {
-      retryCount: 2,
-      timeout: 5000
-    });
+    const result = await DataHandler.writeToDevice(this.tdUrl, value);
 
     if (result.success) {
-      this.operationStatus = 'success';
-      this.lastError = undefined;
+      this.showSuccess = true;
       
-      // Clear success indicator after 2 seconds
+      // Clear success indicator after 3 seconds
       setTimeout(() => {
-        this.operationStatus = 'idle';
-      }, 2000);
+        this.showSuccess = false;
+      }, 3000);
       
       return true;
     } else {
-      this.operationStatus = 'error';
-      this.lastError = DataHandler.getErrorMessage(result);
+      this.errorMessage = result.error || 'Failed to update text value';
       
-      // Clear error indicator after 5 seconds
+      // Clear error indicator after 8 seconds
       setTimeout(() => {
-        this.operationStatus = 'idle';
-        this.lastError = undefined;
-      }, 5000);
+        this.errorMessage = undefined;
+      }, 8000);
       
-      console.warn('Text write failed:', this.lastError);
+      console.warn('Text write failed:', result.error);
       return false;
     }
   }
@@ -345,19 +335,12 @@ export class UiText {
         )}
 
         <div class="relative">
-          {/* Status Indicator */}
-          {this.tdUrl && this.operationStatus !== 'idle' && (
-            <div
-              class={StatusIndicator.getStatusClasses(this.operationStatus, {
-                theme: this.theme,
-                size: 'small',
-                position: 'top-right'
-              })}
-              title={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
-              role="status"
-              aria-label={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
-            >
-              {StatusIndicator.getStatusIcon(this.operationStatus)}
+          {/* Success Indicator */}
+          {this.showSuccess && (
+            <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </div>
           )}
 
@@ -417,6 +400,13 @@ export class UiText {
             </div>
           )}
         </div>
+        
+        {/* Error Message */}
+        {this.errorMessage && (
+          <div class="text-red-500 text-sm mt-1 px-2">
+            {this.errorMessage}
+          </div>
+        )}
       </div>
     );
   }

@@ -1,6 +1,5 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
-import { DataHandler, DataOperationResult } from '../../utils/data-handler';
-import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
+import { DataHandler } from '../../utils/data-handler';
 
 /**
  * Number picker component with various visual styles, TD integration and customizable range.
@@ -166,11 +165,11 @@ export class UiNumberPicker {
   /** Internal state tracking current value */
   @State() currentValue: number = 0;
 
-  /** Operation status for user feedback */
-  @State() operationStatus: OperationStatus = 'idle';
+  /** Success feedback state */
+  @State() showSuccess: boolean = false;
 
   /** Last error message */
-  @State() lastError?: string;
+  @State() errorMessage?: string;
 
   /** Event emitted when value changes */
   @Event() valueChange: EventEmitter<{ value: number; label?: string }>;
@@ -203,19 +202,17 @@ export class UiNumberPicker {
   private async readDeviceState() {
     if (!this.tdUrl) return;
 
-    this.operationStatus = 'loading';
+    // Clear previous state
+    this.showSuccess = false;
+    this.errorMessage = undefined;
     
     try {
       console.log(`Reading from: ${this.tdUrl} via ${this.protocol}`);
       
-      let result: DataOperationResult;
+      let result: any;
       
       if (this.protocol === 'http') {
-        result = await DataHandler.readFromDevice(this.tdUrl, {
-          expectedValueType: 'number',
-          retryCount: 2,
-          timeout: 5000
-        });
+        result = await DataHandler.readFromDevice(this.tdUrl);
       } else if (this.protocol === 'coap') {
         result = await this.readDeviceStateCoap();
       } else if (this.protocol === 'mqtt') {
@@ -227,42 +224,37 @@ export class UiNumberPicker {
       if (result.success && typeof result.value === 'number') {
         this.currentValue = result.value;
         this.value = result.value;
-        this.operationStatus = 'success';
-        this.lastError = undefined;
+        this.showSuccess = true;
         
         console.log(`Read value: ${result.value}`);
         
-        // Clear success indicator after 2 seconds
+        // Clear success indicator after 3 seconds
         setTimeout(() => {
-          this.operationStatus = 'idle';
-        }, 2000);
+          this.showSuccess = false;
+        }, 3000);
       } else {
-        this.operationStatus = 'error';
-        this.lastError = DataHandler.getErrorMessage(result);
+        this.errorMessage = result.error || 'Failed to read number value';
         
-        // Clear error indicator after 5 seconds
+        // Clear error indicator after 8 seconds
         setTimeout(() => {
-          this.operationStatus = 'idle';
-          this.lastError = undefined;
-        }, 5000);
+          this.errorMessage = undefined;
+        }, 8000);
         
-        console.warn('Failed to read state:', this.lastError);
+        console.warn('Failed to read state:', result.error);
       }
     } catch (error) {
-      this.operationStatus = 'error';
-      this.lastError = error.message || 'Unknown error occurred';
+      this.errorMessage = error.message || 'Unknown error occurred';
       
       setTimeout(() => {
-        this.operationStatus = 'idle';
-        this.lastError = undefined;
-      }, 5000);
+        this.errorMessage = undefined;
+      }, 8000);
       
       console.warn('Failed to read state:', error);
     }
   }
 
   /** Read via CoAP */
-  private async readDeviceStateCoap(): Promise<DataOperationResult> {
+  private async readDeviceStateCoap(): Promise<any> {
     try {
       // Simple CoAP GET request
       const url = new URL(this.tdUrl);
@@ -285,7 +277,7 @@ export class UiNumberPicker {
   }
 
   /** Read via MQTT */
-  private async readDeviceStateMqtt(): Promise<DataOperationResult> {
+  private async readDeviceStateMqtt(): Promise<any> {
     if (!this.mqttHost || !this.mqttTopic) {
       return { 
         success: false, 
@@ -348,18 +340,17 @@ export class UiNumberPicker {
   private async updateDevice(value: number): Promise<boolean> {
     if (!this.tdUrl) return true; // Local control, always succeeds
 
-    this.operationStatus = 'loading';
+    // Clear previous state  
+    this.showSuccess = false;
+    this.errorMessage = undefined;
     
     try {
       console.log(`Writing ${value} to: ${this.tdUrl} via ${this.protocol}`);
       
-      let result: DataOperationResult;
+      let result: any;
       
       if (this.protocol === 'http') {
-        result = await DataHandler.writeToDevice(this.tdUrl, value, {
-          retryCount: 2,
-          timeout: 5000
-        });
+        result = await DataHandler.writeToDevice(this.tdUrl, value);
       } else if (this.protocol === 'coap') {
         result = await this.updateDeviceCoap(value);
       } else if (this.protocol === 'mqtt') {
@@ -369,36 +360,31 @@ export class UiNumberPicker {
       }
 
       if (result.success) {
-        this.operationStatus = 'success';
-        this.lastError = undefined;
+        this.showSuccess = true;
         
-        // Clear success indicator after 2 seconds
+        // Clear success indicator after 3 seconds
         setTimeout(() => {
-          this.operationStatus = 'idle';
-        }, 2000);
+          this.showSuccess = false;
+        }, 3000);
         
         return true;
       } else {
-        this.operationStatus = 'error';
-        this.lastError = DataHandler.getErrorMessage(result);
+        this.errorMessage = result.error || 'Failed to update number value';
         
-        // Clear error indicator after 5 seconds
+        // Clear error indicator after 8 seconds
         setTimeout(() => {
-          this.operationStatus = 'idle';
-          this.lastError = undefined;
-        }, 5000);
+          this.errorMessage = undefined;
+        }, 8000);
         
-        console.warn('Failed to write:', this.lastError);
+        console.warn('Failed to write:', result.error);
         return false;
       }
     } catch (error) {
-      this.operationStatus = 'error';
-      this.lastError = error.message || 'Unknown error occurred';
+      this.errorMessage = error.message || 'Unknown error occurred';
       
       setTimeout(() => {
-        this.operationStatus = 'idle';
-        this.lastError = undefined;
-      }, 5000);
+        this.errorMessage = undefined;
+      }, 8000);
       
       console.warn('Failed to write:', error);
       return false;
@@ -406,7 +392,7 @@ export class UiNumberPicker {
   }
 
   /** Write via CoAP */
-  private async updateDeviceCoap(value: number): Promise<DataOperationResult> {
+  private async updateDeviceCoap(value: number): Promise<any> {
     try {
       const url = new URL(this.tdUrl);
       const response = await fetch(`coap://${url.host}${url.pathname}`, {
@@ -434,7 +420,7 @@ export class UiNumberPicker {
   }
 
   /** Write via MQTT */
-  private async updateDeviceMqtt(value: number): Promise<DataOperationResult> {
+  private async updateDeviceMqtt(value: number): Promise<any> {
     if (!this.mqttHost || !this.mqttTopic) {
       return { 
         success: false, 
@@ -699,19 +685,12 @@ export class UiNumberPicker {
             tabindex={isDisabled ? -1 : 0}
             onKeyDown={this.handleKeyDown}
           >
-            {/* Status Indicator */}
-            {this.tdUrl && this.operationStatus !== 'idle' && (
-              <div
-                class={StatusIndicator.getStatusClasses(this.operationStatus, {
-                  theme: this.theme,
-                  size: 'small',
-                  position: 'top-right'
-                })}
-                title={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
-                role="status"
-                aria-label={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
-              >
-                {StatusIndicator.getStatusIcon(this.operationStatus)}
+            {/* Success Indicator */}
+            {this.showSuccess && (
+              <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </div>
             )}
 
@@ -739,6 +718,13 @@ export class UiNumberPicker {
             >
               +
             </button>
+          </div>
+        )}
+        
+        {/* Error Message */}
+        {this.errorMessage && (
+          <div class="text-red-500 text-sm mt-2 px-2">
+            {this.errorMessage}
           </div>
         )}
       </div>

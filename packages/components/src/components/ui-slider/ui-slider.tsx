@@ -1,6 +1,5 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
 import { DataHandler } from '../../utils/data-handler';
-import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 
 /**
  * Slider component with various features, multiple visual styles and TD integration.
@@ -113,11 +112,11 @@ export class UiSlider {
   /** Manual input value */
   @State() manualInputValue: string = '';
 
-  /** Operation status for user feedback */
-  @State() operationStatus: OperationStatus = 'idle';
+  /** Success feedback state */
+  @State() showSuccess: boolean = false;
 
   /** Last error message */
-  @State() lastError?: string;
+  @State() errorMessage?: string;
 
   /** Event emitted when value changes */
   @Event() valueChange: EventEmitter<{ value: number }>;
@@ -150,36 +149,31 @@ export class UiSlider {
   private async readDevice() {
     if (!this.tdUrl) return;
     
-    this.operationStatus = 'loading';
+    // Clear previous state
+    this.showSuccess = false;
+    this.errorMessage = undefined;
     
-    const result = await DataHandler.readFromDevice(this.tdUrl, {
-      expectedValueType: 'number',
-      retryCount: 2,
-      timeout: 5000
-    });
+    const result = await DataHandler.readFromDevice(this.tdUrl);
 
     if (result.success && typeof result.value === 'number') {
       const clampedValue = Math.max(this.min, Math.min(this.max, result.value));
       this.currentValue = clampedValue;
       this.manualInputValue = String(clampedValue);
-      this.operationStatus = 'success';
-      this.lastError = undefined;
+      this.showSuccess = true;
       
-      // Clear success indicator after 2 seconds
+      // Clear success indicator after 3 seconds
       setTimeout(() => {
-        this.operationStatus = 'idle';
-      }, 2000);
+        this.showSuccess = false;
+      }, 3000);
     } else {
-      this.operationStatus = 'error';
-      this.lastError = DataHandler.getErrorMessage(result);
+      this.errorMessage = result.error || 'Failed to read slider value';
       
-      // Clear error indicator after 5 seconds
+      // Clear error indicator after 8 seconds
       setTimeout(() => {
-        this.operationStatus = 'idle';
-        this.lastError = undefined;
-      }, 5000);
+        this.errorMessage = undefined;
+      }, 8000);
       
-      console.warn('Device read failed:', this.lastError);
+      console.warn('Device read failed:', result.error);
     }
   }
 
@@ -187,34 +181,30 @@ export class UiSlider {
   private async writeDevice(value: number): Promise<boolean> {
     if (!this.tdUrl) return true; // Local control, always succeeds
     
-    this.operationStatus = 'loading';
+    // Clear previous state
+    this.showSuccess = false;
+    this.errorMessage = undefined;
     
-    const result = await DataHandler.writeToDevice(this.tdUrl, value, {
-      retryCount: 2,
-      timeout: 5000
-    });
+    const result = await DataHandler.writeToDevice(this.tdUrl, value);
 
     if (result.success) {
-      this.operationStatus = 'success';
-      this.lastError = undefined;
+      this.showSuccess = true;
       
-      // Clear success indicator after 2 seconds
+      // Clear success indicator after 3 seconds
       setTimeout(() => {
-        this.operationStatus = 'idle';
-      }, 2000);
+        this.showSuccess = false;
+      }, 3000);
       
       return true;
     } else {
-      this.operationStatus = 'error';
-      this.lastError = DataHandler.getErrorMessage(result);
+      this.errorMessage = result.error || 'Failed to update slider value';
       
-      // Clear error indicator after 5 seconds
+      // Clear error indicator after 8 seconds
       setTimeout(() => {
-        this.operationStatus = 'idle';
-        this.lastError = undefined;
-      }, 5000);
+        this.errorMessage = undefined;
+      }, 8000);
       
-      console.warn('Device write failed:', this.lastError);
+      console.warn('Device write failed:', result.error);
       return false;
     }
   }
@@ -581,19 +571,12 @@ export class UiSlider {
           aria-valuenow={this.currentValue}
           aria-disabled={isDisabled ? 'true' : 'false'}
         >
-          {/* Status Indicator */}
-          {this.tdUrl && this.operationStatus !== 'idle' && (
-            <div
-              class={StatusIndicator.getStatusClasses(this.operationStatus, {
-                theme: this.theme,
-                size: 'small',
-                position: 'top-right'
-              })}
-              title={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
-              role="status"
-              aria-label={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
-            >
-              {StatusIndicator.getStatusIcon(this.operationStatus)}
+          {/* Success Indicator */}
+          {this.showSuccess && (
+            <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </div>
           )}
           
@@ -672,6 +655,13 @@ export class UiSlider {
                 class={`px-3 py-1 text-sm font-medium rounded transition-colors ${isDisabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-primary text-white hover:bg-primary-dark'}`}
               >Set</button>
             </form>
+          </div>
+        )}
+        
+        {/* Error Message */}
+        {this.errorMessage && (
+          <div class="text-red-500 text-sm mt-2 px-2">
+            {this.errorMessage}
           </div>
         )}
       </div>
