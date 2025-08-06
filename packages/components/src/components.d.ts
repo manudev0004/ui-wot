@@ -332,6 +332,92 @@ export namespace Components {
         "variant": 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
     /**
+     * Simple text component for displaying and editing text data.
+     * Supports single-line input and multi-line textarea with Thing Description integration.
+     * @example Basic Text Display
+     * ```html
+     * <ui-text variant="display" value="Hello World"></ui-text>
+     * ```
+     * @example Single-line Text Input
+     * ```html
+     * <ui-text variant="edit" value="Enter text" label="Name"></ui-text>
+     * ```
+     * @example Multi-line Text Area
+     * ```html
+     * <ui-text 
+     * variant="edit" 
+     * text-type="multi" 
+     * value="Line 1\nLine 2" 
+     * label="Description">
+     * </ui-text>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-text 
+     * td-url="http://device.local/properties/name"
+     * variant="edit"
+     * label="Device Name">
+     * </ui-text>
+     * ```
+     */
+    interface UiText {
+        /**
+          * Custom callback function name for value changes.
+         */
+        "changeHandler"?: string;
+        /**
+          * Color scheme to match design system.
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label for the component.
+         */
+        "label"?: string;
+        /**
+          * Maximum length for text input (edit mode only).
+         */
+        "maxLength"?: number;
+        /**
+          * Placeholder text for edit mode.
+         */
+        "placeholder"?: string;
+        /**
+          * Number of rows for multi-line text area.
+          * @default 4
+         */
+        "rows": number;
+        /**
+          * Current state of the text component.
+          * @default 'default'
+         */
+        "state": 'disabled' | 'active' | 'default';
+        /**
+          * Thing Description URL for property control.
+         */
+        "tdUrl"?: string;
+        /**
+          * Type of text field. - single: Single-line text field - multi: Multi-line text area
+          * @default 'single'
+         */
+        "textType": 'single' | 'multi';
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme": 'light' | 'dark';
+        /**
+          * Text value content.
+          * @default ''
+         */
+        "value": string;
+        /**
+          * Visual style variant of the text component. - display: Read-only text display - edit: Editable text input/textarea
+          * @default 'display'
+         */
+        "variant": 'display' | 'edit';
+    }
+    /**
      * Toogle switch component with various fetueres, multiple visual styles and TD integration.
      * Link a direct property URL for plug-and-play device control.
      * @example Basic Usage
@@ -466,6 +552,10 @@ export interface UiNumberPickerCustomEvent<T> extends CustomEvent<T> {
 export interface UiSliderCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiSliderElement;
+}
+export interface UiTextCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiTextElement;
 }
 export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
     detail: T;
@@ -646,6 +736,52 @@ declare global {
         prototype: HTMLUiSliderElement;
         new (): HTMLUiSliderElement;
     };
+    interface HTMLUiTextElementEventMap {
+        "textChange": { value: string };
+    }
+    /**
+     * Simple text component for displaying and editing text data.
+     * Supports single-line input and multi-line textarea with Thing Description integration.
+     * @example Basic Text Display
+     * ```html
+     * <ui-text variant="display" value="Hello World"></ui-text>
+     * ```
+     * @example Single-line Text Input
+     * ```html
+     * <ui-text variant="edit" value="Enter text" label="Name"></ui-text>
+     * ```
+     * @example Multi-line Text Area
+     * ```html
+     * <ui-text 
+     * variant="edit" 
+     * text-type="multi" 
+     * value="Line 1\nLine 2" 
+     * label="Description">
+     * </ui-text>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-text 
+     * td-url="http://device.local/properties/name"
+     * variant="edit"
+     * label="Device Name">
+     * </ui-text>
+     * ```
+     */
+    interface HTMLUiTextElement extends Components.UiText, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiTextElementEventMap>(type: K, listener: (this: HTMLUiTextElement, ev: UiTextCustomEvent<HTMLUiTextElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiTextElementEventMap>(type: K, listener: (this: HTMLUiTextElement, ev: UiTextCustomEvent<HTMLUiTextElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiTextElement: {
+        prototype: HTMLUiTextElement;
+        new (): HTMLUiTextElement;
+    };
     interface HTMLUiToggleElementEventMap {
         "toggle": { active: boolean };
     }
@@ -729,6 +865,7 @@ declare global {
         "ui-heading": HTMLUiHeadingElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
         "ui-slider": HTMLUiSliderElement;
+        "ui-text": HTMLUiTextElement;
         "ui-toggle": HTMLUiToggleElement;
     }
 }
@@ -1075,6 +1212,96 @@ declare namespace LocalJSX {
         "variant"?: 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
     /**
+     * Simple text component for displaying and editing text data.
+     * Supports single-line input and multi-line textarea with Thing Description integration.
+     * @example Basic Text Display
+     * ```html
+     * <ui-text variant="display" value="Hello World"></ui-text>
+     * ```
+     * @example Single-line Text Input
+     * ```html
+     * <ui-text variant="edit" value="Enter text" label="Name"></ui-text>
+     * ```
+     * @example Multi-line Text Area
+     * ```html
+     * <ui-text 
+     * variant="edit" 
+     * text-type="multi" 
+     * value="Line 1\nLine 2" 
+     * label="Description">
+     * </ui-text>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-text 
+     * td-url="http://device.local/properties/name"
+     * variant="edit"
+     * label="Device Name">
+     * </ui-text>
+     * ```
+     */
+    interface UiText {
+        /**
+          * Custom callback function name for value changes.
+         */
+        "changeHandler"?: string;
+        /**
+          * Color scheme to match design system.
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label for the component.
+         */
+        "label"?: string;
+        /**
+          * Maximum length for text input (edit mode only).
+         */
+        "maxLength"?: number;
+        /**
+          * Event emitted when text value changes.
+         */
+        "onTextChange"?: (event: UiTextCustomEvent<{ value: string }>) => void;
+        /**
+          * Placeholder text for edit mode.
+         */
+        "placeholder"?: string;
+        /**
+          * Number of rows for multi-line text area.
+          * @default 4
+         */
+        "rows"?: number;
+        /**
+          * Current state of the text component.
+          * @default 'default'
+         */
+        "state"?: 'disabled' | 'active' | 'default';
+        /**
+          * Thing Description URL for property control.
+         */
+        "tdUrl"?: string;
+        /**
+          * Type of text field. - single: Single-line text field - multi: Multi-line text area
+          * @default 'single'
+         */
+        "textType"?: 'single' | 'multi';
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme"?: 'light' | 'dark';
+        /**
+          * Text value content.
+          * @default ''
+         */
+        "value"?: string;
+        /**
+          * Visual style variant of the text component. - display: Read-only text display - edit: Editable text input/textarea
+          * @default 'display'
+         */
+        "variant"?: 'display' | 'edit';
+    }
+    /**
      * Toogle switch component with various fetueres, multiple visual styles and TD integration.
      * Link a direct property URL for plug-and-play device control.
      * @example Basic Usage
@@ -1203,6 +1430,7 @@ declare namespace LocalJSX {
         "ui-heading": UiHeading;
         "ui-number-picker": UiNumberPicker;
         "ui-slider": UiSlider;
+        "ui-text": UiText;
         "ui-toggle": UiToggle;
     }
 }
@@ -1315,6 +1543,36 @@ declare module "@stencil/core" {
              * ```
              */
             "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
+            /**
+             * Simple text component for displaying and editing text data.
+             * Supports single-line input and multi-line textarea with Thing Description integration.
+             * @example Basic Text Display
+             * ```html
+             * <ui-text variant="display" value="Hello World"></ui-text>
+             * ```
+             * @example Single-line Text Input
+             * ```html
+             * <ui-text variant="edit" value="Enter text" label="Name"></ui-text>
+             * ```
+             * @example Multi-line Text Area
+             * ```html
+             * <ui-text 
+             * variant="edit" 
+             * text-type="multi" 
+             * value="Line 1\nLine 2" 
+             * label="Description">
+             * </ui-text>
+             * ```
+             * @example TD Integration
+             * ```html
+             * <ui-text 
+             * td-url="http://device.local/properties/name"
+             * variant="edit"
+             * label="Device Name">
+             * </ui-text>
+             * ```
+             */
+            "ui-text": LocalJSX.UiText & JSXBase.HTMLAttributes<HTMLUiTextElement>;
             /**
              * Toogle switch component with various fetueres, multiple visual styles and TD integration.
              * Link a direct property URL for plug-and-play device control.
