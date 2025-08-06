@@ -52,6 +52,18 @@
             >
               UI Number Picker
             </button>
+            <button
+              id="button-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI Button
+            </button>
+            <button
+              id="checkbox-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI Checkbox
+            </button>
           </nav>
         </div>
       </div>
@@ -609,6 +621,327 @@
           </div>
         </div>
       </div>
+
+      <!-- Button Content -->
+      <div id="button-content" class="tab-content hidden">
+        <!-- Button Variants -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Button Variants</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Minimal Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Minimal</h3>
+              <div class="flex justify-center mb-4">
+                <ui-button variant="minimal" color="primary" label="Minimal Button"></ui-button>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  variant="minimal"
+  label="Minimal Button"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+
+            <!-- Outlined Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Outlined</h3>
+              <div class="flex justify-center mb-4">
+                <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  variant="outlined"
+  label="Outlined Button"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+
+            <!-- Filled Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Filled</h3>
+              <div class="flex justify-center mb-4">
+                <ui-button variant="filled" color="primary" label="Filled Button"></ui-button>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  variant="filled"
+  label="Filled Button"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Button Colors -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Button Colors</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Primary Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Primary Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-button variant="minimal" color="primary" label="Minimal"></ui-button>
+                <ui-button variant="outlined" color="primary" label="Outlined"></ui-button>
+                <ui-button variant="filled" color="primary" label="Filled"></ui-button>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  color="primary"
+  variant="filled"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+
+            <!-- Secondary Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Secondary Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-button variant="minimal" color="secondary" label="Minimal"></ui-button>
+                <ui-button variant="outlined" color="secondary" label="Outlined"></ui-button>
+                <ui-button variant="filled" color="secondary" label="Filled"></ui-button>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  color="secondary"
+  variant="outlined"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+
+            <!-- Neutral Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Neutral Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-button variant="minimal" color="neutral" label="Minimal"></ui-button>
+                <ui-button variant="outlined" color="neutral" label="Outlined"></ui-button>
+                <ui-button variant="filled" color="neutral" label="Filled"></ui-button>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  color="neutral"
+  variant="minimal"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Button States -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Button States</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Active State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Active State</h3>
+              <div class="flex justify-center mb-4">
+                <ui-button variant="filled" state="active" color="primary" label="Active Button"></ui-button>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  state="active"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+
+            <!-- Disabled State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Disabled State</h3>
+              <div class="flex justify-center mb-4">
+                <ui-button variant="filled" state="disabled" color="primary" label="Disabled Button"></ui-button>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  state="disabled"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Interactive Examples</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Custom Handler -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Custom Click Handler</h3>
+              <ui-button id="customButton" variant="filled" on-click="handleButtonClick" color="secondary" label="Click Me!"></ui-button>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-button
+  on-click="handleButtonClick"
+  variant="filled"&gt;
+&lt;/ui-button&gt;</pre>
+              <div class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                <div id="buttonStatus" class="text-blue-800 dark:text-blue-200 font-mono">Click the button to see the event!</div>
+              </div>
+            </div>
+
+            <!-- Different Labels -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Different Labels</h3>
+              <div class="space-y-3 flex flex-col items-start">
+                <ui-button variant="outlined" color="primary" label="Save Changes"></ui-button>
+                <ui-button variant="filled" color="secondary" label="Delete Item"></ui-button>
+                <ui-button variant="minimal" color="neutral" label="Cancel"></ui-button>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-button 
+  label="Save Changes"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Checkbox Content -->
+      <div id="checkbox-content" class="tab-content hidden">
+        <!-- Checkbox Variants -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Checkbox Variants</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Minimal Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Minimal</h3>
+              <div class="flex flex-col items-center space-y-3">
+                <ui-checkbox variant="minimal" color="primary" label="Unchecked"></ui-checkbox>
+                <ui-checkbox variant="minimal" color="primary" label="Checked" checked></ui-checkbox>
+              </div>
+              <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  variant="minimal"
+  label="Minimal Checkbox"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+
+            <!-- Outlined Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Outlined (Default)</h3>
+              <div class="flex flex-col items-center space-y-3">
+                <ui-checkbox variant="outlined" color="primary" label="Unchecked"></ui-checkbox>
+                <ui-checkbox variant="outlined" color="primary" label="Checked" checked></ui-checkbox>
+              </div>
+              <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  variant="outlined"
+  label="Outlined Checkbox"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+
+            <!-- Filled Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Filled</h3>
+              <div class="flex flex-col items-center space-y-3">
+                <ui-checkbox variant="filled" color="primary" label="Unchecked"></ui-checkbox>
+                <ui-checkbox variant="filled" color="primary" label="Checked" checked></ui-checkbox>
+              </div>
+              <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  variant="filled"
+  label="Filled Checkbox"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checkbox Colors -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Checkbox Colors</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Primary Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Primary Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-checkbox variant="minimal" color="primary" label="Minimal" checked></ui-checkbox>
+                <ui-checkbox variant="outlined" color="primary" label="Outlined" checked></ui-checkbox>
+                <ui-checkbox variant="filled" color="primary" label="Filled" checked></ui-checkbox>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  color="primary"
+  variant="filled"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+
+            <!-- Secondary Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Secondary Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-checkbox variant="minimal" color="secondary" label="Minimal" checked></ui-checkbox>
+                <ui-checkbox variant="outlined" color="secondary" label="Outlined" checked></ui-checkbox>
+                <ui-checkbox variant="filled" color="secondary" label="Filled" checked></ui-checkbox>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  color="secondary"
+  variant="outlined"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+
+            <!-- Neutral Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Neutral Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-checkbox variant="minimal" color="neutral" label="Minimal" checked></ui-checkbox>
+                <ui-checkbox variant="outlined" color="neutral" label="Outlined" checked></ui-checkbox>
+                <ui-checkbox variant="filled" color="neutral" label="Filled" checked></ui-checkbox>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  color="neutral"
+  variant="minimal"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checkbox States -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Checkbox States</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Default State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Default State</h3>
+              <div class="flex justify-center mb-4">
+                <ui-checkbox variant="outlined" state="default" color="primary" label="Default Checkbox"></ui-checkbox>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  state="default"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+
+            <!-- Active State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Active State</h3>
+              <div class="flex justify-center mb-4">
+                <ui-checkbox variant="outlined" state="active" color="primary" label="Active Checkbox" checked></ui-checkbox>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  state="active"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+
+            <!-- Disabled State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Disabled State</h3>
+              <div class="flex justify-center mb-4">
+                <ui-checkbox variant="outlined" state="disabled" color="primary" label="Disabled Checkbox"></ui-checkbox>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  state="disabled"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Interactive Examples</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Custom Handler -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Custom Change Handler</h3>
+              <ui-checkbox id="customCheckbox" variant="filled" on-change="handleCheckboxChange" color="secondary" label="Toggle me!"></ui-checkbox>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-checkbox
+  on-change="handleCheckboxChange"
+  variant="filled"&gt;
+&lt;/ui-checkbox&gt;</pre>
+              <div class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                <div id="checkboxStatus" class="text-blue-800 dark:text-blue-200 font-mono">Status: Unchecked</div>
+              </div>
+            </div>
+
+            <!-- Different Use Cases -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Common Use Cases</h3>
+              <div class="space-y-3 flex flex-col items-start">
+                <ui-checkbox variant="outlined" color="primary" label="I agree to the terms and conditions"></ui-checkbox>
+                <ui-checkbox variant="filled" color="secondary" label="Subscribe to newsletter"></ui-checkbox>
+                <ui-checkbox variant="minimal" color="neutral" label="Remember me"></ui-checkbox>
+                <ui-checkbox variant="outlined" color="primary" label="Enable notifications" checked></ui-checkbox>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-checkbox 
+  label="I agree to terms"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -617,14 +950,18 @@
       const toggleTab = document.getElementById('toggle-tab');
       const numberPickerTab = document.getElementById('number-picker-tab');
       const sliderTab = document.getElementById('slider-tab');
+      const buttonTab = document.getElementById('button-tab');
+      const checkboxTab = document.getElementById('checkbox-tab');
       const toggleContent = document.getElementById('toggle-content');
       const numberPickerContent = document.getElementById('number-picker-content');
       const sliderContent = document.getElementById('slider-content');
+      const buttonContent = document.getElementById('button-content');
+      const checkboxContent = document.getElementById('checkbox-content');
 
       function setTheme(isDark) {
         html.classList.toggle('dark', isDark);
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker').forEach(component => {
+        document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox').forEach(component => {
           component.theme = isDark ? 'dark' : 'light';
         });
         themeToggle.state = isDark ? 'active' : 'default';
@@ -670,6 +1007,60 @@
         }
       };
 
+      // Button custom handler
+      window.handleButtonClick = function (data) {
+        logEvent('Button Click', data);
+        const statusElement = document.getElementById('buttonStatus');
+        if (statusElement) {
+          statusElement.textContent = 'Button was clicked at ' + new Date().toLocaleTimeString();
+        }
+      };
+
+      // Checkbox custom handler
+      window.handleCheckboxChange = function (data) {
+        logEvent('Checkbox Change', data);
+        const statusElement = document.getElementById('checkboxStatus');
+        if (statusElement) {
+          statusElement.textContent = `Status: ${data.checked ? 'Checked' : 'Unchecked'}`;
+        }
+      };
+
+      // Button click handler
+      window.handleButtonClick = function (data) {
+        logEvent('Button Click', data);
+        const statusElement = document.getElementById('buttonStatus');
+        if (statusElement) {
+          statusElement.textContent = `Button clicked!`;
+        }
+      };
+
+      // Checkbox change handler
+      window.handleCheckboxChange = function (data) {
+        logEvent('Checkbox Change', data);
+        const statusElement = document.getElementById('checkboxStatus');
+        if (statusElement) {
+          statusElement.textContent = `Status: ${data.checked ? 'Checked' : 'Unchecked'}`;
+        }
+      };
+
+      // Button custom handler
+      window.handleButtonClick = function (data) {
+        logEvent('Button Click', data);
+        const statusElement = document.getElementById('buttonStatus');
+        if (statusElement) {
+          statusElement.textContent = `Button clicked at ${new Date().toLocaleTimeString()}!`;
+        }
+      };
+
+      // Checkbox custom handler
+      window.handleCheckboxChange = function (data) {
+        logEvent('Checkbox Change', data);
+        const statusElement = document.getElementById('checkboxStatus');
+        if (statusElement) {
+          statusElement.textContent = `Status: ${data.checked ? 'Checked' : 'Unchecked'}`;
+        }
+      };
+
       // Listen to component events
       document.addEventListener('toggle', event => {
         logEvent('Toggle', event.detail);
@@ -683,17 +1074,29 @@
         logEvent('Value Change', event.detail);
       });
 
+      document.addEventListener('checkboxChange', event => {
+        logEvent('Checkbox Change', event.detail);
+      });
+
       // Tab switching
       toggleTab.addEventListener('click', () => {
-        switchTab(toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent);
+        switchTab(toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent);
       });
 
       numberPickerTab.addEventListener('click', () => {
-        switchTab(numberPickerTab, numberPickerContent, toggleTab, toggleContent, sliderTab, sliderContent);
+        switchTab(numberPickerTab, numberPickerContent, toggleTab, toggleContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent);
       });
 
       sliderTab.addEventListener('click', () => {
-        switchTab(sliderTab, sliderContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent);
+        switchTab(sliderTab, sliderContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, buttonTab, buttonContent, checkboxTab, checkboxContent);
+      });
+
+      buttonTab.addEventListener('click', () => {
+        switchTab(buttonTab, buttonContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, checkboxTab, checkboxContent);
+      });
+
+      checkboxTab.addEventListener('click', () => {
+        switchTab(checkboxTab, checkboxContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent);
       });
 
       // Initialize theme

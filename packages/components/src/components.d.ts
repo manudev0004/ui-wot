@@ -6,6 +6,100 @@
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
+    /**
+     * Button component with various visual styles, matching the ui-number-picker design family.
+     * Supports the same variants, colors, and themes as the number picker.
+     * @example Basic Usage
+     * ```html
+     * <ui-button variant="minimal" label="Click Me"></ui-button>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
+     * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
+     * ```
+     * @example Custom Click Handler
+     * ```html
+     * <ui-button on-click="handleButtonClick" label="Custom Handler"></ui-button>
+     * ```
+     * @example Event Handling
+     * ```javascript
+     * window.handleButtonClick = function(data) {
+     * console.log('Button clicked:', data.label);
+     * // Your custom logic here
+     * };
+     * ```
+     */
+    interface UiButton {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Button text label.
+          * @default 'Button'
+         */
+        "label": string;
+        /**
+          * Function name to call when button is clicked. User defines this function in their code, component will invoke it.
+          * @example "handleButtonClick"
+         */
+        "onClick"?: string;
+        /**
+          * Current state of the button. - active: Button is enabled (default) - disabled: Button cannot be interacted with
+          * @default 'active'
+         */
+        "state": 'active' | 'disabled';
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme": 'light' | 'dark';
+        /**
+          * Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button
+          * @default 'minimal'
+         */
+        "variant": 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Checkbox component with consistent styling to match the design system.
+     */
+    interface UiCheckbox {
+        /**
+          * Whether the checkbox is checked.
+          * @default false
+         */
+        "checked": boolean;
+        /**
+          * Color scheme to match design system.
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label for the checkbox.
+         */
+        "label"?: string;
+        /**
+          * Custom callback function name.
+         */
+        "onChangeCallback"?: string;
+        /**
+          * Current state of the checkbox.
+          * @default 'default'
+         */
+        "state": 'disabled' | 'active' | 'default';
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme": 'light' | 'dark';
+        /**
+          * Visual style variant of the checkbox.
+          * @default 'outlined'
+         */
+        "variant": 'minimal' | 'outlined' | 'filled';
+    }
     interface UiHeading {
         "text": string;
     }
@@ -342,6 +436,14 @@ export namespace Components {
         "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
     }
 }
+export interface UiButtonCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiButtonElement;
+}
+export interface UiCheckboxCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiCheckboxElement;
+}
 export interface UiNumberPickerCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiNumberPickerElement;
@@ -355,6 +457,67 @@ export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
     target: HTMLUiToggleElement;
 }
 declare global {
+    interface HTMLUiButtonElementEventMap {
+        "buttonClick": { label: string };
+    }
+    /**
+     * Button component with various visual styles, matching the ui-number-picker design family.
+     * Supports the same variants, colors, and themes as the number picker.
+     * @example Basic Usage
+     * ```html
+     * <ui-button variant="minimal" label="Click Me"></ui-button>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
+     * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
+     * ```
+     * @example Custom Click Handler
+     * ```html
+     * <ui-button on-click="handleButtonClick" label="Custom Handler"></ui-button>
+     * ```
+     * @example Event Handling
+     * ```javascript
+     * window.handleButtonClick = function(data) {
+     * console.log('Button clicked:', data.label);
+     * // Your custom logic here
+     * };
+     * ```
+     */
+    interface HTMLUiButtonElement extends Components.UiButton, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiButtonElementEventMap>(type: K, listener: (this: HTMLUiButtonElement, ev: UiButtonCustomEvent<HTMLUiButtonElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiButtonElementEventMap>(type: K, listener: (this: HTMLUiButtonElement, ev: UiButtonCustomEvent<HTMLUiButtonElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiButtonElement: {
+        prototype: HTMLUiButtonElement;
+        new (): HTMLUiButtonElement;
+    };
+    interface HTMLUiCheckboxElementEventMap {
+        "checkboxChange": { checked: boolean };
+    }
+    /**
+     * Checkbox component with consistent styling to match the design system.
+     */
+    interface HTMLUiCheckboxElement extends Components.UiCheckbox, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiCheckboxElementEventMap>(type: K, listener: (this: HTMLUiCheckboxElement, ev: UiCheckboxCustomEvent<HTMLUiCheckboxElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiCheckboxElementEventMap>(type: K, listener: (this: HTMLUiCheckboxElement, ev: UiCheckboxCustomEvent<HTMLUiCheckboxElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiCheckboxElement: {
+        prototype: HTMLUiCheckboxElement;
+        new (): HTMLUiCheckboxElement;
+    };
     interface HTMLUiHeadingElement extends Components.UiHeading, HTMLStencilElement {
     }
     var HTMLUiHeadingElement: {
@@ -546,6 +709,8 @@ declare global {
         new (): HTMLUiToggleElement;
     };
     interface HTMLElementTagNameMap {
+        "ui-button": HTMLUiButtonElement;
+        "ui-checkbox": HTMLUiCheckboxElement;
         "ui-heading": HTMLUiHeadingElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
         "ui-slider": HTMLUiSliderElement;
@@ -553,6 +718,108 @@ declare global {
     }
 }
 declare namespace LocalJSX {
+    /**
+     * Button component with various visual styles, matching the ui-number-picker design family.
+     * Supports the same variants, colors, and themes as the number picker.
+     * @example Basic Usage
+     * ```html
+     * <ui-button variant="minimal" label="Click Me"></ui-button>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
+     * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
+     * ```
+     * @example Custom Click Handler
+     * ```html
+     * <ui-button on-click="handleButtonClick" label="Custom Handler"></ui-button>
+     * ```
+     * @example Event Handling
+     * ```javascript
+     * window.handleButtonClick = function(data) {
+     * console.log('Button clicked:', data.label);
+     * // Your custom logic here
+     * };
+     * ```
+     */
+    interface UiButton {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Button text label.
+          * @default 'Button'
+         */
+        "label"?: string;
+        /**
+          * Event emitted when button is clicked
+         */
+        "onButtonClick"?: (event: UiButtonCustomEvent<{ label: string }>) => void;
+        /**
+          * Function name to call when button is clicked. User defines this function in their code, component will invoke it.
+          * @example "handleButtonClick"
+         */
+        "onClick"?: string;
+        /**
+          * Current state of the button. - active: Button is enabled (default) - disabled: Button cannot be interacted with
+          * @default 'active'
+         */
+        "state"?: 'active' | 'disabled';
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme"?: 'light' | 'dark';
+        /**
+          * Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button
+          * @default 'minimal'
+         */
+        "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Checkbox component with consistent styling to match the design system.
+     */
+    interface UiCheckbox {
+        /**
+          * Whether the checkbox is checked.
+          * @default false
+         */
+        "checked"?: boolean;
+        /**
+          * Color scheme to match design system.
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Optional text label for the checkbox.
+         */
+        "label"?: string;
+        /**
+          * Custom callback function name.
+         */
+        "onChangeCallback"?: string;
+        /**
+          * Event emitted when checkbox state changes.
+         */
+        "onCheckboxChange"?: (event: UiCheckboxCustomEvent<{ checked: boolean }>) => void;
+        /**
+          * Current state of the checkbox.
+          * @default 'default'
+         */
+        "state"?: 'disabled' | 'active' | 'default';
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme"?: 'light' | 'dark';
+        /**
+          * Visual style variant of the checkbox.
+          * @default 'outlined'
+         */
+        "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
     interface UiHeading {
         "text"?: string;
     }
@@ -901,6 +1168,8 @@ declare namespace LocalJSX {
         "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
     }
     interface IntrinsicElements {
+        "ui-button": UiButton;
+        "ui-checkbox": UiCheckbox;
         "ui-heading": UiHeading;
         "ui-number-picker": UiNumberPicker;
         "ui-slider": UiSlider;
@@ -911,6 +1180,35 @@ export { LocalJSX as JSX };
 declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
+            /**
+             * Button component with various visual styles, matching the ui-number-picker design family.
+             * Supports the same variants, colors, and themes as the number picker.
+             * @example Basic Usage
+             * ```html
+             * <ui-button variant="minimal" label="Click Me"></ui-button>
+             * ```
+             * @example Different Variants
+             * ```html
+             * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
+             * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
+             * ```
+             * @example Custom Click Handler
+             * ```html
+             * <ui-button on-click="handleButtonClick" label="Custom Handler"></ui-button>
+             * ```
+             * @example Event Handling
+             * ```javascript
+             * window.handleButtonClick = function(data) {
+             * console.log('Button clicked:', data.label);
+             * // Your custom logic here
+             * };
+             * ```
+             */
+            "ui-button": LocalJSX.UiButton & JSXBase.HTMLAttributes<HTMLUiButtonElement>;
+            /**
+             * Checkbox component with consistent styling to match the design system.
+             */
+            "ui-checkbox": LocalJSX.UiCheckbox & JSXBase.HTMLAttributes<HTMLUiCheckboxElement>;
             "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
             /**
              * Number picker component with various visual styles, TD integration and customizable range.
