@@ -1,4 +1,6 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
+import { DataHandler } from '../../utils/data-handler';
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 
 /**
  * Slider component with various features, multiple visual styles and TD integration.
@@ -111,6 +113,12 @@ export class UiSlider {
   /** Manual input value */
   @State() manualInputValue: string = '';
 
+  /** Operation status for user feedback */
+  @State() operationStatus: OperationStatus = 'idle';
+
+  /** Last error message */
+  @State() lastError?: string;
+
   /** Event emitted when value changes */
   @Event() valueChange: EventEmitter<{ value: number }>;
 
@@ -142,35 +150,72 @@ export class UiSlider {
   private async readDevice() {
     if (!this.tdUrl) return;
     
-    try {
-      const response = await fetch(this.tdUrl);
-      if (response.ok) {
-        const value = await response.json();
-        const num = Number(value);
-        if (!isNaN(num)) {
-          this.currentValue = Math.max(this.min, Math.min(this.max, num));
-          this.manualInputValue = String(this.currentValue);
-        }
-      }
-    } catch (error) {
-      // Log error but continue with local value
-      console.warn('Device read failed:', error);
+    this.operationStatus = 'loading';
+    
+    const result = await DataHandler.readFromDevice(this.tdUrl, {
+      expectedValueType: 'number',
+      retryCount: 2,
+      timeout: 5000
+    });
+
+    if (result.success && typeof result.value === 'number') {
+      const clampedValue = Math.max(this.min, Math.min(this.max, result.value));
+      this.currentValue = clampedValue;
+      this.manualInputValue = String(clampedValue);
+      this.operationStatus = 'success';
+      this.lastError = undefined;
+      
+      // Clear success indicator after 2 seconds
+      setTimeout(() => {
+        this.operationStatus = 'idle';
+      }, 2000);
+    } else {
+      this.operationStatus = 'error';
+      this.lastError = DataHandler.getErrorMessage(result);
+      
+      // Clear error indicator after 5 seconds
+      setTimeout(() => {
+        this.operationStatus = 'idle';
+        this.lastError = undefined;
+      }, 5000);
+      
+      console.warn('Device read failed:', this.lastError);
     }
   }
 
   /** Write to TD device */
-  private async writeDevice(value: number) {
-    if (!this.tdUrl) return;
+  private async writeDevice(value: number): Promise<boolean> {
+    if (!this.tdUrl) return true; // Local control, always succeeds
     
-    try {
-      await fetch(this.tdUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(value)
-      });
-    } catch (error) {
-      // Log error but don't interrupt user experience
-      console.warn('Device update failed:', error);
+    this.operationStatus = 'loading';
+    
+    const result = await DataHandler.writeToDevice(this.tdUrl, value, {
+      retryCount: 2,
+      timeout: 5000
+    });
+
+    if (result.success) {
+      this.operationStatus = 'success';
+      this.lastError = undefined;
+      
+      // Clear success indicator after 2 seconds
+      setTimeout(() => {
+        this.operationStatus = 'idle';
+      }, 2000);
+      
+      return true;
+    } else {
+      this.operationStatus = 'error';
+      this.lastError = DataHandler.getErrorMessage(result);
+      
+      // Clear error indicator after 5 seconds
+      setTimeout(() => {
+        this.operationStatus = 'idle';
+        this.lastError = undefined;
+      }, 5000);
+      
+      console.warn('Device write failed:', this.lastError);
+      return false;
     }
   }
 
@@ -181,15 +226,22 @@ export class UiSlider {
     const target = event.target as HTMLInputElement;
     const newValue = Number(target.value);
     
+    const previousValue = this.currentValue;
     this.currentValue = newValue;
     this.manualInputValue = String(newValue);
     this.valueChange.emit({ value: newValue });
 
     // Update TD device if URL provided
     if (this.tdUrl) {
-      this.writeDevice(newValue).catch(() => {
-        // Silently ignore network errors for smooth UX
-      });
+      const success = await this.writeDevice(newValue);
+      if (!success) {
+        // Revert to previous value on write failure
+        this.currentValue = previousValue;
+        this.manualInputValue = String(previousValue);
+        // Force re-render by triggering a minimal DOM update
+        const input = event.target as HTMLInputElement;
+        input.value = String(previousValue);
+      }
     }
   }
 
@@ -211,6 +263,7 @@ export class UiSlider {
     }
 
     const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
+    const previousValue = this.currentValue;
     
     this.currentValue = clampedValue;
     this.manualInputValue = String(clampedValue);
@@ -218,14 +271,17 @@ export class UiSlider {
 
     // Update TD device if URL provided
     if (this.tdUrl) {
-      this.writeDevice(clampedValue).catch(() => {
-        // Silently ignore network errors for smooth UX
-      });
+      const success = await this.writeDevice(clampedValue);
+      if (!success) {
+        // Revert to previous value on write failure
+        this.currentValue = previousValue;
+        this.manualInputValue = String(previousValue);
+      }
     }
   };
 
   /** Handle keyboard navigation */
-  private handleKeyDown = (event: KeyboardEvent) => {
+  private handleKeyDown = async (event: KeyboardEvent) => {
     if (this.state === 'disabled') return;
 
     let newValue = this.currentValue;
@@ -262,14 +318,18 @@ export class UiSlider {
     }
 
     if (newValue !== this.currentValue) {
+      const previousValue = this.currentValue;
       this.currentValue = newValue;
       this.manualInputValue = String(newValue);
       this.valueChange.emit({ value: newValue });
       
       if (this.tdUrl) {
-        this.writeDevice(newValue).catch(() => {
-          // Silently handle errors in keyboard navigation
-        });
+        const success = await this.writeDevice(newValue);
+        if (!success) {
+          // Revert to previous value on write failure
+          this.currentValue = previousValue;
+          this.manualInputValue = String(previousValue);
+        }
       }
     }
   };
@@ -521,6 +581,22 @@ export class UiSlider {
           aria-valuenow={this.currentValue}
           aria-disabled={isDisabled ? 'true' : 'false'}
         >
+          {/* Status Indicator */}
+          {this.tdUrl && this.operationStatus !== 'idle' && (
+            <div
+              class={StatusIndicator.getStatusClasses(this.operationStatus, {
+                theme: this.theme,
+                size: 'small',
+                position: 'top-right'
+              })}
+              title={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
+              role="status"
+              aria-label={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
+            >
+              {StatusIndicator.getStatusIcon(this.operationStatus)}
+            </div>
+          )}
+          
           <div class={trackStyles.track}>
             {this.variant !== 'rainbow' && (
               <div

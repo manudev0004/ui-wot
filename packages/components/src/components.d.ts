@@ -32,6 +32,16 @@ export namespace Components {
      */
     interface UiButton {
         /**
+          * Data payload to send with the action. Can be a JSON string or any value that will be JSON serialized.
+          * @example '{"brightness": 100}' or '"on"' or '42'
+         */
+        "actionData"?: string;
+        /**
+          * Function name to call when button is clicked. User defines this function in their code, component will invoke it.
+          * @example "handleButtonClick"
+         */
+        "clickHandler"?: string;
+        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
@@ -42,15 +52,15 @@ export namespace Components {
          */
         "label": string;
         /**
-          * Function name to call when button is clicked. User defines this function in their code, component will invoke it.
-          * @example "handleButtonClick"
-         */
-        "onClick"?: string;
-        /**
           * Current state of the button. - active: Button is enabled (default) - disabled: Button cannot be interacted with
           * @default 'active'
          */
         "state": 'active' | 'disabled';
+        /**
+          * Thing Description URL for action invocation. When provided, button will trigger an action on the device.
+          * @example "http://device.local/actions/turnOn"
+         */
+        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -67,6 +77,10 @@ export namespace Components {
      */
     interface UiCheckbox {
         /**
+          * Custom callback function name.
+         */
+        "changeHandler"?: string;
+        /**
           * Whether the checkbox is checked.
           * @default false
          */
@@ -81,14 +95,15 @@ export namespace Components {
          */
         "label"?: string;
         /**
-          * Custom callback function name.
-         */
-        "onChangeCallback"?: string;
-        /**
           * Current state of the checkbox.
           * @default 'default'
          */
         "state": 'disabled' | 'active' | 'default';
+        /**
+          * Thing Description URL for property control. When provided, checkbox will read/write boolean values to the device.
+          * @example "http://device.local/properties/enabled"
+         */
+        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -160,6 +175,11 @@ export namespace Components {
      */
     interface UiNumberPicker {
         /**
+          * Function name to call when value changes. User defines this function in their code, component will invoke it.
+          * @example "handleNumberChange"
+         */
+        "changeHandler"?: string;
+        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
@@ -191,11 +211,6 @@ export namespace Components {
           * MQTT topic path for MQTT protocol (e.g., "device/volume")
          */
         "mqttTopic"?: string;
-        /**
-          * Function name to call when value changes. User defines this function in their code, component will invoke it.
-          * @example "handleNumberChange"
-         */
-        "onChange"?: string;
         /**
           * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
           * @default 'http'
@@ -378,6 +393,11 @@ export namespace Components {
      */
     interface UiToggle {
         /**
+          * Function name to call when toggle state changes (for local control). User defines this function in their code, component will invoke it.
+          * @example "handleMyToggle"
+         */
+        "changeHandler"?: string;
+        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
@@ -399,11 +419,6 @@ export namespace Components {
           * MQTT topic path for MQTT protocol (e.g., "device/toggle")
          */
         "mqttTopic"?: string;
-        /**
-          * Function name to call when toggle state changes (for local control). User defines this function in their code, component will invoke it.
-          * @example "handleMyToggle"
-         */
-        "onChange"?: string;
         /**
           * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
           * @default 'http'
@@ -744,6 +759,16 @@ declare namespace LocalJSX {
      */
     interface UiButton {
         /**
+          * Data payload to send with the action. Can be a JSON string or any value that will be JSON serialized.
+          * @example '{"brightness": 100}' or '"on"' or '42'
+         */
+        "actionData"?: string;
+        /**
+          * Function name to call when button is clicked. User defines this function in their code, component will invoke it.
+          * @example "handleButtonClick"
+         */
+        "clickHandler"?: string;
+        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
@@ -758,15 +783,15 @@ declare namespace LocalJSX {
          */
         "onButtonClick"?: (event: UiButtonCustomEvent<{ label: string }>) => void;
         /**
-          * Function name to call when button is clicked. User defines this function in their code, component will invoke it.
-          * @example "handleButtonClick"
-         */
-        "onClick"?: string;
-        /**
           * Current state of the button. - active: Button is enabled (default) - disabled: Button cannot be interacted with
           * @default 'active'
          */
         "state"?: 'active' | 'disabled';
+        /**
+          * Thing Description URL for action invocation. When provided, button will trigger an action on the device.
+          * @example "http://device.local/actions/turnOn"
+         */
+        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -783,6 +808,10 @@ declare namespace LocalJSX {
      */
     interface UiCheckbox {
         /**
+          * Custom callback function name.
+         */
+        "changeHandler"?: string;
+        /**
           * Whether the checkbox is checked.
           * @default false
          */
@@ -797,10 +826,6 @@ declare namespace LocalJSX {
          */
         "label"?: string;
         /**
-          * Custom callback function name.
-         */
-        "onChangeCallback"?: string;
-        /**
           * Event emitted when checkbox state changes.
          */
         "onCheckboxChange"?: (event: UiCheckboxCustomEvent<{ checked: boolean }>) => void;
@@ -809,6 +834,11 @@ declare namespace LocalJSX {
           * @default 'default'
          */
         "state"?: 'disabled' | 'active' | 'default';
+        /**
+          * Thing Description URL for property control. When provided, checkbox will read/write boolean values to the device.
+          * @example "http://device.local/properties/enabled"
+         */
+        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -880,6 +910,11 @@ declare namespace LocalJSX {
      */
     interface UiNumberPicker {
         /**
+          * Function name to call when value changes. User defines this function in their code, component will invoke it.
+          * @example "handleNumberChange"
+         */
+        "changeHandler"?: string;
+        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
@@ -911,11 +946,6 @@ declare namespace LocalJSX {
           * MQTT topic path for MQTT protocol (e.g., "device/volume")
          */
         "mqttTopic"?: string;
-        /**
-          * Function name to call when value changes. User defines this function in their code, component will invoke it.
-          * @example "handleNumberChange"
-         */
-        "onChange"?: string;
         /**
           * Event emitted when value changes
          */
@@ -1106,6 +1136,11 @@ declare namespace LocalJSX {
      */
     interface UiToggle {
         /**
+          * Function name to call when toggle state changes (for local control). User defines this function in their code, component will invoke it.
+          * @example "handleMyToggle"
+         */
+        "changeHandler"?: string;
+        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
@@ -1127,11 +1162,6 @@ declare namespace LocalJSX {
           * MQTT topic path for MQTT protocol (e.g., "device/toggle")
          */
         "mqttTopic"?: string;
-        /**
-          * Function name to call when toggle state changes (for local control). User defines this function in their code, component will invoke it.
-          * @example "handleMyToggle"
-         */
-        "onChange"?: string;
         /**
           * Event emitted when toggle state changes
          */

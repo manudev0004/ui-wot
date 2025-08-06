@@ -1,4 +1,6 @@
-import { Component, Prop, h, Event, EventEmitter } from '@stencil/core';
+import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
+import { DataHandler } from '../../utils/data-handler';
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 
 /**
  * Button component with various visual styles, matching the ui-number-picker design family.
@@ -69,17 +71,95 @@ export class UiButton {
    * User defines this function in their code, component will invoke it.
    * @example "handleButtonClick"
    */
-  @Prop() onClick?: string;
+  @Prop() clickHandler?: string;
+
+  /**
+   * Thing Description URL for action invocation.
+   * When provided, button will trigger an action on the device.
+   * @example "http://device.local/actions/turnOn"
+   */
+  @Prop() tdUrl?: string;
+
+  /**
+   * Data payload to send with the action.
+   * Can be a JSON string or any value that will be JSON serialized.
+   * @example '{"brightness": 100}' or '"on"' or '42'
+   */
+  @Prop() actionData?: string;
+
+  /** Operation status for user feedback */
+  @State() operationStatus: OperationStatus = 'idle';
+
+  /** Last error message */
+  @State() lastError?: string;
 
   /** Event emitted when button is clicked */
   @Event() buttonClick: EventEmitter<{ label: string }>;
 
   /** Handle button click */
-  private handleClick = () => {
+  private handleClick = async () => {
     if (this.state === 'disabled') return;
+    
+    // If TD URL is provided, invoke action on device
+    if (this.tdUrl) {
+      await this.invokeAction();
+    }
     
     this.emitClick();
   };
+
+  /** Invoke action on TD device */
+  private async invokeAction() {
+    this.operationStatus = 'loading';
+    
+    try {
+      let payload = undefined;
+      if (this.actionData) {
+        try {
+          payload = JSON.parse(this.actionData);
+        } catch {
+          // If not valid JSON, use as string
+          payload = this.actionData;
+        }
+      }
+
+      const result = await DataHandler.writeToDevice(this.tdUrl, payload, {
+        retryCount: 1,
+        timeout: 5000
+      });
+
+      if (result.success) {
+        this.operationStatus = 'success';
+        this.lastError = undefined;
+        
+        // Clear success indicator after 2 seconds
+        setTimeout(() => {
+          this.operationStatus = 'idle';
+        }, 2000);
+      } else {
+        this.operationStatus = 'error';
+        this.lastError = DataHandler.getErrorMessage(result);
+        
+        // Clear error indicator after 5 seconds
+        setTimeout(() => {
+          this.operationStatus = 'idle';
+          this.lastError = undefined;
+        }, 5000);
+        
+        console.warn('Action failed:', this.lastError);
+      }
+    } catch (error) {
+      this.operationStatus = 'error';
+      this.lastError = error.message || 'Action failed';
+      
+      setTimeout(() => {
+        this.operationStatus = 'idle';
+        this.lastError = undefined;
+      }, 5000);
+      
+      console.warn('Action failed:', error);
+    }
+  }
 
   /** Emit click events */
   private emitClick() {
@@ -89,8 +169,8 @@ export class UiButton {
     });
 
     // Call user's callback function if provided
-    if (this.onClick && typeof window[this.onClick] === 'function') {
-      window[this.onClick]({
+    if (this.clickHandler && typeof (window as any)[this.clickHandler] === 'function') {
+      (window as any)[this.clickHandler]({
         label: this.label
       });
     }
@@ -176,15 +256,33 @@ export class UiButton {
     const isDisabled = this.state === 'disabled';
 
     return (
-      <button
-        class={this.getButtonStyle()}
-        onClick={this.handleClick}
-        onKeyDown={this.handleKeyDown}
-        disabled={isDisabled}
-        aria-label={this.label}
-      >
-        {this.label}
-      </button>
+      <div class="relative">
+        {/* Status Indicator */}
+        {this.tdUrl && this.operationStatus !== 'idle' && (
+          <div
+            class={StatusIndicator.getStatusClasses(this.operationStatus, {
+              theme: this.theme,
+              size: 'small',
+              position: 'top-right'
+            })}
+            title={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
+            role="status"
+            aria-label={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
+          >
+            {StatusIndicator.getStatusIcon(this.operationStatus)}
+          </div>
+        )}
+        
+        <button
+          class={this.getButtonStyle()}
+          onClick={this.handleClick}
+          onKeyDown={this.handleKeyDown}
+          disabled={isDisabled}
+          aria-label={this.label}
+        >
+          {this.label}
+        </button>
+      </div>
     );
   }
 }

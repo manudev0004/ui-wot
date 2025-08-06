@@ -128,7 +128,7 @@ export class UiToggle {
    * User defines this function in their code, component will invoke it.
    * @example "handleMyToggle"
    */
-  @Prop() onChange?: string;
+  @Prop() changeHandler?: string;
 
   /**
    * Protocol to use for Thing Description communication.
@@ -388,9 +388,9 @@ export class UiToggle {
     // Emit toggle event for parent to handle
     this.toggle.emit({ active: newActive });
 
-    // Call user's onChangeFunction if provided
-    if (this.onChange && typeof window[this.onChange] === 'function') {
-      window[this.onChange]({
+    // Call user's changeHandler if provided
+    if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
+      (window as any)[this.changeHandler]({
         active: newActive,
         value: newActive ? 'true' : 'false',
         label: this.label

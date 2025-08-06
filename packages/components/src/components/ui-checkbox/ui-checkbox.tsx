@@ -1,4 +1,6 @@
 import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
+import { DataHandler } from '../../utils/data-handler';
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 
 /**
  * Checkbox component with consistent styling to match the design system.
@@ -42,7 +44,24 @@ export class UiCheckbox {
   /**
    * Custom callback function name.
    */
-  @Prop() onChangeCallback?: string;
+  @Prop() changeHandler?: string;
+
+  /**
+   * Thing Description URL for property control.
+   * When provided, checkbox will read/write boolean values to the device.
+   * @example "http://device.local/properties/enabled"
+   */
+  @Prop() tdUrl?: string;
+
+  /**
+   * Operation status for user feedback.
+   */
+  @State() operationStatus: OperationStatus = 'idle';
+
+  /**
+   * Last error message.
+   */
+  @State() lastError?: string;
 
   /**
    * Internal state for checked status.
@@ -56,20 +75,114 @@ export class UiCheckbox {
 
   componentWillLoad() {
     this.isChecked = this.checked;
+    
+    // Initialize from TD if URL provided
+    if (this.tdUrl) {
+      this.readFromDevice();
+    }
   }
 
-  private handleClick = () => {
+  private async readFromDevice() {
+    if (!this.tdUrl) return;
+    
+    this.operationStatus = 'loading';
+    
+    const result = await DataHandler.readFromDevice(this.tdUrl, {
+      expectedValueType: 'boolean',
+      retryCount: 2,
+      timeout: 5000
+    });
+
+    if (result.success && typeof result.value === 'boolean') {
+      this.isChecked = result.value;
+      this.checked = result.value;
+      this.operationStatus = 'success';
+      this.lastError = undefined;
+      
+      // Clear success indicator after 2 seconds
+      setTimeout(() => {
+        this.operationStatus = 'idle';
+      }, 2000);
+    } else {
+      this.operationStatus = 'error';
+      this.lastError = DataHandler.getErrorMessage(result);
+      
+      // Clear error indicator after 5 seconds
+      setTimeout(() => {
+        this.operationStatus = 'idle';
+        this.lastError = undefined;
+      }, 5000);
+      
+      console.warn('Checkbox read failed:', this.lastError);
+    }
+  }
+
+  private async writeToDevice(value: boolean): Promise<boolean> {
+    if (!this.tdUrl) return true; // Local control, always succeeds
+    
+    this.operationStatus = 'loading';
+    
+    const result = await DataHandler.writeToDevice(this.tdUrl, value, {
+      retryCount: 2,
+      timeout: 5000
+    });
+
+    if (result.success) {
+      this.operationStatus = 'success';
+      this.lastError = undefined;
+      
+      // Clear success indicator after 2 seconds
+      setTimeout(() => {
+        this.operationStatus = 'idle';
+      }, 2000);
+      
+      return true;
+    } else {
+      this.operationStatus = 'error';
+      this.lastError = DataHandler.getErrorMessage(result);
+      
+      // Clear error indicator after 5 seconds
+      setTimeout(() => {
+        this.operationStatus = 'idle';
+        this.lastError = undefined;
+      }, 5000);
+      
+      console.warn('Checkbox write failed:', this.lastError);
+      return false;
+    }
+  }
+
+  private handleClick = async () => {
     if (this.state === 'disabled') return;
 
-    this.isChecked = !this.isChecked;
-    this.checked = this.isChecked;
+    const newValue = !this.isChecked;
+    const previousValue = this.isChecked;
+
+    this.isChecked = newValue;
+    this.checked = newValue;
     
     // Emit the change event
-    this.checkboxChange.emit({ checked: this.isChecked });
+    this.checkboxChange.emit({ checked: newValue });
 
     // Call custom callback if provided
-    if (this.onChangeCallback && typeof window[this.onChangeCallback] === 'function') {
-      window[this.onChangeCallback]({ checked: this.isChecked });
+    if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
+      (window as any)[this.changeHandler]({ checked: newValue });
+    }
+
+    // Update device if TD URL provided
+    if (this.tdUrl) {
+      const success = await this.writeToDevice(newValue);
+      if (!success) {
+        // Revert to previous value on write failure
+        this.isChecked = previousValue;
+        this.checked = previousValue;
+        
+        // Re-emit with reverted value
+        this.checkboxChange.emit({ checked: previousValue });
+        if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
+          (window as any)[this.changeHandler]({ checked: previousValue });
+        }
+      }
     }
   };
 
@@ -143,21 +256,39 @@ export class UiCheckbox {
 
     return (
       <div class="flex items-center">
-        <div
-          class={checkboxStyles}
-          onClick={this.handleClick}
-          role="checkbox"
-          aria-checked={this.isChecked ? 'true' : 'false'}
-          aria-disabled={isDisabled ? 'true' : 'false'}
-          tabIndex={isDisabled ? -1 : 0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              this.handleClick();
-            }
-          }}
-        >
-          {this.isChecked && this.renderCheckmark()}
+        <div class="relative">
+          {/* Status Indicator */}
+          {this.tdUrl && this.operationStatus !== 'idle' && (
+            <div
+              class={StatusIndicator.getStatusClasses(this.operationStatus, {
+                theme: this.theme,
+                size: 'small',
+                position: 'top-right'
+              })}
+              title={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
+              role="status"
+              aria-label={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
+            >
+              {StatusIndicator.getStatusIcon(this.operationStatus)}
+            </div>
+          )}
+          
+          <div
+            class={checkboxStyles}
+            onClick={this.handleClick}
+            role="checkbox"
+            aria-checked={this.isChecked ? 'true' : 'false'}
+            aria-disabled={isDisabled ? 'true' : 'false'}
+            tabIndex={isDisabled ? -1 : 0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.handleClick();
+              }
+            }}
+          >
+            {this.isChecked && this.renderCheckmark()}
+          </div>
         </div>
         {this.label && (
           <label class={labelStyles} onClick={this.handleClick}>

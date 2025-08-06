@@ -1,4 +1,6 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
+import { DataHandler, DataOperationResult } from '../../utils/data-handler';
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 
 /**
  * Number picker component with various visual styles, TD integration and customizable range.
@@ -118,7 +120,7 @@ export class UiNumberPicker {
    * User defines this function in their code, component will invoke it.
    * @example "handleNumberChange"
    */
-  @Prop() onChange?: string;
+  @Prop() changeHandler?: string;
 
   /**
    * Protocol to use for Thing Description communication.
@@ -164,6 +166,12 @@ export class UiNumberPicker {
   /** Internal state tracking current value */
   @State() currentValue: number = 0;
 
+  /** Operation status for user feedback */
+  @State() operationStatus: OperationStatus = 'idle';
+
+  /** Last error message */
+  @State() lastError?: string;
+
   /** Event emitted when value changes */
   @Event() valueChange: EventEmitter<{ value: number; label?: string }>;
 
@@ -195,37 +203,66 @@ export class UiNumberPicker {
   private async readDeviceState() {
     if (!this.tdUrl) return;
 
+    this.operationStatus = 'loading';
+    
     try {
       console.log(`Reading from: ${this.tdUrl} via ${this.protocol}`);
       
+      let result: DataOperationResult;
+      
       if (this.protocol === 'http') {
-        await this.readDeviceStateHttp();
+        result = await DataHandler.readFromDevice(this.tdUrl, {
+          expectedValueType: 'number',
+          retryCount: 2,
+          timeout: 5000
+        });
       } else if (this.protocol === 'coap') {
-        await this.readDeviceStateCoap();
+        result = await this.readDeviceStateCoap();
       } else if (this.protocol === 'mqtt') {
-        await this.readDeviceStateMqtt();
+        result = await this.readDeviceStateMqtt();
+      } else {
+        result = { success: false, error: `Unsupported protocol: ${this.protocol}` };
+      }
+
+      if (result.success && typeof result.value === 'number') {
+        this.currentValue = result.value;
+        this.value = result.value;
+        this.operationStatus = 'success';
+        this.lastError = undefined;
+        
+        console.log(`Read value: ${result.value}`);
+        
+        // Clear success indicator after 2 seconds
+        setTimeout(() => {
+          this.operationStatus = 'idle';
+        }, 2000);
+      } else {
+        this.operationStatus = 'error';
+        this.lastError = DataHandler.getErrorMessage(result);
+        
+        // Clear error indicator after 5 seconds
+        setTimeout(() => {
+          this.operationStatus = 'idle';
+          this.lastError = undefined;
+        }, 5000);
+        
+        console.warn('Failed to read state:', this.lastError);
       }
     } catch (error) {
+      this.operationStatus = 'error';
+      this.lastError = error.message || 'Unknown error occurred';
+      
+      setTimeout(() => {
+        this.operationStatus = 'idle';
+        this.lastError = undefined;
+      }, 5000);
+      
       console.warn('Failed to read state:', error);
     }
   }
 
-  /** Read via HTTP */
-  private async readDeviceStateHttp() {
-    const response = await fetch(this.tdUrl);
-    
-    if (response.ok) {
-      const value = await response.json();
-      const numberValue = typeof value === 'number' ? value : Number(value);
-      
-      this.currentValue = numberValue;
-      this.value = numberValue;
-      console.log(`Read value: ${numberValue}`);
-    }
-  }
-
   /** Read via CoAP */
-  private async readDeviceStateCoap() {
+  private async readDeviceStateCoap(): Promise<DataOperationResult> {
     try {
       // Simple CoAP GET request
       const url = new URL(this.tdUrl);
@@ -234,90 +271,142 @@ export class UiNumberPicker {
       });
       const value = await response.json();
       const numberValue = typeof value === 'number' ? value : Number(value);
-      this.currentValue = numberValue;
-      this.value = numberValue;
+      
+      if (isNaN(numberValue)) {
+        return { success: false, error: 'Invalid number received from CoAP device' };
+      }
+      
       console.log(`CoAP read value: ${numberValue}`);
+      return { success: true, value: numberValue };
     } catch (error) {
       console.warn('CoAP read failed:', error);
-      throw error;
+      return { success: false, error: error.message || 'CoAP read failed' };
     }
   }
 
   /** Read via MQTT */
-  private async readDeviceStateMqtt() {
+  private async readDeviceStateMqtt(): Promise<DataOperationResult> {
     if (!this.mqttHost || !this.mqttTopic) {
-      console.warn('MQTT host and topic are required for MQTT protocol');
-      return;
+      return { 
+        success: false, 
+        error: 'MQTT host and topic are required for MQTT protocol' 
+      };
     }
 
     try {
       // Use WebSocket-based MQTT connection
       const wsUrl = `ws://${this.mqttHost}/mqtt`;
-      const ws = new WebSocket(wsUrl);
       
-      ws.onopen = () => {
-        // Subscribe to topic
-        const subscribeMsg = {
-          cmd: 'subscribe',
-          topic: this.mqttTopic
+      return new Promise((resolve) => {
+        const ws = new WebSocket(wsUrl);
+        const timeout = setTimeout(() => {
+          ws.close();
+          resolve({ success: false, error: 'MQTT connection timeout' });
+        }, 5000);
+        
+        ws.onopen = () => {
+          // Subscribe to topic
+          const subscribeMsg = {
+            cmd: 'subscribe',
+            topic: this.mqttTopic
+          };
+          ws.send(JSON.stringify(subscribeMsg));
         };
-        ws.send(JSON.stringify(subscribeMsg));
-      };
-      
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.topic === this.mqttTopic) {
-          const numberValue = typeof data.payload === 'number' ? data.payload : Number(data.payload);
-          this.currentValue = numberValue;
-          this.value = numberValue;
-          console.log(`MQTT read value: ${numberValue}`);
-        }
-      };
+        
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.topic === this.mqttTopic) {
+            const numberValue = typeof data.payload === 'number' ? data.payload : Number(data.payload);
+            
+            if (isNaN(numberValue)) {
+              clearTimeout(timeout);
+              ws.close();
+              resolve({ success: false, error: 'Invalid number received from MQTT device' });
+              return;
+            }
+            
+            console.log(`MQTT read value: ${numberValue}`);
+            clearTimeout(timeout);
+            ws.close();
+            resolve({ success: true, value: numberValue });
+          }
+        };
+        
+        ws.onerror = () => {
+          clearTimeout(timeout);
+          ws.close();
+          resolve({ success: false, error: 'MQTT connection failed' });
+        };
+      });
     } catch (error) {
       console.warn('MQTT read failed:', error);
-      throw error;
+      return { success: false, error: error.message || 'MQTT read failed' };
     }
   }
 
   /** Write new state to TD device */
-  private async updateDevice(value: number) {
-    if (!this.tdUrl) return;
+  private async updateDevice(value: number): Promise<boolean> {
+    if (!this.tdUrl) return true; // Local control, always succeeds
 
+    this.operationStatus = 'loading';
+    
     try {
       console.log(`Writing ${value} to: ${this.tdUrl} via ${this.protocol}`);
       
+      let result: DataOperationResult;
+      
       if (this.protocol === 'http') {
-        await this.updateDeviceHttp(value);
+        result = await DataHandler.writeToDevice(this.tdUrl, value, {
+          retryCount: 2,
+          timeout: 5000
+        });
       } else if (this.protocol === 'coap') {
-        await this.updateDeviceCoap(value);
+        result = await this.updateDeviceCoap(value);
       } else if (this.protocol === 'mqtt') {
-        await this.updateDeviceMqtt(value);
+        result = await this.updateDeviceMqtt(value);
+      } else {
+        result = { success: false, error: `Unsupported protocol: ${this.protocol}` };
+      }
+
+      if (result.success) {
+        this.operationStatus = 'success';
+        this.lastError = undefined;
+        
+        // Clear success indicator after 2 seconds
+        setTimeout(() => {
+          this.operationStatus = 'idle';
+        }, 2000);
+        
+        return true;
+      } else {
+        this.operationStatus = 'error';
+        this.lastError = DataHandler.getErrorMessage(result);
+        
+        // Clear error indicator after 5 seconds
+        setTimeout(() => {
+          this.operationStatus = 'idle';
+          this.lastError = undefined;
+        }, 5000);
+        
+        console.warn('Failed to write:', this.lastError);
+        return false;
       }
     } catch (error) {
+      this.operationStatus = 'error';
+      this.lastError = error.message || 'Unknown error occurred';
+      
+      setTimeout(() => {
+        this.operationStatus = 'idle';
+        this.lastError = undefined;
+      }, 5000);
+      
       console.warn('Failed to write:', error);
-      throw error;
+      return false;
     }
-  }
-
-  /** Write via HTTP */
-  private async updateDeviceHttp(value: number) {
-    const response = await fetch(this.tdUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(value),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Write failed: ${response.status}`);
-    }
-    
-    console.log(`Successfully wrote: ${value}`);
   }
 
   /** Write via CoAP */
-  private async updateDeviceCoap(value: number) {
+  private async updateDeviceCoap(value: number): Promise<DataOperationResult> {
     try {
       const url = new URL(this.tdUrl);
       const response = await fetch(`coap://${url.host}${url.pathname}`, {
@@ -329,47 +418,64 @@ export class UiNumberPicker {
       });
 
       if (!response.ok) {
-        throw new Error(`CoAP write failed: ${response.status}`);
+        return { 
+          success: false, 
+          error: `CoAP write failed: ${response.status}`,
+          statusCode: response.status 
+        };
       }
       
       console.log(`CoAP successfully wrote: ${value}`);
+      return { success: true, value };
     } catch (error) {
       console.warn('CoAP write failed:', error);
-      throw error;
+      return { success: false, error: error.message || 'CoAP write failed' };
     }
   }
 
   /** Write via MQTT */
-  private async updateDeviceMqtt(value: number) {
+  private async updateDeviceMqtt(value: number): Promise<DataOperationResult> {
     if (!this.mqttHost || !this.mqttTopic) {
-      console.warn('MQTT host and topic are required for MQTT protocol');
-      throw new Error('MQTT configuration missing');
+      return { 
+        success: false, 
+        error: 'MQTT host and topic are required for MQTT protocol' 
+      };
     }
 
     try {
       // Use WebSocket-based MQTT connection
       const wsUrl = `ws://${this.mqttHost}/mqtt`;
-      const ws = new WebSocket(wsUrl);
       
-      ws.onopen = () => {
-        // Publish to topic
-        const publishMsg = {
-          cmd: 'publish',
-          topic: this.mqttTopic,
-          payload: value
+      return new Promise((resolve) => {
+        const ws = new WebSocket(wsUrl);
+        const timeout = setTimeout(() => {
+          ws.close();
+          resolve({ success: false, error: 'MQTT write timeout' });
+        }, 5000);
+        
+        ws.onopen = () => {
+          const publishMsg = {
+            cmd: 'publish',
+            topic: this.mqttTopic,
+            payload: value
+          };
+          ws.send(JSON.stringify(publishMsg));
+          console.log(`MQTT successfully wrote: ${value}`);
+          
+          clearTimeout(timeout);
+          ws.close();
+          resolve({ success: true, value });
         };
-        ws.send(JSON.stringify(publishMsg));
-        console.log(`MQTT successfully wrote: ${value}`);
-        ws.close();
-      };
-      
-      ws.onerror = (error) => {
-        console.warn('MQTT write failed:', error);
-        throw new Error('MQTT write failed');
-      };
+        
+        ws.onerror = () => {
+          clearTimeout(timeout);
+          ws.close();
+          resolve({ success: false, error: 'MQTT write failed' });
+        };
+      });
     } catch (error) {
       console.warn('MQTT write failed:', error);
-      throw error;
+      return { success: false, error: error.message || 'MQTT write failed' };
     }
   }
 
@@ -385,18 +491,18 @@ export class UiNumberPicker {
     const newValue = this.currentValue + this.step;
     if (this.max !== undefined && newValue > this.max) return;
     
+    const previousValue = this.currentValue;
     this.currentValue = newValue;
     this.value = newValue;
     this.emitChange();
 
     // Update device if connected and write mode is enabled
     if (this.tdUrl && (this.mode === 'write' || this.mode === 'readwrite')) {
-      try {
-        await this.updateDevice(newValue);
-      } catch (error) {
+      const success = await this.updateDevice(newValue);
+      if (!success) {
         // Revert on failure
-        this.currentValue = this.currentValue - this.step;
-        this.value = this.currentValue;
+        this.currentValue = previousValue;
+        this.value = previousValue;
         console.warn('Change failed, reverted state');
         // Emit revert event
         this.emitChange();
@@ -416,18 +522,18 @@ export class UiNumberPicker {
     const newValue = this.currentValue - this.step;
     if (this.min !== undefined && newValue < this.min) return;
     
+    const previousValue = this.currentValue;
     this.currentValue = newValue;
     this.value = newValue;
     this.emitChange();
 
     // Update device if connected and write mode is enabled
     if (this.tdUrl && (this.mode === 'write' || this.mode === 'readwrite')) {
-      try {
-        await this.updateDevice(newValue);
-      } catch (error) {
+      const success = await this.updateDevice(newValue);
+      if (!success) {
         // Revert on failure
-        this.currentValue = this.currentValue + this.step;
-        this.value = this.currentValue;
+        this.currentValue = previousValue;
+        this.value = previousValue;
         console.warn('Change failed, reverted state');
         // Emit revert event
         this.emitChange();
@@ -444,8 +550,8 @@ export class UiNumberPicker {
     });
 
     // Call user's callback function if provided
-    if (this.onChange && typeof window[this.onChange] === 'function') {
-      window[this.onChange]({
+    if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
+      (window as any)[this.changeHandler]({
         value: this.currentValue,
         label: this.label
       });
@@ -589,10 +695,26 @@ export class UiNumberPicker {
         ) : (
           // Show interactive number picker
           <div 
-            class="flex items-center gap-3"
+            class="relative flex items-center gap-3"
             tabindex={isDisabled ? -1 : 0}
             onKeyDown={this.handleKeyDown}
           >
+            {/* Status Indicator */}
+            {this.tdUrl && this.operationStatus !== 'idle' && (
+              <div
+                class={StatusIndicator.getStatusClasses(this.operationStatus, {
+                  theme: this.theme,
+                  size: 'small',
+                  position: 'top-right'
+                })}
+                title={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
+                role="status"
+                aria-label={StatusIndicator.getStatusTooltip(this.operationStatus, this.lastError)}
+              >
+                {StatusIndicator.getStatusIcon(this.operationStatus)}
+              </div>
+            )}
+
             {/* Decrement Button */}
             <button
               class={this.getButtonStyle('decrement')}
