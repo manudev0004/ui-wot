@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /**
  * UI Text Component Styles
  * Includes design system colors, typography, and syntax highlighting

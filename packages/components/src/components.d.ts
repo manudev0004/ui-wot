@@ -73,6 +73,70 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
+     * Calendar component for date-time selection with various visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-calendar 
+     * td-url="http://device.local/properties/schedule"
+     * variant="filled"
+     * label="Device Schedule"
+     * include-time="true">
+     * </ui-calendar>
+     * ```
+     */
+    interface UiCalendar {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Include time picker alongside date picker.
+          * @default false
+         */
+        "includeTime": boolean;
+        /**
+          * Optional text label for the calendar.
+         */
+        "label"?: string;
+        /**
+          * Maximum selectable date (ISO string).
+         */
+        "maxDate"?: string;
+        /**
+          * Minimum selectable date (ISO string).
+         */
+        "minDate"?: string;
+        /**
+          * Current state of the calendar. - disabled: Calendar cannot be interacted with - default: Calendar is interactive (default)
+          * @default 'default'
+         */
+        "state": 'disabled' | 'default';
+        /**
+          * Thing Description URL for device control.
+         */
+        "tdUrl"?: string;
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme": 'light' | 'dark';
+        /**
+          * Current selected date-time value (ISO string).
+         */
+        "value"?: string;
+        /**
+          * Visual style variant of the calendar. - minimal: Clean minimal design (default) - outlined: Border with background - filled: Solid background
+          * @default 'minimal'
+         */
+        "variant": 'minimal' | 'outlined' | 'filled';
+    }
+    /**
      * Checkbox component with consistent styling to match the design system.
      */
     interface UiCheckbox {
@@ -571,6 +635,10 @@ export interface UiButtonCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiButtonElement;
 }
+export interface UiCalendarCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiCalendarElement;
+}
 export interface UiCheckboxCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiCheckboxElement;
@@ -632,6 +700,40 @@ declare global {
     var HTMLUiButtonElement: {
         prototype: HTMLUiButtonElement;
         new (): HTMLUiButtonElement;
+    };
+    interface HTMLUiCalendarElementEventMap {
+        "dateChange": { value: string };
+    }
+    /**
+     * Calendar component for date-time selection with various visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-calendar 
+     * td-url="http://device.local/properties/schedule"
+     * variant="filled"
+     * label="Device Schedule"
+     * include-time="true">
+     * </ui-calendar>
+     * ```
+     */
+    interface HTMLUiCalendarElement extends Components.UiCalendar, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiCalendarElementEventMap>(type: K, listener: (this: HTMLUiCalendarElement, ev: UiCalendarCustomEvent<HTMLUiCalendarElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiCalendarElementEventMap>(type: K, listener: (this: HTMLUiCalendarElement, ev: UiCalendarCustomEvent<HTMLUiCalendarElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiCalendarElement: {
+        prototype: HTMLUiCalendarElement;
+        new (): HTMLUiCalendarElement;
     };
     interface HTMLUiCheckboxElementEventMap {
         "checkboxChange": { checked: boolean };
@@ -901,6 +1003,7 @@ declare global {
     };
     interface HTMLElementTagNameMap {
         "ui-button": HTMLUiButtonElement;
+        "ui-calendar": HTMLUiCalendarElement;
         "ui-checkbox": HTMLUiCheckboxElement;
         "ui-heading": HTMLUiHeadingElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
@@ -976,6 +1079,74 @@ declare namespace LocalJSX {
         "theme"?: 'light' | 'dark';
         /**
           * Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button
+          * @default 'minimal'
+         */
+        "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Calendar component for date-time selection with various visual styles and TD integration.
+     * Link a direct property URL for plug-and-play device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+     * ```
+     * @example TD Integration
+     * ```html
+     * <ui-calendar 
+     * td-url="http://device.local/properties/schedule"
+     * variant="filled"
+     * label="Device Schedule"
+     * include-time="true">
+     * </ui-calendar>
+     * ```
+     */
+    interface UiCalendar {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Include time picker alongside date picker.
+          * @default false
+         */
+        "includeTime"?: boolean;
+        /**
+          * Optional text label for the calendar.
+         */
+        "label"?: string;
+        /**
+          * Maximum selectable date (ISO string).
+         */
+        "maxDate"?: string;
+        /**
+          * Minimum selectable date (ISO string).
+         */
+        "minDate"?: string;
+        /**
+          * Event emitted when date changes
+         */
+        "onDateChange"?: (event: UiCalendarCustomEvent<{ value: string }>) => void;
+        /**
+          * Current state of the calendar. - disabled: Calendar cannot be interacted with - default: Calendar is interactive (default)
+          * @default 'default'
+         */
+        "state"?: 'disabled' | 'default';
+        /**
+          * Thing Description URL for device control.
+         */
+        "tdUrl"?: string;
+        /**
+          * Theme for the component.
+          * @default 'light'
+         */
+        "theme"?: 'light' | 'dark';
+        /**
+          * Current selected date-time value (ISO string).
+         */
+        "value"?: string;
+        /**
+          * Visual style variant of the calendar. - minimal: Clean minimal design (default) - outlined: Border with background - filled: Solid background
           * @default 'minimal'
          */
         "variant"?: 'minimal' | 'outlined' | 'filled';
@@ -1496,6 +1667,7 @@ declare namespace LocalJSX {
     }
     interface IntrinsicElements {
         "ui-button": UiButton;
+        "ui-calendar": UiCalendar;
         "ui-checkbox": UiCheckbox;
         "ui-heading": UiHeading;
         "ui-number-picker": UiNumberPicker;
@@ -1533,6 +1705,24 @@ declare module "@stencil/core" {
              * ```
              */
             "ui-button": LocalJSX.UiButton & JSXBase.HTMLAttributes<HTMLUiButtonElement>;
+            /**
+             * Calendar component for date-time selection with various visual styles and TD integration.
+             * Link a direct property URL for plug-and-play device control.
+             * @example Basic Usage
+             * ```html
+             * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+             * ```
+             * @example TD Integration
+             * ```html
+             * <ui-calendar 
+             * td-url="http://device.local/properties/schedule"
+             * variant="filled"
+             * label="Device Schedule"
+             * include-time="true">
+             * </ui-calendar>
+             * ```
+             */
+            "ui-calendar": LocalJSX.UiCalendar & JSXBase.HTMLAttributes<HTMLUiCalendarElement>;
             /**
              * Checkbox component with consistent styling to match the design system.
              */

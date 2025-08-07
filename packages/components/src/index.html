@@ -70,6 +70,12 @@
             >
               UI Text
             </button>
+            <button
+              id="calendar-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI Calendar
+            </button>
           </nav>
         </div>
       </div>
@@ -886,403 +892,81 @@
 
       <!-- Text Content -->
       <div id="text-content" class="tab-content hidden">
-        <!-- TD Integration -->
+
+
+        <!-- Basic Examples -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Thing Description Integration</h2>
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Text Examples</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Single-line Text -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Single-line Text Input</h3>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Single-line Input</h3>
               <ui-text
-                id="td-text-single"
                 variant="edit"
                 text-type="single"
                 label="Device Name"
                 placeholder="Enter device name"
                 value="Smart Thermostat"
-                max-length="50"
                 change-handler="handleTextChange"
               ></ui-text>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Try typing to see real-time updates</p>
             </div>
 
             <!-- Multi-line Text Area -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Multi-line Text Area</h3>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Multi-line Text</h3>
               <ui-text
-                id="td-text-multi"
                 variant="edit"
                 text-type="multi"
-                label="Device Description"
-                placeholder="Enter detailed description..."
-                value="This is a smart thermostat that automatically adjusts temperature based on occupancy and time of day.
-
-Features:
-- WiFi connectivity
-- Mobile app control
-- Energy saving mode"
-                rows="6"
-                max-length="500"
-                change-handler="handleTextChange"
-              ></ui-text>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Multi-line with character counting</p>
-            </div>
-          </div>
-
-          <!-- Local Text Controls -->
-          <div class="mt-6">
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Local Text Controls</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <ui-text
-                id="local-text-single"
-                variant="edit"
-                text-type="single"
-                label="Local Single Line"
-                placeholder="Enter text here"
-                value="Local example"
-                change-handler="handleTextChange"
-              ></ui-text>
-              <ui-text
-                id="local-text-multi"
-                variant="edit"
-                text-type="multi"
-                label="Local Multi Line"
-                placeholder="Enter multi-line text..."
-                value="Local multi-line example"
-                rows="3"
-                change-handler="handleTextChange"
-              ></ui-text>
-            </div>
-          </div>
-        </div>
-
-        <!-- Display Variants -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Display Variants</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Read-only Single Line -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-only Single Line</h3>
-              <ui-text
-                variant="display"
-                text-type="single"
-                label="Device Status"
-                value="Online - Connected to WiFi network 'HomeNet'"
-              ></ui-text>
-            </div>
-
-            <!-- Read-only Multi-line -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-only Multi-line</h3>
-              <ui-text
-                variant="display"
-                text-type="multi"
-                label="System Log"
-                value="2024-01-15 10:30:25 - Device initialized
-2024-01-15 10:30:26 - WiFi connected
-2024-01-15 10:30:27 - Temperature sensor active
-2024-01-15 10:30:28 - Ready for operation"
+                label="Description"
+                placeholder="Enter description..."
+                value="This is a smart thermostat with WiFi connectivity and mobile app control."
                 rows="4"
+                change-handler="handleTextChange"
               ></ui-text>
             </div>
           </div>
         </div>
 
-        <!-- Structured Text (Syntax Highlighting) -->
+           
+      </div>
+
+      <!-- Calendar Content -->
+      <div id="calendar-content" class="tab-content hidden">
+
+
+        <!-- Basic Examples -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Structured Text with Syntax Highlighting</h2>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- JSON Display -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">JSON Configuration</h3>
-              <ui-text
-                variant="display"
-                text-type="multi"
-                structure="json"
-                label="Device Configuration"
-                value='{"deviceId": "thermostat-001", "settings": {"targetTemp": 22, "mode": "auto", "schedule": {"weekday": [{"time": "06:00", "temp": 20}, {"time": "18:00", "temp": 22}], "weekend": [{"time": "08:00", "temp": 21}]}, "features": {"wifi": true, "bluetooth": false, "voice": true}}}'
-                rows="8"
-              ></ui-text>
-            </div>
-
-            <!-- YAML Display -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">YAML Configuration</h3>
-              <ui-text
-                variant="display"
-                text-type="multi"
-                structure="yaml"
-                label="Device Settings"
-                value="device:
-  id: thermostat-001
-  name: Living Room Thermostat
-  
-settings:
-  temperature:
-    target: 22
-    unit: celsius
-  mode: auto
-  
-schedule:
-  weekday:
-    - time: '06:00'
-      temperature: 20
-    - time: '18:00'
-      temperature: 22
-  weekend:
-    - time: '08:00'
-      temperature: 21
-
-features:
-  wifi: enabled
-  bluetooth: disabled
-  voice_control: enabled
-  # Energy saving mode
-  eco_mode: true"
-                rows="10"
-              ></ui-text>
-            </div>
-
-            <!-- XML Display -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">XML Configuration</h3>
-              <ui-text
-                variant="display"
-                text-type="multi"
-                structure="xml"
-                label="Device Definition"
-                value='<?xml version="1.0" encoding="UTF-8"?>
-<device id="thermostat-001">
-  <name>Living Room Thermostat</name>
-  <settings>
-    <temperature target="22" unit="celsius" />
-    <mode>auto</mode>
-  </settings>
-  <features>
-    <wifi enabled="true" />
-    <bluetooth enabled="false" />
-    <voice enabled="true" />
-  </features>
-</device>'
-                rows="8"
-              ></ui-text>
-            </div>
-
-            <!-- Markdown Display -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Markdown Documentation</h3>
-              <ui-text
-                variant="display"
-                text-type="multi"
-                structure="markdown"
-                label="Device Manual"
-                value="# Smart Thermostat Manual
-
-## Overview
-The **Smart Thermostat** provides intelligent climate control with the following features:
-
-### Key Features
-- *WiFi connectivity* for remote control
-- **Energy saving** algorithms
-- `Voice control` integration
-- Automated scheduling
-
-### Quick Start
-1. Connect to WiFi network
-2. Set your preferred temperature
-3. Enable scheduling for optimal comfort
-
-> **Note:** For best results, place the thermostat away from direct sunlight.
-
-For support, visit [our website](https://example.com/support) or call **1-800-SUPPORT**."
-                rows="10"
-              ></ui-text>
-            </div>
-          </div>
-        </div>
-
-        <!-- Editable Structured Text -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Editable Structured Text</h2>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- JSON Editor -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">JSON Editor</h3>
-              <ui-text
-                variant="edit"
-                text-type="multi"
-                structure="json"
-                label="Edit Configuration"
-                placeholder="Enter valid JSON..."
-                value='{"temperature": 21, "mode": "heat"}'
-                rows="6"
-                change-handler="handleTextChange"
-              ></ui-text>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Edit mode with JSON structure (no highlighting in edit)</p>
-            </div>
-
-            <!-- Plain Text Editor -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Plain Text Editor</h3>
-              <ui-text
-                variant="edit"
-                text-type="multi"
-                structure="unstructured"
-                label="Notes"
-                placeholder="Enter your notes here..."
-                value="Device installation notes:
-- Mounted on north wall
-- WiFi signal strength: -45 dBm
-- Initial calibration completed"
-                rows="6"
-                resizable="true"
-                change-handler="handleTextChange"
-              ></ui-text>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Resizable text area with line counting</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Color Variants -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Color Variants</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Primary Color -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Primary</h3>
-              <ui-text
-                variant="edit"
-                text-type="single"
-                color="primary"
-                label="Primary Input"
-                placeholder="Primary color scheme"
-                value="Primary example"
-                change-handler="handleTextChange"
-              ></ui-text>
-            </div>
-
-            <!-- Secondary Color -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Secondary</h3>
-              <ui-text
-                variant="edit"
-                text-type="single"
-                color="secondary"
-                label="Secondary Input"
-                placeholder="Secondary color scheme"
-                value="Secondary example"
-                change-handler="handleTextChange"
-              ></ui-text>
-            </div>
-
-            <!-- Neutral Color -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Neutral</h3>
-              <ui-text
-                variant="edit"
-                text-type="single"
-                color="neutral"
-                label="Neutral Input"
-                placeholder="Neutral color scheme"
-                value="Neutral example"
-                change-handler="handleTextChange"
-              ></ui-text>
-            </div>
-          </div>
-        </div>
-
-        <!-- State Variants -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Component States</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Default State -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default</h3>
-              <ui-text
-                variant="edit"
-                text-type="single"
-                state="default"
-                label="Default State"
-                placeholder="Normal input field"
-                value="Default text"
-                change-handler="handleTextChange"
-              ></ui-text>
-            </div>
-
-            <!-- Active State -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Active</h3>
-              <ui-text
-                variant="edit"
-                text-type="single"
-                state="active"
-                label="Active State"
-                placeholder="Active input field"
-                value="Active text"
-                change-handler="handleTextChange"
-              ></ui-text>
-            </div>
-
-            <!-- Disabled State -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Disabled</h3>
-              <ui-text
-                variant="edit"
-                text-type="single"
-                state="disabled"
-                label="Disabled State"
-                placeholder="Disabled input field"
-                value="Disabled text"
-                change-handler="handleTextChange"
-              ></ui-text>
-            </div>
-          </div>
-        </div>
-
-        <!-- Usage Information -->
-        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Usage Information</h2>
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Calendar Examples</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Properties -->
+            <!-- Date Only -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Key Properties</h3>
-              <ul class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                <li><code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">variant</code>: "display" | "edit"</li>
-                <li><code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">text-type</code>: "single" | "multi"</li>
-                <li><code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">structure</code>: removed (simplified component)</li>
-                <li><code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">color</code>: "primary" | "secondary" | "neutral"</li>
-                <li><code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">state</code>: "default" | "active" | "disabled"</li>
-                <li><code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">td-url</code>: Thing Description URL</li>
-                <li><code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">change-handler</code>: Callback function name</li>
-              </ul>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date Selection</h3>
+              <ui-calendar
+                variant="outlined"
+                color="primary"
+                label="Select Date"
+                value="2024-01-15T00:00:00.000Z"
+              ></ui-calendar>
             </div>
 
-            <!-- Events -->
+            <!-- Date and Time -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Events & Feedback</h3>
-              <ul class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                <li><code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">textChange</code>: Emitted on value change</li>
-                <li><code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">change-handler</code>: Custom callback function</li>
-                <li>📊 Character/line counting in edit mode</li>
-                <li>✅ Success/error status indicators</li>
-                <li>⚡ Real-time validation and feedback</li>
-                <li>🎨 Consistent visual feedback design</li>
-              </ul>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date and Time</h3>
+              <ui-calendar
+                variant="filled"
+                color="secondary"
+                label="Select Date & Time"
+                include-time="true"
+                value="2024-01-15T14:30:00.000Z"
+              ></ui-calendar>
             </div>
-          </div>
 
-          <!-- Error Handling -->
-          <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-700">
-            <h3 class="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">✅ Simple Error Handling</h3>
-            <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-              <li>• <strong>Success Feedback:</strong> Green checkmark appears on successful operations</li>
-                           <li>• <strong>Error Messages:</strong> Clear error text appears below component on failure</li>
-              <li>• <strong>User-Friendly:</strong> Simple status indicators without complex state management</li>
-              <li>• <strong>Consistent Design:</strong> All components use the same error/success pattern</li>
-            </ul>
+         
           </div>
         </div>
-    </div>
+
+      
+      </div>
 
     <script>
       const themeToggle = document.getElementById('theme-toggle');
@@ -1293,17 +977,19 @@ For support, visit [our website](https://example.com/support) or call **1-800-SU
       const buttonTab = document.getElementById('button-tab');
       const checkboxTab = document.getElementById('checkbox-tab');
       const textTab = document.getElementById('text-tab');
+      const calendarTab = document.getElementById('calendar-tab');
       const toggleContent = document.getElementById('toggle-content');
       const numberPickerContent = document.getElementById('number-picker-content');
       const sliderContent = document.getElementById('slider-content');
       const buttonContent = document.getElementById('button-content');
       const checkboxContent = document.getElementById('checkbox-content');
       const textContent = document.getElementById('text-content');
+      const calendarContent = document.getElementById('calendar-content');
 
       function setTheme(isDark) {
         html.classList.toggle('dark', isDark);
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox').forEach(component => {
+        document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox, ui-text, ui-calendar').forEach(component => {
           component.theme = isDark ? 'dark' : 'light';
         });
         themeToggle.state = isDark ? 'active' : 'default';
@@ -1365,27 +1051,31 @@ For support, visit [our website](https://example.com/support) or call **1-800-SU
 
       // Tab switching
       toggleTab.addEventListener('click', () => {
-        switchTab(toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent);
+        switchTab(toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent, calendarTab, calendarContent);
       });
 
       numberPickerTab.addEventListener('click', () => {
-        switchTab(numberPickerTab, numberPickerContent, toggleTab, toggleContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent);
+        switchTab(numberPickerTab, numberPickerContent, toggleTab, toggleContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent, calendarTab, calendarContent);
       });
 
       sliderTab.addEventListener('click', () => {
-        switchTab(sliderTab, sliderContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent);
+        switchTab(sliderTab, sliderContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent, calendarTab, calendarContent);
       });
 
       buttonTab.addEventListener('click', () => {
-        switchTab(buttonTab, buttonContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, checkboxTab, checkboxContent, textTab, textContent);
+        switchTab(buttonTab, buttonContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, checkboxTab, checkboxContent, textTab, textContent, calendarTab, calendarContent);
       });
 
       checkboxTab.addEventListener('click', () => {
-        switchTab(checkboxTab, checkboxContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent, textTab, textContent);
+        switchTab(checkboxTab, checkboxContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent, textTab, textContent, calendarTab, calendarContent);
       });
 
       textTab.addEventListener('click', () => {
-        switchTab(textTab, textContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent);
+        switchTab(textTab, textContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent, calendarTab, calendarContent);
+      });
+
+      calendarTab.addEventListener('click', () => {
+        switchTab(calendarTab, calendarContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent);
       });
 
       // Initialize theme
