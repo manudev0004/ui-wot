@@ -49,23 +49,6 @@ import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/
  * </ui-toggle>
  * ```
  * 
- * @example User's JavaScript Handler
- * ```javascript
- * window.myToggleHandler = function(data) {
- *   console.log('Toggle changed:', data.active);
- *   console.log('New value:', data.value);
- *   console.log('Label:', data.label);
- *   // Your custom logic here
- * };
- * ```
- * 
- * @example Event Handling
- * ```javascript
- * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
- *   console.log('Toggle state:', event.detail.active);
- *   // Your custom logic here
- * });
- * ```
  */
 @Component({
   tag: 'ui-toggle',
@@ -182,13 +165,12 @@ export class UiToggle {
     if (this.tdUrl && (this.mode === 'read' || this.mode === 'readwrite')) {
       await this.readDeviceState();
     } else if (!this.tdUrl && this.value) {
-      // Initialize from value prop when no TD URL
+      // Initialize from value prop if there is no TD URL
       const boolValue = this.parseValue(this.value);
       this.isActive = boolValue;
     }
   }
 
-  /** Parse string value to boolean */
   private parseValue(value: string): boolean {
     const lowerValue = value.toLowerCase();
     return lowerValue === 'true' || lowerValue === '1' || lowerValue === 'on' || lowerValue === 'yes';
@@ -229,7 +211,6 @@ export class UiToggle {
   /** Read via CoAP */
   private async readDeviceStateCoap() {
     try {
-      // Simple CoAP GET request
       const url = new URL(this.tdUrl);
       const response = await fetch(`coap://${url.host}${url.pathname}`, {
         method: 'GET'
@@ -377,18 +358,16 @@ export class UiToggle {
   private async handleToggle() {
     if (this.state === 'disabled') return;
     
-    // Don't allow interaction in read-only mode (applies to both TD URL and local control)
+    // No interaction in read-only mode
     if (this.mode === 'read') {
       return;
     }
 
     const newActive = !this.isActive;
     this.isActive = newActive;
-
-    // Emit toggle event for parent to handle
     this.toggle.emit({ active: newActive });
 
-    // Call user's changeHandler if provided
+    // Call provided function
     if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
       (window as any)[this.changeHandler]({
         active: newActive,
@@ -416,7 +395,7 @@ export class UiToggle {
     }
   }
 
-  /** Handle keyboard 'enter' and 'spacebar' input to toggle switch state */
+  /** Keyboard 'enter' and 'spacebar' input handle to toggle switch state */
   private handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
@@ -429,7 +408,7 @@ export class UiToggle {
     const isDisabled = this.state === 'disabled';
     const isActive = this.isActive;
     
-    // Bigger sixe for apple variant
+    // Bigger size for apple variant
     const size = this.variant === 'apple' ? 'w-11 h-7' : 'w-12 h-6';
 
     // Different shapes of thumb

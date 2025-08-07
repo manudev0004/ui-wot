@@ -554,22 +554,6 @@ export namespace Components {
      * label="Custom Toggle">
      * </ui-toggle>
      * ```
-     * @example User's JavaScript Handler
-     * ```javascript
-     * window.myToggleHandler = function(data) {
-     * console.log('Toggle changed:', data.active);
-     * console.log('New value:', data.value);
-     * console.log('Label:', data.label);
-     * // Your custom logic here
-     * };
-     * ```
-     * @example Event Handling
-     * ```javascript
-     * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
-     * console.log('Toggle state:', event.detail.active);
-     * // Your custom logic here
-     * });
-     * ```
      */
     interface UiToggle {
         /**
@@ -969,22 +953,6 @@ declare global {
      * on-change="myToggleHandler"
      * label="Custom Toggle">
      * </ui-toggle>
-     * ```
-     * @example User's JavaScript Handler
-     * ```javascript
-     * window.myToggleHandler = function(data) {
-     * console.log('Toggle changed:', data.active);
-     * console.log('New value:', data.value);
-     * console.log('Label:', data.label);
-     * // Your custom logic here
-     * };
-     * ```
-     * @example Event Handling
-     * ```javascript
-     * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
-     * console.log('Toggle state:', event.detail.active);
-     * // Your custom logic here
-     * });
      * ```
      */
     interface HTMLUiToggleElement extends Components.UiToggle, HTMLStencilElement {
@@ -1585,22 +1553,6 @@ declare namespace LocalJSX {
      * label="Custom Toggle">
      * </ui-toggle>
      * ```
-     * @example User's JavaScript Handler
-     * ```javascript
-     * window.myToggleHandler = function(data) {
-     * console.log('Toggle changed:', data.active);
-     * console.log('New value:', data.value);
-     * console.log('Label:', data.label);
-     * // Your custom logic here
-     * };
-     * ```
-     * @example Event Handling
-     * ```javascript
-     * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
-     * console.log('Toggle state:', event.detail.active);
-     * // Your custom logic here
-     * });
-     * ```
      */
     interface UiToggle {
         /**
@@ -1885,22 +1837,6 @@ declare module "@stencil/core" {
              * on-change="myToggleHandler"
              * label="Custom Toggle">
              * </ui-toggle>
-             * ```
-             * @example User's JavaScript Handler
-             * ```javascript
-             * window.myToggleHandler = function(data) {
-             * console.log('Toggle changed:', data.active);
-             * console.log('New value:', data.value);
-             * console.log('Label:', data.label);
-             * // Your custom logic here
-             * };
-             * ```
-             * @example Event Handling
-             * ```javascript
-             * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
-             * console.log('Toggle state:', event.detail.active);
-             * // Your custom logic here
-             * });
              * ```
              */
             "ui-toggle": LocalJSX.UiToggle & JSXBase.HTMLAttributes<HTMLUiToggleElement>;
