@@ -28,7 +28,7 @@
         <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Wot-Components</h1>
         <div class="flex items-center gap-3">
           <span class="text-sm text-gray-600 dark:text-gray-300">Light</span>
-          <ui-toggle id="theme-toggle" variant="apple"></ui-toggle>
+          <ui-toggle id="theme-toggle" variant="default" ></ui-toggle>
           <span class="text-sm text-gray-600 dark:text-gray-300">Dark</span>
         </div>
       </div>
@@ -417,7 +417,7 @@
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Slider Examples</h2>
           <div class="space-y-6 max-w-md">
             <ui-slider
-              td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number"
+              td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/num"
               min="0"
               max="100"
               variant="neon"
@@ -551,22 +551,22 @@
               <div class="flex justify-around items-start h-80 pt-4 pb-8">
                 <div class="flex flex-col items-center">
                   <ui-slider orientation="vertical" variant="narrow" min="0" max="100" value="30" label=""></ui-slider>
-                  <span class="text-xs text-gray-600 dark:text-gray-400 mt-2">Narrow</span>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2 text-center">Narrow</span>
                 </div>
                 <div class="flex flex-col items-center">
                   <ui-slider orientation="vertical" variant="wide" min="0" max="100" value="60" label=""></ui-slider>
-                  <span class="text-xs text-gray-600 dark:text-gray-400 mt-2">Wide</span>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2 text-center">Wide</span>
                 </div>
                 <div class="flex flex-col items-center">
                   <ui-slider orientation="vertical" variant="rainbow" min="0" max="360" value="180" label=""></ui-slider>
-                  <span class="text-xs text-gray-600 dark:text-gray-400 mt-2">Rainbow</span>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2 text-center">Rainbow</span>
                 </div>
                 <div class="flex flex-col items-center">
                   <ui-slider orientation="vertical" variant="stepped" min="0" max="20" step="5" value="15" label=""></ui-slider>
-                  <span class="text-xs text-gray-600 dark:text-gray-400 mt-2">Stepped</span>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2 text-center">Stepped</span>
                 </div>
               </div>
-              <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider 
+              <pre class="mt-20 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider 
   orientation="vertical"
   variant="narrow"&gt;</pre>
             </div>
@@ -745,46 +745,46 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <!-- Minimal Variant -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Minimal (Circle)</h3>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Radio</h3>
               <div class="flex flex-col items-center space-y-4">
-                <ui-checkbox variant="minimal" color="primary" label="Unchecked Circle"></ui-checkbox>
-                <ui-checkbox variant="minimal" color="primary" label="Checked Circle" checked></ui-checkbox>
+                <ui-checkbox variant="minimal" color="primary" label="Unchecked Radio"></ui-checkbox>
+                <ui-checkbox variant="minimal" color="primary" label="Checked Radio" checked></ui-checkbox>
                 <ui-checkbox variant="minimal" color="secondary" label="Secondary" checked></ui-checkbox>
                 <ui-checkbox variant="minimal" color="neutral" label="Neutral" checked></ui-checkbox>
               </div>
               <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
   variant="minimal"
-  label="Circle Style"&gt;
+  label="Radio Style"&gt;
 &lt;/ui-checkbox&gt;</pre>
             </div>
 
             <!-- Outlined Variant -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Outlined (Classic)</h3>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Outlined</h3>
               <div class="flex flex-col items-center space-y-4">
-                <ui-checkbox variant="outlined" color="primary" label="Unchecked Square"></ui-checkbox>
-                <ui-checkbox variant="outlined" color="primary" label="Checked Square" checked></ui-checkbox>
+                <ui-checkbox variant="outlined" color="primary" label="Unchecked Outlined"></ui-checkbox>
+                <ui-checkbox variant="outlined" color="primary" label="Checked Outlined" checked></ui-checkbox>
                 <ui-checkbox variant="outlined" color="secondary" label="Secondary" checked></ui-checkbox>
                 <ui-checkbox variant="outlined" color="neutral" label="Neutral" checked></ui-checkbox>
               </div>
               <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
   variant="outlined"
-  label="Classic Style"&gt;
+  label="Outlined Style"&gt;
 &lt;/ui-checkbox&gt;</pre>
             </div>
 
             <!-- Filled Variant -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Filled (Modern Toggle)</h3>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Filled</h3>
               <div class="flex flex-col items-center space-y-4">
-                <ui-checkbox variant="filled" color="primary" label="Unchecked Toggle"></ui-checkbox>
-                <ui-checkbox variant="filled" color="primary" label="Checked Toggle" checked></ui-checkbox>
+                <ui-checkbox variant="filled" color="primary" label="Unchecked Filled"></ui-checkbox>
+                <ui-checkbox variant="filled" color="primary" label="Checked Filled" checked></ui-checkbox>
                 <ui-checkbox variant="filled" color="secondary" label="Secondary" checked></ui-checkbox>
                 <ui-checkbox variant="filled" color="neutral" label="Neutral" checked></ui-checkbox>
               </div>
               <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
   variant="filled"
-  label="Modern Toggle"&gt;
+  label="Filled Style"&gt;
 &lt;/ui-checkbox&gt;</pre>
             </div>
           </div>
@@ -881,77 +881,7 @@
       </div>
 
       <!-- Thing Description Integration -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Thing Description Integration</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Working Components -->
-          <div>
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Connected Device Controls</h3>
-            <div class="space-y-3">
-              <ui-slider 
-                td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number"
-                min="0" 
-                max="100" 
-                label="Device Value"
-                variant="neon"
-                color="primary">
-              </ui-slider>
-              <ui-number-picker 
-                td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number"
-                label="Number Control"
-                protocol="http"
-                mode="readwrite"
-                min="0"
-                max="100">
-              </ui-number-picker>
-              <ui-checkbox 
-                td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
-                label="Boolean Property"
-                variant="filled"
-                color="primary">
-              </ui-checkbox>
-              <ui-button 
-                td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/actions/reset"
-                action-data='"default"'
-                label="Reset Action"
-                variant="filled"
-                color="primary">
-              </ui-button>
-            </div>
-          </div>
-
-          <!-- Local Controls -->
-          <div>
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Local Controls</h3>
-            <div class="space-y-3">
-              <ui-slider 
-                min="0" 
-                max="100" 
-                value="50"
-                label="Local Slider"
-                variant="narrow"
-                color="secondary">
-              </ui-slider>
-              <ui-number-picker 
-                value="25"
-                label="Local Counter"
-                min="0"
-                max="100">
-              </ui-number-picker>
-              <ui-checkbox 
-                label="Local Checkbox"
-                variant="outlined"
-                color="secondary">
-              </ui-checkbox>
-              <ui-button 
-                label="Local Button"
-                variant="outlined"
-                color="secondary">
-              </ui-button>
-            </div>
-          </div>
-        </div>
-      </div>
+      
     </div>
 
       <!-- Text Content -->
@@ -1346,7 +1276,7 @@ For support, visit [our website](https://example.com/support) or call **1-800-SU
             <h3 class="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">✅ Simple Error Handling</h3>
             <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1">
               <li>• <strong>Success Feedback:</strong> Green checkmark appears on successful operations</li>
-              <li>• <strong>Error Messages:</strong> Clear error text appears below component on failure</li>
+                           <li>• <strong>Error Messages:</strong> Clear error text appears below component on failure</li>
               <li>• <strong>User-Friendly:</strong> Simple status indicators without complex state management</li>
               <li>• <strong>Consistent Design:</strong> All components use the same error/success pattern</li>
             </ul>

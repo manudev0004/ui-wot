@@ -333,11 +333,11 @@ export class UiSlider {
     let progressSize = 'h-2';
     
     if (this.orientation === 'vertical') {
-      trackSize = 'w-2 h-64'; // Default height for vertical
-      if (this.variant === 'wide') trackSize = 'w-4 h-64';
-      if (this.variant === 'narrow') trackSize = 'w-1 h-64';
+      trackSize = 'w-2 h-48'; // Shorter height for vertical
+      if (this.variant === 'wide') trackSize = 'w-3 h-48';
+      if (this.variant === 'narrow') trackSize = 'w-1 h-48';
       progressSize = 'w-2';
-      if (this.variant === 'wide') progressSize = 'w-4';
+      if (this.variant === 'wide') progressSize = 'w-3';
       if (this.variant === 'narrow') progressSize = 'w-1';
     } else {
       if (this.variant === 'wide') trackSize = 'h-4 w-full';
@@ -543,10 +543,11 @@ export class UiSlider {
     const percent = ((this.currentValue - this.min) / (this.max - this.min)) * 100;
 
     return (
-      <div class={isVertical ? 'flex flex-col items-center w-24 mx-2 mb-8' : 'w-full'}>
-        {this.label && (
+      <div class={isVertical ? 'flex flex-col items-center w-20 mx-4 mb-4' : 'w-full'}> {/* Reduced mb-4 for vertical to avoid excess space */}
+        {/* Label only for horizontal sliders */}
+        {this.label && !isVertical && (
           <label
-            class={`block text-sm font-medium ${isVertical ? 'mb-4 text-center' : 'mb-4'} ${isDisabled ? 'text-gray-400' : ''} ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+            class={`block text-sm font-medium mb-4 ${isDisabled ? 'text-gray-400' : ''} ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
           >
             {this.label}
           </label>
@@ -562,7 +563,7 @@ export class UiSlider {
         {/* Slider Interface */}
         <div
           class={isVertical ? 'relative flex flex-col items-center justify-center' : 'relative'}
-          style={isVertical ? {height: '16rem', width: '2rem'} : {}}
+          style={isVertical ? {height: '12rem', width: '1.5rem'} : {}}
           tabIndex={isDisabled ? -1 : 0}
           onKeyDown={this.handleKeyDown}
           role="slider"
@@ -583,10 +584,10 @@ export class UiSlider {
           <div class={trackStyles.track}>
             {this.variant !== 'rainbow' && (
               <div
-                class={trackStyles.progress}
+                class={`${trackStyles.progress} ${trackStyles.progressSize}`}
                 style={isVertical
-                  ? {height: `${percent}%`, bottom: '0', left: '0', position: 'absolute'}
-                  : {width: `${percent}%`}}
+                  ? {height: `${percent}%`, bottom: '0', left: '0', position: 'absolute', width: '100%'}
+                  : {width: `${percent}%`, height: '100%'}}
               ></div>
             )}
             {this.renderStepMarks()}
@@ -614,23 +615,32 @@ export class UiSlider {
           </div>
         </div>
 
-        {/* Value labels for vertical - current value box and min at bottom */}
+        {/* Value labels for vertical - min, current value box, and label at bottom */}
         {isVertical && (
-          <div class={`flex flex-col items-center mt-6 space-y-4 text-xs ${this.theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-            <div class={`px-3 py-2 rounded-md text-center font-medium border min-w-12 ${this.theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`}>
+          <div class={`flex flex-col items-center mt-4 space-y-2 text-xs ${this.theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`} style={{marginBottom: '1.5rem'}}> {/* Increased margin below label/value group to prevent overlap */}
+            <span>{this.min}</span>
+            <div class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${this.theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`}>
               {this.currentValue}
             </div>
-            <span class="mt-2">{this.min}</span>
+            {this.label && (
+              <span class="text-xs font-medium text-center mt-1 mb-2">{this.label}</span>
+            )}
           </div>
         )}
 
-        {/* Horizontal value labels */}
+        {/* Horizontal value labels: min/max on top, value box below, centered with extra gap */}
         {!isVertical && (
-          <div class={`flex justify-between text-xs mt-3 ${this.theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-            <span>{this.min}</span>
-            <span>{this.currentValue}</span>
-            <span>{this.max}</span>
-          </div>
+          <>
+            <div class={`flex justify-between items-center text-xs mt-3 ${this.theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+              <span>{this.min}</span>
+              <span>{this.max}</span>
+            </div>
+            <div class="flex justify-center mt-0"> {/* Increased gap (mt-4) */}
+              <div class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${this.theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`} style={{display: 'inline-block'}}>
+                {this.currentValue}
+              </div>
+            </div>
+          </>
         )}
 
         {/* Manual Control Interface */}
