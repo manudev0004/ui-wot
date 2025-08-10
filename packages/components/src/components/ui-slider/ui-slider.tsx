@@ -1,5 +1,5 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
-import { DataHandler } from '../../utils/data-handler';
+import { WotService, WotResult } from '../../utils/wot-service';
 
 /**
  * Slider component with various features, multiple visual styles and TD integration.
@@ -153,7 +153,7 @@ export class UiSlider {
     this.showSuccess = false;
     this.errorMessage = undefined;
     
-    const result = await DataHandler.readFromDevice(this.tdUrl);
+    const result: WotResult = await WotService.readProperty(this.tdUrl);
 
     if (result.success && typeof result.value === 'number') {
       const clampedValue = Math.max(this.min, Math.min(this.max, result.value));
@@ -185,7 +185,7 @@ export class UiSlider {
     this.showSuccess = false;
     this.errorMessage = undefined;
     
-    const result = await DataHandler.writeToDevice(this.tdUrl, value);
+    const result: WotResult = await WotService.writeProperty(this.tdUrl, value);
 
     if (result.success) {
       this.showSuccess = true;

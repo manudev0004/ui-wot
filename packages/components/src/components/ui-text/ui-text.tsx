@@ -1,5 +1,5 @@
 import { Component, Prop, State, h, Event, EventEmitter, Watch } from '@stencil/core';
-import { DataHandler } from '../../utils/data-handler';
+import { WotService, WotResult } from '../../utils/wot-service';
 
 /**
  * Comprehensive text component for displaying and editing text data.
@@ -194,7 +194,7 @@ export class UiText {
     this.showSuccess = false;
     this.errorMessage = undefined;
     
-    const result = await DataHandler.readFromDevice(this.tdUrl);
+    const result: WotResult = await WotService.readProperty(this.tdUrl);
 
     if (result.success && typeof result.value === 'string') {
       this.currentValue = result.value;
@@ -224,7 +224,7 @@ export class UiText {
     this.showSuccess = false;
     this.errorMessage = undefined;
     
-    const result = await DataHandler.writeToDevice(this.tdUrl, value);
+    const result: WotResult = await WotService.writeProperty(this.tdUrl, value);
 
     if (result.success) {
       this.showSuccess = true;

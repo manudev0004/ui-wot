@@ -1,4 +1,5 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
+import { WotService, WotResult } from '../../utils/wot-service';
 
 /**
  * Toogle switch component with various fetueres, multiple visual styles and TD integration.
@@ -9,32 +10,31 @@ import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/
  * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
  * ```
  * 
- * @example TD Integration with HTTP
+ * @example TD Integration (Auto-detects protocol)
  * ```html
  * <ui-toggle 
  *   td-url="http://device.local/properties/power"
  *   label="Smart Light"
- *   protocol="http"
  *   mode="readwrite">
  * </ui-toggle>
  * ```
  * 
- * @example TD Integration with MQTT
+ * @example Multi-protocol Support
  * ```html
- * <ui-toggle 
- *   td-url="mqtt://device"
- *   mqtt-host="localhost:1883"
- *   mqtt-topic="device/toggle"
- *   label="MQTT Device"
- *   protocol="mqtt"
- *   mode="readwrite">
- * </ui-toggle>
+ * <!-- HTTP -->
+ * <ui-toggle td-url="http://device.local/properties/power" label="HTTP Device"></ui-toggle>
+ * 
+ * <!-- CoAP -->
+ * <ui-toggle td-url="coap://device.local/properties/power" label="CoAP Device"></ui-toggle>
+ * 
+ * <!-- MQTT (via TD) -->
+ * <ui-toggle td-url="mqtt://broker.local/device/properties/power" label="MQTT Device"></ui-toggle>
  * ```
  * 
  * @example TD Device Read-Only (shows colored circle)
  * ```html
  * <ui-toggle 
- *   td-url="http://sensor.local/status"
+ *   td-url="http://sensor.local/properties/status"
  *   label="Door Sensor"
  *   mode="read">
  * </ui-toggle>
@@ -44,7 +44,7 @@ import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/
  * ```html
  * <ui-toggle 
  *   value="true"
- *   on-change="myToggleHandler"
+ *   change-handler="myToggleHandler"
  *   label="Custom Toggle">
  * </ui-toggle>
  * ```
@@ -114,24 +114,6 @@ export class UiToggle {
   @Prop() changeHandler?: string;
 
   /**
-   * Protocol to use for Thing Description communication.
-   * - http: HTTP REST API (default)
-   * - coap: CoAP protocol  
-   * - mqtt: MQTT protocol
-   */
-  @Prop() protocol: 'http' | 'coap' | 'mqtt' = 'http';
-
-  /**
-   * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
-   */
-  @Prop() mqttHost?: string;
-
-  /**
-   * MQTT topic path for MQTT protocol (e.g., "device/toggle")
-   */
-  @Prop() mqttTopic?: string;
-
-  /**
    * Device interaction mode.
    * - read: Only read from device (display current state as colored circle)
    * - write: Only write to device (control device but don't sync state)
@@ -142,17 +124,36 @@ export class UiToggle {
   /** Internal state tracking if toggle is on/off */
   @State() isActive: boolean = true;
 
+  /** Success feedback state */
+  @State() showSuccess: boolean = false;
+
+  /** Last error message */
+  @State() errorMessage?: string;
+
+  /** Property observation subscription */
+  private observationSubscription?: any;
+
   /** Event emitted when toggle state changes */
   @Event() toggle: EventEmitter<{ active: boolean }>;
 
   /** Watch for TD URL changes and reconnect */
   @Watch('tdUrl')
-  @Watch('value')
   async watchTdUrl() {
     if (this.tdUrl && (this.mode === 'read' || this.mode === 'readwrite')) {
       await this.readDeviceState();
+      // Setup property observation if supported
+      this.setupPropertyObservation();
     } else if (!this.tdUrl && this.value) {
       // Handle local value changes
+      const boolValue = this.parseValue(this.value);
+      this.isActive = boolValue;
+    }
+  }
+
+  /** Watch for value prop changes */
+  @Watch('value')
+  watchValue() {
+    if (!this.tdUrl && this.value) {
       const boolValue = this.parseValue(this.value);
       this.isActive = boolValue;
     }
@@ -164,10 +165,24 @@ export class UiToggle {
     
     if (this.tdUrl && (this.mode === 'read' || this.mode === 'readwrite')) {
       await this.readDeviceState();
+      // Setup property observation if supported
+      this.setupPropertyObservation();
     } else if (!this.tdUrl && this.value) {
       // Initialize from value prop if there is no TD URL
       const boolValue = this.parseValue(this.value);
       this.isActive = boolValue;
+    }
+  }
+
+  /** Cleanup on component destroy */
+  disconnectedCallback() {
+    if (this.observationSubscription) {
+      try {
+        // Unsubscribe from property observation
+        this.observationSubscription.stop?.();
+      } catch (error) {
+        console.warn('Failed to unsubscribe from property observation:', error);
+      }
     }
   }
 
@@ -176,181 +191,118 @@ export class UiToggle {
     return lowerValue === 'true' || lowerValue === '1' || lowerValue === 'on' || lowerValue === 'yes';
   }
 
-  /** Read current state from device */
+  /** Read current state from device using node-wot */
   private async readDeviceState() {
     if (!this.tdUrl) return;
 
+    // Clear previous state
+    this.showSuccess = false;
+    this.errorMessage = undefined;
+
     try {
-      console.log(`Reading from: ${this.tdUrl} via ${this.protocol}`);
+      console.log(`Reading from: ${this.tdUrl} using Node-WoT`);
       
-      if (this.protocol === 'http') {
-        await this.readDeviceStateHttp();
-      } else if (this.protocol === 'coap') {
-        await this.readDeviceStateCoap();
-      } else if (this.protocol === 'mqtt') {
-        await this.readDeviceStateMqtt();
+      const result: WotResult = await WotService.readProperty(this.tdUrl);
+      
+      if (result.success && result.value !== undefined) {
+        const booleanValue = typeof result.value === 'boolean' ? result.value : Boolean(result.value);
+        this.isActive = booleanValue;
+        this.showSuccess = true;
+        
+        // Clear success indicator after 3 seconds
+        setTimeout(() => {
+          this.showSuccess = false;
+        }, 3000);
+        
+        console.log(`Successfully read value: ${booleanValue}`);
+      } else {
+        this.errorMessage = result.error || 'Failed to read toggle state';
+        
+        // Clear error indicator after 8 seconds
+        setTimeout(() => {
+          this.errorMessage = undefined;
+        }, 8000);
+        
+        console.warn('Device read failed:', result.error);
       }
     } catch (error) {
+      this.errorMessage = `Connection failed: ${error.message || 'Unknown error'}`;
+      
+      // Clear error indicator after 8 seconds
+      setTimeout(() => {
+        this.errorMessage = undefined;
+      }, 8000);
+      
       console.warn('Failed to read state:', error);
     }
   }
 
-  /** Read via HTTP */
-  private async readDeviceStateHttp() {
-    const response = await fetch(this.tdUrl);
-    
-    if (response.ok) {
-      const value = await response.json();
-      const booleanValue = typeof value === 'boolean' ? value : Boolean(value);
-      
-      this.isActive = booleanValue;
-      console.log(`Read value: ${booleanValue}`);
-    }
-  }
+  /** Setup property observation for real-time updates */
+  private async setupPropertyObservation() {
+    if (!this.tdUrl || this.mode === 'write') return;
 
-  /** Read via CoAP */
-  private async readDeviceStateCoap() {
     try {
-      const url = new URL(this.tdUrl);
-      const response = await fetch(`coap://${url.host}${url.pathname}`, {
-        method: 'GET'
+      const result = await WotService.observeProperty(this.tdUrl, (value) => {
+        const booleanValue = typeof value === 'boolean' ? value : Boolean(value);
+        this.isActive = booleanValue;
+        console.log(`Property observation update: ${booleanValue}`);
       });
-      const value = await response.json();
-      const booleanValue = typeof value === 'boolean' ? value : Boolean(value);
-      this.isActive = booleanValue;
-      console.log(`CoAP read value: ${booleanValue}`);
-    } catch (error) {
-      console.warn('CoAP read failed:', error);
-      throw error;
-    }
-  }
 
-  /** Read via MQTT */
-  private async readDeviceStateMqtt() {
-    if (!this.mqttHost || !this.mqttTopic) {
-      console.warn('MQTT host and topic are required for MQTT protocol');
-      return;
-    }
-
-    try {
-      // Use WebSocket-based MQTT connection
-      const wsUrl = `ws://${this.mqttHost}/mqtt`;
-      const ws = new WebSocket(wsUrl);
-      
-      ws.onopen = () => {
-        // Subscribe to topic
-        const subscribeMsg = {
-          cmd: 'subscribe',
-          topic: this.mqttTopic
-        };
-        ws.send(JSON.stringify(subscribeMsg));
-      };
-      
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.topic === this.mqttTopic) {
-          const booleanValue = typeof data.payload === 'boolean' ? data.payload : Boolean(data.payload);
-          this.isActive = booleanValue;
-          console.log(`MQTT read value: ${booleanValue}`);
-        }
-      };
-    } catch (error) {
-      console.warn('MQTT read failed:', error);
-      throw error;
-    }
-  }
-
-  /** Write new state to TD device */
-  private async updateDevice(value: boolean) {
-    if (!this.tdUrl) return;
-
-    try {
-      console.log(`Writing ${value} to: ${this.tdUrl} via ${this.protocol}`);
-      
-      if (this.protocol === 'http') {
-        await this.updateDeviceHttp(value);
-      } else if (this.protocol === 'coap') {
-        await this.updateDeviceCoap(value);
-      } else if (this.protocol === 'mqtt') {
-        await this.updateDeviceMqtt(value);
+      if (result.success) {
+        this.observationSubscription = result.value;
+        console.log('Property observation setup successfully');
+      } else {
+        console.warn('Property observation not supported:', result.error);
       }
     } catch (error) {
+      console.warn('Failed to setup property observation:', error);
+    }
+  }
+
+  /** Write new state to TD device using node-wot */
+  private async updateDevice(value: boolean): Promise<boolean> {
+    if (!this.tdUrl || this.mode === 'read') return false;
+
+    // Clear previous state
+    this.showSuccess = false;
+    this.errorMessage = undefined;
+
+    try {
+      console.log(`Writing ${value} to: ${this.tdUrl} using Node-WoT`);
+      
+      const result: WotResult = await WotService.writeProperty(this.tdUrl, value);
+      
+      if (result.success) {
+        this.showSuccess = true;
+        
+        // Clear success indicator after 3 seconds
+        setTimeout(() => {
+          this.showSuccess = false;
+        }, 3000);
+        
+        console.log(`Successfully wrote: ${value}`);
+        return true;
+      } else {
+        this.errorMessage = result.error || 'Failed to write toggle state';
+        
+        // Clear error indicator after 8 seconds
+        setTimeout(() => {
+          this.errorMessage = undefined;
+        }, 8000);
+        
+        console.warn('Device write failed:', result.error);
+        return false;
+      }
+    } catch (error) {
+      this.errorMessage = `Connection failed: ${error.message || 'Unknown error'}`;
+      
+      // Clear error indicator after 8 seconds
+      setTimeout(() => {
+        this.errorMessage = undefined;
+      }, 8000);
+      
       console.warn('Failed to write:', error);
-      throw error;
-    }
-  }
-
-  /** Write via HTTP */
-  private async updateDeviceHttp(value: boolean) {
-    const response = await fetch(this.tdUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(value),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Write failed: ${response.status}`);
-    }
-    
-    console.log(`Successfully wrote: ${value}`);
-  }
-
-  /** Write via CoAP */
-  private async updateDeviceCoap(value: boolean) {
-    try {
-      const url = new URL(this.tdUrl);
-      const response = await fetch(`coap://${url.host}${url.pathname}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(value),
-      });
-
-      if (!response.ok) {
-        throw new Error(`CoAP write failed: ${response.status}`);
-      }
-      
-      console.log(`CoAP successfully wrote: ${value}`);
-    } catch (error) {
-      console.warn('CoAP write failed:', error);
-      throw error;
-    }
-  }
-
-  /** Write via MQTT */
-  private async updateDeviceMqtt(value: boolean) {
-    if (!this.mqttHost || !this.mqttTopic) {
-      console.warn('MQTT host and topic are required for MQTT protocol');
-      throw new Error('MQTT configuration missing');
-    }
-
-    try {
-      // Use WebSocket-based MQTT connection
-      const wsUrl = `ws://${this.mqttHost}/mqtt`;
-      const ws = new WebSocket(wsUrl);
-      
-      ws.onopen = () => {
-        // Publish to topic
-        const publishMsg = {
-          cmd: 'publish',
-          topic: this.mqttTopic,
-          payload: value
-        };
-        ws.send(JSON.stringify(publishMsg));
-        console.log(`MQTT successfully wrote: ${value}`);
-        ws.close();
-      };
-      
-      ws.onerror = (error) => {
-        console.warn('MQTT write failed:', error);
-        throw new Error('MQTT write failed');
-      };
-    } catch (error) {
-      console.warn('MQTT write failed:', error);
-      throw error;
+      return false;
     }
   }
 
@@ -383,9 +335,8 @@ export class UiToggle {
 
     // Update device if connected and write mode is enabled
     if (this.tdUrl && (this.mode === 'write' || this.mode === 'readwrite')) {
-      try {
-        await this.updateDevice(newActive);
-      } catch (error) {
+      const success = await this.updateDevice(newActive);
+      if (!success) {
         // Revert on failure
         this.isActive = !newActive;
         console.warn('Change failed, reverted state');
@@ -522,7 +473,6 @@ export class UiToggle {
             title={hoverTitle}
           ></span>
         ) : (
-
           <span
             class={toggleStyle}
             role="switch"
@@ -535,6 +485,26 @@ export class UiToggle {
             <span class={thumbStyle}></span>
             {this.showCrossIcons()}
           </span>
+        )}
+
+        {/* Status indicators for TD operations */}
+        {this.tdUrl && (
+          <div class="flex items-center space-x-1">
+            {this.showSuccess && (
+              <span class="inline-flex items-center text-green-600" title="Successfully updated">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              </span>
+            )}
+            {this.errorMessage && (
+              <span class="inline-flex items-center text-red-600" title={this.errorMessage}>
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+              </span>
+            )}
+          </div>
         )}
       </div>
     );

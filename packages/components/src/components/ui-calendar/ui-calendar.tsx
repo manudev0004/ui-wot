@@ -1,5 +1,5 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
-import { DataHandler } from '../../utils/data-handler';
+import { WotService, WotResult } from '../../utils/wot-service';
 
 /**
  * Calendar component for date-time selection with various visual styles and TD integration.
@@ -138,7 +138,7 @@ export class UiCalendar {
     this.showSuccess = false;
     this.errorMessage = undefined;
     
-    const result = await DataHandler.readFromDevice(this.tdUrl);
+    const result: WotResult = await WotService.readProperty(this.tdUrl);
 
     if (result.success && result.value) {
       const dateValue = new Date(result.value);
@@ -174,7 +174,7 @@ export class UiCalendar {
     this.showSuccess = false;
     this.errorMessage = undefined;
     
-    const result = await DataHandler.writeToDevice(this.tdUrl, value);
+    const result: WotResult = await WotService.writeProperty(this.tdUrl, value);
 
     if (result.success) {
       this.showSuccess = true;

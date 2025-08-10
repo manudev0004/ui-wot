@@ -1,5 +1,5 @@
 import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
-import { DataHandler } from '../../utils/data-handler';
+import { WotService, WotResult } from '../../utils/wot-service';
 
 /**
  * Button component with various visual styles, matching the ui-number-picker design family.
@@ -124,7 +124,7 @@ export class UiButton {
         }
       }
 
-      const result = await DataHandler.writeToDevice(this.tdUrl, payload);
+      const result: WotResult = await WotService.invokeAction(this.tdUrl, payload);
 
       if (result.success) {
         this.showSuccess = true;

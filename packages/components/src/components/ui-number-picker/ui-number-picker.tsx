@@ -1,5 +1,5 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
-import { DataHandler } from '../../utils/data-handler';
+import { WotService, WotResult } from '../../utils/wot-service';
 
 /**
  * Number picker component with various visual styles, TD integration and customizable range.
@@ -122,24 +122,6 @@ export class UiNumberPicker {
   @Prop() changeHandler?: string;
 
   /**
-   * Protocol to use for Thing Description communication.
-   * - http: HTTP REST API (default)
-   * - coap: CoAP protocol  
-   * - mqtt: MQTT protocol
-   */
-  @Prop() protocol: 'http' | 'coap' | 'mqtt' = 'http';
-
-  /**
-   * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
-   */
-  @Prop() mqttHost?: string;
-
-  /**
-   * MQTT topic path for MQTT protocol (e.g., "device/volume")
-   */
-  @Prop() mqttTopic?: string;
-
-  /**
    * Device interaction mode.
    * - read: Only read from device (display current value, no interaction)
    * - write: Only write to device (control device but don't sync state)
@@ -207,19 +189,9 @@ export class UiNumberPicker {
     this.errorMessage = undefined;
     
     try {
-      console.log(`Reading from: ${this.tdUrl} via ${this.protocol}`);
+      console.log(`Reading from: ${this.tdUrl} using Node-WoT`);
       
-      let result: any;
-      
-      if (this.protocol === 'http') {
-        result = await DataHandler.readFromDevice(this.tdUrl);
-      } else if (this.protocol === 'coap') {
-        result = await this.readDeviceStateCoap();
-      } else if (this.protocol === 'mqtt') {
-        result = await this.readDeviceStateMqtt();
-      } else {
-        result = { success: false, error: `Unsupported protocol: ${this.protocol}` };
-      }
+      const result: WotResult = await WotService.readProperty(this.tdUrl);
 
       if (result.success && typeof result.value === 'number') {
         this.currentValue = result.value;
@@ -253,89 +225,6 @@ export class UiNumberPicker {
     }
   }
 
-  /** Read via CoAP */
-  private async readDeviceStateCoap(): Promise<any> {
-    try {
-      // Simple CoAP GET request
-      const url = new URL(this.tdUrl);
-      const response = await fetch(`coap://${url.host}${url.pathname}`, {
-        method: 'GET'
-      });
-      const value = await response.json();
-      const numberValue = typeof value === 'number' ? value : Number(value);
-      
-      if (isNaN(numberValue)) {
-        return { success: false, error: 'Invalid number received from CoAP device' };
-      }
-      
-      console.log(`CoAP read value: ${numberValue}`);
-      return { success: true, value: numberValue };
-    } catch (error) {
-      console.warn('CoAP read failed:', error);
-      return { success: false, error: error.message || 'CoAP read failed' };
-    }
-  }
-
-  /** Read via MQTT */
-  private async readDeviceStateMqtt(): Promise<any> {
-    if (!this.mqttHost || !this.mqttTopic) {
-      return { 
-        success: false, 
-        error: 'MQTT host and topic are required for MQTT protocol' 
-      };
-    }
-
-    try {
-      // Use WebSocket-based MQTT connection
-      const wsUrl = `ws://${this.mqttHost}/mqtt`;
-      
-      return new Promise((resolve) => {
-        const ws = new WebSocket(wsUrl);
-        const timeout = setTimeout(() => {
-          ws.close();
-          resolve({ success: false, error: 'MQTT connection timeout' });
-        }, 5000);
-        
-        ws.onopen = () => {
-          // Subscribe to topic
-          const subscribeMsg = {
-            cmd: 'subscribe',
-            topic: this.mqttTopic
-          };
-          ws.send(JSON.stringify(subscribeMsg));
-        };
-        
-        ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          if (data.topic === this.mqttTopic) {
-            const numberValue = typeof data.payload === 'number' ? data.payload : Number(data.payload);
-            
-            if (isNaN(numberValue)) {
-              clearTimeout(timeout);
-              ws.close();
-              resolve({ success: false, error: 'Invalid number received from MQTT device' });
-              return;
-            }
-            
-            console.log(`MQTT read value: ${numberValue}`);
-            clearTimeout(timeout);
-            ws.close();
-            resolve({ success: true, value: numberValue });
-          }
-        };
-        
-        ws.onerror = () => {
-          clearTimeout(timeout);
-          ws.close();
-          resolve({ success: false, error: 'MQTT connection failed' });
-        };
-      });
-    } catch (error) {
-      console.warn('MQTT read failed:', error);
-      return { success: false, error: error.message || 'MQTT read failed' };
-    }
-  }
-
   /** Write new state to TD device */
   private async updateDevice(value: number): Promise<boolean> {
     if (!this.tdUrl) return true; // Local control, always succeeds
@@ -345,19 +234,9 @@ export class UiNumberPicker {
     this.errorMessage = undefined;
     
     try {
-      console.log(`Writing ${value} to: ${this.tdUrl} via ${this.protocol}`);
+      console.log(`Writing ${value} to: ${this.tdUrl} using Node-WoT`);
       
-      let result: any;
-      
-      if (this.protocol === 'http') {
-        result = await DataHandler.writeToDevice(this.tdUrl, value);
-      } else if (this.protocol === 'coap') {
-        result = await this.updateDeviceCoap(value);
-      } else if (this.protocol === 'mqtt') {
-        result = await this.updateDeviceMqtt(value);
-      } else {
-        result = { success: false, error: `Unsupported protocol: ${this.protocol}` };
-      }
+      const result: WotResult = await WotService.writeProperty(this.tdUrl, value);
 
       if (result.success) {
         this.showSuccess = true;
@@ -388,80 +267,6 @@ export class UiNumberPicker {
       
       console.warn('Failed to write:', error);
       return false;
-    }
-  }
-
-  /** Write via CoAP */
-  private async updateDeviceCoap(value: number): Promise<any> {
-    try {
-      const url = new URL(this.tdUrl);
-      const response = await fetch(`coap://${url.host}${url.pathname}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(value),
-      });
-
-      if (!response.ok) {
-        return { 
-          success: false, 
-          error: `CoAP write failed: ${response.status}`,
-          statusCode: response.status 
-        };
-      }
-      
-      console.log(`CoAP successfully wrote: ${value}`);
-      return { success: true, value };
-    } catch (error) {
-      console.warn('CoAP write failed:', error);
-      return { success: false, error: error.message || 'CoAP write failed' };
-    }
-  }
-
-  /** Write via MQTT */
-  private async updateDeviceMqtt(value: number): Promise<any> {
-    if (!this.mqttHost || !this.mqttTopic) {
-      return { 
-        success: false, 
-        error: 'MQTT host and topic are required for MQTT protocol' 
-      };
-    }
-
-    try {
-      // Use WebSocket-based MQTT connection
-      const wsUrl = `ws://${this.mqttHost}/mqtt`;
-      
-      return new Promise((resolve) => {
-        const ws = new WebSocket(wsUrl);
-        const timeout = setTimeout(() => {
-          ws.close();
-          resolve({ success: false, error: 'MQTT write timeout' });
-        }, 5000);
-        
-        ws.onopen = () => {
-          const publishMsg = {
-            cmd: 'publish',
-            topic: this.mqttTopic,
-            payload: value
-          };
-          ws.send(JSON.stringify(publishMsg));
-          console.log(`MQTT successfully wrote: ${value}`);
-          
-          clearTimeout(timeout);
-          ws.close();
-          resolve({ success: true, value });
-        };
-        
-        ws.onerror = () => {
-          clearTimeout(timeout);
-          ws.close();
-          resolve({ success: false, error: 'MQTT write failed' });
-        };
-      });
-    } catch (error) {
-      console.warn('MQTT write failed:', error);
-      return { success: false, error: error.message || 'MQTT write failed' };
     }
   }
 

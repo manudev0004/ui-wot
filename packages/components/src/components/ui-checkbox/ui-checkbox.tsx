@@ -1,5 +1,5 @@
 import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
-import { DataHandler } from '../../utils/data-handler';
+import { WotService, WotResult } from '../../utils/wot-service';
 
 /**
  * Checkbox component with consistent styling to match the design system.
@@ -88,7 +88,7 @@ export class UiCheckbox {
     this.showSuccess = false;
     this.errorMessage = undefined;
     
-    const result = await DataHandler.readFromDevice(this.tdUrl);
+    const result: WotResult = await WotService.readProperty(this.tdUrl);
 
     if (result.success && typeof result.value === 'boolean') {
       this.isChecked = result.value;
@@ -118,7 +118,7 @@ export class UiCheckbox {
     this.showSuccess = false;
     this.errorMessage = undefined;
     
-    const result = await DataHandler.writeToDevice(this.tdUrl, value);
+    const result: WotResult = await WotService.writeProperty(this.tdUrl, value);
 
     if (result.success) {
       this.showSuccess = true;

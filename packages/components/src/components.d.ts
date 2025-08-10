@@ -268,19 +268,6 @@ export namespace Components {
          */
         "mode": 'read' | 'write' | 'readwrite';
         /**
-          * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
-         */
-        "mqttHost"?: string;
-        /**
-          * MQTT topic path for MQTT protocol (e.g., "device/volume")
-         */
-        "mqttTopic"?: string;
-        /**
-          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
-          * @default 'http'
-         */
-        "protocol": 'http' | 'coap' | 'mqtt';
-        /**
           * Current state of the number picker. - active: Number picker is enabled (default) - disabled: Number picker cannot be interacted with
           * @default 'active'
          */
@@ -518,30 +505,27 @@ export namespace Components {
      * ```html
      * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
      * ```
-     * @example TD Integration with HTTP
+     * @example TD Integration (Auto-detects protocol)
      * ```html
      * <ui-toggle 
      * td-url="http://device.local/properties/power"
      * label="Smart Light"
-     * protocol="http"
      * mode="readwrite">
      * </ui-toggle>
      * ```
-     * @example TD Integration with MQTT
+     * @example Multi-protocol Support
      * ```html
-     * <ui-toggle 
-     * td-url="mqtt://device"
-     * mqtt-host="localhost:1883"
-     * mqtt-topic="device/toggle"
-     * label="MQTT Device"
-     * protocol="mqtt"
-     * mode="readwrite">
-     * </ui-toggle>
+     * <!-- HTTP -->
+     * <ui-toggle td-url="http://device.local/properties/power" label="HTTP Device"></ui-toggle>
+     * <!-- CoAP -->
+     * <ui-toggle td-url="coap://device.local/properties/power" label="CoAP Device"></ui-toggle>
+     * <!-- MQTT (via TD) -->
+     * <ui-toggle td-url="mqtt://broker.local/device/properties/power" label="MQTT Device"></ui-toggle>
      * ```
      * @example TD Device Read-Only (shows colored circle)
      * ```html
      * <ui-toggle 
-     * td-url="http://sensor.local/status"
+     * td-url="http://sensor.local/properties/status"
      * label="Door Sensor"
      * mode="read">
      * </ui-toggle>
@@ -550,7 +534,7 @@ export namespace Components {
      * ```html
      * <ui-toggle 
      * value="true"
-     * on-change="myToggleHandler"
+     * change-handler="myToggleHandler"
      * label="Custom Toggle">
      * </ui-toggle>
      * ```
@@ -575,19 +559,6 @@ export namespace Components {
           * @default 'readwrite'
          */
         "mode": 'read' | 'write' | 'readwrite';
-        /**
-          * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
-         */
-        "mqttHost"?: string;
-        /**
-          * MQTT topic path for MQTT protocol (e.g., "device/toggle")
-         */
-        "mqttTopic"?: string;
-        /**
-          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
-          * @default 'http'
-         */
-        "protocol": 'http' | 'coap' | 'mqtt';
         /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'
@@ -918,30 +889,27 @@ declare global {
      * ```html
      * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
      * ```
-     * @example TD Integration with HTTP
+     * @example TD Integration (Auto-detects protocol)
      * ```html
      * <ui-toggle 
      * td-url="http://device.local/properties/power"
      * label="Smart Light"
-     * protocol="http"
      * mode="readwrite">
      * </ui-toggle>
      * ```
-     * @example TD Integration with MQTT
+     * @example Multi-protocol Support
      * ```html
-     * <ui-toggle 
-     * td-url="mqtt://device"
-     * mqtt-host="localhost:1883"
-     * mqtt-topic="device/toggle"
-     * label="MQTT Device"
-     * protocol="mqtt"
-     * mode="readwrite">
-     * </ui-toggle>
+     * <!-- HTTP -->
+     * <ui-toggle td-url="http://device.local/properties/power" label="HTTP Device"></ui-toggle>
+     * <!-- CoAP -->
+     * <ui-toggle td-url="coap://device.local/properties/power" label="CoAP Device"></ui-toggle>
+     * <!-- MQTT (via TD) -->
+     * <ui-toggle td-url="mqtt://broker.local/device/properties/power" label="MQTT Device"></ui-toggle>
      * ```
      * @example TD Device Read-Only (shows colored circle)
      * ```html
      * <ui-toggle 
-     * td-url="http://sensor.local/status"
+     * td-url="http://sensor.local/properties/status"
      * label="Door Sensor"
      * mode="read">
      * </ui-toggle>
@@ -950,7 +918,7 @@ declare global {
      * ```html
      * <ui-toggle 
      * value="true"
-     * on-change="myToggleHandler"
+     * change-handler="myToggleHandler"
      * label="Custom Toggle">
      * </ui-toggle>
      * ```
@@ -1255,22 +1223,9 @@ declare namespace LocalJSX {
          */
         "mode"?: 'read' | 'write' | 'readwrite';
         /**
-          * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
-         */
-        "mqttHost"?: string;
-        /**
-          * MQTT topic path for MQTT protocol (e.g., "device/volume")
-         */
-        "mqttTopic"?: string;
-        /**
           * Event emitted when value changes
          */
         "onValueChange"?: (event: UiNumberPickerCustomEvent<{ value: number; label?: string }>) => void;
-        /**
-          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
-          * @default 'http'
-         */
-        "protocol"?: 'http' | 'coap' | 'mqtt';
         /**
           * Current state of the number picker. - active: Number picker is enabled (default) - disabled: Number picker cannot be interacted with
           * @default 'active'
@@ -1517,30 +1472,27 @@ declare namespace LocalJSX {
      * ```html
      * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
      * ```
-     * @example TD Integration with HTTP
+     * @example TD Integration (Auto-detects protocol)
      * ```html
      * <ui-toggle 
      * td-url="http://device.local/properties/power"
      * label="Smart Light"
-     * protocol="http"
      * mode="readwrite">
      * </ui-toggle>
      * ```
-     * @example TD Integration with MQTT
+     * @example Multi-protocol Support
      * ```html
-     * <ui-toggle 
-     * td-url="mqtt://device"
-     * mqtt-host="localhost:1883"
-     * mqtt-topic="device/toggle"
-     * label="MQTT Device"
-     * protocol="mqtt"
-     * mode="readwrite">
-     * </ui-toggle>
+     * <!-- HTTP -->
+     * <ui-toggle td-url="http://device.local/properties/power" label="HTTP Device"></ui-toggle>
+     * <!-- CoAP -->
+     * <ui-toggle td-url="coap://device.local/properties/power" label="CoAP Device"></ui-toggle>
+     * <!-- MQTT (via TD) -->
+     * <ui-toggle td-url="mqtt://broker.local/device/properties/power" label="MQTT Device"></ui-toggle>
      * ```
      * @example TD Device Read-Only (shows colored circle)
      * ```html
      * <ui-toggle 
-     * td-url="http://sensor.local/status"
+     * td-url="http://sensor.local/properties/status"
      * label="Door Sensor"
      * mode="read">
      * </ui-toggle>
@@ -1549,7 +1501,7 @@ declare namespace LocalJSX {
      * ```html
      * <ui-toggle 
      * value="true"
-     * on-change="myToggleHandler"
+     * change-handler="myToggleHandler"
      * label="Custom Toggle">
      * </ui-toggle>
      * ```
@@ -1575,22 +1527,9 @@ declare namespace LocalJSX {
          */
         "mode"?: 'read' | 'write' | 'readwrite';
         /**
-          * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
-         */
-        "mqttHost"?: string;
-        /**
-          * MQTT topic path for MQTT protocol (e.g., "device/toggle")
-         */
-        "mqttTopic"?: string;
-        /**
           * Event emitted when toggle state changes
          */
         "onToggle"?: (event: UiToggleCustomEvent<{ active: boolean }>) => void;
-        /**
-          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
-          * @default 'http'
-         */
-        "protocol"?: 'http' | 'coap' | 'mqtt';
         /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'
@@ -1802,30 +1741,27 @@ declare module "@stencil/core" {
              * ```html
              * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
              * ```
-             * @example TD Integration with HTTP
+             * @example TD Integration (Auto-detects protocol)
              * ```html
              * <ui-toggle 
              * td-url="http://device.local/properties/power"
              * label="Smart Light"
-             * protocol="http"
              * mode="readwrite">
              * </ui-toggle>
              * ```
-             * @example TD Integration with MQTT
+             * @example Multi-protocol Support
              * ```html
-             * <ui-toggle 
-             * td-url="mqtt://device"
-             * mqtt-host="localhost:1883"
-             * mqtt-topic="device/toggle"
-             * label="MQTT Device"
-             * protocol="mqtt"
-             * mode="readwrite">
-             * </ui-toggle>
+             * <!-- HTTP -->
+             * <ui-toggle td-url="http://device.local/properties/power" label="HTTP Device"></ui-toggle>
+             * <!-- CoAP -->
+             * <ui-toggle td-url="coap://device.local/properties/power" label="CoAP Device"></ui-toggle>
+             * <!-- MQTT (via TD) -->
+             * <ui-toggle td-url="mqtt://broker.local/device/properties/power" label="MQTT Device"></ui-toggle>
              * ```
              * @example TD Device Read-Only (shows colored circle)
              * ```html
              * <ui-toggle 
-             * td-url="http://sensor.local/status"
+             * td-url="http://sensor.local/properties/status"
              * label="Door Sensor"
              * mode="read">
              * </ui-toggle>
@@ -1834,7 +1770,7 @@ declare module "@stencil/core" {
              * ```html
              * <ui-toggle 
              * value="true"
-             * on-change="myToggleHandler"
+             * change-handler="myToggleHandler"
              * label="Custom Toggle">
              * </ui-toggle>
              * ```
