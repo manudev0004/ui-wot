@@ -1,0 +1,53 @@
+import { ThingDescription } from 'wot-thing-description-types';
+
+export interface ComponentLayout {
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  minW?: number;
+  minH?: number;
+  maxW?: number;
+  maxH?: number;
+}
+
+export interface WoTComponent {
+  id: string;
+  type: 'property' | 'action' | 'event';
+  title: string;
+  name: string;
+  description?: string;
+  schema?: any;
+  uiComponent: string; // The stencil component to use
+  variant?: string; // Component variant
+  layout: ComponentLayout;
+  thing: any; // Reference to the WoT thing
+  affordanceKey: string; // Key of the affordance in TD
+}
+
+export interface TDSource {
+  type: 'url' | 'file';
+  content: string | File;
+}
+
+export interface ParsedAffordance {
+  key: string;
+  type: 'property' | 'action' | 'event';
+  title?: string;
+  description?: string;
+  schema?: any;
+  forms?: any[];
+  suggestedComponent: string;
+  availableVariants: string[];
+}
+
+export interface AppState {
+  currentView: 'home' | 'td-input' | 'affordance-selection' | 'component-canvas';
+  tdSource?: TDSource;
+  parsedTD?: ThingDescription;
+  availableAffordances: ParsedAffordance[];
+  selectedAffordances: string[];
+  components: WoTComponent[];
+  things: Map<string, any>; // WoT thing instances
+}
