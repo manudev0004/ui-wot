@@ -37,8 +37,8 @@
 }
 
 .react-grid-item.resizing {
-  opacity: 0.6;
-  z-index: 1;
+  opacity: 0.8;
+  z-index: 2;
 }
 
 .react-grid-item.react-draggable-dragging {
@@ -48,6 +48,47 @@
 
 .react-grid-item.dropping {
   visibility: hidden;
+}
+
+.react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+  background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNiIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgNiA2IiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA2IDYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+IDxnPiA8cGF0aCBkPSJtIDEsNSAwLDEgNSwwIDAsLTEgeiIgZmlsbD0iIzQ0NDQ0NCIvPiA8cGF0aCBkPSJtIDIsMyAwLDEgMywwIDAsLTEgeiIgZmlsbD0iIzQ0NDQ0NCIvPiA8cGF0aCBkPSJtIDMsMSAwLDEgMiwwIDAsLTEgeiIgZmlsbD0iIzQ0NDQ0NCIvPiA8L2c+IDwvc3ZnPg==');
+  background-position: bottom right;
+  padding: 0 3px 3px 0;
+  background-repeat: no-repeat;
+  background-origin: content-box;
+  box-sizing: border-box;
+  cursor: se-resize;
+  opacity: 0.4;
+  transition: opacity 200ms ease;
+}
+
+.react-grid-item:hover > .react-resizable-handle {
+  opacity: 1;
+}
+
+/* Custom component styling */
+.component-edit-overlay {
+  position: absolute;
+  inset: 0;
+  background: white;
+  border: 2px solid #3b82f6;
+  border-radius: 0.5rem;
+  z-index: 1000;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .react-grid-item.react-grid-placeholder {
