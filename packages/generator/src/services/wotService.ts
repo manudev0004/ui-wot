@@ -1,68 +1,68 @@
+// Use browser-compatible imports
+import '@node-wot/browser-bundle';
 import { ThingDescription } from 'wot-thing-description-types';
 import { ParsedAffordance, TDSource } from '../types';
 
+declare global {
+  const WoT: any;
+}
+
 class WoTService {
-  private servient: any;
+  private wot: any;
   private things: Map<string, any> = new Map();
 
   constructor() {
-    // For browser environment, we'll use a mock servient
-    this.servient = {
-      start: async () => {},
-      addThing: async (td: ThingDescription) => this.createMockThing(td),
-      shutdown: async () => {},
-    };
+    // Will be initialized in start()
   }
 
   async start() {
-    console.log('WoT Service started in browser mode');
+    try {
+      // Try to use global WoT from browser bundle
+      if (typeof WoT !== 'undefined') {
+        this.wot = WoT;
+        console.log('WoT Service started with browser bundle');
+      } else {
+        throw new Error('WoT not available');
+      }
+    } catch (error) {
+      console.warn('Failed to start WoT service, using mock mode:', error);
+      this.initMockMode();
+    }
+  }
+
+  private initMockMode() {
+    this.wot = {
+      consume: (td: ThingDescription) => this.createMockThing(td)
+    };
   }
 
   private createMockThing(td: ThingDescription) {
-    // Create a mock thing for demonstration purposes
-    const mockThing = {
+    return {
       readProperty: async (propertyKey: string) => {
-        console.log(`Reading property: ${propertyKey}`);
-        // Return mock values based on property type
         const property = td.properties?.[propertyKey];
         if (property) {
           switch (property.type) {
-            case 'boolean':
-              return Math.random() > 0.5;
+            case 'boolean': return Math.random() > 0.5;
             case 'integer':
             case 'number':
               const min = property.minimum || 0;
               const max = property.maximum || 100;
               return Math.floor(Math.random() * (max - min + 1)) + min;
-            case 'string':
-              return `Mock value for ${propertyKey}`;
-            default:
-              return null;
+            case 'string': return `Mock value for ${propertyKey}`;
+            default: return null;
           }
         }
         return null;
       },
       writeProperty: async (propertyKey: string, value: any) => {
-        console.log(`Writing property ${propertyKey}:`, value);
+        console.log(`Mock write ${propertyKey}:`, value);
         return value;
       },
       invokeAction: async (actionKey: string, input?: any) => {
-        console.log(`Invoking action ${actionKey}:`, input);
-        return { success: true, timestamp: new Date().toISOString() };
-      },
-      subscribeEvent: async (eventKey: string, callback: (data: any) => void) => {
-        console.log(`Subscribed to event: ${eventKey}`);
-        // Simulate periodic events for demo
-        setTimeout(() => {
-          callback({ 
-            message: `Mock event from ${eventKey}`, 
-            timestamp: new Date().toISOString() 
-          });
-        }, 2000);
-      },
+        console.log(`Mock action ${actionKey}:`, input);
+        return { result: 'success' };
+      }
     };
-
-    return mockThing;
   }
 
   async parseTDFromSource(source: TDSource): Promise<ThingDescription> {
@@ -71,13 +71,11 @@ class WoTService {
     if (source.type === 'url') {
       const response = await fetch(source.content as string);
       if (!response.ok) {
-        throw new Error(`Failed to fetch TD from URL: ${response.statusText}`);
+        throw new Error(`Failed to fetch TD: ${response.statusText}`);
       }
       tdContent = await response.text();
     } else {
-      // File content
-      const file = source.content as File;
-      tdContent = await this.readFileAsText(file);
+      tdContent = await this.readFileAsText(source.content as File);
     }
 
     try {
@@ -109,7 +107,7 @@ class WoTService {
 
   async createThing(td: ThingDescription): Promise<any> {
     try {
-      const thing = this.servient.addThing(td);
+      const thing = this.wot ? await this.wot.consume(td) : this.createMockThing(td);
       
       if (td.id) {
         this.things.set(td.id, thing);
@@ -151,8 +149,8 @@ class WoTService {
           description: action.description,
           schema: action,
           forms: action.forms,
-          suggestedComponent: this.suggestComponentForAction(action),
-          availableVariants: this.getAvailableVariants(this.suggestComponentForAction(action))
+          suggestedComponent: 'ui-button',
+          availableVariants: ['minimal', 'outlined', 'filled']
         });
       });
     }
@@ -167,8 +165,8 @@ class WoTService {
           description: event.description,
           schema: event,
           forms: event.forms,
-          suggestedComponent: 'ui-text', // Events typically display text
-          availableVariants: ['default']
+          suggestedComponent: 'ui-text',
+          availableVariants: ['minimal']
         });
       });
     }
@@ -179,54 +177,53 @@ class WoTService {
   private suggestComponentForProperty(property: any): string {
     if (!property.type) return 'ui-text';
 
-    switch (property.type) {
-      case 'boolean':
-        return 'ui-toggle';
-      case 'number':
-      case 'integer':
-        if (property.minimum !== undefined && property.maximum !== undefined) {
+    // Boolean properties -> toggle
+    if (property.type === 'boolean') {
+      return 'ui-toggle';
+    }
+
+    // Numeric properties with min/max -> slider or number picker
+    if (property.type === 'integer' || property.type === 'number') {
+      if (property.minimum !== undefined && property.maximum !== undefined) {
+        const range = property.maximum - property.minimum;
+        if (range <= 1000) {
           return 'ui-slider';
         }
-        return 'ui-number-picker';
-      case 'string':
-        if (property.format === 'date') {
-          return 'ui-calendar';
-        }
-        return 'ui-text';
-      default:
-        return 'ui-text';
+      }
+      return 'ui-number-picker';
     }
-  }
 
-  private suggestComponentForAction(_action: any): string {
-    // Actions are typically buttons
-    return 'ui-button';
+    // String properties
+    if (property.type === 'string') {
+      if (property.format === 'date' || property.format === 'date-time') {
+        return 'ui-calendar';
+      }
+      return 'ui-text';
+    }
+
+    return 'ui-text';
   }
 
   private getAvailableVariants(componentType: string): string[] {
-    // Based on your Stencil components, return available variants
     const variantMap: Record<string, string[]> = {
-      'ui-button': ['primary', 'secondary', 'danger'],
-      'ui-toggle': ['default', 'switch'],
-      'ui-slider': ['default', 'range'],
-      'ui-text': ['default', 'multiline'],
-      'ui-number-picker': ['default', 'stepper'],
-      'ui-calendar': ['default', 'compact'],
-      'ui-checkbox': ['default', 'switch'],
+      'ui-button': ['minimal', 'outlined', 'filled'],
+      'ui-toggle': ['circle', 'rounded', 'square'],
+      'ui-slider': ['narrow', 'wide', 'rainbow', 'neon', 'stepped'],
+      'ui-text': ['minimal', 'outlined', 'filled'],
+      'ui-number-picker': ['minimal', 'outlined', 'filled'],
+      'ui-calendar': ['minimal', 'outlined', 'filled'],
+      'ui-checkbox': ['minimal', 'outlined', 'filled'],
       'ui-heading': ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
     };
 
-    return variantMap[componentType] || ['default'];
+    return variantMap[componentType] || ['minimal'];
   }
 
   async interactWithProperty(thing: any, propertyKey: string, value?: any): Promise<any> {
     try {
       if (value !== undefined) {
-        // Write property
-        await thing.writeProperty(propertyKey, value);
-        return value;
+        return await thing.writeProperty(propertyKey, value);
       } else {
-        // Read property
         return await thing.readProperty(propertyKey);
       }
     } catch (error) {
@@ -244,21 +241,11 @@ class WoTService {
     }
   }
 
-  async subscribeToEvent(thing: any, eventKey: string, callback: (data: any) => void): Promise<void> {
-    try {
-      await thing.subscribeEvent(eventKey, callback);
-    } catch (error) {
-      console.error(`Failed to subscribe to event ${eventKey}:`, error);
-      throw error;
-    }
-  }
-
   getThing(thingId: string): any {
     return this.things.get(thingId);
   }
 
   async stop() {
-    await this.servient.shutdown();
     this.things.clear();
     console.log('WoT Service stopped');
   }

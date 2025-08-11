@@ -1,21 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* Custom Color Schema */
+  --color-primary: #067362;
+  --color-primary-light: #08967f;
+  --color-neutral-light: #E4E6E6;
+  --color-accent: #33b8a4;
+  
+  /* Typography */
+  --font-heading-hero: 'Bebas Neue', cursive;
+  --font-heading: 'Josefin Sans', sans-serif;
+  --font-body: 'Josefin Sans', sans-serif;
+
+  font-family: var(--font-body);
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light;
   color: rgba(0, 0, 0, 0.87);
   background-color: #ffffff;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Typography Classes */
+.font-hero {
+  font-family: var(--font-heading-hero);
+}
+
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+/* Custom Color Classes */
+.bg-primary { background-color: var(--color-primary); }
+.bg-primary-light { background-color: var(--color-primary-light); }
+.bg-neutral-light { background-color: var(--color-neutral-light); }
+.bg-accent { background-color: var(--color-accent); }
+
+.text-primary { color: var(--color-primary); }
+.text-primary-light { color: var(--color-primary-light); }
+.text-accent { color: var(--color-accent); }
+
+.border-primary { border-color: var(--color-primary); }
+.border-accent { border-color: var(--color-accent); }
 
 /* React Grid Layout Styles */
 .react-grid-layout {
