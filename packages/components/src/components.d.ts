@@ -7,8 +7,8 @@
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
     /**
-     * Button component with various visual styles, matching the ui-number-picker design family.
-     * Supports the same variants, colors, and themes as the number picker.
+     * Button component with various visual styles for user interactions.
+     * Pure UI component focused on click events and visual feedback.
      * @example Basic Usage
      * ```html
      * <ui-button variant="minimal" label="Click Me"></ui-button>
@@ -18,49 +18,38 @@ export namespace Components {
      * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
      * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
      * ```
-     * @example Custom Click Handler
-     * ```html
-     * <ui-button on-click="handleButtonClick" label="Custom Handler"></ui-button>
-     * ```
      * @example Event Handling
      * ```javascript
-     * window.handleButtonClick = function(data) {
-     * console.log('Button clicked:', data.label);
-     * // Your custom logic here
-     * };
+     * const button = document.querySelector('ui-button');
+     * button.addEventListener('buttonClick', (e) => {
+     * console.log('Button clicked:', e.detail.label);
+     * });
+     * ```
+     * @example Framework Integration
+     * ```javascript
+     * // React
+     * <ui-button label="Save" onButtonClick={(e) => handleSave(e.detail)} />
+     * // Vue
+     * <ui-button label="Save"
+     * @buttonClick ="handleSave($event.detail)" />
      * ```
      */
     interface UiButton {
-        /**
-          * Data payload to send with the action. Can be a JSON string or any value that will be JSON serialized.
-          * @example '{"brightness": 100}' or '"on"' or '42'
-         */
-        "actionData"?: string;
-        /**
-          * Function name to call when button is clicked. User defines this function in their code, component will invoke it.
-          * @example "handleButtonClick"
-         */
-        "clickHandler"?: string;
         /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
+          * Whether the button is disabled.
+          * @default false
+         */
+        "disabled": boolean;
+        /**
           * Button text label.
           * @default 'Button'
          */
         "label": string;
-        /**
-          * Current state of the button. - active: Button is enabled (default) - disabled: Button cannot be interacted with
-          * @default 'active'
-         */
-        "state": 'active' | 'disabled';
-        /**
-          * Thing Description URL for action invocation. When provided, button will trigger an action on the device.
-          * @example "http://device.local/actions/turnOn"
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -183,71 +172,40 @@ export namespace Components {
         "text": string;
     }
     /**
-     * Number picker component with various visual styles, TD integration and customizable range.
-     * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+     * Number picker component with increment/decrement buttons for numeric input.
+     * Pure UI component focused on user interaction and value management.
      * @example Basic Usage
      * ```html
      * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
      * ```
-     * @example TD Integration with HTTP
-     * ```html
-     * <ui-number-picker 
-     * td-url="http://device.local/properties/volume"
-     * label="Device Volume"
-     * protocol="http"
-     * mode="readwrite"
-     * min="0"
-     * max="100">
-     * </ui-number-picker>
-     * ```
-     * @example TD Integration with MQTT
-     * ```html
-     * <ui-number-picker 
-     * td-url="mqtt://device"
-     * mqtt-host="localhost:1883"
-     * mqtt-topic="device/volume"
-     * label="MQTT Volume"
-     * protocol="mqtt"
-     * mode="readwrite">
-     * </ui-number-picker>
-     * ```
-     * @example TD Device Read-Only (shows value only)
-     * ```html
-     * <ui-number-picker 
-     * td-url="http://sensor.local/temperature"
-     * label="Temperature Sensor"
-     * mode="read">
-     * </ui-number-picker>
-     * ```
-     * @example Local Control with Custom Handler
-     * ```html
-     * <ui-number-picker 
-     * value="3"
-     * on-change="handleNumberChange"
-     * variant="filled"
-     * label="Custom Counter">
-     * </ui-number-picker>
-     * ```
      * @example Event Handling
      * ```javascript
-     * window.handleNumberChange = function(data) {
-     * console.log('Number changed:', data.value);
-     * console.log('Label:', data.label);
-     * // Your custom logic here
-     * };
+     * const picker = document.querySelector('ui-number-picker');
+     * picker.addEventListener('valueChange', (e) => {
+     * console.log('Number changed:', e.detail.value);
+     * console.log('Label:', e.detail.label);
+     * });
+     * ```
+     * @example Framework Integration
+     * ```javascript
+     * // React
+     * <ui-number-picker value={count} onValueChange={(e) => setCount(e.detail.value)} />
+     * // Vue
+     * <ui-number-picker :value="count"
+     * @valueChange ="count = $event.detail.value" />
      * ```
      */
     interface UiNumberPicker {
-        /**
-          * Function name to call when value changes. User defines this function in their code, component will invoke it.
-          * @example "handleNumberChange"
-         */
-        "changeHandler"?: string;
         /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Whether the number picker is disabled.
+          * @default false
+         */
+        "disabled": boolean;
         /**
           * Optional text label, to display above the number picker.
          */
@@ -263,33 +221,17 @@ export namespace Components {
          */
         "min"?: number;
         /**
-          * Device interaction mode. - read: Only read from device (display current value, no interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
-          * @default 'readwrite'
-         */
-        "mode": 'read' | 'write' | 'readwrite';
-        /**
-          * Current state of the number picker. - active: Number picker is enabled (default) - disabled: Number picker cannot be interacted with
-          * @default 'active'
-         */
-        "state": 'active' | 'disabled';
-        /**
           * Step increment/decrement amount.
           * @default 1
          */
         "step": number;
-        /**
-          * Direct URL of TD number properties to auto connect and interact with the device.
-          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number" ```
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
          */
         "theme": 'light' | 'dark';
         /**
-          * Current value of the number picker (for local control mode). When no td-url is provided and value is set, this controls the picker state.
-          * @example 5, 10, 25
+          * Current value of the number picker.
           * @default 0
          */
         "value": number;
@@ -300,21 +242,27 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Slider component with various features, multiple visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Slider component with various visual styles for numeric input.
+     * Pure UI component focused on user interaction and visual feedback.
      * @example Basic Usage
      * ```html
      * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
      * ```
-     * @example TD Integration
-     * ```html
-     * <ui-slider 
-     * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
-     * min="0" 
-     * max="100" 
-     * label="Device Brightness"
-     * enable-manual-control="true">
-     * </ui-slider>
+     * @example Event Handling
+     * ```javascript
+     * const slider = document.querySelector('ui-slider');
+     * slider.addEventListener('valueChange', (e) => {
+     * console.log('New value:', e.detail.value);
+     * console.log('Label:', e.detail.label);
+     * });
+     * ```
+     * @example Framework Integration
+     * ```javascript
+     * // React
+     * <ui-slider value={brightness} onValueChange={(e) => setBrightness(e.detail.value)} />
+     * // Vue
+     * <ui-slider :value="brightness"
+     * @valueChange ="brightness = $event.detail.value" />
      * ```
      */
     interface UiSlider {
@@ -323,6 +271,11 @@ export namespace Components {
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Whether the slider is disabled.
+          * @default false
+         */
+        "disabled": boolean;
         /**
           * Enable manual control interface.
           * @default false
@@ -348,19 +301,10 @@ export namespace Components {
          */
         "orientation": 'horizontal' | 'vertical';
         /**
-          * Current state of the slider. - disabled: Slider cannot be clicked or interacted with - default: Slider is interactive (default)
-          * @default 'default'
-         */
-        "state": 'disabled' | 'default';
-        /**
           * Step increment for the slider.
           * @default 1
          */
         "step": number;
-        /**
-          * Thing Description URL for device control.
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -616,11 +560,11 @@ export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
 }
 declare global {
     interface HTMLUiButtonElementEventMap {
-        "buttonClick": { label: string };
+        "buttonClick": { label: string; timestamp: Date };
     }
     /**
-     * Button component with various visual styles, matching the ui-number-picker design family.
-     * Supports the same variants, colors, and themes as the number picker.
+     * Button component with various visual styles for user interactions.
+     * Pure UI component focused on click events and visual feedback.
      * @example Basic Usage
      * ```html
      * <ui-button variant="minimal" label="Click Me"></ui-button>
@@ -630,16 +574,20 @@ declare global {
      * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
      * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
      * ```
-     * @example Custom Click Handler
-     * ```html
-     * <ui-button on-click="handleButtonClick" label="Custom Handler"></ui-button>
-     * ```
      * @example Event Handling
      * ```javascript
-     * window.handleButtonClick = function(data) {
-     * console.log('Button clicked:', data.label);
-     * // Your custom logic here
-     * };
+     * const button = document.querySelector('ui-button');
+     * button.addEventListener('buttonClick', (e) => {
+     * console.log('Button clicked:', e.detail.label);
+     * });
+     * ```
+     * @example Framework Integration
+     * ```javascript
+     * // React
+     * <ui-button label="Save" onButtonClick={(e) => handleSave(e.detail)} />
+     * // Vue
+     * <ui-button label="Save"
+     * @buttonClick ="handleSave($event.detail)" />
      * ```
      */
     interface HTMLUiButtonElement extends Components.UiButton, HTMLStencilElement {
@@ -720,58 +668,27 @@ declare global {
         "valueChange": { value: number; label?: string };
     }
     /**
-     * Number picker component with various visual styles, TD integration and customizable range.
-     * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+     * Number picker component with increment/decrement buttons for numeric input.
+     * Pure UI component focused on user interaction and value management.
      * @example Basic Usage
      * ```html
      * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
      * ```
-     * @example TD Integration with HTTP
-     * ```html
-     * <ui-number-picker 
-     * td-url="http://device.local/properties/volume"
-     * label="Device Volume"
-     * protocol="http"
-     * mode="readwrite"
-     * min="0"
-     * max="100">
-     * </ui-number-picker>
-     * ```
-     * @example TD Integration with MQTT
-     * ```html
-     * <ui-number-picker 
-     * td-url="mqtt://device"
-     * mqtt-host="localhost:1883"
-     * mqtt-topic="device/volume"
-     * label="MQTT Volume"
-     * protocol="mqtt"
-     * mode="readwrite">
-     * </ui-number-picker>
-     * ```
-     * @example TD Device Read-Only (shows value only)
-     * ```html
-     * <ui-number-picker 
-     * td-url="http://sensor.local/temperature"
-     * label="Temperature Sensor"
-     * mode="read">
-     * </ui-number-picker>
-     * ```
-     * @example Local Control with Custom Handler
-     * ```html
-     * <ui-number-picker 
-     * value="3"
-     * on-change="handleNumberChange"
-     * variant="filled"
-     * label="Custom Counter">
-     * </ui-number-picker>
-     * ```
      * @example Event Handling
      * ```javascript
-     * window.handleNumberChange = function(data) {
-     * console.log('Number changed:', data.value);
-     * console.log('Label:', data.label);
-     * // Your custom logic here
-     * };
+     * const picker = document.querySelector('ui-number-picker');
+     * picker.addEventListener('valueChange', (e) => {
+     * console.log('Number changed:', e.detail.value);
+     * console.log('Label:', e.detail.label);
+     * });
+     * ```
+     * @example Framework Integration
+     * ```javascript
+     * // React
+     * <ui-number-picker value={count} onValueChange={(e) => setCount(e.detail.value)} />
+     * // Vue
+     * <ui-number-picker :value="count"
+     * @valueChange ="count = $event.detail.value" />
      * ```
      */
     interface HTMLUiNumberPickerElement extends Components.UiNumberPicker, HTMLStencilElement {
@@ -789,24 +706,32 @@ declare global {
         new (): HTMLUiNumberPickerElement;
     };
     interface HTMLUiSliderElementEventMap {
-        "valueChange": { value: number };
+        "valueChange": { value: number; label?: string };
+        "slideStart": { value: number; label?: string };
+        "slideEnd": { value: number; label?: string };
     }
     /**
-     * Slider component with various features, multiple visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Slider component with various visual styles for numeric input.
+     * Pure UI component focused on user interaction and visual feedback.
      * @example Basic Usage
      * ```html
      * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
      * ```
-     * @example TD Integration
-     * ```html
-     * <ui-slider 
-     * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
-     * min="0" 
-     * max="100" 
-     * label="Device Brightness"
-     * enable-manual-control="true">
-     * </ui-slider>
+     * @example Event Handling
+     * ```javascript
+     * const slider = document.querySelector('ui-slider');
+     * slider.addEventListener('valueChange', (e) => {
+     * console.log('New value:', e.detail.value);
+     * console.log('Label:', e.detail.label);
+     * });
+     * ```
+     * @example Framework Integration
+     * ```javascript
+     * // React
+     * <ui-slider value={brightness} onValueChange={(e) => setBrightness(e.detail.value)} />
+     * // Vue
+     * <ui-slider :value="brightness"
+     * @valueChange ="brightness = $event.detail.value" />
      * ```
      */
     interface HTMLUiSliderElement extends Components.UiSlider, HTMLStencilElement {
@@ -950,8 +875,8 @@ declare global {
 }
 declare namespace LocalJSX {
     /**
-     * Button component with various visual styles, matching the ui-number-picker design family.
-     * Supports the same variants, colors, and themes as the number picker.
+     * Button component with various visual styles for user interactions.
+     * Pure UI component focused on click events and visual feedback.
      * @example Basic Usage
      * ```html
      * <ui-button variant="minimal" label="Click Me"></ui-button>
@@ -961,34 +886,33 @@ declare namespace LocalJSX {
      * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
      * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
      * ```
-     * @example Custom Click Handler
-     * ```html
-     * <ui-button on-click="handleButtonClick" label="Custom Handler"></ui-button>
-     * ```
      * @example Event Handling
      * ```javascript
-     * window.handleButtonClick = function(data) {
-     * console.log('Button clicked:', data.label);
-     * // Your custom logic here
-     * };
+     * const button = document.querySelector('ui-button');
+     * button.addEventListener('buttonClick', (e) => {
+     * console.log('Button clicked:', e.detail.label);
+     * });
+     * ```
+     * @example Framework Integration
+     * ```javascript
+     * // React
+     * <ui-button label="Save" onButtonClick={(e) => handleSave(e.detail)} />
+     * // Vue
+     * <ui-button label="Save"
+     * @buttonClick ="handleSave($event.detail)" />
      * ```
      */
     interface UiButton {
-        /**
-          * Data payload to send with the action. Can be a JSON string or any value that will be JSON serialized.
-          * @example '{"brightness": 100}' or '"on"' or '42'
-         */
-        "actionData"?: string;
-        /**
-          * Function name to call when button is clicked. User defines this function in their code, component will invoke it.
-          * @example "handleButtonClick"
-         */
-        "clickHandler"?: string;
         /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Whether the button is disabled.
+          * @default false
+         */
+        "disabled"?: boolean;
         /**
           * Button text label.
           * @default 'Button'
@@ -997,17 +921,7 @@ declare namespace LocalJSX {
         /**
           * Event emitted when button is clicked
          */
-        "onButtonClick"?: (event: UiButtonCustomEvent<{ label: string }>) => void;
-        /**
-          * Current state of the button. - active: Button is enabled (default) - disabled: Button cannot be interacted with
-          * @default 'active'
-         */
-        "state"?: 'active' | 'disabled';
-        /**
-          * Thing Description URL for action invocation. When provided, button will trigger an action on the device.
-          * @example "http://device.local/actions/turnOn"
-         */
-        "tdUrl"?: string;
+        "onButtonClick"?: (event: UiButtonCustomEvent<{ label: string; timestamp: Date }>) => void;
         /**
           * Theme for the component.
           * @default 'light'
@@ -1138,71 +1052,40 @@ declare namespace LocalJSX {
         "text"?: string;
     }
     /**
-     * Number picker component with various visual styles, TD integration and customizable range.
-     * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+     * Number picker component with increment/decrement buttons for numeric input.
+     * Pure UI component focused on user interaction and value management.
      * @example Basic Usage
      * ```html
      * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
      * ```
-     * @example TD Integration with HTTP
-     * ```html
-     * <ui-number-picker 
-     * td-url="http://device.local/properties/volume"
-     * label="Device Volume"
-     * protocol="http"
-     * mode="readwrite"
-     * min="0"
-     * max="100">
-     * </ui-number-picker>
-     * ```
-     * @example TD Integration with MQTT
-     * ```html
-     * <ui-number-picker 
-     * td-url="mqtt://device"
-     * mqtt-host="localhost:1883"
-     * mqtt-topic="device/volume"
-     * label="MQTT Volume"
-     * protocol="mqtt"
-     * mode="readwrite">
-     * </ui-number-picker>
-     * ```
-     * @example TD Device Read-Only (shows value only)
-     * ```html
-     * <ui-number-picker 
-     * td-url="http://sensor.local/temperature"
-     * label="Temperature Sensor"
-     * mode="read">
-     * </ui-number-picker>
-     * ```
-     * @example Local Control with Custom Handler
-     * ```html
-     * <ui-number-picker 
-     * value="3"
-     * on-change="handleNumberChange"
-     * variant="filled"
-     * label="Custom Counter">
-     * </ui-number-picker>
-     * ```
      * @example Event Handling
      * ```javascript
-     * window.handleNumberChange = function(data) {
-     * console.log('Number changed:', data.value);
-     * console.log('Label:', data.label);
-     * // Your custom logic here
-     * };
+     * const picker = document.querySelector('ui-number-picker');
+     * picker.addEventListener('valueChange', (e) => {
+     * console.log('Number changed:', e.detail.value);
+     * console.log('Label:', e.detail.label);
+     * });
+     * ```
+     * @example Framework Integration
+     * ```javascript
+     * // React
+     * <ui-number-picker value={count} onValueChange={(e) => setCount(e.detail.value)} />
+     * // Vue
+     * <ui-number-picker :value="count"
+     * @valueChange ="count = $event.detail.value" />
      * ```
      */
     interface UiNumberPicker {
-        /**
-          * Function name to call when value changes. User defines this function in their code, component will invoke it.
-          * @example "handleNumberChange"
-         */
-        "changeHandler"?: string;
         /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Whether the number picker is disabled.
+          * @default false
+         */
+        "disabled"?: boolean;
         /**
           * Optional text label, to display above the number picker.
          */
@@ -1218,37 +1101,21 @@ declare namespace LocalJSX {
          */
         "min"?: number;
         /**
-          * Device interaction mode. - read: Only read from device (display current value, no interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
-          * @default 'readwrite'
-         */
-        "mode"?: 'read' | 'write' | 'readwrite';
-        /**
           * Event emitted when value changes
          */
         "onValueChange"?: (event: UiNumberPickerCustomEvent<{ value: number; label?: string }>) => void;
-        /**
-          * Current state of the number picker. - active: Number picker is enabled (default) - disabled: Number picker cannot be interacted with
-          * @default 'active'
-         */
-        "state"?: 'active' | 'disabled';
         /**
           * Step increment/decrement amount.
           * @default 1
          */
         "step"?: number;
         /**
-          * Direct URL of TD number properties to auto connect and interact with the device.
-          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number" ```
-         */
-        "tdUrl"?: string;
-        /**
           * Theme for the component.
           * @default 'light'
          */
         "theme"?: 'light' | 'dark';
         /**
-          * Current value of the number picker (for local control mode). When no td-url is provided and value is set, this controls the picker state.
-          * @example 5, 10, 25
+          * Current value of the number picker.
           * @default 0
          */
         "value"?: number;
@@ -1259,21 +1126,27 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Slider component with various features, multiple visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Slider component with various visual styles for numeric input.
+     * Pure UI component focused on user interaction and visual feedback.
      * @example Basic Usage
      * ```html
      * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
      * ```
-     * @example TD Integration
-     * ```html
-     * <ui-slider 
-     * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
-     * min="0" 
-     * max="100" 
-     * label="Device Brightness"
-     * enable-manual-control="true">
-     * </ui-slider>
+     * @example Event Handling
+     * ```javascript
+     * const slider = document.querySelector('ui-slider');
+     * slider.addEventListener('valueChange', (e) => {
+     * console.log('New value:', e.detail.value);
+     * console.log('Label:', e.detail.label);
+     * });
+     * ```
+     * @example Framework Integration
+     * ```javascript
+     * // React
+     * <ui-slider value={brightness} onValueChange={(e) => setBrightness(e.detail.value)} />
+     * // Vue
+     * <ui-slider :value="brightness"
+     * @valueChange ="brightness = $event.detail.value" />
      * ```
      */
     interface UiSlider {
@@ -1282,6 +1155,11 @@ declare namespace LocalJSX {
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Whether the slider is disabled.
+          * @default false
+         */
+        "disabled"?: boolean;
         /**
           * Enable manual control interface.
           * @default false
@@ -1302,28 +1180,27 @@ declare namespace LocalJSX {
          */
         "min"?: number;
         /**
+          * Event emitted when user stops dragging
+         */
+        "onSlideEnd"?: (event: UiSliderCustomEvent<{ value: number; label?: string }>) => void;
+        /**
+          * Event emitted when user starts dragging
+         */
+        "onSlideStart"?: (event: UiSliderCustomEvent<{ value: number; label?: string }>) => void;
+        /**
           * Event emitted when value changes
          */
-        "onValueChange"?: (event: UiSliderCustomEvent<{ value: number }>) => void;
+        "onValueChange"?: (event: UiSliderCustomEvent<{ value: number; label?: string }>) => void;
         /**
           * Orientation of the slider. - horizontal: Left to right slider (default) - vertical: Bottom to top slider
           * @default 'horizontal'
          */
         "orientation"?: 'horizontal' | 'vertical';
         /**
-          * Current state of the slider. - disabled: Slider cannot be clicked or interacted with - default: Slider is interactive (default)
-          * @default 'default'
-         */
-        "state"?: 'disabled' | 'default';
-        /**
           * Step increment for the slider.
           * @default 1
          */
         "step"?: number;
-        /**
-          * Thing Description URL for device control.
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -1572,8 +1449,8 @@ declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
             /**
-             * Button component with various visual styles, matching the ui-number-picker design family.
-             * Supports the same variants, colors, and themes as the number picker.
+             * Button component with various visual styles for user interactions.
+             * Pure UI component focused on click events and visual feedback.
              * @example Basic Usage
              * ```html
              * <ui-button variant="minimal" label="Click Me"></ui-button>
@@ -1583,16 +1460,20 @@ declare module "@stencil/core" {
              * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
              * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
              * ```
-             * @example Custom Click Handler
-             * ```html
-             * <ui-button on-click="handleButtonClick" label="Custom Handler"></ui-button>
-             * ```
              * @example Event Handling
              * ```javascript
-             * window.handleButtonClick = function(data) {
-             * console.log('Button clicked:', data.label);
-             * // Your custom logic here
-             * };
+             * const button = document.querySelector('ui-button');
+             * button.addEventListener('buttonClick', (e) => {
+             * console.log('Button clicked:', e.detail.label);
+             * });
+             * ```
+             * @example Framework Integration
+             * ```javascript
+             * // React
+             * <ui-button label="Save" onButtonClick={(e) => handleSave(e.detail)} />
+             * // Vue
+             * <ui-button label="Save"
+             * @buttonClick ="handleSave($event.detail)" />
              * ```
              */
             "ui-button": LocalJSX.UiButton & JSXBase.HTMLAttributes<HTMLUiButtonElement>;
@@ -1620,77 +1501,52 @@ declare module "@stencil/core" {
             "ui-checkbox": LocalJSX.UiCheckbox & JSXBase.HTMLAttributes<HTMLUiCheckboxElement>;
             "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
             /**
-             * Number picker component with various visual styles, TD integration and customizable range.
-             * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+             * Number picker component with increment/decrement buttons for numeric input.
+             * Pure UI component focused on user interaction and value management.
              * @example Basic Usage
              * ```html
              * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
              * ```
-             * @example TD Integration with HTTP
-             * ```html
-             * <ui-number-picker 
-             * td-url="http://device.local/properties/volume"
-             * label="Device Volume"
-             * protocol="http"
-             * mode="readwrite"
-             * min="0"
-             * max="100">
-             * </ui-number-picker>
-             * ```
-             * @example TD Integration with MQTT
-             * ```html
-             * <ui-number-picker 
-             * td-url="mqtt://device"
-             * mqtt-host="localhost:1883"
-             * mqtt-topic="device/volume"
-             * label="MQTT Volume"
-             * protocol="mqtt"
-             * mode="readwrite">
-             * </ui-number-picker>
-             * ```
-             * @example TD Device Read-Only (shows value only)
-             * ```html
-             * <ui-number-picker 
-             * td-url="http://sensor.local/temperature"
-             * label="Temperature Sensor"
-             * mode="read">
-             * </ui-number-picker>
-             * ```
-             * @example Local Control with Custom Handler
-             * ```html
-             * <ui-number-picker 
-             * value="3"
-             * on-change="handleNumberChange"
-             * variant="filled"
-             * label="Custom Counter">
-             * </ui-number-picker>
-             * ```
              * @example Event Handling
              * ```javascript
-             * window.handleNumberChange = function(data) {
-             * console.log('Number changed:', data.value);
-             * console.log('Label:', data.label);
-             * // Your custom logic here
-             * };
+             * const picker = document.querySelector('ui-number-picker');
+             * picker.addEventListener('valueChange', (e) => {
+             * console.log('Number changed:', e.detail.value);
+             * console.log('Label:', e.detail.label);
+             * });
+             * ```
+             * @example Framework Integration
+             * ```javascript
+             * // React
+             * <ui-number-picker value={count} onValueChange={(e) => setCount(e.detail.value)} />
+             * // Vue
+             * <ui-number-picker :value="count"
+             * @valueChange ="count = $event.detail.value" />
              * ```
              */
             "ui-number-picker": LocalJSX.UiNumberPicker & JSXBase.HTMLAttributes<HTMLUiNumberPickerElement>;
             /**
-             * Slider component with various features, multiple visual styles and TD integration.
-             * Link a direct property URL for plug-and-play device control.
+             * Slider component with various visual styles for numeric input.
+             * Pure UI component focused on user interaction and visual feedback.
              * @example Basic Usage
              * ```html
              * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
              * ```
-             * @example TD Integration
-             * ```html
-             * <ui-slider 
-             * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
-             * min="0" 
-             * max="100" 
-             * label="Device Brightness"
-             * enable-manual-control="true">
-             * </ui-slider>
+             * @example Event Handling
+             * ```javascript
+             * const slider = document.querySelector('ui-slider');
+             * slider.addEventListener('valueChange', (e) => {
+             * console.log('New value:', e.detail.value);
+             * console.log('Label:', e.detail.label);
+             * });
+             * ```
+             * @example Framework Integration
+             * ```javascript
+             * // React
+             * <ui-slider value={brightness} onValueChange={(e) => setBrightness(e.detail.value)} />
+             * // Vue
+             * <ui-slider :value="brightness"
+             * @valueChange ="brightness = $event.detail.value" />
              * ```
              */
             "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
