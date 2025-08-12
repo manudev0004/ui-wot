@@ -1,24 +1,30 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
-import { WotService, WotResult } from '../../utils/wot-service';
 
 /**
- * Slider component with various features, multiple visual styles and TD integration.
- * Link a direct property URL for plug-and-play device control.
+ * Slider component with various visual styles for numeric input.
+ * Pure UI component focused on user interaction and visual feedback.
  * 
  * @example Basic Usage
  * ```html
  * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
  * ```
  * 
- * @example TD Integration
- * ```html
- * <ui-slider 
- *   td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
- *   min="0" 
- *   max="100" 
- *   label="Device Brightness"
- *   enable-manual-control="true">
- * </ui-slider>
+ * @example Event Handling
+ * ```javascript
+ * const slider = document.querySelector('ui-slider');
+ * slider.addEventListener('valueChange', (e) => {
+ *   console.log('New value:', e.detail.value);
+ *   console.log('Label:', e.detail.label);
+ * });
+ * ```
+ * 
+ * @example Framework Integration
+ * ```javascript
+ * // React
+ * <ui-slider value={brightness} onValueChange={(e) => setBrightness(e.detail.value)} />
+ * 
+ * // Vue
+ * <ui-slider :value="brightness" @valueChange="brightness = $event.detail.value" />
  * ```
  */
 @Component({
@@ -45,11 +51,9 @@ export class UiSlider {
   @Prop() orientation: 'horizontal' | 'vertical' = 'horizontal';
 
   /**
-   * Current state of the slider.
-   * - disabled: Slider cannot be clicked or interacted with
-   * - default: Slider is interactive (default)
+   * Whether the slider is disabled.
    */
-  @Prop({ mutable: true }) state: 'disabled' | 'default' = 'default';
+  @Prop() disabled: boolean = false;
 
   /**
    * Theme for the component.
@@ -97,37 +101,27 @@ export class UiSlider {
   @Prop() thumbShape: 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond' = 'circle';
 
   /**
-   * Thing Description URL for device control.
-   */
-  @Prop() tdUrl?: string;
-
-  /**
    * Enable manual control interface.
    */
   @Prop() enableManualControl: boolean = false;
 
-  /** Current value */
+  /** Current value state */
   @State() currentValue: number = 0;
 
   /** Manual input value */
   @State() manualInputValue: string = '';
 
-  /** Success feedback state */
-  @State() showSuccess: boolean = false;
-
-  /** Last error message */
-  @State() errorMessage?: string;
+  /** Track if user is currently dragging */
+  @State() isDragging: boolean = false;
 
   /** Event emitted when value changes */
-  @Event() valueChange: EventEmitter<{ value: number }>;
+  @Event() valueChange: EventEmitter<{ value: number; label?: string }>;
 
-  /** Watch for TD URL changes */
-  @Watch('tdUrl')
-  async watchTdUrl() {
-    if (this.tdUrl) {
-      await this.readDevice();
-    }
-  }
+  /** Event emitted when user starts dragging */
+  @Event() slideStart: EventEmitter<{ value: number; label?: string }>;
+
+  /** Event emitted when user stops dragging */
+  @Event() slideEnd: EventEmitter<{ value: number; label?: string }>;
 
   /** Watch for value prop changes */
   @Watch('value')
@@ -137,114 +131,40 @@ export class UiSlider {
   }
 
   /** Initialize component */
-  async componentWillLoad() {
+  componentWillLoad() {
     this.currentValue = this.value;
     this.manualInputValue = String(this.value);
-    if (this.tdUrl) {
-      await this.readDevice();
-    }
-  }
-
-  /** Read from TD device */
-  private async readDevice() {
-    if (!this.tdUrl) return;
-    
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-    
-    const result: WotResult = await WotService.readProperty(this.tdUrl);
-
-    if (result.success && typeof result.value === 'number') {
-      const clampedValue = Math.max(this.min, Math.min(this.max, result.value));
-      this.currentValue = clampedValue;
-      this.manualInputValue = String(clampedValue);
-      this.showSuccess = true;
-      
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-    } else {
-      this.errorMessage = result.error || 'Failed to read slider value';
-      
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-      
-      console.warn('Device read failed:', result.error);
-    }
-  }
-
-  /** Write to TD device */
-  private async writeDevice(value: number): Promise<boolean> {
-    if (!this.tdUrl) return true; // Local control, always succeeds
-    
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-    
-    const result: WotResult = await WotService.writeProperty(this.tdUrl, value);
-
-    if (result.success) {
-      this.showSuccess = true;
-      
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-      
-      return true;
-    } else {
-      this.errorMessage = result.error || 'Failed to update slider value';
-      
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-      
-      console.warn('Device write failed:', result.error);
-      return false;
-    }
   }
 
   /** Handle slider value change */
-  private async handleChange(event: Event) {
-    if (this.state === 'disabled') return;
+  private handleChange = (event: Event) => {
+    if (this.disabled) return;
 
     const target = event.target as HTMLInputElement;
     const newValue = Number(target.value);
     
-    const previousValue = this.currentValue;
     this.currentValue = newValue;
+    this.value = newValue;
     this.manualInputValue = String(newValue);
-    this.valueChange.emit({ value: newValue });
+    
+    this.valueChange.emit({ 
+      value: newValue, 
+      label: this.label 
+    });
+  };
 
-    // Update TD device if URL provided
-    if (this.tdUrl) {
-      const success = await this.writeDevice(newValue);
-      if (!success) {
-        // Revert to previous value on write failure
-        this.currentValue = previousValue;
-        this.manualInputValue = String(previousValue);
-        // Force re-render by triggering a minimal DOM update
-        const input = event.target as HTMLInputElement;
-        input.value = String(previousValue);
-      }
-    }
-  }
+  
 
-  /** Handle manual input */
+    /** Handle manual input */
   private handleManualInput = (event: Event) => {
     const target = event.target as HTMLInputElement;
     this.manualInputValue = target.value;
   };
 
   /** Handle manual submit */
-  private handleManualSubmit = async (event: Event) => {
+  private handleManualSubmit = (event: Event) => {
     event.preventDefault();
-    if (this.state === 'disabled') return;
+    if (this.disabled) return;
 
     const newValue = Number(this.manualInputValue);
     if (isNaN(newValue)) {
@@ -253,26 +173,20 @@ export class UiSlider {
     }
 
     const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
-    const previousValue = this.currentValue;
     
     this.currentValue = clampedValue;
+    this.value = clampedValue;
     this.manualInputValue = String(clampedValue);
-    this.valueChange.emit({ value: clampedValue });
-
-    // Update TD device if URL provided
-    if (this.tdUrl) {
-      const success = await this.writeDevice(clampedValue);
-      if (!success) {
-        // Revert to previous value on write failure
-        this.currentValue = previousValue;
-        this.manualInputValue = String(previousValue);
-      }
-    }
+    
+    this.valueChange.emit({ 
+      value: clampedValue, 
+      label: this.label 
+    });
   };
 
   /** Handle keyboard navigation */
-  private handleKeyDown = async (event: KeyboardEvent) => {
-    if (this.state === 'disabled') return;
+  private handleKeyDown = (event: KeyboardEvent) => {
+    if (this.disabled) return;
 
     let newValue = this.currentValue;
     
@@ -308,25 +222,20 @@ export class UiSlider {
     }
 
     if (newValue !== this.currentValue) {
-      const previousValue = this.currentValue;
       this.currentValue = newValue;
+      this.value = newValue;
       this.manualInputValue = String(newValue);
-      this.valueChange.emit({ value: newValue });
       
-      if (this.tdUrl) {
-        const success = await this.writeDevice(newValue);
-        if (!success) {
-          // Revert to previous value on write failure
-          this.currentValue = previousValue;
-          this.manualInputValue = String(previousValue);
-        }
-      }
+      this.valueChange.emit({ 
+        value: newValue, 
+        label: this.label 
+      });
     }
   };
 
   /** Get track styles */
   getTrackStyle() {
-    const isDisabled = this.state === 'disabled';
+    const isDisabled = this.disabled;
     const percentage = ((this.currentValue - this.min) / (this.max - this.min)) * 100;
 
     let trackSize = 'h-2 w-full';
@@ -538,7 +447,7 @@ export class UiSlider {
   render() {
     const trackStyles = this.getTrackStyle();
     const thumbStyle = this.getThumbStyle();
-    const isDisabled = this.state === 'disabled';
+    const isDisabled = this.disabled;
     const isVertical = this.orientation === 'vertical';
     const percent = ((this.currentValue - this.min) / (this.max - this.min)) * 100;
 
@@ -572,15 +481,6 @@ export class UiSlider {
           aria-valuenow={this.currentValue}
           aria-disabled={isDisabled ? 'true' : 'false'}
         >
-          {/* Success Indicator */}
-          {this.showSuccess && (
-            <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          )}
-          
           <div class={trackStyles.track}>
             {this.variant !== 'rainbow' && (
               <div
@@ -665,13 +565,6 @@ export class UiSlider {
                 class={`px-3 py-1 text-sm font-medium rounded transition-colors ${isDisabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-primary text-white hover:bg-primary-dark'}`}
               >Set</button>
             </form>
-          </div>
-        )}
-        
-        {/* Error Message */}
-        {this.errorMessage && (
-          <div class="text-red-500 text-sm mt-2 px-2">
-            {this.errorMessage}
           </div>
         )}
       </div>

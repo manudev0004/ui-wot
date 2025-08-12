@@ -7,22 +7,21 @@
 
 ## Overview
 
-Slider component with various features, multiple visual styles and TD integration.
-Link a direct property URL for plug-and-play device control.
+Slider component with various visual styles for numeric input.
+Pure UI component focused on user interaction and visual feedback.
 
 ## Properties
 
 | Property              | Attribute               | Description                                                                                                                                                                                               | Type                                                         | Default        |
 | --------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | -------------- |
 | `color`               | `color`                 | Color scheme to match thingsweb webpage                                                                                                                                                                   | `"neutral" \| "primary" \| "secondary"`                      | `'primary'`    |
+| `disabled`            | `disabled`              | Whether the slider is disabled.                                                                                                                                                                           | `boolean`                                                    | `false`        |
 | `enableManualControl` | `enable-manual-control` | Enable manual control interface.                                                                                                                                                                          | `boolean`                                                    | `false`        |
 | `label`               | `label`                 | Optional text label, to display text above the slider.                                                                                                                                                    | `string`                                                     | `undefined`    |
 | `max`                 | `max`                   | Maximum value of the slider.                                                                                                                                                                              | `number`                                                     | `100`          |
 | `min`                 | `min`                   | Minimum value of the slider.                                                                                                                                                                              | `number`                                                     | `0`            |
 | `orientation`         | `orientation`           | Orientation of the slider. - horizontal: Left to right slider (default) - vertical: Bottom to top slider                                                                                                  | `"horizontal" \| "vertical"`                                 | `'horizontal'` |
-| `state`               | `state`                 | Current state of the slider. - disabled: Slider cannot be clicked or interacted with - default: Slider is interactive (default)                                                                           | `"default" \| "disabled"`                                    | `'default'`    |
 | `step`                | `step`                  | Step increment for the slider.                                                                                                                                                                            | `number`                                                     | `1`            |
-| `tdUrl`               | `td-url`                | Thing Description URL for device control.                                                                                                                                                                 | `string`                                                     | `undefined`    |
 | `theme`               | `theme`                 | Theme for the component.                                                                                                                                                                                  | `"dark" \| "light"`                                          | `'light'`      |
 | `thumbShape`          | `thumb-shape`           | Shape of the slider thumb. - circle: Round thumb (default) - square: Square thumb - arrow: Arrow-shaped thumb pointing right - triangle: Triangle-shaped thumb - diamond: Diamond-shaped thumb (<> style) | `"arrow" \| "circle" \| "diamond" \| "square" \| "triangle"` | `'circle'`     |
 | `value`               | `value`                 | Current value of the slider.                                                                                                                                                                              | `number`                                                     | `0`            |
@@ -31,9 +30,11 @@ Link a direct property URL for plug-and-play device control.
 
 ## Events
 
-| Event         | Description                      | Type                              |
-| ------------- | -------------------------------- | --------------------------------- |
-| `valueChange` | Event emitted when value changes | `CustomEvent<{ value: number; }>` |
+| Event         | Description                             | Type                                              |
+| ------------- | --------------------------------------- | ------------------------------------------------- |
+| `slideEnd`    | Event emitted when user stops dragging  | `CustomEvent<{ value: number; label?: string; }>` |
+| `slideStart`  | Event emitted when user starts dragging | `CustomEvent<{ value: number; label?: string; }>` |
+| `valueChange` | Event emitted when value changes        | `CustomEvent<{ value: number; label?: string; }>` |
 
 
 ----------------------------------------------

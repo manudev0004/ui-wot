@@ -6,8 +6,8 @@
     <title>Wot-Components</title>
     <script type="module" src="/build/ui-wot-components.esm.js"></script>
     <script nomodule src="/build/ui-wot-components.js"></script>
-    <!-- Node-WoT Browser Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js" defer></script>
+    <!-- Node-WoT Browser Bundle - using specific version for stability -->
+    <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@0.9.1/dist/wot-bundle.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -90,31 +90,51 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Read-Write Mode -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Write Mode (Default)</h3>
-              <ui-toggle
-                td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
-                mode="readwrite"
-                variant="neon"
-                color="primary"
-                label="HTTP Device"
-              >
-              </ui-toggle>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Write Mode with Node-WoT</h3>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-3">
+                  <ui-toggle
+                    id="td-toggle-readwrite"
+                    variant="neon"
+                    color="primary"
+                    label="HTTP Device"
+                    value="false"
+                    change-handler="handleToggleChange"
+                  >
+                  </ui-toggle>
+                  <button id="toggle-rw-refresh" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded text-sm">
+                    Refresh
+                  </button>
+                </div>
+                <div id="toggle-rw-status" class="mt-2 text-sm"></div>
+              </div>
               <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle
-  td-url="http://device.local/power"
-  label="HTTP Device"&gt;
+  id="td-toggle-readwrite"
+  variant="neon"
+  color="primary"
+  label="HTTP Device"
+  value="false"
+  change-handler="handleToggleChange"&gt;
 &lt;/ui-toggle&gt;</pre>
             </div>
 
             <!-- Read-Only Mode -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode (Status Display)</h3>
-              <div class="flex items-center gap-4">
-                <ui-toggle td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" mode="read" label="Sensor Status"> </ui-toggle>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode with Node-WoT</h3>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-3">
+                  <ui-toggle id="td-toggle-readonly" label="Sensor Status" value="false" disabled="true"> </ui-toggle>
+                  <button id="refresh-status" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded text-sm">
+                    Refresh
+                  </button>
+                </div>
+                <div id="toggle-ro-status" class="mt-2 text-sm"></div>
               </div>
-              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle
-  td-url="http://sensor.local/status"
-  mode="read"
-  label="Sensor Status"&gt;
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle 
+  id="td-toggle-readonly"
+  label="Sensor Status" 
+  disabled="true"
+  value="false"&gt;
 &lt;/ui-toggle&gt;</pre>
             </div>
           </div>
@@ -253,39 +273,64 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Read-Write Mode -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Write Mode (Default)</h3>
-              <ui-number-picker
-                td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int"
-                mode="readwrite"
-                variant="outlined"
-                color="primary"
-                label="HTTP Device"
-                min="0"
-                max="100"
-              >
-              </ui-number-picker>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Write Mode with Node-WoT</h3>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-3">
+                  <ui-number-picker
+                    id="td-number-readwrite"
+                    variant="outlined"
+                    color="primary"
+                    label="HTTP Device"
+                    min="0"
+                    max="100"
+                    value="0"
+                    change-handler="handleNumberChange"
+                  >
+                  </ui-number-picker>
+                  <button id="number-rw-refresh" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded text-sm">
+                    Refresh
+                  </button>
+                </div>
+                <div id="number-rw-status" class="mt-2 text-sm"></div>
+              </div>
               <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-number-picker
-  td-url="http://device.local/temperature"
-  label="HTTP Device"&gt;
+  id="td-number-readwrite"
+  variant="outlined"
+  color="primary"
+  label="HTTP Device"
+  min="0"
+  max="100"
+  value="0"
+  change-handler="handleNumberChange"&gt;
 &lt;/ui-number-picker&gt;</pre>
             </div>
 
             <!-- Read-Only Mode -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode (Status Display)</h3>
-              <ui-number-picker
-                td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/int"
-                mode="read"
-                label="Sensor Reading"
-                min="0"
-                max="100"
-                color="primary"
-              >
-              </ui-number-picker>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode with Node-WoT</h3>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-3">
+                  <ui-number-picker
+                    id="td-number-readonly"
+                    label="Sensor Reading"
+                    min="0"
+                    max="100"
+                    color="primary"
+                    disabled="true"
+                    value="0"
+                  >
+                  </ui-number-picker>
+                  <button id="refresh-number" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded text-sm">
+                    Refresh
+                  </button>
+                </div>
+                <div id="number-ro-status" class="mt-2 text-sm"></div>
+              </div>
               <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-number-picker
-  td-url="http://sensor.local/reading"
-  mode="read"
-  label="Sensor Reading"&gt;
+  id="td-number-readonly"
+  label="Sensor Reading"
+  disabled="true"
+  value="0"&gt;
 &lt;/ui-number-picker&gt;</pre>
             </div>
           </div>
@@ -1012,15 +1057,6 @@
         console.log(`[${new Date().toLocaleTimeString()}] ${eventName}:`, detail);
       }
 
-      // Local control handlers for toggles
-      window.handleLightToggle = function (data) {
-        logEvent('Light Toggle', data);
-      };
-
-      window.handleFanToggle = function (data) {
-        logEvent('Fan Toggle', data);
-      };
-
       // Text change handler
       window.handleTextChange = function (data) {
         logEvent('Text Change', data);
@@ -1078,57 +1114,254 @@
       setTheme(savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches));
 
       themeToggle.addEventListener('toggle', e => setTheme(e.detail.active));
+      
+      const TD_URL = "http://plugfest.thingweb.io:80/http-data-schema-thing";
+      
+      class WoTBrowser {
+        constructor() {
+          this.things = {};
+          this.isInitialized = false;
+          this.initPromise = null;
+          this.servient = null;
+          this.WoT = null;
+        }
 
-      // Add event listeners to see slider values change
+        async init() {
+          if (this.initPromise) return this.initPromise;
+          
+          this.initPromise = new Promise((resolve, reject) => {
+        const timeout = 10000;
+        let attempts = 0;
+        const maxAttempts = timeout / 200;
+
+        const checkWoT = () => {
+          attempts++;
+          if (window.WoT && window.WoT.Core && window.WoT.Http) {
+            this.initializeServient().then(resolve).catch(reject);
+          } else if (attempts >= maxAttempts) {
+            reject(new Error("WoT global object not available after timeout"));
+          } else {
+            setTimeout(checkWoT, 200);
+          }
+        };
+        
+        checkWoT();
+          });
+          
+          return this.initPromise;
+        }
+        
+        async initializeServient() {
+          try {
+        this.servient = new WoT.Core.Servient();
+        this.servient.addClientFactory(new WoT.Http.HttpClientFactory());
+        this.WoT = await this.servient.start();
+        this.isInitialized = true;
+        return true;
+          } catch (error) {
+        throw error;
+          }
+        }
+        
+        async consumeTD(tdUrl, componentId) {
+          await this.init();
+          try {
+        const td = await this.WoT.requestThingDescription(tdUrl);
+        const thing = await this.WoT.consume(td);
+        this.things[componentId] = thing;
+        return true;
+          } catch (error) {
+        return false;
+          }
+        }
+        
+        async readProperty(componentId, propertyName = "value") {
+          if (!this.things[componentId]) {
+        return { success: false, error: 'Thing not consumed' };
+          }
+          try {
+        const thing = this.things[componentId];
+        const value = await thing.readProperty(propertyName);
+        return { success: true, value };
+          } catch (error) {
+        return { success: false, error: error.message };
+          }
+        }
+        
+        async writeProperty(componentId, value, propertyName = "value") {
+          if (!this.things[componentId]) {
+        return { success: false, error: 'Thing not consumed' };
+          }
+          try {
+        const thing = this.things[componentId];
+        await thing.writeProperty(propertyName, value);
+        return { success: true };
+          } catch (error) {
+        return { success: false, error: error.message };
+          }
+        }
+      }
+      
+      const WoTClient = new WoTBrowser();
+      
+      document.addEventListener('DOMContentLoaded', async () => {
+        try {
+          await WoTClient.init();
+          setupComponentHandlers();
+          const booleanTdUrl = `${TD_URL}`;
+          const intTdUrl = `${TD_URL}`;
+          const success1 = await WoTClient.consumeTD(booleanTdUrl, "td-toggle-readwrite");
+          const success2 = await WoTClient.consumeTD(booleanTdUrl, "td-toggle-readonly");
+          const success3 = await WoTClient.consumeTD(intTdUrl, "td-number-readwrite");
+          const success4 = await WoTClient.consumeTD(intTdUrl, "td-number-readonly");
+          if (success1 && success2 && success3 && success4) {
+        await refreshToggleReadwrite();
+        await refreshToggleStatus();
+        await refreshNumberReadwrite(); 
+        await refreshNumberStatus();
+          } else {
+        // error
+          }
+        } catch (error) {
+          const errorMsg = "Failed to connect to WoT device. Please check console for details.";
+          document.querySelectorAll('[id$="-status"]').forEach(el => {
+        el.textContent = errorMsg;
+        el.className = "mt-2 text-sm text-red-500";
+          });
+        }
+      });
+      
+      function setupComponentHandlers() {
+        const toggleRwStatus = document.getElementById("toggle-rw-status");
+        const toggleRoStatus = document.getElementById("toggle-ro-status");
+        const numberRwStatus = document.getElementById("number-rw-status");
+        const numberRoStatus = document.getElementById("number-ro-status");
+        
+        function updateStatus(element, message, isError = false) {
+          element.textContent = message;
+          element.className = "mt-2 text-sm " + (isError ? "text-red-500" : "text-green-500");
+          setTimeout(() => {
+        element.textContent = "";
+          }, 3000);
+        }
+        
+        window.handleToggleChange = async function(data) {
+          updateStatus(toggleRwStatus, "Writing to device...");
+          const boolValue = data.value === "true" || data.active === true;
+          const result = await WoTClient.writeProperty("td-toggle-readwrite", boolValue, "bool");
+          if (result.success) {
+        updateStatus(toggleRwStatus, "Successfully updated device!");
+          } else {
+        updateStatus(toggleRwStatus, `Error: ${result.error}`, true);
+          }
+        };
+        
+        window.handleNumberChange = async function(data) {
+          updateStatus(numberRwStatus, "Writing to device...");
+          const numValue = parseInt(data.value, 10);
+          const result = await WoTClient.writeProperty("td-number-readwrite", numValue, "int");
+          if (result.success) {
+        updateStatus(numberRwStatus, "Successfully updated device!");
+          } else {
+        updateStatus(numberRwStatus, `Error: ${result.error}`, true);
+          }
+        };
+        
+        document.getElementById("refresh-status").addEventListener("click", async () => {
+          updateStatus(toggleRoStatus, "Reading from device...");
+          await refreshToggleStatus();
+          updateStatus(toggleRoStatus, "Value refreshed!");
+        });
+        
+        document.getElementById("refresh-number").addEventListener("click", async () => {
+          updateStatus(numberRoStatus, "Reading from device...");
+          await refreshNumberStatus();
+          updateStatus(numberRoStatus, "Value refreshed!");
+        });
+        
+        document.getElementById("toggle-rw-refresh").addEventListener("click", async () => {
+          updateStatus(toggleRwStatus, "Reading from device...");
+          await refreshToggleReadwrite();
+          updateStatus(toggleRwStatus, "Value refreshed!");
+        });
+        
+        document.getElementById("number-rw-refresh").addEventListener("click", async () => {
+          updateStatus(numberRwStatus, "Reading from device...");
+          await refreshNumberReadwrite();
+          updateStatus(numberRwStatus, "Value refreshed!");
+        });
+        
+        const tdToggleReadwrite = document.getElementById("td-toggle-readwrite");
+        tdToggleReadwrite.addEventListener("toggle", (e) => {
+          handleToggleChange(e.detail);
+        });
+        
+        const tdNumberReadwrite = document.getElementById("td-number-readwrite");
+        tdNumberReadwrite.addEventListener("valueChange", (e) => {
+          handleNumberChange(e.detail);
+        });
+      }
+      
+      async function refreshToggleReadwrite() {
+        const result = await WoTClient.readProperty("td-toggle-readwrite", "bool");
+        if (result.success) {
+          const toggle = document.getElementById("td-toggle-readwrite");
+          toggle.value = String(result.value);
+        }
+      }
+      
+      async function refreshToggleStatus() {
+        const result = await WoTClient.readProperty("td-toggle-readonly", "bool");
+        if (result.success) {
+          const toggle = document.getElementById("td-toggle-readonly");
+          toggle.value = String(result.value);
+        }
+      }
+      
+      async function refreshNumberReadwrite() {
+        const result = await WoTClient.readProperty("td-number-readwrite", "int");
+        if (result.success) {
+          const numberPicker = document.getElementById("td-number-readwrite");
+          numberPicker.value = String(result.value);
+        }
+      }
+      
+      async function refreshNumberStatus() {
+        const result = await WoTClient.readProperty("td-number-readonly", "int");
+        if (result.success) {
+          const numberPicker = document.getElementById("td-number-readonly");
+          numberPicker.value = String(result.value);
+        }
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('ui-slider').forEach(slider => {
           slider.addEventListener('valueChange', e => {
-            console.log(`Slider value changed to: ${e.detail.value}`);
           });
         });
       });
 
-      // Demo functions for local control toggles
       let lightState = false;
       let fanState = true;
 
-      // Function called by Smart Light toggle
       window.handleLightToggle = function (data) {
-        console.log('Light toggle clicked:', data);
         lightState = data.active;
-
-        // Update the toggle's value attribute to reflect new state
         const lightToggle = document.getElementById('lightToggle');
         if (lightToggle) {
           lightToggle.setAttribute('value', lightState ? 'true' : 'false');
         }
-
-        // Update status display
         updateDeviceStatus();
-
-        // Here you would typically make API calls or update your application state
-        console.log(`Light is now: ${lightState ? 'ON' : 'OFF'}`);
       };
 
-      // Function called by Fan toggle
       window.handleFanToggle = function (data) {
-        console.log('Fan toggle clicked:', data);
         fanState = data.active;
-
-        // Update the toggle's value attribute to reflect new state
         const fanToggle = document.getElementById('fanToggle');
         if (fanToggle) {
           fanToggle.setAttribute('value', fanState ? 'true' : 'false');
         }
-
-        // Update status display
         updateDeviceStatus();
-
-        // Here you would typically make API calls or update your application state
-        console.log(`Fan is now: ${fanState ? 'ON' : 'OFF'}`);
       };
 
-      // Update the status display
       function updateDeviceStatus() {
         const statusElement = document.getElementById('deviceStatus');
         if (statusElement) {
@@ -1136,9 +1369,7 @@
         }
       }
 
-      // Initialize status on page load
       document.addEventListener('DOMContentLoaded', updateDeviceStatus);
-    </script>
 
     <style>
       .tab-button.active {

@@ -89,15 +89,6 @@ export function AffordanceSelectionPage() {
     dispatch({ type: 'SET_VIEW', payload: 'td-input' });
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'property': return '🔧';
-      case 'action': return '⚡';
-      case 'event': return '📡';
-      default: return '❓';
-    }
-  };
-
   const getComponentBadgeColor = (component: string) => {
     const colorMap: Record<string, string> = {
       'ui-button': 'bg-blue-100 text-blue-800',
@@ -175,7 +166,6 @@ export function AffordanceSelectionPage() {
               <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center">
-                    <span className="text-lg mr-2">{getTypeIcon(affordance.type)}</span>
                     <div>
                       <h3 className="font-medium text-gray-900">{affordance.title}</h3>
                       <p className="text-sm text-gray-500 capitalize">{affordance.type}</p>

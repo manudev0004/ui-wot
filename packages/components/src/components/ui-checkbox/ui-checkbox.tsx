@@ -1,5 +1,4 @@
 import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
-import { WotService, WotResult } from '../../utils/wot-service';
 
 /**
  * Checkbox component with consistent styling to match the design system.
@@ -46,21 +45,9 @@ export class UiCheckbox {
   @Prop() changeHandler?: string;
 
   /**
-   * Thing Description URL for property control.
-   * When provided, checkbox will read/write boolean values to the device.
-   * @example "http://device.local/properties/enabled"
+   * Whether the checkbox is disabled.
    */
-  @Prop() tdUrl?: string;
-
-  /**
-   * Success feedback state.
-   */
-  @State() showSuccess: boolean = false;
-
-  /**
-   * Last error message.
-   */
-  @State() errorMessage?: string;
+  @Prop() disabled: boolean = false;
 
   /**
    * Internal state for checked status.
@@ -70,115 +57,29 @@ export class UiCheckbox {
   /**
    * Event emitted when checkbox state changes.
    */
-  @Event() checkboxChange: EventEmitter<{ checked: boolean }>;
+  @Event() checkboxChange: EventEmitter<{ checked: boolean; label?: string }>;
 
   componentWillLoad() {
     this.isChecked = this.checked;
-    
-    // Initialize from TD if URL provided
-    if (this.tdUrl) {
-      this.readFromDevice();
-    }
   }
 
-  private async readFromDevice() {
-    if (!this.tdUrl) return;
+  /** Handle checkbox click */
+  private handleClick = () => {
+    if (this.disabled) return;
+
+    this.isChecked = !this.isChecked;
+    this.checked = this.isChecked;
     
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-    
-    const result: WotResult = await WotService.readProperty(this.tdUrl);
-
-    if (result.success && typeof result.value === 'boolean') {
-      this.isChecked = result.value;
-      this.checked = result.value;
-      this.showSuccess = true;
-      
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-    } else {
-      this.errorMessage = result.error || 'Failed to read checkbox state';
-      
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-      
-      console.warn('Checkbox read failed:', result.error);
-    }
-  }
-
-  private async writeToDevice(value: boolean): Promise<boolean> {
-    if (!this.tdUrl) return true; // Local control, always succeeds
-    
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-    
-    const result: WotResult = await WotService.writeProperty(this.tdUrl, value);
-
-    if (result.success) {
-      this.showSuccess = true;
-      
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-      
-      return true;
-    } else {
-      this.errorMessage = result.error || 'Failed to update checkbox state';
-      
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-      
-      console.warn('Checkbox write failed:', result.error);
-      return false;
-    }
-  }
-
-  private handleClick = async () => {
-    if (this.state === 'disabled') return;
-
-    const newValue = !this.isChecked;
-    const previousValue = this.isChecked;
-
-    this.isChecked = newValue;
-    this.checked = newValue;
-    
-    // Emit the change event
-    this.checkboxChange.emit({ checked: newValue });
-
-    // Call custom callback if provided
-    if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
-      (window as any)[this.changeHandler]({ checked: newValue });
-    }
-
-    // Update device if TD URL provided
-    if (this.tdUrl) {
-      const success = await this.writeToDevice(newValue);
-      if (!success) {
-        // Revert to previous value on write failure
-        this.isChecked = previousValue;
-        this.checked = previousValue;
-        
-        // Re-emit with reverted value
-        this.checkboxChange.emit({ checked: previousValue });
-        if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
-          (window as any)[this.changeHandler]({ checked: previousValue });
-        }
-      }
-    }
+    this.checkboxChange.emit({ 
+      checked: this.isChecked,
+      label: this.label
+    });
   };
 
+  /** Get checkbox styles */
   private getCheckboxStyles() {
-    const isDisabled = this.state === 'disabled';
-    const isActive = this.state === 'active' || this.isChecked;
+    const isActive = this.isChecked;
+    const isDisabled = this.disabled;
     
     let baseClasses = 'transition-all duration-300 flex items-center justify-center cursor-pointer';
     
@@ -226,7 +127,7 @@ export class UiCheckbox {
   }
 
   private getLabelStyles() {
-    const isDisabled = this.state === 'disabled';
+    const isDisabled = this.disabled;
     
     let classes = 'ml-3 text-sm font-medium cursor-pointer';
     
@@ -242,28 +143,19 @@ export class UiCheckbox {
   render() {
     const checkboxStyles = this.getCheckboxStyles();
     const labelStyles = this.getLabelStyles();
-    const isDisabled = this.state === 'disabled';
 
     return (
       <div class="inline-block">
         <div class="flex items-center">
           <div class="relative">
-            {/* Success Indicator */}
-            {this.showSuccess && (
-              <div class="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5 z-10">
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-            )}
-            
+            {/* Checkbox */}
             <div
               class={checkboxStyles}
               onClick={this.handleClick}
               role="checkbox"
               aria-checked={this.isChecked ? 'true' : 'false'}
-              aria-disabled={isDisabled ? 'true' : 'false'}
-              tabIndex={isDisabled ? -1 : 0}
+              aria-disabled={this.disabled ? 'true' : 'false'}
+              tabIndex={this.disabled ? -1 : 0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
@@ -280,13 +172,6 @@ export class UiCheckbox {
             </label>
           )}
         </div>
-        
-        {/* Error Message */}
-        {this.errorMessage && (
-          <div class="text-red-500 text-sm mt-1 px-2">
-            {this.errorMessage}
-          </div>
-        )}
       </div>
     );
   }

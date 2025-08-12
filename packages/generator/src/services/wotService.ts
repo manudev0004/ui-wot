@@ -1,4 +1,3 @@
-// Use browser-compatible imports
 import '@node-wot/browser-bundle';
 import { ThingDescription } from 'wot-thing-description-types';
 import { ParsedAffordance, TDSource } from '../types';
@@ -12,12 +11,10 @@ class WoTService {
   private things: Map<string, any> = new Map();
 
   constructor() {
-    // Will be initialized in start()
   }
 
   async start() {
     try {
-      // Try to use global WoT from browser bundle
       if (typeof WoT !== 'undefined') {
         this.wot = WoT;
         console.log('WoT Service started with browser bundle');
@@ -176,13 +173,10 @@ class WoTService {
 
   private suggestComponentForProperty(property: any): string {
     if (!property.type) return 'ui-text';
-
-    // Boolean properties -> toggle
     if (property.type === 'boolean') {
       return 'ui-toggle';
     }
 
-    // Numeric properties with min/max -> slider or number picker
     if (property.type === 'integer' || property.type === 'number') {
       if (property.minimum !== undefined && property.maximum !== undefined) {
         const range = property.maximum - property.minimum;

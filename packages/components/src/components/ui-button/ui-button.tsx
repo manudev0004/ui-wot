@@ -1,9 +1,8 @@
-import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
-import { WotService, WotResult } from '../../utils/wot-service';
+import { Component, Prop, h, Event, EventEmitter } from '@stencil/core';
 
 /**
- * Button component with various visual styles, matching the ui-number-picker design family.
- * Supports the same variants, colors, and themes as the number picker.
+ * Button component with various visual styles for user interactions.
+ * Pure UI component focused on click events and visual feedback.
  * 
  * @example Basic Usage
  * ```html
@@ -16,17 +15,21 @@ import { WotService, WotResult } from '../../utils/wot-service';
  * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
  * ```
  * 
- * @example Custom Click Handler
- * ```html
- * <ui-button on-click="handleButtonClick" label="Custom Handler"></ui-button>
- * ```
- * 
  * @example Event Handling
  * ```javascript
- * window.handleButtonClick = function(data) {
- *   console.log('Button clicked:', data.label);
- *   // Your custom logic here
- * };
+ * const button = document.querySelector('ui-button');
+ * button.addEventListener('buttonClick', (e) => {
+ *   console.log('Button clicked:', e.detail.label);
+ * });
+ * ```
+ * 
+ * @example Framework Integration
+ * ```javascript
+ * // React
+ * <ui-button label="Save" onButtonClick={(e) => handleSave(e.detail)} />
+ * 
+ * // Vue
+ * <ui-button label="Save" @buttonClick="handleSave($event.detail)" />
  * ```
  */
 @Component({
@@ -44,11 +47,9 @@ export class UiButton {
   @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'minimal';
 
   /**
-   * Current state of the button.
-   * - active: Button is enabled (default)
-   * - disabled: Button cannot be interacted with
+   * Whether the button is disabled.
    */
-  @Prop({ mutable: true }) state: 'active' | 'disabled' = 'active';
+  @Prop() disabled: boolean = false;
 
   /**
    * Theme for the component.
@@ -65,113 +66,22 @@ export class UiButton {
    */
   @Prop() label: string = 'Button';
 
-  /**
-   * Function name to call when button is clicked.
-   * User defines this function in their code, component will invoke it.
-   * @example "handleButtonClick"
-   */
-  @Prop() clickHandler?: string;
-
-  /**
-   * Thing Description URL for action invocation.
-   * When provided, button will trigger an action on the device.
-   * @example "http://device.local/actions/turnOn"
-   */
-  @Prop() tdUrl?: string;
-
-  /**
-   * Data payload to send with the action.
-   * Can be a JSON string or any value that will be JSON serialized.
-   * @example '{"brightness": 100}' or '"on"' or '42'
-   */
-  @Prop() actionData?: string;
-
-  /** Operation status for user feedback */
-  @State() showSuccess: boolean = false;
-
-  /** Last error message */
-  @State() errorMessage?: string;
-
   /** Event emitted when button is clicked */
-  @Event() buttonClick: EventEmitter<{ label: string }>;
+  @Event() buttonClick: EventEmitter<{ label: string; timestamp: Date }>;
 
   /** Handle button click */
-  private handleClick = async () => {
-    if (this.state === 'disabled') return;
+  private handleClick = () => {
+    if (this.disabled) return;
     
-    // If TD URL is provided, invoke action on device
-    if (this.tdUrl) {
-      await this.invokeAction();
-    }
-    
-    this.emitClick();
-  };
-
-  /** Invoke action on TD device */
-  private async invokeAction() {
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-    
-    try {
-      let payload = undefined;
-      if (this.actionData) {
-        try {
-          payload = JSON.parse(this.actionData);
-        } catch {
-          // If not valid JSON, use as string
-          payload = this.actionData;
-        }
-      }
-
-      const result: WotResult = await WotService.invokeAction(this.tdUrl, payload);
-
-      if (result.success) {
-        this.showSuccess = true;
-        
-        // Clear success indicator after 3 seconds
-        setTimeout(() => {
-          this.showSuccess = false;
-        }, 3000);
-      } else {
-        this.errorMessage = result.error;
-        
-        // Clear error after 8 seconds
-        setTimeout(() => {
-          this.errorMessage = undefined;
-        }, 8000);
-        
-        console.warn('Action failed:', result.error);
-      }
-    } catch (error) {
-      this.errorMessage = error.message || 'Action failed';
-      
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-      
-      console.warn('Action failed:', error);
-    }
-  }
-
-  /** Emit click events */
-  private emitClick() {
-    // Emit click event for parent to handle
     this.buttonClick.emit({ 
-      label: this.label 
+      label: this.label,
+      timestamp: new Date()
     });
-
-    // Call user's callback function if provided
-    if (this.clickHandler && typeof (window as any)[this.clickHandler] === 'function') {
-      (window as any)[this.clickHandler]({
-        label: this.label
-      });
-    }
-  }
+  };
 
   /** Handle keyboard input */
   private handleKeyDown = (event: KeyboardEvent) => {
-    if (this.state === 'disabled') return;
+    if (this.disabled) return;
     
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -181,7 +91,7 @@ export class UiButton {
 
   /** Get button style classes */
   private getButtonStyle(): string {
-    const isDisabled = this.state === 'disabled';
+    const isDisabled = this.disabled;
     
     let baseClasses = 'px-6 h-12 flex items-center justify-center text-base font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg';
     
@@ -246,36 +156,18 @@ export class UiButton {
 
   /** Render component */
   render() {
-    const isDisabled = this.state === 'disabled';
+    const isDisabled = this.disabled;
 
     return (
-      <div class="relative">
-        {/* Success Indicator */}
-        {this.showSuccess && (
-          <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        )}
-        
-        <button
-          class={this.getButtonStyle()}
-          onClick={this.handleClick}
-          onKeyDown={this.handleKeyDown}
-          disabled={isDisabled}
-          aria-label={this.label}
-        >
-          {this.label}
-        </button>
-        
-        {/* Error Message */}
-        {this.errorMessage && (
-          <div class="text-red-500 text-sm mt-1 px-2">
-            {this.errorMessage}
-          </div>
-        )}
-      </div>
+      <button
+        class={this.getButtonStyle()}
+        onClick={this.handleClick}
+        onKeyDown={this.handleKeyDown}
+        disabled={isDisabled}
+        aria-label={this.label}
+      >
+        {this.label}
+      </button>
     );
   }
 }

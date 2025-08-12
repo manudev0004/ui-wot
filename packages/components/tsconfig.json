@@ -4,6 +4,7 @@
     "allowUnreachableCode": false,
     "declaration": false,
     "experimentalDecorators": true,
+  "skipLibCheck": true,
     "lib": [
       "dom",
       "es2022"
@@ -15,7 +16,8 @@
     "noUnusedParameters": true,
     "jsx": "react",
     "jsxFactory": "h",
-    "jsxFragmentFactory": "h.Fragment"
+  "jsxFragmentFactory": "h.Fragment",
+  "types": []
   },
   "include": [
     "src"

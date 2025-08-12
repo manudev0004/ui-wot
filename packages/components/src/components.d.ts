@@ -62,18 +62,17 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Calendar component for date-time selection with various visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Calendar component for date-time selection with various visual styles.
+     * Provides an interactive calendar interface for date and time selection.
      * @example Basic Usage
      * ```html
      * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
      * ```
-     * @example TD Integration
+     * @example Advanced Usage
      * ```html
      * <ui-calendar 
-     * td-url="http://device.local/properties/schedule"
      * variant="filled"
-     * label="Device Schedule"
+     * label="Schedule Date"
      * include-time="true">
      * </ui-calendar>
      * ```
@@ -84,6 +83,11 @@ export namespace Components {
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Whether the calendar is disabled.
+          * @default false
+         */
+        "disabled": boolean;
         /**
           * Include time picker alongside date picker.
           * @default false
@@ -106,10 +110,6 @@ export namespace Components {
           * @default 'default'
          */
         "state": 'disabled' | 'default';
-        /**
-          * Thing Description URL for device control.
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -144,6 +144,11 @@ export namespace Components {
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
+          * Whether the checkbox is disabled.
+          * @default false
+         */
+        "disabled": boolean;
+        /**
           * Optional text label for the checkbox.
          */
         "label"?: string;
@@ -152,11 +157,6 @@ export namespace Components {
           * @default 'default'
          */
         "state": 'disabled' | 'active' | 'default';
-        /**
-          * Thing Description URL for property control. When provided, checkbox will read/write boolean values to the device.
-          * @example "http://device.local/properties/enabled"
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -329,7 +329,7 @@ export namespace Components {
     /**
      * Comprehensive text component for displaying and editing text data.
      * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
-     * expandable content, and Thing Description integration.
+     * and expandable content.
      * @example Basic Text Display
      * ```html
      * <ui-text variant="display" value="Hello World"></ui-text>
@@ -356,25 +356,31 @@ export namespace Components {
      * value='{"key": "value"}'>
      * </ui-text>
      * ```
-     * @example TD Integration
+     * @example Event Handling
      * ```html
      * <ui-text 
-     * td-url="http://device.local/properties/name"
      * variant="edit"
-     * label="Device Name">
+     * label="Text Input"
+     * onTextChange="handleChange">
      * </ui-text>
+     * <script>
+     * function handleChange(event) {
+     * console.log('Text changed:', event.detail.value);
+     * }
+     * </script>
      * ```
      */
     interface UiText {
-        /**
-          * Custom callback function name for value changes.
-         */
-        "changeHandler"?: string;
         /**
           * Color scheme to match design system.
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Whether the text component is disabled.
+          * @default false
+         */
+        "disabled": boolean;
         /**
           * Enable expandable/collapsible display for long text.
           * @default false
@@ -418,10 +424,6 @@ export namespace Components {
          */
         "structure": 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown';
         /**
-          * Thing Description URL for property control.
-         */
-        "tdUrl"?: string;
-        /**
           * Type of text field. - single: Single-line text field - multi: Multi-line text area
           * @default 'single'
          */
@@ -443,38 +445,12 @@ export namespace Components {
         "variant": 'display' | 'edit';
     }
     /**
-     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Toggle switch component with various features and multiple visual styles.
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
      * ```
-     * @example TD Integration (Auto-detects protocol)
-     * ```html
-     * <ui-toggle 
-     * td-url="http://device.local/properties/power"
-     * label="Smart Light"
-     * mode="readwrite">
-     * </ui-toggle>
-     * ```
-     * @example Multi-protocol Support
-     * ```html
-     * <!-- HTTP -->
-     * <ui-toggle td-url="http://device.local/properties/power" label="HTTP Device"></ui-toggle>
-     * <!-- CoAP -->
-     * <ui-toggle td-url="coap://device.local/properties/power" label="CoAP Device"></ui-toggle>
-     * <!-- MQTT (via TD) -->
-     * <ui-toggle td-url="mqtt://broker.local/device/properties/power" label="MQTT Device"></ui-toggle>
-     * ```
-     * @example TD Device Read-Only (shows colored circle)
-     * ```html
-     * <ui-toggle 
-     * td-url="http://sensor.local/properties/status"
-     * label="Door Sensor"
-     * mode="read">
-     * </ui-toggle>
-     * ```
-     * @example Local Control with Custom Handler
+     * @example Custom Handler Usage
      * ```html
      * <ui-toggle 
      * value="true"
@@ -490,36 +466,31 @@ export namespace Components {
          */
         "changeHandler"?: string;
         /**
-          * Color scheme to match thingsweb webpage
+          * Color scheme
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
+          * Whether the toggle is disabled
+          * @default false
+         */
+        "disabled": boolean;
+        /**
           * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
          */
         "label"?: string;
-        /**
-          * Device interaction mode. - read: Only read from device (display current state as colored circle) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
-          * @default 'readwrite'
-         */
-        "mode": 'read' | 'write' | 'readwrite';
         /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'
          */
         "state": 'active' | 'disabled' | 'default';
         /**
-          * Direct URL of TD boolean properties to auto connect and interact with the device.
-          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" ```
-         */
-        "tdUrl"?: string;
-        /**
           * Theme for the component.
           * @default 'light'
          */
         "theme": 'light' | 'dark';
         /**
-          * Current value for local control mode (true/false, on/off, 1/0). When no td-url is provided and value is set, this controls the toggle state.
+          * Current value for local control mode (true/false, on/off, 1/0).
           * @example "true", "false", "on", "off", "1", "0"
          */
         "value"?: string;
@@ -605,21 +576,20 @@ declare global {
         new (): HTMLUiButtonElement;
     };
     interface HTMLUiCalendarElementEventMap {
-        "dateChange": { value: string };
+        "dateChange": { value: string; label?: string };
     }
     /**
-     * Calendar component for date-time selection with various visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Calendar component for date-time selection with various visual styles.
+     * Provides an interactive calendar interface for date and time selection.
      * @example Basic Usage
      * ```html
      * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
      * ```
-     * @example TD Integration
+     * @example Advanced Usage
      * ```html
      * <ui-calendar 
-     * td-url="http://device.local/properties/schedule"
      * variant="filled"
-     * label="Device Schedule"
+     * label="Schedule Date"
      * include-time="true">
      * </ui-calendar>
      * ```
@@ -639,7 +609,7 @@ declare global {
         new (): HTMLUiCalendarElement;
     };
     interface HTMLUiCheckboxElementEventMap {
-        "checkboxChange": { checked: boolean };
+        "checkboxChange": { checked: boolean; label?: string };
     }
     /**
      * Checkbox component with consistent styling to match the design system.
@@ -749,12 +719,12 @@ declare global {
         new (): HTMLUiSliderElement;
     };
     interface HTMLUiTextElementEventMap {
-        "textChange": { value: string };
+        "textChange": { value: string; label?: string };
     }
     /**
      * Comprehensive text component for displaying and editing text data.
      * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
-     * expandable content, and Thing Description integration.
+     * and expandable content.
      * @example Basic Text Display
      * ```html
      * <ui-text variant="display" value="Hello World"></ui-text>
@@ -781,13 +751,18 @@ declare global {
      * value='{"key": "value"}'>
      * </ui-text>
      * ```
-     * @example TD Integration
+     * @example Event Handling
      * ```html
      * <ui-text 
-     * td-url="http://device.local/properties/name"
      * variant="edit"
-     * label="Device Name">
+     * label="Text Input"
+     * onTextChange="handleChange">
      * </ui-text>
+     * <script>
+     * function handleChange(event) {
+     * console.log('Text changed:', event.detail.value);
+     * }
+     * </script>
      * ```
      */
     interface HTMLUiTextElement extends Components.UiText, HTMLStencilElement {
@@ -808,38 +783,12 @@ declare global {
         "toggle": { active: boolean };
     }
     /**
-     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Toggle switch component with various features and multiple visual styles.
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
      * ```
-     * @example TD Integration (Auto-detects protocol)
-     * ```html
-     * <ui-toggle 
-     * td-url="http://device.local/properties/power"
-     * label="Smart Light"
-     * mode="readwrite">
-     * </ui-toggle>
-     * ```
-     * @example Multi-protocol Support
-     * ```html
-     * <!-- HTTP -->
-     * <ui-toggle td-url="http://device.local/properties/power" label="HTTP Device"></ui-toggle>
-     * <!-- CoAP -->
-     * <ui-toggle td-url="coap://device.local/properties/power" label="CoAP Device"></ui-toggle>
-     * <!-- MQTT (via TD) -->
-     * <ui-toggle td-url="mqtt://broker.local/device/properties/power" label="MQTT Device"></ui-toggle>
-     * ```
-     * @example TD Device Read-Only (shows colored circle)
-     * ```html
-     * <ui-toggle 
-     * td-url="http://sensor.local/properties/status"
-     * label="Door Sensor"
-     * mode="read">
-     * </ui-toggle>
-     * ```
-     * @example Local Control with Custom Handler
+     * @example Custom Handler Usage
      * ```html
      * <ui-toggle 
      * value="true"
@@ -934,18 +883,17 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Calendar component for date-time selection with various visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Calendar component for date-time selection with various visual styles.
+     * Provides an interactive calendar interface for date and time selection.
      * @example Basic Usage
      * ```html
      * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
      * ```
-     * @example TD Integration
+     * @example Advanced Usage
      * ```html
      * <ui-calendar 
-     * td-url="http://device.local/properties/schedule"
      * variant="filled"
-     * label="Device Schedule"
+     * label="Schedule Date"
      * include-time="true">
      * </ui-calendar>
      * ```
@@ -956,6 +904,11 @@ declare namespace LocalJSX {
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Whether the calendar is disabled.
+          * @default false
+         */
+        "disabled"?: boolean;
         /**
           * Include time picker alongside date picker.
           * @default false
@@ -976,16 +929,12 @@ declare namespace LocalJSX {
         /**
           * Event emitted when date changes
          */
-        "onDateChange"?: (event: UiCalendarCustomEvent<{ value: string }>) => void;
+        "onDateChange"?: (event: UiCalendarCustomEvent<{ value: string; label?: string }>) => void;
         /**
           * Current state of the calendar. - disabled: Calendar cannot be interacted with - default: Calendar is interactive (default)
           * @default 'default'
          */
         "state"?: 'disabled' | 'default';
-        /**
-          * Thing Description URL for device control.
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -1020,23 +969,23 @@ declare namespace LocalJSX {
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
+          * Whether the checkbox is disabled.
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
           * Optional text label for the checkbox.
          */
         "label"?: string;
         /**
           * Event emitted when checkbox state changes.
          */
-        "onCheckboxChange"?: (event: UiCheckboxCustomEvent<{ checked: boolean }>) => void;
+        "onCheckboxChange"?: (event: UiCheckboxCustomEvent<{ checked: boolean; label?: string }>) => void;
         /**
           * Current state of the checkbox.
           * @default 'default'
          */
         "state"?: 'disabled' | 'active' | 'default';
-        /**
-          * Thing Description URL for property control. When provided, checkbox will read/write boolean values to the device.
-          * @example "http://device.local/properties/enabled"
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -1225,7 +1174,7 @@ declare namespace LocalJSX {
     /**
      * Comprehensive text component for displaying and editing text data.
      * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
-     * expandable content, and Thing Description integration.
+     * and expandable content.
      * @example Basic Text Display
      * ```html
      * <ui-text variant="display" value="Hello World"></ui-text>
@@ -1252,25 +1201,31 @@ declare namespace LocalJSX {
      * value='{"key": "value"}'>
      * </ui-text>
      * ```
-     * @example TD Integration
+     * @example Event Handling
      * ```html
      * <ui-text 
-     * td-url="http://device.local/properties/name"
      * variant="edit"
-     * label="Device Name">
+     * label="Text Input"
+     * onTextChange="handleChange">
      * </ui-text>
+     * <script>
+     * function handleChange(event) {
+     * console.log('Text changed:', event.detail.value);
+     * }
+     * </script>
      * ```
      */
     interface UiText {
-        /**
-          * Custom callback function name for value changes.
-         */
-        "changeHandler"?: string;
         /**
           * Color scheme to match design system.
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Whether the text component is disabled.
+          * @default false
+         */
+        "disabled"?: boolean;
         /**
           * Enable expandable/collapsible display for long text.
           * @default false
@@ -1292,7 +1247,7 @@ declare namespace LocalJSX {
         /**
           * Event emitted when text value changes.
          */
-        "onTextChange"?: (event: UiTextCustomEvent<{ value: string }>) => void;
+        "onTextChange"?: (event: UiTextCustomEvent<{ value: string; label?: string }>) => void;
         /**
           * Placeholder text for edit mode.
          */
@@ -1318,10 +1273,6 @@ declare namespace LocalJSX {
          */
         "structure"?: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown';
         /**
-          * Thing Description URL for property control.
-         */
-        "tdUrl"?: string;
-        /**
           * Type of text field. - single: Single-line text field - multi: Multi-line text area
           * @default 'single'
          */
@@ -1343,38 +1294,12 @@ declare namespace LocalJSX {
         "variant"?: 'display' | 'edit';
     }
     /**
-     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Toggle switch component with various features and multiple visual styles.
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
      * ```
-     * @example TD Integration (Auto-detects protocol)
-     * ```html
-     * <ui-toggle 
-     * td-url="http://device.local/properties/power"
-     * label="Smart Light"
-     * mode="readwrite">
-     * </ui-toggle>
-     * ```
-     * @example Multi-protocol Support
-     * ```html
-     * <!-- HTTP -->
-     * <ui-toggle td-url="http://device.local/properties/power" label="HTTP Device"></ui-toggle>
-     * <!-- CoAP -->
-     * <ui-toggle td-url="coap://device.local/properties/power" label="CoAP Device"></ui-toggle>
-     * <!-- MQTT (via TD) -->
-     * <ui-toggle td-url="mqtt://broker.local/device/properties/power" label="MQTT Device"></ui-toggle>
-     * ```
-     * @example TD Device Read-Only (shows colored circle)
-     * ```html
-     * <ui-toggle 
-     * td-url="http://sensor.local/properties/status"
-     * label="Door Sensor"
-     * mode="read">
-     * </ui-toggle>
-     * ```
-     * @example Local Control with Custom Handler
+     * @example Custom Handler Usage
      * ```html
      * <ui-toggle 
      * value="true"
@@ -1390,19 +1315,19 @@ declare namespace LocalJSX {
          */
         "changeHandler"?: string;
         /**
-          * Color scheme to match thingsweb webpage
+          * Color scheme
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
+          * Whether the toggle is disabled
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
           * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
          */
         "label"?: string;
-        /**
-          * Device interaction mode. - read: Only read from device (display current state as colored circle) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
-          * @default 'readwrite'
-         */
-        "mode"?: 'read' | 'write' | 'readwrite';
         /**
           * Event emitted when toggle state changes
          */
@@ -1413,17 +1338,12 @@ declare namespace LocalJSX {
          */
         "state"?: 'active' | 'disabled' | 'default';
         /**
-          * Direct URL of TD boolean properties to auto connect and interact with the device.
-          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" ```
-         */
-        "tdUrl"?: string;
-        /**
           * Theme for the component.
           * @default 'light'
          */
         "theme"?: 'light' | 'dark';
         /**
-          * Current value for local control mode (true/false, on/off, 1/0). When no td-url is provided and value is set, this controls the toggle state.
+          * Current value for local control mode (true/false, on/off, 1/0).
           * @example "true", "false", "on", "off", "1", "0"
          */
         "value"?: string;
@@ -1478,18 +1398,17 @@ declare module "@stencil/core" {
              */
             "ui-button": LocalJSX.UiButton & JSXBase.HTMLAttributes<HTMLUiButtonElement>;
             /**
-             * Calendar component for date-time selection with various visual styles and TD integration.
-             * Link a direct property URL for plug-and-play device control.
+             * Calendar component for date-time selection with various visual styles.
+             * Provides an interactive calendar interface for date and time selection.
              * @example Basic Usage
              * ```html
              * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
              * ```
-             * @example TD Integration
+             * @example Advanced Usage
              * ```html
              * <ui-calendar 
-             * td-url="http://device.local/properties/schedule"
              * variant="filled"
-             * label="Device Schedule"
+             * label="Schedule Date"
              * include-time="true">
              * </ui-calendar>
              * ```
@@ -1553,7 +1472,7 @@ declare module "@stencil/core" {
             /**
              * Comprehensive text component for displaying and editing text data.
              * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
-             * expandable content, and Thing Description integration.
+             * and expandable content.
              * @example Basic Text Display
              * ```html
              * <ui-text variant="display" value="Hello World"></ui-text>
@@ -1580,49 +1499,28 @@ declare module "@stencil/core" {
              * value='{"key": "value"}'>
              * </ui-text>
              * ```
-             * @example TD Integration
+             * @example Event Handling
              * ```html
              * <ui-text 
-             * td-url="http://device.local/properties/name"
              * variant="edit"
-             * label="Device Name">
+             * label="Text Input"
+             * onTextChange="handleChange">
              * </ui-text>
+             * <script>
+             * function handleChange(event) {
+             * console.log('Text changed:', event.detail.value);
+             * }
+             * </script>
              * ```
              */
             "ui-text": LocalJSX.UiText & JSXBase.HTMLAttributes<HTMLUiTextElement>;
             /**
-             * Toogle switch component with various fetueres, multiple visual styles and TD integration.
-             * Link a direct property URL for plug-and-play device control.
+             * Toggle switch component with various features and multiple visual styles.
              * @example Basic Usage
              * ```html
              * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
              * ```
-             * @example TD Integration (Auto-detects protocol)
-             * ```html
-             * <ui-toggle 
-             * td-url="http://device.local/properties/power"
-             * label="Smart Light"
-             * mode="readwrite">
-             * </ui-toggle>
-             * ```
-             * @example Multi-protocol Support
-             * ```html
-             * <!-- HTTP -->
-             * <ui-toggle td-url="http://device.local/properties/power" label="HTTP Device"></ui-toggle>
-             * <!-- CoAP -->
-             * <ui-toggle td-url="coap://device.local/properties/power" label="CoAP Device"></ui-toggle>
-             * <!-- MQTT (via TD) -->
-             * <ui-toggle td-url="mqtt://broker.local/device/properties/power" label="MQTT Device"></ui-toggle>
-             * ```
-             * @example TD Device Read-Only (shows colored circle)
-             * ```html
-             * <ui-toggle 
-             * td-url="http://sensor.local/properties/status"
-             * label="Door Sensor"
-             * mode="read">
-             * </ui-toggle>
-             * ```
-             * @example Local Control with Custom Handler
+             * @example Custom Handler Usage
              * ```html
              * <ui-toggle 
              * value="true"

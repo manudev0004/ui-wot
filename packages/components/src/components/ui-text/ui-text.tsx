@@ -1,10 +1,9 @@
 import { Component, Prop, State, h, Event, EventEmitter, Watch } from '@stencil/core';
-import { WotService, WotResult } from '../../utils/wot-service';
 
 /**
  * Comprehensive text component for displaying and editing text data.
  * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
- * expandable content, and Thing Description integration.
+ * and expandable content.
  * 
  * @example Basic Text Display
  * ```html
@@ -36,13 +35,18 @@ import { WotService, WotResult } from '../../utils/wot-service';
  * </ui-text>
  * ```
  * 
- * @example TD Integration
+ * @example Event Handling
  * ```html
  * <ui-text 
- *   td-url="http://device.local/properties/name"
  *   variant="edit"
- *   label="Device Name">
+ *   label="Text Input"
+ *   onTextChange="handleChange">
  * </ui-text>
+ * <script>
+ *   function handleChange(event) {
+ *     console.log('Text changed:', event.detail.value);
+ *   }
+ * </script>
  * ```
  */
 @Component({
@@ -130,29 +134,14 @@ export class UiText {
   @Prop() rows: number = 4;
 
   /**
-   * Thing Description URL for property control.
+   * Whether the text component is disabled.
    */
-  @Prop() tdUrl?: string;
-
-  /**
-   * Custom callback function name for value changes.
-   */
-  @Prop() changeHandler?: string;
+  @Prop() disabled: boolean = false;
 
   /**
    * Internal state for text value.
    */
   @State() currentValue: string = '';
-
-  /**
-   * Success feedback state.
-   */
-  @State() showSuccess: boolean = false;
-
-  /**
-   * Last error message.
-   */
-  @State() errorMessage?: string;
 
   /**
    * Whether expandable text is currently expanded.
@@ -162,7 +151,7 @@ export class UiText {
   /**
    * Event emitted when text value changes.
    */
-  @Event() textChange: EventEmitter<{ value: string }>;
+  @Event() textChange: EventEmitter<{ value: string; label?: string }>;
 
   /** Watch for value prop changes */
   @Watch('value')
@@ -170,120 +159,30 @@ export class UiText {
     this.currentValue = this.value;
   }
 
-  /** Watch for TD URL changes */
-  @Watch('tdUrl')
-  async watchTdUrl() {
-    if (this.tdUrl) {
-      await this.readFromDevice();
-    }
-  }
-
+  /** Initialize component */
   componentWillLoad() {
     this.currentValue = this.value;
-    
-    // Initialize from TD if URL provided
-    if (this.tdUrl) {
-      this.readFromDevice();
-    }
   }
 
-  private async readFromDevice() {
-    if (!this.tdUrl) return;
+  /** Handle text input changes */
+  private handleTextChange = (event: Event) => {
+    if (this.disabled) return;
     
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-    
-    const result: WotResult = await WotService.readProperty(this.tdUrl);
-
-    if (result.success && typeof result.value === 'string') {
-      this.currentValue = result.value;
-      this.value = result.value;
-      this.showSuccess = true;
-      
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-    } else {
-      this.errorMessage = result.error || 'Failed to read text value';
-      
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-      
-      console.warn('Text read failed:', result.error);
-    }
-  }
-
-  private async writeToDevice(value: string): Promise<boolean> {
-    if (!this.tdUrl) return true; // Local control, always succeeds
-    
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-    
-    const result: WotResult = await WotService.writeProperty(this.tdUrl, value);
-
-    if (result.success) {
-      this.showSuccess = true;
-      
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-      
-      return true;
-    } else {
-      this.errorMessage = result.error || 'Failed to update text value';
-      
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-      
-      console.warn('Text write failed:', result.error);
-      return false;
-    }
-  }
-
-  private handleInput = async (event: Event) => {
-    if (this.state === 'disabled' || this.variant === 'display') return;
-
     const target = event.target as HTMLInputElement | HTMLTextAreaElement;
     const newValue = target.value;
-    const previousValue = this.currentValue;
-
+    
     this.currentValue = newValue;
     this.value = newValue;
     
-    // Emit the change event
-    this.textChange.emit({ value: newValue });
-
-    // Call custom callback if provided
-    if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
-      (window as any)[this.changeHandler]({ value: newValue });
-    }
-
-    // Update device if TD URL provided
-    if (this.tdUrl) {
-      const success = await this.writeToDevice(newValue);
-      if (!success) {
-        // Revert to previous value on write failure
-        this.currentValue = previousValue;
-        this.value = previousValue;
-        target.value = previousValue;
-        
-        // Re-emit with reverted value
-        this.textChange.emit({ value: previousValue });
-        if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
-          (window as any)[this.changeHandler]({ value: previousValue });
-        }
-      }
-    }
+    this.textChange.emit({
+      value: newValue,
+      label: this.label
+    });
   };
 
+
+
+  /** Get container style classes */
   private getContainerStyles() {
     let baseClasses = 'relative w-full';
     
@@ -295,7 +194,7 @@ export class UiText {
   }
 
   private getInputStyles() {
-    const isDisabled = this.state === 'disabled';
+    const isDisabled = this.disabled;
     const isEdit = this.variant === 'edit';
     
     let baseClasses = 'w-full transition-all duration-200 font-sans text-sm';
@@ -344,7 +243,7 @@ export class UiText {
   }
 
   private getLabelStyles() {
-    const isDisabled = this.state === 'disabled';
+    const isDisabled = this.disabled;
     
     let classes = 'block text-sm font-medium mb-2';
     
@@ -439,7 +338,7 @@ export class UiText {
     const containerStyles = this.getContainerStyles();
     const inputStyles = this.getInputStyles();
     const labelStyles = this.getLabelStyles();
-    const isDisabled = this.state === 'disabled';
+    const isDisabled = this.disabled;
     const isEdit = this.variant === 'edit';
 
     return (
@@ -454,15 +353,6 @@ export class UiText {
         )}
 
         <div class="relative">
-          {/* Success Indicator */}
-          {this.showSuccess && (
-            <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          )}
-
           {/* Text Input/Display */}
           {isEdit ? (
             // Edit Mode
@@ -474,7 +364,7 @@ export class UiText {
                 placeholder={this.placeholder}
                 maxLength={this.maxLength}
                 disabled={isDisabled}
-                onInput={this.handleInput}
+                onInput={this.handleTextChange}
                 aria-label={this.label || 'Text input'}
               />
             ) : (
@@ -485,7 +375,7 @@ export class UiText {
                 maxLength={this.maxLength}
                 rows={this.rows}
                 disabled={isDisabled}
-                onInput={this.handleInput}
+                onInput={this.handleTextChange}
                 aria-label={this.label || 'Text area'}
               ></textarea>
             )
@@ -546,13 +436,6 @@ export class UiText {
             </div>
           )}
         </div>
-        
-        {/* Error Message */}
-        {this.errorMessage && (
-          <div class="text-red-500 text-sm mt-1 px-2">
-            {this.errorMessage}
-          </div>
-        )}
       </div>
     );
   }

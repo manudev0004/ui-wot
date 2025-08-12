@@ -1,21 +1,19 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
-import { WotService, WotResult } from '../../utils/wot-service';
 
 /**
- * Calendar component for date-time selection with various visual styles and TD integration.
- * Link a direct property URL for plug-and-play device control.
+ * Calendar component for date-time selection with various visual styles.
+ * Provides an interactive calendar interface for date and time selection.
  * 
  * @example Basic Usage
  * ```html
  * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
  * ```
  * 
- * @example TD Integration
+ * @example Advanced Usage
  * ```html
  * <ui-calendar 
- *   td-url="http://device.local/properties/schedule"
  *   variant="filled"
- *   label="Device Schedule"
+ *   label="Schedule Date"
  *   include-time="true">
  * </ui-calendar>
  * ```
@@ -77,9 +75,9 @@ export class UiCalendar {
   @Prop() maxDate?: string;
 
   /**
-   * Thing Description URL for device control.
+   * Whether the calendar is disabled.
    */
-  @Prop() tdUrl?: string;
+  @Prop() disabled: boolean = false;
 
   /** Current selected date */
   @State() selectedDate: Date = new Date();
@@ -91,22 +89,8 @@ export class UiCalendar {
   /** Calendar open state */
   @State() isOpen: boolean = false;
 
-  /** Success feedback state */
-  @State() showSuccess: boolean = false;
-
-  /** Last error message */
-  @State() errorMessage?: string;
-
   /** Event emitted when date changes */
-  @Event() dateChange: EventEmitter<{ value: string }>;
-
-  /** Watch for TD URL changes */
-  @Watch('tdUrl')
-  async watchTdUrl() {
-    if (this.tdUrl) {
-      await this.readDevice();
-    }
-  }
+  @Event() dateChange: EventEmitter<{ value: string; label?: string }>;
 
   /** Watch for value prop changes */
   @Watch('value')
@@ -119,88 +103,20 @@ export class UiCalendar {
   }
 
   /** Initialize component */
-  async componentWillLoad() {
+  componentWillLoad() {
     if (this.value) {
-      this.selectedDate = new Date(this.value);
-      this.currentMonth = this.selectedDate.getMonth();
-      this.currentYear = this.selectedDate.getFullYear();
-    }
-    if (this.tdUrl) {
-      await this.readDevice();
-    }
-  }
-
-  /** Read from TD device */
-  private async readDevice() {
-    if (!this.tdUrl) return;
-    
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-    
-    const result: WotResult = await WotService.readProperty(this.tdUrl);
-
-    if (result.success && result.value) {
-      const dateValue = new Date(result.value);
-      if (!isNaN(dateValue.getTime())) {
-        this.selectedDate = dateValue;
-        this.currentMonth = dateValue.getMonth();
-        this.currentYear = dateValue.getFullYear();
-        this.value = dateValue.toISOString();
-        this.showSuccess = true;
-        
-        // Clear success indicator after 3 seconds
-        setTimeout(() => {
-          this.showSuccess = false;
-        }, 3000);
+      const date = new Date(this.value);
+      if (!isNaN(date.getTime())) {
+        this.selectedDate = date;
+        this.currentMonth = date.getMonth();
+        this.currentYear = date.getFullYear();
       }
-    } else {
-      this.errorMessage = result.error || 'Failed to read calendar value';
-      
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-      
-      console.warn('Device read failed:', result.error);
-    }
-  }
-
-  /** Write to TD device */
-  private async writeDevice(value: string): Promise<boolean> {
-    if (!this.tdUrl) return true; // Local control, always succeeds
-    
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-    
-    const result: WotResult = await WotService.writeProperty(this.tdUrl, value);
-
-    if (result.success) {
-      this.showSuccess = true;
-      
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-      
-      return true;
-    } else {
-      this.errorMessage = result.error || 'Failed to update calendar value';
-      
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-      
-      console.warn('Device write failed:', result.error);
-      return false;
     }
   }
 
   /** Handle date selection */
-  private async handleDateSelect(day: number) {
-    if (this.state === 'disabled') return;
+  private handleDateSelect = (day: number) => {
+    if (this.disabled) return;
 
     const newDate = new Date(this.currentYear, this.currentMonth, day);
     
@@ -210,26 +126,20 @@ export class UiCalendar {
       newDate.setMinutes(this.selectedDate.getMinutes());
     }
 
-    const previousDate = this.selectedDate;
     this.selectedDate = newDate;
     this.value = newDate.toISOString();
-    this.dateChange.emit({ value: this.value });
     this.isOpen = false;
 
-    // Update TD device if URL provided
-    if (this.tdUrl) {
-      const success = await this.writeDevice(this.value);
-      if (!success) {
-        // Revert to previous value on write failure
-        this.selectedDate = previousDate;
-        this.value = previousDate?.toISOString();
-      }
-    }
-  }
+    // Emit date change event
+    this.dateChange.emit({
+      value: this.value,
+      label: this.label
+    });
+  };
 
   /** Handle time change */
-  private async handleTimeChange(event: Event) {
-    if (this.state === 'disabled') return;
+  private handleTimeChange = (event: Event) => {
+    if (this.disabled) return;
 
     const target = event.target as HTMLInputElement;
     const [hours, minutes] = target.value.split(':').map(Number);
@@ -238,20 +148,13 @@ export class UiCalendar {
     newDate.setHours(hours);
     newDate.setMinutes(minutes);
 
-    const previousDate = this.selectedDate;
     this.selectedDate = newDate;
     this.value = newDate.toISOString();
-    this.dateChange.emit({ value: this.value });
-
-    // Update TD device if URL provided
-    if (this.tdUrl) {
-      const success = await this.writeDevice(this.value);
-      if (!success) {
-        // Revert to previous value on write failure
-        this.selectedDate = previousDate;
-        this.value = previousDate?.toISOString();
-      }
-    }
+    
+    this.dateChange.emit({ 
+      value: this.value,
+      label: this.label 
+    });
   }
 
   /** Navigate month */
@@ -273,7 +176,7 @@ export class UiCalendar {
 
   /** Get calendar styles */
   private getCalendarStyles() {
-    const isDisabled = this.state === 'disabled';
+    const isDisabled = this.disabled;
     let containerClass = 'relative inline-block';
     let inputClass = `w-full px-3 py-2 text-sm border rounded-md transition-colors ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`;
     let calendarClass = `absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4 min-w-72`;
@@ -384,15 +287,6 @@ export class UiCalendar {
               <path d="M4 0V2M12 0V2M2 4H14M2 2H14C15.1 2 16 2.9 16 4V14C16 15.1 15.1 16 14 16H2C0.9 16 0 15.1 0 14V4C0 2.9 0.9 2 2 2Z" fill="currentColor" opacity="0.6"/>
             </svg>
           </div>
-
-          {/* Success Indicator */}
-          {this.showSuccess && (
-            <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          )}
         </div>
 
         {/* Calendar Dropdown */}
@@ -468,13 +362,6 @@ export class UiCalendar {
                 />
               </div>
             )}
-          </div>
-        )}
-
-        {/* Error Message */}
-        {this.errorMessage && (
-          <div class="text-red-500 text-sm mt-2">
-            {this.errorMessage}
           </div>
         )}
 

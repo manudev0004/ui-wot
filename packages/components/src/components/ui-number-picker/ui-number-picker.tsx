@@ -1,65 +1,30 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
-import { WotService, WotResult } from '../../utils/wot-service';
 
 /**
- * Number picker component with various visual styles, TD integration and customizable range.
- * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+ * Number picker component with increment/decrement buttons for numeric input.
+ * Pure UI component focused on user interaction and value management.
  * 
  * @example Basic Usage
  * ```html
  * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
  * ```
  * 
- * @example TD Integration with HTTP
- * ```html
- * <ui-number-picker 
- *   td-url="http://device.local/properties/volume"
- *   label="Device Volume"
- *   protocol="http"
- *   mode="readwrite"
- *   min="0"
- *   max="100">
- * </ui-number-picker>
- * ```
- * 
- * @example TD Integration with MQTT
- * ```html
- * <ui-number-picker 
- *   td-url="mqtt://device"
- *   mqtt-host="localhost:1883"
- *   mqtt-topic="device/volume"
- *   label="MQTT Volume"
- *   protocol="mqtt"
- *   mode="readwrite">
- * </ui-number-picker>
- * ```
- * 
- * @example TD Device Read-Only (shows value only)
- * ```html
- * <ui-number-picker 
- *   td-url="http://sensor.local/temperature"
- *   label="Temperature Sensor"
- *   mode="read">
- * </ui-number-picker>
- * ```
- * 
- * @example Local Control with Custom Handler
- * ```html
- * <ui-number-picker 
- *   value="3"
- *   on-change="handleNumberChange"
- *   variant="filled"
- *   label="Custom Counter">
- * </ui-number-picker>
- * ```
- * 
  * @example Event Handling
  * ```javascript
- * window.handleNumberChange = function(data) {
- *   console.log('Number changed:', data.value);
- *   console.log('Label:', data.label);
- *   // Your custom logic here
- * };
+ * const picker = document.querySelector('ui-number-picker');
+ * picker.addEventListener('valueChange', (e) => {
+ *   console.log('Number changed:', e.detail.value);
+ *   console.log('Label:', e.detail.label);
+ * });
+ * ```
+ * 
+ * @example Framework Integration
+ * ```javascript
+ * // React
+ * <ui-number-picker value={count} onValueChange={(e) => setCount(e.detail.value)} />
+ * 
+ * // Vue
+ * <ui-number-picker :value="count" @valueChange="count = $event.detail.value" />
  * ```
  */
 @Component({
@@ -77,11 +42,9 @@ export class UiNumberPicker {
   @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'minimal';
 
   /**
-   * Current state of the number picker.
-   * - active: Number picker is enabled (default)
-   * - disabled: Number picker cannot be interacted with
+   * Whether the number picker is disabled.
    */
-  @Prop({ mutable: true }) state: 'active' | 'disabled' = 'active';
+  @Prop() disabled: boolean = false;
 
   /**
    * Theme for the component.
@@ -99,35 +62,9 @@ export class UiNumberPicker {
   @Prop() label?: string;
 
   /**
-   * Direct URL of TD number properties to auto connect and interact with the device.
-   * @example
-   * ```
-   * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number"
-   * ```
-   */
-  @Prop() tdUrl?: string;
-
-  /**
-   * Current value of the number picker (for local control mode).
-   * When no td-url is provided and value is set, this controls the picker state.
-   * @example 5, 10, 25
+   * Current value of the number picker.
    */
   @Prop({ mutable: true }) value: number = 0;
-
-  /**
-   * Function name to call when value changes.
-   * User defines this function in their code, component will invoke it.
-   * @example "handleNumberChange"
-   */
-  @Prop() changeHandler?: string;
-
-  /**
-   * Device interaction mode.
-   * - read: Only read from device (display current value, no interaction)
-   * - write: Only write to device (control device but don't sync state)
-   * - readwrite: Read and write (full synchronization) - default
-   */
-  @Prop() mode: 'read' | 'write' | 'readwrite' = 'readwrite';
 
   /**
    * Minimum allowed value.
@@ -147,236 +84,61 @@ export class UiNumberPicker {
   /** Internal state tracking current value */
   @State() currentValue: number = 0;
 
-  /** Success feedback state */
-  @State() showSuccess: boolean = false;
-
-  /** Last error message */
-  @State() errorMessage?: string;
-
   /** Event emitted when value changes */
   @Event() valueChange: EventEmitter<{ value: number; label?: string }>;
 
-  /** Watch for TD URL changes and reconnect */
-  @Watch('tdUrl')
+  /** Watch for value prop changes */
   @Watch('value')
-  async watchTdUrl() {
-    if (this.tdUrl && (this.mode === 'read' || this.mode === 'readwrite')) {
-      await this.readDeviceState();
-    } else if (!this.tdUrl && this.value !== undefined) {
-      // Handle local value changes
-      this.currentValue = this.value;
-    }
+  watchValue() {
+    this.currentValue = this.value;
   }
 
   /** Initialize component */
   componentWillLoad() {
     this.currentValue = this.value;
-    
-    if (this.tdUrl && (this.mode === 'read' || this.mode === 'readwrite')) {
-      this.readDeviceState();
-    } else if (!this.tdUrl && this.value !== undefined) {
-      // Initialize from value prop when no TD URL
-      this.currentValue = this.value;
-    }
-  }
-
-  /** Read current state from device */
-  private async readDeviceState() {
-    if (!this.tdUrl) return;
-
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-    
-    try {
-      console.log(`Reading from: ${this.tdUrl} using Node-WoT`);
-      
-      const result: WotResult = await WotService.readProperty(this.tdUrl);
-
-      if (result.success && typeof result.value === 'number') {
-        this.currentValue = result.value;
-        this.value = result.value;
-        this.showSuccess = true;
-        
-        console.log(`Read value: ${result.value}`);
-        
-        // Clear success indicator after 3 seconds
-        setTimeout(() => {
-          this.showSuccess = false;
-        }, 3000);
-      } else {
-        this.errorMessage = result.error || 'Failed to read number value';
-        
-        // Clear error indicator after 8 seconds
-        setTimeout(() => {
-          this.errorMessage = undefined;
-        }, 8000);
-        
-        console.warn('Failed to read state:', result.error);
-      }
-    } catch (error) {
-      this.errorMessage = error.message || 'Unknown error occurred';
-      
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-      
-      console.warn('Failed to read state:', error);
-    }
-  }
-
-  /** Write new state to TD device */
-  private async updateDevice(value: number): Promise<boolean> {
-    if (!this.tdUrl) return true; // Local control, always succeeds
-
-    // Clear previous state  
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-    
-    try {
-      console.log(`Writing ${value} to: ${this.tdUrl} using Node-WoT`);
-      
-      const result: WotResult = await WotService.writeProperty(this.tdUrl, value);
-
-      if (result.success) {
-        this.showSuccess = true;
-        
-        // Clear success indicator after 3 seconds
-        setTimeout(() => {
-          this.showSuccess = false;
-        }, 3000);
-        
-        return true;
-      } else {
-        this.errorMessage = result.error || 'Failed to update number value';
-        
-        // Clear error indicator after 8 seconds
-        setTimeout(() => {
-          this.errorMessage = undefined;
-        }, 8000);
-        
-        console.warn('Failed to write:', result.error);
-        return false;
-      }
-    } catch (error) {
-      this.errorMessage = error.message || 'Unknown error occurred';
-      
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-      
-      console.warn('Failed to write:', error);
-      return false;
-    }
   }
 
   /** Handle increment */
-  private handleIncrement = async () => {
-    if (this.state === 'disabled') return;
-    
-    // Don't allow interaction in read-only mode
-    if (this.mode === 'read') {
-      return;
-    }
+  private handleIncrement = () => {
+    if (this.disabled) return;
     
     const newValue = this.currentValue + this.step;
     if (this.max !== undefined && newValue > this.max) return;
     
-    const previousValue = this.currentValue;
     this.currentValue = newValue;
     this.value = newValue;
-    this.emitChange();
-
-    // Update device if connected and write mode is enabled
-    if (this.tdUrl && (this.mode === 'write' || this.mode === 'readwrite')) {
-      const success = await this.updateDevice(newValue);
-      if (!success) {
-        // Revert on failure
-        this.currentValue = previousValue;
-        this.value = previousValue;
-        console.warn('Change failed, reverted state');
-        // Emit revert event
-        this.emitChange();
-      }
-    }
+    
+    this.valueChange.emit({
+      value: newValue,
+      label: this.label
+    });
   };
 
   /** Handle decrement */
-  private handleDecrement = async () => {
-    if (this.state === 'disabled') return;
-    
-    // Don't allow interaction in read-only mode
-    if (this.mode === 'read') {
-      return;
-    }
+  private handleDecrement = () => {
+    if (this.disabled) return;
     
     const newValue = this.currentValue - this.step;
     if (this.min !== undefined && newValue < this.min) return;
     
-    const previousValue = this.currentValue;
     this.currentValue = newValue;
     this.value = newValue;
-    this.emitChange();
-
-    // Update device if connected and write mode is enabled
-    if (this.tdUrl && (this.mode === 'write' || this.mode === 'readwrite')) {
-      const success = await this.updateDevice(newValue);
-      if (!success) {
-        // Revert on failure
-        this.currentValue = previousValue;
-        this.value = previousValue;
-        console.warn('Change failed, reverted state');
-        // Emit revert event
-        this.emitChange();
-      }
-    }
-  };
-
-  /** Emit value change events */
-  private emitChange() {
-    // Emit value change event for parent to handle
-    this.valueChange.emit({ 
-      value: this.currentValue, 
-      label: this.label 
-    });
-
-    // Call user's callback function if provided
-    if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
-      (window as any)[this.changeHandler]({
-        value: this.currentValue,
-        label: this.label
-      });
-    }
-
-    // Update value prop for local control
-    if (!this.tdUrl && this.value !== undefined) {
-      this.value = this.currentValue;
-    }
-  }
-
-  /** Handle keyboard input */
-  private handleKeyDown = (event: KeyboardEvent) => {
-    if (this.state === 'disabled') return;
     
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      this.handleIncrement();
-    } else if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      this.handleDecrement();
-    }
+    this.valueChange.emit({
+      value: newValue,
+      label: this.label
+    });
   };
 
   /** Get button style classes */
   private getButtonStyle(type: 'increment' | 'decrement'): string {
-    const isDisabled = this.state === 'disabled';
     const isAtMax = this.max !== undefined && this.currentValue >= this.max && type === 'increment';
     const isAtMin = this.min !== undefined && this.currentValue <= this.min && type === 'decrement';
-    const disabled = isDisabled || isAtMax || isAtMin;
+    const isDisabled = this.disabled || isAtMax || isAtMin;
     
     let baseClasses = 'w-12 h-12 flex items-center justify-center text-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg';
     
-    if (disabled) {
+    if (isDisabled) {
       baseClasses += ' opacity-50 cursor-not-allowed';
     } else {
       baseClasses += ' cursor-pointer hover:scale-105 active:scale-95';
@@ -385,7 +147,7 @@ export class UiNumberPicker {
     // Variant-specific styling with explicit color control
     if (this.variant === 'minimal') {
       // Minimal: No background, no border, just text
-      if (disabled) {
+      if (isDisabled) {
         baseClasses += ' text-gray-400';
       } else {
         // Clear color specification based on theme
@@ -397,7 +159,7 @@ export class UiNumberPicker {
       }
     } else if (this.variant === 'outlined') {
       // Outlined: Border with user's chosen color, no background
-      if (disabled) {
+      if (isDisabled) {
         baseClasses += ' border-2 border-gray-300 text-gray-400 bg-transparent';
       } else {
         const borderColor = `border-${this.getColorName()}`;
@@ -411,7 +173,7 @@ export class UiNumberPicker {
       }
     } else if (this.variant === 'filled') {
       // Filled: Background with user's chosen color, text color matches theme
-      if (disabled) {
+      if (isDisabled) {
         baseClasses += ' bg-gray-400 text-white-force';
       } else {
         // Filled buttons: black text in light theme, white text in dark theme
@@ -431,11 +193,9 @@ export class UiNumberPicker {
 
   /** Get value display style */
   private getValueStyle(): string {
-    const isDisabled = this.state === 'disabled';
-    
     let classes = 'min-w-[60px] h-12 flex items-center justify-center text-lg font-semibold rounded-lg border-2 number-display';
     
-    if (isDisabled) {
+    if (this.disabled) {
       // Disabled state
       classes += ' bg-gray-100 text-gray-400 border-gray-300 dark:bg-gray-800 dark:text-gray-600 dark:border-gray-600';
     } else {
@@ -454,84 +214,44 @@ export class UiNumberPicker {
 
   /** Render component */
   render() {
-    const isDisabled = this.state === 'disabled';
-    const isReadOnly = this.mode === 'read';
-    const hoverTitle = isReadOnly ? 'Value cannot be changed (Read-only mode)' : '';
-    const containerClasses = `flex flex-col items-center gap-3 ${isDisabled ? 'opacity-75' : ''}`;
+    const containerClasses = `flex flex-col items-center gap-3 ${this.disabled ? 'opacity-75' : ''}`;
 
     return (
       <div class={containerClasses}>
         {this.label && (
           <label 
             class={`text-sm font-medium ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-            title={hoverTitle}
           >
             {this.label}
-            {isReadOnly && (
-              <span class="ml-1 text-xs text-blue-500 dark:text-blue-400">(Read-only)</span>
-            )}
           </label>
         )}
         
-        {isReadOnly ? (
-          // Show value display only for read-only mode
-          <div 
-            class="flex items-center justify-center min-w-[120px] h-12 px-4 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600"
-            title={hoverTitle}
+        <div class="relative flex items-center gap-3">
+          {/* Decrement Button */}
+          <button
+            class={this.getButtonStyle('decrement')}
+            onClick={this.handleDecrement}
+            disabled={this.disabled || (this.min !== undefined && this.currentValue <= this.min)}
+            aria-label="Decrease value"
           >
-            <span class={`text-lg font-medium ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {this.currentValue}
-            </span>
+            −
+          </button>
+
+          {/* Value Display */}
+          <div class={this.getValueStyle()}>
+            {this.currentValue}
           </div>
-        ) : (
-          // Show interactive number picker
-          <div 
-            class="relative flex items-center gap-3"
-            tabindex={isDisabled ? -1 : 0}
-            onKeyDown={this.handleKeyDown}
+
+          {/* Increment Button */}
+          <button
+            class={this.getButtonStyle('increment')}
+            onClick={this.handleIncrement}
+            disabled={this.disabled || (this.max !== undefined && this.currentValue >= this.max)}
+            aria-label="Increase value"
           >
-            {/* Success Indicator */}
-            {this.showSuccess && (
-              <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-            )}
-
-            {/* Decrement Button */}
-            <button
-              class={this.getButtonStyle('decrement')}
-              onClick={this.handleDecrement}
-              disabled={isDisabled || (this.min !== undefined && this.currentValue <= this.min)}
-              aria-label="Decrease value"
-            >
-              −
-            </button>
-
-            {/* Value Display */}
-            <div class={this.getValueStyle()}>
-              {this.currentValue}
-            </div>
-
-            {/* Increment Button */}
-            <button
-              class={this.getButtonStyle('increment')}
-              onClick={this.handleIncrement}
-              disabled={isDisabled || (this.max !== undefined && this.currentValue >= this.max)}
-              aria-label="Increase value"
-            >
-              +
-            </button>
-          </div>
-        )}
-        
-        {/* Error Message */}
-        {this.errorMessage && (
-          <div class="text-red-500 text-sm mt-2 px-2">
-            {this.errorMessage}
-          </div>
-        )}
+            +
+          </button>
+        </div>
       </div>
     );
   }
