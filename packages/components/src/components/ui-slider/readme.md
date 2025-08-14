@@ -30,9 +30,9 @@ Link a direct property URL for plug-and-play device control.
 
 ## Events
 
-| Event         | Description                      | Type                              |
-| ------------- | -------------------------------- | --------------------------------- |
-| `valueChange` | Event emitted when value changes | `CustomEvent<{ value: number; }>` |
+| Event         | Description                      | Type                               |
+| ------------- | -------------------------------- | ---------------------------------- |
+| `valueChange` | Event emitted when value changes | `CustomEvent<UiSliderValueChange>` |
 
 
 ----------------------------------------------

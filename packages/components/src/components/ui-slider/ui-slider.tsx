@@ -1,5 +1,7 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
 
+export interface UiSliderValueChange { value: number }
+
 /**
  * Slider component with various features, multiple visual styles and TD integration.
  * Link a direct property URL for plug-and-play device control.
@@ -118,7 +120,7 @@ export class UiSlider {
   @State() errorMessage?: string;
 
   /** Event emitted when value changes */
-  @Event() valueChange: EventEmitter<{ value: number }>;
+  @Event() valueChange: EventEmitter<UiSliderValueChange>;
 
   /** Watch for TD URL changes */
   // TD watcher removed

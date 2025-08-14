@@ -27,10 +27,10 @@ Link a direct property URL for plug-and-play device control.
 
 ## Events
 
-| Event         | Description                                 | Type                              |
-| ------------- | ------------------------------------------- | --------------------------------- |
-| `dateChange`  | Event emitted when date changes             | `CustomEvent<{ value: string; }>` |
-| `valueChange` | Standardized valueChange event for calendar | `CustomEvent<{ value: string; }>` |
+| Event         | Description                                 | Type                                 |
+| ------------- | ------------------------------------------- | ------------------------------------ |
+| `dateChange`  | Event emitted when date changes             | `CustomEvent<UiCalendarDateChange>`  |
+| `valueChange` | Standardized valueChange event for calendar | `CustomEvent<UiCalendarValueChange>` |
 
 
 ----------------------------------------------

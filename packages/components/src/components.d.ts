@@ -5,6 +5,14 @@
  * It contains typing information for all components that exist in this project.
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
+import { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
+import { UiCheckboxCheckboxChange, UiCheckboxValueChange } from "./components/ui-checkbox/ui-checkbox";
+import { UiSliderValueChange } from "./components/ui-slider/ui-slider";
+import { UiTextValueChange } from "./components/ui-text/ui-text";
+export { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
+export { UiCheckboxCheckboxChange, UiCheckboxValueChange } from "./components/ui-checkbox/ui-checkbox";
+export { UiSliderValueChange } from "./components/ui-slider/ui-slider";
+export { UiTextValueChange } from "./components/ui-text/ui-text";
 export namespace Components {
     /**
      * Button component with various visual styles, matching the ui-number-picker design family.
@@ -340,110 +348,51 @@ export namespace Components {
          */
         "variant": 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
-    /**
-     * Comprehensive text component for displaying and editing text data.
-     * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
-     * expandable content, and Thing Description integration.
-     * @example Basic Text Display
-     * ```html
-     * <ui-text variant="display" value="Hello World"></ui-text>
-     * ```
-     * @example Single-line Text Input
-     * ```html
-     * <ui-text variant="edit" value="Enter text" label="Name"></ui-text>
-     * ```
-     * @example Multi-line Text Area
-     * ```html
-     * <ui-text
-     * variant="edit"
-     * text-type="multi"
-     * value="Line 1\nLine 2"
-     * label="Description">
-     * </ui-text>
-     * ```
-     * @example Structured Text with Highlighting
-     * ```html
-     * <ui-text
-     * variant="display"
-     * text-type="multi"
-     * structure="json"
-     * value='{"key": "value"}'>
-     * </ui-text>
-     * ```
-     * @example TD Integration
-     * ```html
-     * <ui-text
-     * td-url="http://device.local/properties/name"
-     * variant="edit"
-     * label="Device Name">
-     * </ui-text>
-     * ```
-     */
     interface UiText {
         /**
-          * Color scheme to match design system.
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
-          * Enable expandable/collapsible display for long text.
           * @default false
          */
         "expandable": boolean;
-        /**
-          * Optional text label for the component.
-         */
         "label"?: string;
         /**
-          * Maximum height before showing expand/collapse controls (in pixels).
           * @default 200
          */
         "maxHeight": number;
-        /**
-          * Maximum length for text input (edit mode only).
-         */
         "maxLength"?: number;
-        /**
-          * Placeholder text for edit mode.
-         */
         "placeholder"?: string;
         /**
-          * Whether the text area should be resizable (edit mode only).
           * @default false
          */
         "resizable": boolean;
         /**
-          * Number of rows for multi-line text area.
           * @default 4
          */
         "rows": number;
         /**
-          * Current state of the text component.
           * @default 'default'
          */
         "state": 'disabled' | 'active' | 'default';
         /**
-          * Structure type for syntax highlighting in display mode. - unstructured: Plain text (default) - json: JSON syntax highlighting - yaml: YAML syntax highlighting - xml: XML syntax highlighting - markdown: Markdown syntax highlighting
           * @default 'unstructured'
          */
         "structure": 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown';
         /**
-          * Type of text field. - single: Single-line text field - multi: Multi-line text area
           * @default 'single'
          */
         "textType": 'single' | 'multi';
         /**
-          * Theme for the component.
           * @default 'light'
          */
         "theme": 'light' | 'dark';
         /**
-          * Text value content.
           * @default ''
          */
         "value": string;
         /**
-          * Visual style variant of the text component. - display: Read-only text display - edit: Editable text input/textarea
           * @default 'display'
          */
         "variant": 'display' | 'edit';
@@ -615,8 +564,8 @@ declare global {
         new (): HTMLUiButtonElement;
     };
     interface HTMLUiCalendarElementEventMap {
-        "dateChange": { value: string };
-        "valueChange": { value: string };
+        "dateChange": UiCalendarDateChange;
+        "valueChange": UiCalendarValueChange;
     }
     /**
      * Calendar component for date-time selection with various visual styles and TD integration.
@@ -650,8 +599,8 @@ declare global {
         new (): HTMLUiCalendarElement;
     };
     interface HTMLUiCheckboxElementEventMap {
-        "checkboxChange": { checked: boolean };
-        "valueChange": { value: boolean; label?: string };
+        "checkboxChange": UiCheckboxCheckboxChange;
+        "valueChange": UiCheckboxValueChange;
     }
     /**
      * Checkbox component with consistent styling to match the design system.
@@ -749,7 +698,7 @@ declare global {
         new (): HTMLUiNumberPickerElement;
     };
     interface HTMLUiSliderElementEventMap {
-        "valueChange": { value: number };
+        "valueChange": UiSliderValueChange;
     }
     /**
      * Slider component with various features, multiple visual styles and TD integration.
@@ -784,48 +733,9 @@ declare global {
         new (): HTMLUiSliderElement;
     };
     interface HTMLUiTextElementEventMap {
-        "textChange": { value: string };
-        "valueChange": { value: string };
+        "textChange": UiTextValueChange;
+        "valueChange": UiTextValueChange;
     }
-    /**
-     * Comprehensive text component for displaying and editing text data.
-     * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
-     * expandable content, and Thing Description integration.
-     * @example Basic Text Display
-     * ```html
-     * <ui-text variant="display" value="Hello World"></ui-text>
-     * ```
-     * @example Single-line Text Input
-     * ```html
-     * <ui-text variant="edit" value="Enter text" label="Name"></ui-text>
-     * ```
-     * @example Multi-line Text Area
-     * ```html
-     * <ui-text
-     * variant="edit"
-     * text-type="multi"
-     * value="Line 1\nLine 2"
-     * label="Description">
-     * </ui-text>
-     * ```
-     * @example Structured Text with Highlighting
-     * ```html
-     * <ui-text
-     * variant="display"
-     * text-type="multi"
-     * structure="json"
-     * value='{"key": "value"}'>
-     * </ui-text>
-     * ```
-     * @example TD Integration
-     * ```html
-     * <ui-text
-     * td-url="http://device.local/properties/name"
-     * variant="edit"
-     * label="Device Name">
-     * </ui-text>
-     * ```
-     */
     interface HTMLUiTextElement extends Components.UiText, HTMLStencilElement {
         addEventListener<K extends keyof HTMLUiTextElementEventMap>(type: K, listener: (this: HTMLUiTextElement, ev: UiTextCustomEvent<HTMLUiTextElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
         addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
@@ -1028,11 +938,11 @@ declare namespace LocalJSX {
         /**
           * Event emitted when date changes
          */
-        "onDateChange"?: (event: UiCalendarCustomEvent<{ value: string }>) => void;
+        "onDateChange"?: (event: UiCalendarCustomEvent<UiCalendarDateChange>) => void;
         /**
           * Standardized valueChange event for calendar
          */
-        "onValueChange"?: (event: UiCalendarCustomEvent<{ value: string }>) => void;
+        "onValueChange"?: (event: UiCalendarCustomEvent<UiCalendarValueChange>) => void;
         /**
           * Current state of the calendar. - disabled: Calendar cannot be interacted with - default: Calendar is interactive (default)
           * @default 'default'
@@ -1074,11 +984,11 @@ declare namespace LocalJSX {
         /**
           * Event emitted when checkbox state changes.
          */
-        "onCheckboxChange"?: (event: UiCheckboxCustomEvent<{ checked: boolean }>) => void;
+        "onCheckboxChange"?: (event: UiCheckboxCustomEvent<UiCheckboxCheckboxChange>) => void;
         /**
           * Standardized valueChange event (boolean value)
          */
-        "onValueChange"?: (event: UiCheckboxCustomEvent<{ value: boolean; label?: string }>) => void;
+        "onValueChange"?: (event: UiCheckboxCustomEvent<UiCheckboxValueChange>) => void;
         /**
           * Current state of the checkbox.
           * @default 'default'
@@ -1255,7 +1165,7 @@ declare namespace LocalJSX {
         /**
           * Event emitted when value changes
          */
-        "onValueChange"?: (event: UiSliderCustomEvent<{ value: number }>) => void;
+        "onValueChange"?: (event: UiSliderCustomEvent<UiSliderValueChange>) => void;
         /**
           * Orientation of the slider. - horizontal: Left to right slider (default) - vertical: Bottom to top slider
           * @default 'horizontal'
@@ -1292,118 +1202,53 @@ declare namespace LocalJSX {
          */
         "variant"?: 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
-    /**
-     * Comprehensive text component for displaying and editing text data.
-     * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
-     * expandable content, and Thing Description integration.
-     * @example Basic Text Display
-     * ```html
-     * <ui-text variant="display" value="Hello World"></ui-text>
-     * ```
-     * @example Single-line Text Input
-     * ```html
-     * <ui-text variant="edit" value="Enter text" label="Name"></ui-text>
-     * ```
-     * @example Multi-line Text Area
-     * ```html
-     * <ui-text
-     * variant="edit"
-     * text-type="multi"
-     * value="Line 1\nLine 2"
-     * label="Description">
-     * </ui-text>
-     * ```
-     * @example Structured Text with Highlighting
-     * ```html
-     * <ui-text
-     * variant="display"
-     * text-type="multi"
-     * structure="json"
-     * value='{"key": "value"}'>
-     * </ui-text>
-     * ```
-     * @example TD Integration
-     * ```html
-     * <ui-text
-     * td-url="http://device.local/properties/name"
-     * variant="edit"
-     * label="Device Name">
-     * </ui-text>
-     * ```
-     */
     interface UiText {
         /**
-          * Color scheme to match design system.
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
-          * Enable expandable/collapsible display for long text.
           * @default false
          */
         "expandable"?: boolean;
-        /**
-          * Optional text label for the component.
-         */
         "label"?: string;
         /**
-          * Maximum height before showing expand/collapse controls (in pixels).
           * @default 200
          */
         "maxHeight"?: number;
-        /**
-          * Maximum length for text input (edit mode only).
-         */
         "maxLength"?: number;
-        /**
-          * Event emitted when text value changes.
-         */
-        "onTextChange"?: (event: UiTextCustomEvent<{ value: string }>) => void;
-        /**
-          * Standardized valueChange alias for textChange to support generic integrations
-         */
-        "onValueChange"?: (event: UiTextCustomEvent<{ value: string }>) => void;
-        /**
-          * Placeholder text for edit mode.
-         */
+        "onTextChange"?: (event: UiTextCustomEvent<UiTextValueChange>) => void;
+        "onValueChange"?: (event: UiTextCustomEvent<UiTextValueChange>) => void;
         "placeholder"?: string;
         /**
-          * Whether the text area should be resizable (edit mode only).
           * @default false
          */
         "resizable"?: boolean;
         /**
-          * Number of rows for multi-line text area.
           * @default 4
          */
         "rows"?: number;
         /**
-          * Current state of the text component.
           * @default 'default'
          */
         "state"?: 'disabled' | 'active' | 'default';
         /**
-          * Structure type for syntax highlighting in display mode. - unstructured: Plain text (default) - json: JSON syntax highlighting - yaml: YAML syntax highlighting - xml: XML syntax highlighting - markdown: Markdown syntax highlighting
           * @default 'unstructured'
          */
         "structure"?: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown';
         /**
-          * Type of text field. - single: Single-line text field - multi: Multi-line text area
           * @default 'single'
          */
         "textType"?: 'single' | 'multi';
         /**
-          * Theme for the component.
           * @default 'light'
          */
         "theme"?: 'light' | 'dark';
         /**
-          * Text value content.
           * @default ''
          */
         "value"?: string;
         /**
-          * Visual style variant of the text component. - display: Read-only text display - edit: Editable text input/textarea
           * @default 'display'
          */
         "variant"?: 'display' | 'edit';
@@ -1649,45 +1494,6 @@ declare module "@stencil/core" {
              * ```
              */
             "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
-            /**
-             * Comprehensive text component for displaying and editing text data.
-             * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
-             * expandable content, and Thing Description integration.
-             * @example Basic Text Display
-             * ```html
-             * <ui-text variant="display" value="Hello World"></ui-text>
-             * ```
-             * @example Single-line Text Input
-             * ```html
-             * <ui-text variant="edit" value="Enter text" label="Name"></ui-text>
-             * ```
-             * @example Multi-line Text Area
-             * ```html
-             * <ui-text
-             * variant="edit"
-             * text-type="multi"
-             * value="Line 1\nLine 2"
-             * label="Description">
-             * </ui-text>
-             * ```
-             * @example Structured Text with Highlighting
-             * ```html
-             * <ui-text
-             * variant="display"
-             * text-type="multi"
-             * structure="json"
-             * value='{"key": "value"}'>
-             * </ui-text>
-             * ```
-             * @example TD Integration
-             * ```html
-             * <ui-text
-             * td-url="http://device.local/properties/name"
-             * variant="edit"
-             * label="Device Name">
-             * </ui-text>
-             * ```
-             */
             "ui-text": LocalJSX.UiText & JSXBase.HTMLAttributes<HTMLUiTextElement>;
             /**
              * Toogle switch component with various fetueres, multiple visual styles and TD integration.

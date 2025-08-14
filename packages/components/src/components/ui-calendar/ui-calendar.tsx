@@ -1,5 +1,8 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
 
+export interface UiCalendarDateChange { value: string }
+export interface UiCalendarValueChange { value: string }
+
 /**
  * Calendar component for date-time selection with various visual styles and TD integration.
  * Link a direct property URL for plug-and-play device control.
@@ -97,10 +100,10 @@ export class UiCalendar {
   @State() errorMessage?: string;
 
   /** Event emitted when date changes */
-  @Event() dateChange: EventEmitter<{ value: string }>;
+  @Event() dateChange: EventEmitter<UiCalendarDateChange>;
 
   /** Standardized valueChange event for calendar */
-  @Event() valueChange: EventEmitter<{ value: string }>;
+  @Event() valueChange: EventEmitter<UiCalendarValueChange>;
 
   /** Watch for TD URL changes */
   // TD watcher removed

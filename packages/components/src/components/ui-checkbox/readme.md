@@ -23,10 +23,10 @@ Checkbox component with consistent styling to match the design system.
 
 ## Events
 
-| Event            | Description                                    | Type                                               |
-| ---------------- | ---------------------------------------------- | -------------------------------------------------- |
-| `checkboxChange` | Event emitted when checkbox state changes.     | `CustomEvent<{ checked: boolean; }>`               |
-| `valueChange`    | Standardized valueChange event (boolean value) | `CustomEvent<{ value: boolean; label?: string; }>` |
+| Event            | Description                                    | Type                                    |
+| ---------------- | ---------------------------------------------- | --------------------------------------- |
+| `checkboxChange` | Event emitted when checkbox state changes.     | `CustomEvent<UiCheckboxCheckboxChange>` |
+| `valueChange`    | Standardized valueChange event (boolean value) | `CustomEvent<UiCheckboxValueChange>`    |
 
 
 ----------------------------------------------

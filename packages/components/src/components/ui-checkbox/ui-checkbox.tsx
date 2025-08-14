@@ -1,4 +1,7 @@
-import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
+import { Component, Prop, State, h, Event, EventEmitter, Watch } from '@stencil/core';
+
+export interface UiCheckboxCheckboxChange { checked: boolean }
+export interface UiCheckboxValueChange { value: boolean; label?: string }
 
 /**
  * Checkbox component with consistent styling to match the design system.
@@ -70,10 +73,15 @@ export class UiCheckbox {
   /**
    * Event emitted when checkbox state changes.
    */
-  @Event() checkboxChange: EventEmitter<{ checked: boolean }>;
+  @Event() checkboxChange: EventEmitter<UiCheckboxCheckboxChange>;
 
   /** Standardized valueChange event (boolean value) */
-  @Event() valueChange: EventEmitter<{ value: boolean; label?: string }>;
+  @Event() valueChange: EventEmitter<UiCheckboxValueChange>;
+
+  @Watch('checked')
+  watchChecked(newVal: boolean) {
+    this.isChecked = !!newVal;
+  }
 
   componentWillLoad() {
     this.isChecked = this.checked;
