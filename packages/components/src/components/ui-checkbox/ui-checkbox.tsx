@@ -1,5 +1,4 @@
 import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
-import { DataHandler } from '../../utils/data-handler';
 
 /**
  * Checkbox component with consistent styling to match the design system.
@@ -50,7 +49,7 @@ export class UiCheckbox {
    * When provided, checkbox will read/write boolean values to the device.
    * @example "http://device.local/properties/enabled"
    */
-  @Prop() tdUrl?: string;
+  // TD integration removed: use events or external handlers instead
 
   /**
    * Success feedback state.
@@ -76,80 +75,17 @@ export class UiCheckbox {
     this.isChecked = this.checked;
 
     // Initialize from TD if URL provided
-    if (this.tdUrl) {
-      this.readFromDevice();
-    }
+  // External integrations should listen for events; no device reads performed here.
   }
 
-  private async readFromDevice() {
-    if (!this.tdUrl) return;
-
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-
-    const result = await DataHandler.readFromDevice(this.tdUrl);
-
-    if (result.success && typeof result.value === 'boolean') {
-      this.isChecked = result.value;
-      this.checked = result.value;
-      this.showSuccess = true;
-
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-    } else {
-      this.errorMessage = result.error || 'Failed to read checkbox state';
-
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-
-      console.warn('Checkbox read failed:', result.error);
-    }
-  }
-
-  private async writeToDevice(value: boolean): Promise<boolean> {
-    if (!this.tdUrl) return true; // Local control, always succeeds
-
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-
-    const result = await DataHandler.writeToDevice(this.tdUrl, value);
-
-    if (result.success) {
-      this.showSuccess = true;
-
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-
-      return true;
-    } else {
-      this.errorMessage = result.error || 'Failed to update checkbox state';
-
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-
-      console.warn('Checkbox write failed:', result.error);
-      return false;
-    }
-  }
+  // Device integration removed; external systems should use events.
 
   private handleClick = async () => {
     if (this.state === 'disabled') return;
 
-    const newValue = !this.isChecked;
-    const previousValue = this.isChecked;
-
-    this.isChecked = newValue;
-    this.checked = newValue;
+  const newValue = !this.isChecked;
+  this.isChecked = newValue;
+  this.checked = newValue;
 
     // Emit the change event
     this.checkboxChange.emit({ checked: newValue });
@@ -159,21 +95,7 @@ export class UiCheckbox {
       (window as any)[this.changeHandler]({ checked: newValue });
     }
 
-    // Update device if TD URL provided
-    if (this.tdUrl) {
-      const success = await this.writeToDevice(newValue);
-      if (!success) {
-        // Revert to previous value on write failure
-        this.isChecked = previousValue;
-        this.checked = previousValue;
-
-        // Re-emit with reverted value
-        this.checkboxChange.emit({ checked: previousValue });
-        if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
-          (window as any)[this.changeHandler]({ checked: previousValue });
-        }
-      }
-    }
+  // Local control only: external integrations should handle device writes.
   };
 
   private getCheckboxStyles() {

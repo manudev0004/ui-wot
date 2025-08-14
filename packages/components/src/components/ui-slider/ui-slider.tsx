@@ -1,5 +1,4 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
-import { DataHandler } from '../../utils/data-handler';
 
 /**
  * Slider component with various features, multiple visual styles and TD integration.
@@ -99,7 +98,7 @@ export class UiSlider {
   /**
    * Thing Description URL for device control.
    */
-  @Prop() tdUrl?: string;
+  // TD integration removed: external integrations should use events
 
   /**
    * Enable manual control interface.
@@ -122,12 +121,7 @@ export class UiSlider {
   @Event() valueChange: EventEmitter<{ value: number }>;
 
   /** Watch for TD URL changes */
-  @Watch('tdUrl')
-  async watchTdUrl() {
-    if (this.tdUrl) {
-      await this.readDevice();
-    }
-  }
+  // TD watcher removed
 
   /** Watch for value prop changes */
   @Watch('value')
@@ -140,74 +134,12 @@ export class UiSlider {
   async componentWillLoad() {
     this.currentValue = this.value;
     this.manualInputValue = String(this.value);
-    if (this.tdUrl) {
-      await this.readDevice();
-    }
+  // Initialize from value prop
   }
 
-  /** Read from TD device */
-  private async readDevice() {
-    if (!this.tdUrl) return;
+  // Device read logic removed
 
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-
-    const result = await DataHandler.readFromDevice(this.tdUrl);
-
-    if (result.success && typeof result.value === 'number') {
-      const clampedValue = Math.max(this.min, Math.min(this.max, result.value));
-      this.currentValue = clampedValue;
-      this.manualInputValue = String(clampedValue);
-      this.showSuccess = true;
-
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-    } else {
-      this.errorMessage = result.error || 'Failed to read slider value';
-
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-
-      console.warn('Device read failed:', result.error);
-    }
-  }
-
-  /** Write to TD device */
-  private async writeDevice(value: number): Promise<boolean> {
-    if (!this.tdUrl) return true; // Local control, always succeeds
-
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-
-    const result = await DataHandler.writeToDevice(this.tdUrl, value);
-
-    if (result.success) {
-      this.showSuccess = true;
-
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-
-      return true;
-    } else {
-      this.errorMessage = result.error || 'Failed to update slider value';
-
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-
-      console.warn('Device write failed:', result.error);
-      return false;
-    }
-  }
+  // Device write logic removed
 
   /** Handle slider value change */
   private async handleChange(event: Event) {
@@ -216,23 +148,10 @@ export class UiSlider {
     const target = event.target as HTMLInputElement;
     const newValue = Number(target.value);
 
-    const previousValue = this.currentValue;
-    this.currentValue = newValue;
+  this.currentValue = newValue;
     this.manualInputValue = String(newValue);
     this.valueChange.emit({ value: newValue });
-
-    // Update TD device if URL provided
-    if (this.tdUrl) {
-      const success = await this.writeDevice(newValue);
-      if (!success) {
-        // Revert to previous value on write failure
-        this.currentValue = previousValue;
-        this.manualInputValue = String(previousValue);
-        // Force re-render by triggering a minimal DOM update
-        const input = event.target as HTMLInputElement;
-        input.value = String(previousValue);
-      }
-    }
+  // Local-only change: external device writes should be handled by listeners to `valueChange`.
   }
 
   /** Handle manual input */
@@ -252,22 +171,12 @@ export class UiSlider {
       return;
     }
 
-    const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
-    const previousValue = this.currentValue;
+  const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
 
-    this.currentValue = clampedValue;
-    this.manualInputValue = String(clampedValue);
-    this.valueChange.emit({ value: clampedValue });
-
-    // Update TD device if URL provided
-    if (this.tdUrl) {
-      const success = await this.writeDevice(clampedValue);
-      if (!success) {
-        // Revert to previous value on write failure
-        this.currentValue = previousValue;
-        this.manualInputValue = String(previousValue);
-      }
-    }
+  this.currentValue = clampedValue;
+  this.manualInputValue = String(clampedValue);
+  this.valueChange.emit({ value: clampedValue });
+  // Local-only change: external device writes should be handled by listeners to `valueChange`.
   };
 
   /** Handle keyboard navigation */
@@ -308,19 +217,10 @@ export class UiSlider {
     }
 
     if (newValue !== this.currentValue) {
-      const previousValue = this.currentValue;
       this.currentValue = newValue;
       this.manualInputValue = String(newValue);
       this.valueChange.emit({ value: newValue });
-
-      if (this.tdUrl) {
-        const success = await this.writeDevice(newValue);
-        if (!success) {
-          // Revert to previous value on write failure
-          this.currentValue = previousValue;
-          this.manualInputValue = String(previousValue);
-        }
-      }
+      // Local-only change: external device writes should be handled by listeners to `valueChange`.
     }
   };
 

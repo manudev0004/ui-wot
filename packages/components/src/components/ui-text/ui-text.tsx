@@ -1,5 +1,4 @@
 import { Component, Prop, State, h, Event, EventEmitter, Watch } from '@stencil/core';
-import { DataHandler } from '../../utils/data-handler';
 
 /**
  * Comprehensive text component for displaying and editing text data.
@@ -132,7 +131,7 @@ export class UiText {
   /**
    * Thing Description URL for property control.
    */
-  @Prop() tdUrl?: string;
+  // TD integration removed: external integrations should use events
 
   /**
    * Custom callback function name for value changes.
@@ -169,93 +168,24 @@ export class UiText {
   watchValue() {
     this.currentValue = this.value;
   }
-
-  /** Watch for TD URL changes */
-  @Watch('tdUrl')
-  async watchTdUrl() {
-    if (this.tdUrl) {
-      await this.readFromDevice();
-    }
-  }
+  // TD watcher removed
 
   componentWillLoad() {
     this.currentValue = this.value;
 
-    // Initialize from TD if URL provided
-    if (this.tdUrl) {
-      this.readFromDevice();
-    }
+  // Initialize local state from value
   }
 
-  private async readFromDevice() {
-    if (!this.tdUrl) return;
+  // Device read logic removed
 
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-
-    const result = await DataHandler.readFromDevice(this.tdUrl);
-
-    if (result.success && typeof result.value === 'string') {
-      this.currentValue = result.value;
-      this.value = result.value;
-      this.showSuccess = true;
-
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-    } else {
-      this.errorMessage = result.error || 'Failed to read text value';
-
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-
-      console.warn('Text read failed:', result.error);
-    }
-  }
-
-  private async writeToDevice(value: string): Promise<boolean> {
-    if (!this.tdUrl) return true; // Local control, always succeeds
-
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-
-    const result = await DataHandler.writeToDevice(this.tdUrl, value);
-
-    if (result.success) {
-      this.showSuccess = true;
-
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-
-      return true;
-    } else {
-      this.errorMessage = result.error || 'Failed to update text value';
-
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-
-      console.warn('Text write failed:', result.error);
-      return false;
-    }
-  }
+  // Device write logic removed
 
   private handleInput = async (event: Event) => {
     if (this.state === 'disabled' || this.variant === 'display') return;
 
-    const target = event.target as HTMLInputElement | HTMLTextAreaElement;
-    const newValue = target.value;
-    const previousValue = this.currentValue;
-
-    this.currentValue = newValue;
+  const target = event.target as HTMLInputElement | HTMLTextAreaElement;
+  const newValue = target.value;
+  this.currentValue = newValue;
     this.value = newValue;
 
     // Emit the change event
@@ -266,22 +196,7 @@ export class UiText {
       (window as any)[this.changeHandler]({ value: newValue });
     }
 
-    // Update device if TD URL provided
-    if (this.tdUrl) {
-      const success = await this.writeToDevice(newValue);
-      if (!success) {
-        // Revert to previous value on write failure
-        this.currentValue = previousValue;
-        this.value = previousValue;
-        target.value = previousValue;
-
-        // Re-emit with reverted value
-        this.textChange.emit({ value: previousValue });
-        if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
-          (window as any)[this.changeHandler]({ value: previousValue });
-        }
-      }
-    }
+  // Local-only change: external device writes should be handled by listeners to `textChange`.
   };
 
   private getContainerStyles() {

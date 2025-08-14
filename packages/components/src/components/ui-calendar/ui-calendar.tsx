@@ -1,5 +1,4 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
-import { DataHandler } from '../../utils/data-handler';
 
 /**
  * Calendar component for date-time selection with various visual styles and TD integration.
@@ -79,7 +78,7 @@ export class UiCalendar {
   /**
    * Thing Description URL for device control.
    */
-  @Prop() tdUrl?: string;
+  // TD integration removed: use events or external handlers instead
 
   /** Current selected date */
   @State() selectedDate: Date = new Date();
@@ -101,12 +100,7 @@ export class UiCalendar {
   @Event() dateChange: EventEmitter<{ value: string }>;
 
   /** Watch for TD URL changes */
-  @Watch('tdUrl')
-  async watchTdUrl() {
-    if (this.tdUrl) {
-      await this.readDevice();
-    }
-  }
+  // TD watcher removed
 
   /** Watch for value prop changes */
   @Watch('value')
@@ -125,77 +119,6 @@ export class UiCalendar {
       this.currentMonth = this.selectedDate.getMonth();
       this.currentYear = this.selectedDate.getFullYear();
     }
-    if (this.tdUrl) {
-      await this.readDevice();
-    }
-  }
-
-  /** Read from TD device */
-  private async readDevice() {
-    if (!this.tdUrl) return;
-
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-
-    const result = await DataHandler.readFromDevice(this.tdUrl);
-
-    if (result.success && result.value) {
-      const dateValue = new Date(result.value);
-      if (!isNaN(dateValue.getTime())) {
-        this.selectedDate = dateValue;
-        this.currentMonth = dateValue.getMonth();
-        this.currentYear = dateValue.getFullYear();
-        this.value = dateValue.toISOString();
-        this.showSuccess = true;
-
-        // Clear success indicator after 3 seconds
-        setTimeout(() => {
-          this.showSuccess = false;
-        }, 3000);
-      }
-    } else {
-      this.errorMessage = result.error || 'Failed to read calendar value';
-
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-
-      console.warn('Device read failed:', result.error);
-    }
-  }
-
-  /** Write to TD device */
-  private async writeDevice(value: string): Promise<boolean> {
-    if (!this.tdUrl) return true; // Local control, always succeeds
-
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-
-    const result = await DataHandler.writeToDevice(this.tdUrl, value);
-
-    if (result.success) {
-      this.showSuccess = true;
-
-      // Clear success indicator after 3 seconds
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 3000);
-
-      return true;
-    } else {
-      this.errorMessage = result.error || 'Failed to update calendar value';
-
-      // Clear error indicator after 8 seconds
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-
-      console.warn('Device write failed:', result.error);
-      return false;
-    }
   }
 
   /** Handle date selection */
@@ -210,21 +133,12 @@ export class UiCalendar {
       newDate.setMinutes(this.selectedDate.getMinutes());
     }
 
-    const previousDate = this.selectedDate;
-    this.selectedDate = newDate;
-    this.value = newDate.toISOString();
+  this.selectedDate = newDate;
+  this.value = newDate.toISOString();
     this.dateChange.emit({ value: this.value });
     this.isOpen = false;
 
-    // Update TD device if URL provided
-    if (this.tdUrl) {
-      const success = await this.writeDevice(this.value);
-      if (!success) {
-        // Revert to previous value on write failure
-        this.selectedDate = previousDate;
-        this.value = previousDate?.toISOString();
-      }
-    }
+  // Local control only: external integrations should listen to the `dateChange` event.
   }
 
   /** Handle time change */
@@ -238,20 +152,11 @@ export class UiCalendar {
     newDate.setHours(hours);
     newDate.setMinutes(minutes);
 
-    const previousDate = this.selectedDate;
-    this.selectedDate = newDate;
-    this.value = newDate.toISOString();
+  this.selectedDate = newDate;
+  this.value = newDate.toISOString();
     this.dateChange.emit({ value: this.value });
 
-    // Update TD device if URL provided
-    if (this.tdUrl) {
-      const success = await this.writeDevice(this.value);
-      if (!success) {
-        // Revert to previous value on write failure
-        this.selectedDate = previousDate;
-        this.value = previousDate?.toISOString();
-      }
-    }
+  // Local control only: external integrations should listen to the `dateChange` event.
   }
 
   /** Navigate month */

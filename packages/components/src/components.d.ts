@@ -32,11 +32,6 @@ export namespace Components {
      */
     interface UiButton {
         /**
-          * Data payload to send with the action. Can be a JSON string or any value that will be JSON serialized.
-          * @example '{"brightness": 100}' or '"on"' or '42'
-         */
-        "actionData"?: string;
-        /**
           * Function name to call when button is clicked. User defines this function in their code, component will invoke it.
           * @example "handleButtonClick"
          */
@@ -56,11 +51,6 @@ export namespace Components {
           * @default 'active'
          */
         "state": 'active' | 'disabled';
-        /**
-          * Thing Description URL for action invocation. When provided, button will trigger an action on the device.
-          * @example "http://device.local/actions/turnOn"
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -118,10 +108,6 @@ export namespace Components {
          */
         "state": 'disabled' | 'default';
         /**
-          * Thing Description URL for device control.
-         */
-        "tdUrl"?: string;
-        /**
           * Theme for the component.
           * @default 'light'
          */
@@ -163,11 +149,6 @@ export namespace Components {
           * @default 'default'
          */
         "state": 'disabled' | 'active' | 'default';
-        /**
-          * Thing Description URL for property control. When provided, checkbox will read/write boolean values to the device.
-          * @example "http://device.local/properties/enabled"
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -268,19 +249,6 @@ export namespace Components {
          */
         "mode": 'read' | 'write' | 'readwrite';
         /**
-          * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
-         */
-        "mqttHost"?: string;
-        /**
-          * MQTT topic path for MQTT protocol (e.g., "device/volume")
-         */
-        "mqttTopic"?: string;
-        /**
-          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol - mqtt: MQTT protocol
-          * @default 'http'
-         */
-        "protocol": 'http' | 'coap' | 'mqtt';
-        /**
           * Current state of the number picker. - active: Number picker is enabled (default) - disabled: Number picker cannot be interacted with
           * @default 'active'
          */
@@ -290,11 +258,6 @@ export namespace Components {
           * @default 1
          */
         "step": number;
-        /**
-          * Direct URL of TD number properties to auto connect and interact with the device.
-          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number" ```
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -370,10 +333,6 @@ export namespace Components {
           * @default 1
          */
         "step": number;
-        /**
-          * Thing Description URL for device control.
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -487,10 +446,6 @@ export namespace Components {
          */
         "structure": 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown';
         /**
-          * Thing Description URL for property control.
-         */
-        "tdUrl"?: string;
-        /**
           * Type of text field. - single: Single-line text field - multi: Multi-line text area
           * @default 'single'
          */
@@ -592,28 +547,10 @@ export namespace Components {
          */
         "mode": 'read' | 'write' | 'readwrite';
         /**
-          * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
-         */
-        "mqttHost"?: string;
-        /**
-          * MQTT topic path for MQTT protocol (e.g., "device/toggle")
-         */
-        "mqttTopic"?: string;
-        /**
-          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol - mqtt: MQTT protocol
-          * @default 'http'
-         */
-        "protocol": 'http' | 'coap' | 'mqtt';
-        /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'
          */
         "state": 'active' | 'disabled' | 'default';
-        /**
-          * Direct URL of TD boolean properties to auto connect and interact with the device.
-          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" ```
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -1039,11 +976,6 @@ declare namespace LocalJSX {
      */
     interface UiButton {
         /**
-          * Data payload to send with the action. Can be a JSON string or any value that will be JSON serialized.
-          * @example '{"brightness": 100}' or '"on"' or '42'
-         */
-        "actionData"?: string;
-        /**
           * Function name to call when button is clicked. User defines this function in their code, component will invoke it.
           * @example "handleButtonClick"
          */
@@ -1067,11 +999,6 @@ declare namespace LocalJSX {
           * @default 'active'
          */
         "state"?: 'active' | 'disabled';
-        /**
-          * Thing Description URL for action invocation. When provided, button will trigger an action on the device.
-          * @example "http://device.local/actions/turnOn"
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -1133,10 +1060,6 @@ declare namespace LocalJSX {
          */
         "state"?: 'disabled' | 'default';
         /**
-          * Thing Description URL for device control.
-         */
-        "tdUrl"?: string;
-        /**
           * Theme for the component.
           * @default 'light'
          */
@@ -1182,11 +1105,6 @@ declare namespace LocalJSX {
           * @default 'default'
          */
         "state"?: 'disabled' | 'active' | 'default';
-        /**
-          * Thing Description URL for property control. When provided, checkbox will read/write boolean values to the device.
-          * @example "http://device.local/properties/enabled"
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -1287,22 +1205,9 @@ declare namespace LocalJSX {
          */
         "mode"?: 'read' | 'write' | 'readwrite';
         /**
-          * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
-         */
-        "mqttHost"?: string;
-        /**
-          * MQTT topic path for MQTT protocol (e.g., "device/volume")
-         */
-        "mqttTopic"?: string;
-        /**
           * Event emitted when value changes
          */
         "onValueChange"?: (event: UiNumberPickerCustomEvent<{ value: number; label?: string }>) => void;
-        /**
-          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol - mqtt: MQTT protocol
-          * @default 'http'
-         */
-        "protocol"?: 'http' | 'coap' | 'mqtt';
         /**
           * Current state of the number picker. - active: Number picker is enabled (default) - disabled: Number picker cannot be interacted with
           * @default 'active'
@@ -1313,11 +1218,6 @@ declare namespace LocalJSX {
           * @default 1
          */
         "step"?: number;
-        /**
-          * Direct URL of TD number properties to auto connect and interact with the device.
-          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/number" ```
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -1397,10 +1297,6 @@ declare namespace LocalJSX {
           * @default 1
          */
         "step"?: number;
-        /**
-          * Thing Description URL for device control.
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -1518,10 +1414,6 @@ declare namespace LocalJSX {
          */
         "structure"?: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown';
         /**
-          * Thing Description URL for property control.
-         */
-        "tdUrl"?: string;
-        /**
           * Type of text field. - single: Single-line text field - multi: Multi-line text area
           * @default 'single'
          */
@@ -1623,32 +1515,14 @@ declare namespace LocalJSX {
          */
         "mode"?: 'read' | 'write' | 'readwrite';
         /**
-          * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
-         */
-        "mqttHost"?: string;
-        /**
-          * MQTT topic path for MQTT protocol (e.g., "device/toggle")
-         */
-        "mqttTopic"?: string;
-        /**
           * Event emitted when toggle state changes
          */
         "onToggle"?: (event: UiToggleCustomEvent<{ active: boolean }>) => void;
-        /**
-          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol - mqtt: MQTT protocol
-          * @default 'http'
-         */
-        "protocol"?: 'http' | 'coap' | 'mqtt';
         /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'
          */
         "state"?: 'active' | 'disabled' | 'default';
-        /**
-          * Direct URL of TD boolean properties to auto connect and interact with the device.
-          * @example ``` td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" ```
-         */
-        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'

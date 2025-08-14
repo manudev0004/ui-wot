@@ -1,4 +1,4 @@
-import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
+import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
 
 /**
  * Toogle switch component with various fetueres, multiple visual styles and TD integration.
@@ -114,7 +114,7 @@ export class UiToggle {
    * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
    * ```
    */
-  @Prop() tdUrl?: string;
+  // TD integration removed: use events for external device I/O
 
   /**
    * Current value for local control mode (true/false, on/off, 1/0).
@@ -136,17 +136,7 @@ export class UiToggle {
    * - coap: CoAP protocol
    * - mqtt: MQTT protocol
    */
-  @Prop() protocol: 'http' | 'coap' | 'mqtt' = 'http';
-
-  /**
-   * MQTT broker host for MQTT protocol (e.g., "localhost:1883")
-   */
-  @Prop() mqttHost?: string;
-
-  /**
-   * MQTT topic path for MQTT protocol (e.g., "device/toggle")
-   */
-  @Prop() mqttTopic?: string;
+  // protocol and mqtt props removed with TD integration
 
   /**
    * Device interaction mode.
@@ -162,27 +152,15 @@ export class UiToggle {
   /** Event emitted when toggle state changes */
   @Event() toggle: EventEmitter<{ active: boolean }>;
 
-  /** Watch for TD URL changes and reconnect */
-  @Watch('tdUrl')
-  @Watch('value')
-  async watchTdUrl() {
-    if (this.tdUrl && (this.mode === 'read' || this.mode === 'readwrite')) {
-      await this.readDeviceState();
-    } else if (!this.tdUrl && this.value) {
-      // Handle local value changes
-      const boolValue = this.parseValue(this.value);
-      this.isActive = boolValue;
-    }
-  }
+  /** Watch for value prop changes */
+  // Keep watching `value` only to reflect external prop changes
+  // (watch decorator not needed here unless explicit reactive handling is required)
 
   /** Initialize component */
   async componentWillLoad() {
     this.isActive = this.state === 'active';
-
-    if (this.tdUrl && (this.mode === 'read' || this.mode === 'readwrite')) {
-      await this.readDeviceState();
-    } else if (!this.tdUrl && this.value) {
-      // Initialize from value prop when no TD URL
+    // Initialize from value prop when provided
+    if (this.value) {
       const boolValue = this.parseValue(this.value);
       this.isActive = boolValue;
     }
@@ -194,184 +172,7 @@ export class UiToggle {
     return lowerValue === 'true' || lowerValue === '1' || lowerValue === 'on' || lowerValue === 'yes';
   }
 
-  /** Read current state from device */
-  private async readDeviceState() {
-    if (!this.tdUrl) return;
-
-    try {
-      console.log(`Reading from: ${this.tdUrl} via ${this.protocol}`);
-
-      if (this.protocol === 'http') {
-        await this.readDeviceStateHttp();
-      } else if (this.protocol === 'coap') {
-        await this.readDeviceStateCoap();
-      } else if (this.protocol === 'mqtt') {
-        await this.readDeviceStateMqtt();
-      }
-    } catch (error) {
-      console.warn('Failed to read state:', error);
-    }
-  }
-
-  /** Read via HTTP */
-  private async readDeviceStateHttp() {
-    const response = await fetch(this.tdUrl);
-
-    if (response.ok) {
-      const value = await response.json();
-      const booleanValue = typeof value === 'boolean' ? value : Boolean(value);
-
-      this.isActive = booleanValue;
-      console.log(`Read value: ${booleanValue}`);
-    }
-  }
-
-  /** Read via CoAP */
-  private async readDeviceStateCoap() {
-    try {
-      // Simple CoAP GET request
-      const url = new URL(this.tdUrl);
-      const response = await fetch(`coap://${url.host}${url.pathname}`, {
-        method: 'GET',
-      });
-      const value = await response.json();
-      const booleanValue = typeof value === 'boolean' ? value : Boolean(value);
-      this.isActive = booleanValue;
-      console.log(`CoAP read value: ${booleanValue}`);
-    } catch (error) {
-      console.warn('CoAP read failed:', error);
-      throw error;
-    }
-  }
-
-  /** Read via MQTT */
-  private async readDeviceStateMqtt() {
-    if (!this.mqttHost || !this.mqttTopic) {
-      console.warn('MQTT host and topic are required for MQTT protocol');
-      return;
-    }
-
-    try {
-      // Use WebSocket-based MQTT connection
-      const wsUrl = `ws://${this.mqttHost}/mqtt`;
-      const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        // Subscribe to topic
-        const subscribeMsg = {
-          cmd: 'subscribe',
-          topic: this.mqttTopic,
-        };
-        ws.send(JSON.stringify(subscribeMsg));
-      };
-
-      ws.onmessage = event => {
-        const data = JSON.parse(event.data);
-        if (data.topic === this.mqttTopic) {
-          const booleanValue = typeof data.payload === 'boolean' ? data.payload : Boolean(data.payload);
-          this.isActive = booleanValue;
-          console.log(`MQTT read value: ${booleanValue}`);
-        }
-      };
-    } catch (error) {
-      console.warn('MQTT read failed:', error);
-      throw error;
-    }
-  }
-
-  /** Write new state to TD device */
-  private async updateDevice(value: boolean) {
-    if (!this.tdUrl) return;
-
-    try {
-      console.log(`Writing ${value} to: ${this.tdUrl} via ${this.protocol}`);
-
-      if (this.protocol === 'http') {
-        await this.updateDeviceHttp(value);
-      } else if (this.protocol === 'coap') {
-        await this.updateDeviceCoap(value);
-      } else if (this.protocol === 'mqtt') {
-        await this.updateDeviceMqtt(value);
-      }
-    } catch (error) {
-      console.warn('Failed to write:', error);
-      throw error;
-    }
-  }
-
-  /** Write via HTTP */
-  private async updateDeviceHttp(value: boolean) {
-    const response = await fetch(this.tdUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(value),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Write failed: ${response.status}`);
-    }
-
-    console.log(`Successfully wrote: ${value}`);
-  }
-
-  /** Write via CoAP */
-  private async updateDeviceCoap(value: boolean) {
-    try {
-      const url = new URL(this.tdUrl);
-      const response = await fetch(`coap://${url.host}${url.pathname}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(value),
-      });
-
-      if (!response.ok) {
-        throw new Error(`CoAP write failed: ${response.status}`);
-      }
-
-      console.log(`CoAP successfully wrote: ${value}`);
-    } catch (error) {
-      console.warn('CoAP write failed:', error);
-      throw error;
-    }
-  }
-
-  /** Write via MQTT */
-  private async updateDeviceMqtt(value: boolean) {
-    if (!this.mqttHost || !this.mqttTopic) {
-      console.warn('MQTT host and topic are required for MQTT protocol');
-      throw new Error('MQTT configuration missing');
-    }
-
-    try {
-      // Use WebSocket-based MQTT connection
-      const wsUrl = `ws://${this.mqttHost}/mqtt`;
-      const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        // Publish to topic
-        const publishMsg = {
-          cmd: 'publish',
-          topic: this.mqttTopic,
-          payload: value,
-        };
-        ws.send(JSON.stringify(publishMsg));
-        console.log(`MQTT successfully wrote: ${value}`);
-        ws.close();
-      };
-
-      ws.onerror = error => {
-        console.warn('MQTT write failed:', error);
-        throw new Error('MQTT write failed');
-      };
-    } catch (error) {
-      console.warn('MQTT write failed:', error);
-      throw error;
-    }
-  }
+  // Device read/write helpers removed; keep UI-only behavior and `mode` prop for visual differences
 
   /** Toggle click handle */
   private async handleToggle() {
@@ -398,22 +199,11 @@ export class UiToggle {
     }
 
     // Update value prop for local control
-    if (!this.tdUrl && this.value !== undefined) {
+    if (this.value !== undefined) {
       this.value = newActive ? 'true' : 'false';
     }
 
-    // Update device if connected and write mode is enabled
-    if (this.tdUrl && (this.mode === 'write' || this.mode === 'readwrite')) {
-      try {
-        await this.updateDevice(newActive);
-      } catch (error) {
-        // Revert on failure
-        this.isActive = !newActive;
-        console.warn('Change failed, reverted state');
-        // Emit revert event
-        this.toggle.emit({ active: !newActive });
-      }
-    }
+  // Local-only change: external device updates should be handled by listeners to `toggle` events.
   }
 
   /** Handle keyboard 'enter' and 'spacebar' input to toggle switch state */

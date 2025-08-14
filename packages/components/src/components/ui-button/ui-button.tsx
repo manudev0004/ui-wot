@@ -1,5 +1,4 @@
 import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
-import { DataHandler } from '../../utils/data-handler';
 
 /**
  * Button component with various visual styles, matching the ui-number-picker design family.
@@ -77,14 +76,7 @@ export class UiButton {
    * When provided, button will trigger an action on the device.
    * @example "http://device.local/actions/turnOn"
    */
-  @Prop() tdUrl?: string;
-
-  /**
-   * Data payload to send with the action.
-   * Can be a JSON string or any value that will be JSON serialized.
-   * @example '{"brightness": 100}' or '"on"' or '42'
-   */
-  @Prop() actionData?: string;
+  // TD integration removed: use normal clickHandler or events for external integration
 
   /** Operation status for user feedback */
   @State() showSuccess: boolean = false;
@@ -99,60 +91,9 @@ export class UiButton {
   private handleClick = async () => {
     if (this.state === 'disabled') return;
 
-    // If TD URL is provided, invoke action on device
-    if (this.tdUrl) {
-      await this.invokeAction();
-    }
-
-    this.emitClick();
+  // Emit event and call local handler; TD integration removed
+  this.emitClick();
   };
-
-  /** Invoke action on TD device */
-  private async invokeAction() {
-    // Clear previous state
-    this.showSuccess = false;
-    this.errorMessage = undefined;
-
-    try {
-      let payload = undefined;
-      if (this.actionData) {
-        try {
-          payload = JSON.parse(this.actionData);
-        } catch {
-          // If not valid JSON, use as string
-          payload = this.actionData;
-        }
-      }
-
-      const result = await DataHandler.writeToDevice(this.tdUrl, payload);
-
-      if (result.success) {
-        this.showSuccess = true;
-
-        // Clear success indicator after 3 seconds
-        setTimeout(() => {
-          this.showSuccess = false;
-        }, 3000);
-      } else {
-        this.errorMessage = result.error;
-
-        // Clear error after 8 seconds
-        setTimeout(() => {
-          this.errorMessage = undefined;
-        }, 8000);
-
-        console.warn('Action failed:', result.error);
-      }
-    } catch (error) {
-      this.errorMessage = error.message || 'Action failed';
-
-      setTimeout(() => {
-        this.errorMessage = undefined;
-      }, 8000);
-
-      console.warn('Action failed:', error);
-    }
-  }
 
   /** Emit click events */
   private emitClick() {
