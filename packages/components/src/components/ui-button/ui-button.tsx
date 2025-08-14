@@ -188,14 +188,14 @@ export class UiButton {
       <div class="relative">
         {/* Success Indicator */}
         {this.showSuccess && (
-          <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
+          <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10" part="success-indicator">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
         )}
 
-        <button class={this.getButtonStyle()} onClick={this.handleClick} onKeyDown={this.handleKeyDown} disabled={isDisabled} aria-label={this.label}>
+        <button class={this.getButtonStyle()} onClick={this.handleClick} onKeyDown={this.handleKeyDown} disabled={isDisabled} aria-label={this.label} part="button">
           {this.label}
         </button>
 

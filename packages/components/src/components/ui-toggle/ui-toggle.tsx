@@ -326,6 +326,7 @@ export class UiToggle {
             class={`select-none mr-2 ${isDisabled || isReadOnly ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer'} ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
             onClick={() => !isDisabled && !isReadOnly && this.handleToggle()}
             title={hoverTitle}
+            part="label"
           >
             {this.label}
           </label>
@@ -340,11 +341,12 @@ export class UiToggle {
             role="switch"
             aria-checked={this.isActive ? 'true' : 'false'}
             aria-disabled={isDisabled ? 'true' : 'false'}
-            tabindex={isDisabled ? -1 : 0}
+            tabIndex={isDisabled ? -1 : 0}
             onClick={() => !isDisabled && this.handleToggle()}
             onKeyDown={this.handleKeyDown}
+            part="control"
           >
-            <span class={thumbStyle}></span>
+            <span class={thumbStyle} part="thumb"></span>
             {this.showCrossIcons()}
           </span>
         )}

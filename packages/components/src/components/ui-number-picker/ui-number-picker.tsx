@@ -373,12 +373,13 @@ export class UiNumberPicker {
               onClick={this.handleDecrement}
               disabled={isDisabled || (this.min !== undefined && this.currentValue <= this.min)}
               aria-label="Decrease value"
+              part="decrement-button"
             >
               −
             </button>
 
             {/* Value Display */}
-            <div class={this.getValueStyle()}>{this.currentValue}</div>
+            <div class={this.getValueStyle()} part="value-display">{this.currentValue}</div>
 
             {/* Increment Button */}
             <button
@@ -386,6 +387,7 @@ export class UiNumberPicker {
               onClick={this.handleIncrement}
               disabled={isDisabled || (this.max !== undefined && this.currentValue >= this.max)}
               aria-label="Increase value"
+              part="increment-button"
             >
               +
             </button>

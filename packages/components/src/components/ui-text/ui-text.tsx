@@ -69,23 +69,23 @@ export class UiText {
     const isEdit = this.variant === 'edit';
 
     return (
-      <div class='relative w-full'>
+      <div class='relative w-full' part="container">
         {this.label && <label class={`block text-sm font-medium mb-2 ${isDisabled ? 'text-gray-400' : (this.theme === 'dark' ? 'text-white' : 'text-gray-900')}`}>{this.label}{!isEdit && <span class='ml-1 text-xs text-blue-500 dark:text-blue-400'>(Read-only)</span>}</label>}
         <div class='relative'>
           {this.showSuccess && <div class='absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10'>
             <svg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M10 3L4.5 8.5L2 6' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' /></svg>
           </div>}
 
-          {isEdit ? (
+              {isEdit ? (
             this.textType === 'single' ? (
-              <input type='text' class={inputStyles} value={this.currentValue} placeholder={this.placeholder} maxLength={this.maxLength} disabled={isDisabled} onInput={this.handleInput} aria-label={this.label || 'Text input'} />
+              <input part="input" type='text' class={inputStyles} value={this.currentValue} placeholder={this.placeholder} maxLength={this.maxLength} disabled={isDisabled} onInput={this.handleInput} aria-label={this.label || 'Text input'} />
             ) : (
-              <textarea class={`${inputStyles} ${this.resizable ? 'resize-vertical' : 'resize-none'}`} value={this.currentValue} placeholder={this.placeholder} maxLength={this.maxLength} rows={this.rows} disabled={isDisabled} onInput={this.handleInput} aria-label={this.label || 'Text area'} />
+              <textarea part="input" class={`${inputStyles} ${this.resizable ? 'resize-vertical' : 'resize-none'}`} value={this.currentValue} placeholder={this.placeholder} maxLength={this.maxLength} rows={this.rows} disabled={isDisabled} onInput={this.handleInput} aria-label={this.label || 'Text area'} />
             )
           ) : (
             <div class={inputStyles}>
               {this.textType === 'single' ? <span class='block truncate'>{this.currentValue || '\u00A0'}</span> : (
-                <div class={`overflow-auto ${this.expandable && !this.isExpanded ? 'max-h-48' : ''}`} style={this.expandable && !this.isExpanded ? { maxHeight: `${this.maxHeight}px` } : {}}>
+                <div class={`overflow-auto ${this.expandable && !this.isExpanded ? 'max-h-48' : ''}`} style={this.expandable && !this.isExpanded ? { maxHeight: `${this.maxHeight}px` } : {}} part="preview">
                   {this.structure === 'unstructured' ? <pre class='whitespace-pre-wrap m-0 font-sans text-sm'>{this.currentValue || '\u00A0'}</pre> : <pre class='whitespace-pre-wrap m-0 font-mono text-sm'>{this.highlightSyntax(this.currentValue || '\u00A0', this.structure)}</pre>}
                 </div>
               )}

@@ -35,6 +35,15 @@ Link a direct property URL for plug-and-play device control.
 | `valueChange` | Event emitted when value changes | `CustomEvent<UiSliderValueChange>` |
 
 
+## Shadow Parts
+
+| Part         | Description |
+| ------------ | ----------- |
+| `"progress"` |             |
+| `"thumb"`    |             |
+| `"track"`    |             |
+
+
 ----------------------------------------------
 
 *Built with [StencilJS](https://stenciljs.com/)*

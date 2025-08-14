@@ -29,6 +29,14 @@ Checkbox component with consistent styling to match the design system.
 | `valueChange`    | Standardized valueChange event (boolean value) | `CustomEvent<UiCheckboxValueChange>`    |
 
 
+## Shadow Parts
+
+| Part        | Description |
+| ----------- | ----------- |
+| `"control"` |             |
+| `"label"`   |             |
+
+
 ----------------------------------------------
 
 *Built with [StencilJS](https://stenciljs.com/)*
