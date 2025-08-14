@@ -3,25 +3,25 @@ import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/
 /**
  * Toogle switch component with various fetueres, multiple visual styles and TD integration.
  * Link a direct property URL for plug-and-play device control.
- * 
+ *
  * @example Basic Usage
  * ```html
  * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
  * ```
- * 
+ *
  * @example TD Integration with HTTP
  * ```html
- * <ui-toggle 
+ * <ui-toggle
  *   td-url="http://device.local/properties/power"
  *   label="Smart Light"
  *   protocol="http"
  *   mode="readwrite">
  * </ui-toggle>
  * ```
- * 
+ *
  * @example TD Integration with MQTT
  * ```html
- * <ui-toggle 
+ * <ui-toggle
  *   td-url="mqtt://device"
  *   mqtt-host="localhost:1883"
  *   mqtt-topic="device/toggle"
@@ -30,25 +30,25 @@ import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/
  *   mode="readwrite">
  * </ui-toggle>
  * ```
- * 
+ *
  * @example TD Device Read-Only (shows colored circle)
  * ```html
- * <ui-toggle 
+ * <ui-toggle
  *   td-url="http://sensor.local/status"
  *   label="Door Sensor"
  *   mode="read">
  * </ui-toggle>
  * ```
- * 
+ *
  * @example Local Control with Custom Handler
  * ```html
- * <ui-toggle 
+ * <ui-toggle
  *   value="true"
  *   on-change="myToggleHandler"
  *   label="Custom Toggle">
  * </ui-toggle>
  * ```
- * 
+ *
  * @example User's JavaScript Handler
  * ```javascript
  * window.myToggleHandler = function(data) {
@@ -58,7 +58,7 @@ import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/
  *   // Your custom logic here
  * };
  * ```
- * 
+ *
  * @example Event Handling
  * ```javascript
  * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
@@ -97,7 +97,7 @@ export class UiToggle {
   @Prop() theme: 'light' | 'dark' = 'light';
 
   /**
-   * Color scheme to match thingsweb webpage 
+   * Color scheme to match thingsweb webpage
    */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
@@ -133,7 +133,7 @@ export class UiToggle {
   /**
    * Protocol to use for Thing Description communication.
    * - http: HTTP REST API (default)
-   * - coap: CoAP protocol  
+   * - coap: CoAP protocol
    * - mqtt: MQTT protocol
    */
   @Prop() protocol: 'http' | 'coap' | 'mqtt' = 'http';
@@ -178,7 +178,7 @@ export class UiToggle {
   /** Initialize component */
   async componentWillLoad() {
     this.isActive = this.state === 'active';
-    
+
     if (this.tdUrl && (this.mode === 'read' || this.mode === 'readwrite')) {
       await this.readDeviceState();
     } else if (!this.tdUrl && this.value) {
@@ -200,7 +200,7 @@ export class UiToggle {
 
     try {
       console.log(`Reading from: ${this.tdUrl} via ${this.protocol}`);
-      
+
       if (this.protocol === 'http') {
         await this.readDeviceStateHttp();
       } else if (this.protocol === 'coap') {
@@ -216,11 +216,11 @@ export class UiToggle {
   /** Read via HTTP */
   private async readDeviceStateHttp() {
     const response = await fetch(this.tdUrl);
-    
+
     if (response.ok) {
       const value = await response.json();
       const booleanValue = typeof value === 'boolean' ? value : Boolean(value);
-      
+
       this.isActive = booleanValue;
       console.log(`Read value: ${booleanValue}`);
     }
@@ -232,7 +232,7 @@ export class UiToggle {
       // Simple CoAP GET request
       const url = new URL(this.tdUrl);
       const response = await fetch(`coap://${url.host}${url.pathname}`, {
-        method: 'GET'
+        method: 'GET',
       });
       const value = await response.json();
       const booleanValue = typeof value === 'boolean' ? value : Boolean(value);
@@ -255,17 +255,17 @@ export class UiToggle {
       // Use WebSocket-based MQTT connection
       const wsUrl = `ws://${this.mqttHost}/mqtt`;
       const ws = new WebSocket(wsUrl);
-      
+
       ws.onopen = () => {
         // Subscribe to topic
         const subscribeMsg = {
           cmd: 'subscribe',
-          topic: this.mqttTopic
+          topic: this.mqttTopic,
         };
         ws.send(JSON.stringify(subscribeMsg));
       };
-      
-      ws.onmessage = (event) => {
+
+      ws.onmessage = event => {
         const data = JSON.parse(event.data);
         if (data.topic === this.mqttTopic) {
           const booleanValue = typeof data.payload === 'boolean' ? data.payload : Boolean(data.payload);
@@ -285,7 +285,7 @@ export class UiToggle {
 
     try {
       console.log(`Writing ${value} to: ${this.tdUrl} via ${this.protocol}`);
-      
+
       if (this.protocol === 'http') {
         await this.updateDeviceHttp(value);
       } else if (this.protocol === 'coap') {
@@ -312,7 +312,7 @@ export class UiToggle {
     if (!response.ok) {
       throw new Error(`Write failed: ${response.status}`);
     }
-    
+
     console.log(`Successfully wrote: ${value}`);
   }
 
@@ -331,7 +331,7 @@ export class UiToggle {
       if (!response.ok) {
         throw new Error(`CoAP write failed: ${response.status}`);
       }
-      
+
       console.log(`CoAP successfully wrote: ${value}`);
     } catch (error) {
       console.warn('CoAP write failed:', error);
@@ -350,20 +350,20 @@ export class UiToggle {
       // Use WebSocket-based MQTT connection
       const wsUrl = `ws://${this.mqttHost}/mqtt`;
       const ws = new WebSocket(wsUrl);
-      
+
       ws.onopen = () => {
         // Publish to topic
         const publishMsg = {
           cmd: 'publish',
           topic: this.mqttTopic,
-          payload: value
+          payload: value,
         };
         ws.send(JSON.stringify(publishMsg));
         console.log(`MQTT successfully wrote: ${value}`);
         ws.close();
       };
-      
-      ws.onerror = (error) => {
+
+      ws.onerror = error => {
         console.warn('MQTT write failed:', error);
         throw new Error('MQTT write failed');
       };
@@ -376,7 +376,7 @@ export class UiToggle {
   /** Toggle click handle */
   private async handleToggle() {
     if (this.state === 'disabled') return;
-    
+
     // Don't allow interaction in read-only mode (applies to both TD URL and local control)
     if (this.mode === 'read') {
       return;
@@ -393,7 +393,7 @@ export class UiToggle {
       (window as any)[this.changeHandler]({
         active: newActive,
         value: newActive ? 'true' : 'false',
-        label: this.label
+        label: this.label,
       });
     }
 
@@ -428,7 +428,7 @@ export class UiToggle {
   getToggleStyle() {
     const isDisabled = this.state === 'disabled';
     const isActive = this.isActive;
-    
+
     // Bigger sixe for apple variant
     const size = this.variant === 'apple' ? 'w-11 h-7' : 'w-12 h-6';
 
@@ -439,7 +439,7 @@ export class UiToggle {
 
     // Background color
     let bgColor = 'bg-gray-300';
-    
+
     if (this.color === 'neutral') {
       bgColor = isActive ? 'bg-gray-500' : 'bg-gray-300';
     } else if (this.variant === 'cross') {
@@ -473,34 +473,34 @@ export class UiToggle {
   /** Fetch current thumb style */
   getThumbStyle() {
     const isActive = this.isActive;
-    
+
     // Apple variant
     if (this.variant === 'apple') {
       const baseStyle = 'absolute w-6 h-6 bg-white transition-all duration-200 ease-in-out shadow-md rounded-full top-0 left-0';
       const movement = isActive ? 'translate-x-4' : 'translate-x-0';
       return `${baseStyle} ${movement}`;
     }
-    
+
     // Standard thumb
     const baseStyle = 'absolute w-4 h-4 bg-white transition-transform duration-300 ease-in-out shadow-sm';
     const shape = this.variant === 'square' ? 'rounded-sm' : 'rounded-full';
-    
+
     let position = 'top-1 left-1';
     if (this.variant === 'neon') {
       position = 'top-0.5 left-1';
     }
-    
+
     const movement = isActive ? 'translate-x-6' : 'translate-x-0';
-    
+
     return `${baseStyle} ${shape} ${position} ${movement}`;
   }
 
   /** Tick and cross icons for cross variant */
   showCrossIcons() {
     if (this.variant !== 'cross') return null;
-    
+
     const isActive = this.isActive;
-    
+
     return (
       <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
         {!isActive ? (
@@ -535,15 +535,11 @@ export class UiToggle {
             {this.label}
           </label>
         )}
-        
+
         {isReadOnly ? (
           // Show colored circle for read-only mode
-          <span 
-            class={`inline-block w-6 h-6 rounded-full ${this.isActive ? 'bg-green-500' : 'bg-red-500'}`}
-            title={hoverTitle}
-          ></span>
+          <span class={`inline-block w-6 h-6 rounded-full ${this.isActive ? 'bg-green-500' : 'bg-red-500'}`} title={hoverTitle}></span>
         ) : (
-
           <span
             class={toggleStyle}
             role="switch"

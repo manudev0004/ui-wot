@@ -74,7 +74,7 @@ export class UiCheckbox {
 
   componentWillLoad() {
     this.isChecked = this.checked;
-    
+
     // Initialize from TD if URL provided
     if (this.tdUrl) {
       this.readFromDevice();
@@ -83,60 +83,60 @@ export class UiCheckbox {
 
   private async readFromDevice() {
     if (!this.tdUrl) return;
-    
+
     // Clear previous state
     this.showSuccess = false;
     this.errorMessage = undefined;
-    
+
     const result = await DataHandler.readFromDevice(this.tdUrl);
 
     if (result.success && typeof result.value === 'boolean') {
       this.isChecked = result.value;
       this.checked = result.value;
       this.showSuccess = true;
-      
+
       // Clear success indicator after 3 seconds
       setTimeout(() => {
         this.showSuccess = false;
       }, 3000);
     } else {
       this.errorMessage = result.error || 'Failed to read checkbox state';
-      
+
       // Clear error indicator after 8 seconds
       setTimeout(() => {
         this.errorMessage = undefined;
       }, 8000);
-      
+
       console.warn('Checkbox read failed:', result.error);
     }
   }
 
   private async writeToDevice(value: boolean): Promise<boolean> {
     if (!this.tdUrl) return true; // Local control, always succeeds
-    
+
     // Clear previous state
     this.showSuccess = false;
     this.errorMessage = undefined;
-    
+
     const result = await DataHandler.writeToDevice(this.tdUrl, value);
 
     if (result.success) {
       this.showSuccess = true;
-      
+
       // Clear success indicator after 3 seconds
       setTimeout(() => {
         this.showSuccess = false;
       }, 3000);
-      
+
       return true;
     } else {
       this.errorMessage = result.error || 'Failed to update checkbox state';
-      
+
       // Clear error indicator after 8 seconds
       setTimeout(() => {
         this.errorMessage = undefined;
       }, 8000);
-      
+
       console.warn('Checkbox write failed:', result.error);
       return false;
     }
@@ -150,7 +150,7 @@ export class UiCheckbox {
 
     this.isChecked = newValue;
     this.checked = newValue;
-    
+
     // Emit the change event
     this.checkboxChange.emit({ checked: newValue });
 
@@ -166,7 +166,7 @@ export class UiCheckbox {
         // Revert to previous value on write failure
         this.isChecked = previousValue;
         this.checked = previousValue;
-        
+
         // Re-emit with reverted value
         this.checkboxChange.emit({ checked: previousValue });
         if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
@@ -179,9 +179,9 @@ export class UiCheckbox {
   private getCheckboxStyles() {
     const isDisabled = this.state === 'disabled';
     const isActive = this.state === 'active' || this.isChecked;
-    
+
     let baseClasses = 'transition-all duration-300 flex items-center justify-center cursor-pointer';
-    
+
     if (isDisabled) {
       baseClasses += ' opacity-50 cursor-not-allowed';
     }
@@ -191,34 +191,41 @@ export class UiCheckbox {
       // Minimal: Simple circle that fills with color when checked
       baseClasses += ' w-4 h-4 rounded-full border-2';
       if (isActive) {
-        baseClasses += this.color === 'primary' ? ' bg-primary border-primary text-white scale-110' :
-                      this.color === 'secondary' ? ' bg-secondary border-secondary text-white scale-110' :
-                      ' bg-neutral border-neutral text-white scale-110';
+        baseClasses +=
+          this.color === 'primary'
+            ? ' bg-primary border-primary text-white scale-110'
+            : this.color === 'secondary'
+            ? ' bg-secondary border-secondary text-white scale-110'
+            : ' bg-neutral border-neutral text-white scale-110';
       } else {
-        baseClasses += this.theme === 'dark' ? ' border-gray-500 bg-transparent hover:border-gray-400' : 
-                      ' border-gray-400 bg-transparent hover:border-gray-600';
+        baseClasses += this.theme === 'dark' ? ' border-gray-500 bg-transparent hover:border-gray-400' : ' border-gray-400 bg-transparent hover:border-gray-600';
       }
     } else if (this.variant === 'outlined') {
       // Outlined: Square with thick border and checkmark
       baseClasses += ' w-5 h-5 rounded border-2';
       if (isActive) {
-        baseClasses += this.color === 'primary' ? ' border-primary bg-white text-primary shadow-md' :
-                      this.color === 'secondary' ? ' border-secondary bg-white text-secondary shadow-md' :
-                      ' border-neutral bg-white text-neutral shadow-md';
+        baseClasses +=
+          this.color === 'primary'
+            ? ' border-primary bg-white text-primary shadow-md'
+            : this.color === 'secondary'
+            ? ' border-secondary bg-white text-secondary shadow-md'
+            : ' border-neutral bg-white text-neutral shadow-md';
       } else {
-        baseClasses += this.theme === 'dark' ? ' border-gray-600 bg-gray-800 hover:border-gray-500' : 
-                      ' border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm';
+        baseClasses += this.theme === 'dark' ? ' border-gray-600 bg-gray-800 hover:border-gray-500' : ' border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm';
       }
-    } else { // filled
+    } else {
+      // filled
       // Filled: Traditional square checkbox with solid fill when checked
       baseClasses += ' w-5 h-5 rounded';
       if (isActive) {
-        baseClasses += this.color === 'primary' ? ' bg-primary text-white border border-primary' :
-                      this.color === 'secondary' ? ' bg-secondary text-white border border-secondary' :
-                      ' bg-neutral text-white border border-neutral';
+        baseClasses +=
+          this.color === 'primary'
+            ? ' bg-primary text-white border border-primary'
+            : this.color === 'secondary'
+            ? ' bg-secondary text-white border border-secondary'
+            : ' bg-neutral text-white border border-neutral';
       } else {
-        baseClasses += this.theme === 'dark' ? ' bg-gray-700 border border-gray-600 hover:bg-gray-600' : 
-                      ' bg-gray-50 border border-gray-300 hover:bg-gray-100';
+        baseClasses += this.theme === 'dark' ? ' bg-gray-700 border border-gray-600 hover:bg-gray-600' : ' bg-gray-50 border border-gray-300 hover:bg-gray-100';
       }
     }
 
@@ -227,9 +234,9 @@ export class UiCheckbox {
 
   private getLabelStyles() {
     const isDisabled = this.state === 'disabled';
-    
+
     let classes = 'ml-3 text-sm font-medium cursor-pointer';
-    
+
     if (isDisabled) {
       classes += ' opacity-50 cursor-not-allowed';
     } else {
@@ -252,11 +259,11 @@ export class UiCheckbox {
             {this.showSuccess && (
               <div class="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5 z-10">
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </div>
             )}
-            
+
             <div
               class={checkboxStyles}
               onClick={this.handleClick}
@@ -264,7 +271,7 @@ export class UiCheckbox {
               aria-checked={this.isChecked ? 'true' : 'false'}
               aria-disabled={isDisabled ? 'true' : 'false'}
               tabIndex={isDisabled ? -1 : 0}
-              onKeyDown={(e) => {
+              onKeyDown={e => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   this.handleClick();
@@ -280,13 +287,9 @@ export class UiCheckbox {
             </label>
           )}
         </div>
-        
+
         {/* Error Message */}
-        {this.errorMessage && (
-          <div class="text-red-500 text-sm mt-1 px-2">
-            {this.errorMessage}
-          </div>
-        )}
+        {this.errorMessage && <div class="text-red-500 text-sm mt-1 px-2">{this.errorMessage}</div>}
       </div>
     );
   }
@@ -294,39 +297,19 @@ export class UiCheckbox {
   private renderCheckmark() {
     if (this.variant === 'minimal') {
       // Simple dot for minimal variant
-      return (
-        <div class="w-2 h-2 rounded-full bg-current"></div>
-      );
+      return <div class="w-2 h-2 rounded-full bg-current"></div>;
     } else if (this.variant === 'outlined') {
       // Classic checkmark for outlined variant
       return (
-        <svg
-          class="w-3 h-3"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-            clip-rule="evenodd"
-          />
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
         </svg>
       );
     } else {
       // Traditional checkmark for filled variant
       return (
-        <svg
-          class="w-3 h-3"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-            clip-rule="evenodd"
-          />
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
         </svg>
       );
     }

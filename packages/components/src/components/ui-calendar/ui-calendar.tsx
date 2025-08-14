@@ -4,15 +4,15 @@ import { DataHandler } from '../../utils/data-handler';
 /**
  * Calendar component for date-time selection with various visual styles and TD integration.
  * Link a direct property URL for plug-and-play device control.
- * 
+ *
  * @example Basic Usage
  * ```html
  * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
  * ```
- * 
+ *
  * @example TD Integration
  * ```html
- * <ui-calendar 
+ * <ui-calendar
  *   td-url="http://device.local/properties/schedule"
  *   variant="filled"
  *   label="Device Schedule"
@@ -47,7 +47,7 @@ export class UiCalendar {
   @Prop() theme: 'light' | 'dark' = 'light';
 
   /**
-   * Color scheme to match thingsweb webpage 
+   * Color scheme to match thingsweb webpage
    */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
@@ -133,11 +133,11 @@ export class UiCalendar {
   /** Read from TD device */
   private async readDevice() {
     if (!this.tdUrl) return;
-    
+
     // Clear previous state
     this.showSuccess = false;
     this.errorMessage = undefined;
-    
+
     const result = await DataHandler.readFromDevice(this.tdUrl);
 
     if (result.success && result.value) {
@@ -148,7 +148,7 @@ export class UiCalendar {
         this.currentYear = dateValue.getFullYear();
         this.value = dateValue.toISOString();
         this.showSuccess = true;
-        
+
         // Clear success indicator after 3 seconds
         setTimeout(() => {
           this.showSuccess = false;
@@ -156,12 +156,12 @@ export class UiCalendar {
       }
     } else {
       this.errorMessage = result.error || 'Failed to read calendar value';
-      
+
       // Clear error indicator after 8 seconds
       setTimeout(() => {
         this.errorMessage = undefined;
       }, 8000);
-      
+
       console.warn('Device read failed:', result.error);
     }
   }
@@ -169,30 +169,30 @@ export class UiCalendar {
   /** Write to TD device */
   private async writeDevice(value: string): Promise<boolean> {
     if (!this.tdUrl) return true; // Local control, always succeeds
-    
+
     // Clear previous state
     this.showSuccess = false;
     this.errorMessage = undefined;
-    
+
     const result = await DataHandler.writeToDevice(this.tdUrl, value);
 
     if (result.success) {
       this.showSuccess = true;
-      
+
       // Clear success indicator after 3 seconds
       setTimeout(() => {
         this.showSuccess = false;
       }, 3000);
-      
+
       return true;
     } else {
       this.errorMessage = result.error || 'Failed to update calendar value';
-      
+
       // Clear error indicator after 8 seconds
       setTimeout(() => {
         this.errorMessage = undefined;
       }, 8000);
-      
+
       console.warn('Device write failed:', result.error);
       return false;
     }
@@ -203,7 +203,7 @@ export class UiCalendar {
     if (this.state === 'disabled') return;
 
     const newDate = new Date(this.currentYear, this.currentMonth, day);
-    
+
     // Preserve time if includeTime is enabled
     if (this.includeTime && this.selectedDate) {
       newDate.setHours(this.selectedDate.getHours());
@@ -233,7 +233,7 @@ export class UiCalendar {
 
     const target = event.target as HTMLInputElement;
     const [hours, minutes] = target.value.split(':').map(Number);
-    
+
     const newDate = new Date(this.selectedDate);
     newDate.setHours(hours);
     newDate.setMinutes(minutes);
@@ -317,36 +317,33 @@ export class UiCalendar {
     const startingDayOfWeek = firstDay.getDay();
 
     const days = [];
-    
+
     // Empty cells for days before month starts
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(null);
     }
-    
+
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(day);
     }
-    
+
     return days;
   }
 
   /** Format display value */
   private getDisplayValue() {
     if (!this.selectedDate) return '';
-    
+
     const date = this.selectedDate.toLocaleDateString();
     const time = this.includeTime ? this.selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-    
+
     return this.includeTime ? `${date} ${time}` : date;
   }
 
   /** Get month name */
   private getMonthName() {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     return months[this.currentMonth];
   }
 
@@ -361,9 +358,7 @@ export class UiCalendar {
       <div class={styles.containerClass}>
         {/* Label */}
         {this.label && (
-          <label class={`block text-sm font-medium mb-2 ${isDisabled ? 'text-gray-400' : ''} ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            {this.label}
-          </label>
+          <label class={`block text-sm font-medium mb-2 ${isDisabled ? 'text-gray-400' : ''} ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{this.label}</label>
         )}
 
         {/* Input Field */}
@@ -377,11 +372,11 @@ export class UiCalendar {
             onClick={() => !isDisabled && (this.isOpen = !this.isOpen)}
             placeholder={this.includeTime ? 'Select date and time' : 'Select date'}
           />
-          
+
           {/* Calendar Icon */}
           <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 0V2M12 0V2M2 4H14M2 2H14C15.1 2 16 2.9 16 4V14C16 15.1 15.1 16 14 16H2C0.9 16 0 15.1 0 14V4C0 2.9 0.9 2 2 2Z" fill="currentColor" opacity="0.6"/>
+              <path d="M4 0V2M12 0V2M2 4H14M2 2H14C15.1 2 16 2.9 16 4V14C16 15.1 15.1 16 14 16H2C0.9 16 0 15.1 0 14V4C0 2.9 0.9 2 2 2Z" fill="currentColor" opacity="0.6" />
             </svg>
           </div>
 
@@ -389,7 +384,7 @@ export class UiCalendar {
           {this.showSuccess && (
             <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </div>
           )}
@@ -400,25 +395,19 @@ export class UiCalendar {
           <div class={styles.calendarClass}>
             {/* Header */}
             <div class="flex items-center justify-between mb-4">
-              <button
-                class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                onClick={() => this.navigateMonth(-1)}
-              >
+              <button class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => this.navigateMonth(-1)}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </button>
-              
+
               <div class={`text-lg font-medium ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                 {this.getMonthName()} {this.currentYear}
               </div>
-              
-              <button
-                class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                onClick={() => this.navigateMonth(1)}
-              >
+
+              <button class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => this.navigateMonth(1)}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </button>
             </div>
@@ -426,9 +415,7 @@ export class UiCalendar {
             {/* Week Days */}
             <div class="grid grid-cols-7 gap-1 mb-2">
               {weekDays.map(day => (
-                <div class={`text-center text-xs font-medium py-2 ${this.theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {day}
-                </div>
+                <div class={`text-center text-xs font-medium py-2 ${this.theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{day}</div>
               ))}
             </div>
 
@@ -438,13 +425,11 @@ export class UiCalendar {
                 <button
                   key={index}
                   class={`h-8 text-sm rounded transition-colors ${
-                    day === null 
-                      ? '' 
-                      : day === this.selectedDate?.getDate() && 
-                        this.currentMonth === this.selectedDate?.getMonth() && 
-                        this.currentYear === this.selectedDate?.getFullYear()
-                        ? this.getActiveColor()
-                        : `hover:bg-gray-100 dark:hover:bg-gray-700 ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`
+                    day === null
+                      ? ''
+                      : day === this.selectedDate?.getDate() && this.currentMonth === this.selectedDate?.getMonth() && this.currentYear === this.selectedDate?.getFullYear()
+                      ? this.getActiveColor()
+                      : `hover:bg-gray-100 dark:hover:bg-gray-700 ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`
                   }`}
                   disabled={day === null}
                   onClick={() => day && this.handleDateSelect(day)}
@@ -457,14 +442,14 @@ export class UiCalendar {
             {/* Time Picker */}
             {this.includeTime && (
               <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                <label class={`block text-sm font-medium mb-2 ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  Time
-                </label>
+                <label class={`block text-sm font-medium mb-2 ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Time</label>
                 <input
                   type="time"
-                  class={`w-full px-3 py-2 text-sm border rounded-md ${this.theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                  class={`w-full px-3 py-2 text-sm border rounded-md ${
+                    this.theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  }`}
                   value={this.selectedDate ? `${String(this.selectedDate.getHours()).padStart(2, '0')}:${String(this.selectedDate.getMinutes()).padStart(2, '0')}` : ''}
-                  onInput={(e) => this.handleTimeChange(e)}
+                  onInput={e => this.handleTimeChange(e)}
                 />
               </div>
             )}
@@ -472,19 +457,10 @@ export class UiCalendar {
         )}
 
         {/* Error Message */}
-        {this.errorMessage && (
-          <div class="text-red-500 text-sm mt-2">
-            {this.errorMessage}
-          </div>
-        )}
+        {this.errorMessage && <div class="text-red-500 text-sm mt-2">{this.errorMessage}</div>}
 
         {/* Click outside to close */}
-        {this.isOpen && (
-          <div 
-            class="fixed inset-0 z-40" 
-            onClick={() => this.isOpen = false}
-          ></div>
-        )}
+        {this.isOpen && <div class="fixed inset-0 z-40" onClick={() => (this.isOpen = false)}></div>}
       </div>
     );
   }

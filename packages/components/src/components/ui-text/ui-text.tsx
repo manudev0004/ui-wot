@@ -5,40 +5,40 @@ import { DataHandler } from '../../utils/data-handler';
  * Comprehensive text component for displaying and editing text data.
  * Supports single-line input, multi-line textarea, structured text with syntax highlighting,
  * expandable content, and Thing Description integration.
- * 
+ *
  * @example Basic Text Display
  * ```html
  * <ui-text variant="display" value="Hello World"></ui-text>
  * ```
- * 
+ *
  * @example Single-line Text Input
  * ```html
  * <ui-text variant="edit" value="Enter text" label="Name"></ui-text>
  * ```
- * 
+ *
  * @example Multi-line Text Area
  * ```html
- * <ui-text 
- *   variant="edit" 
- *   text-type="multi" 
- *   value="Line 1\nLine 2" 
+ * <ui-text
+ *   variant="edit"
+ *   text-type="multi"
+ *   value="Line 1\nLine 2"
  *   label="Description">
  * </ui-text>
  * ```
- * 
+ *
  * @example Structured Text with Highlighting
  * ```html
- * <ui-text 
- *   variant="display" 
- *   text-type="multi" 
- *   structure="json" 
+ * <ui-text
+ *   variant="display"
+ *   text-type="multi"
+ *   structure="json"
  *   value='{"key": "value"}'>
  * </ui-text>
  * ```
- * 
+ *
  * @example TD Integration
  * ```html
- * <ui-text 
+ * <ui-text
  *   td-url="http://device.local/properties/name"
  *   variant="edit"
  *   label="Device Name">
@@ -180,7 +180,7 @@ export class UiText {
 
   componentWillLoad() {
     this.currentValue = this.value;
-    
+
     // Initialize from TD if URL provided
     if (this.tdUrl) {
       this.readFromDevice();
@@ -189,60 +189,60 @@ export class UiText {
 
   private async readFromDevice() {
     if (!this.tdUrl) return;
-    
+
     // Clear previous state
     this.showSuccess = false;
     this.errorMessage = undefined;
-    
+
     const result = await DataHandler.readFromDevice(this.tdUrl);
 
     if (result.success && typeof result.value === 'string') {
       this.currentValue = result.value;
       this.value = result.value;
       this.showSuccess = true;
-      
+
       // Clear success indicator after 3 seconds
       setTimeout(() => {
         this.showSuccess = false;
       }, 3000);
     } else {
       this.errorMessage = result.error || 'Failed to read text value';
-      
+
       // Clear error indicator after 8 seconds
       setTimeout(() => {
         this.errorMessage = undefined;
       }, 8000);
-      
+
       console.warn('Text read failed:', result.error);
     }
   }
 
   private async writeToDevice(value: string): Promise<boolean> {
     if (!this.tdUrl) return true; // Local control, always succeeds
-    
+
     // Clear previous state
     this.showSuccess = false;
     this.errorMessage = undefined;
-    
+
     const result = await DataHandler.writeToDevice(this.tdUrl, value);
 
     if (result.success) {
       this.showSuccess = true;
-      
+
       // Clear success indicator after 3 seconds
       setTimeout(() => {
         this.showSuccess = false;
       }, 3000);
-      
+
       return true;
     } else {
       this.errorMessage = result.error || 'Failed to update text value';
-      
+
       // Clear error indicator after 8 seconds
       setTimeout(() => {
         this.errorMessage = undefined;
       }, 8000);
-      
+
       console.warn('Text write failed:', result.error);
       return false;
     }
@@ -257,7 +257,7 @@ export class UiText {
 
     this.currentValue = newValue;
     this.value = newValue;
-    
+
     // Emit the change event
     this.textChange.emit({ value: newValue });
 
@@ -274,7 +274,7 @@ export class UiText {
         this.currentValue = previousValue;
         this.value = previousValue;
         target.value = previousValue;
-        
+
         // Re-emit with reverted value
         this.textChange.emit({ value: previousValue });
         if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
@@ -286,7 +286,7 @@ export class UiText {
 
   private getContainerStyles() {
     let baseClasses = 'relative w-full';
-    
+
     if (this.textType === 'multi') {
       baseClasses += ' min-h-24';
     }
@@ -297,13 +297,13 @@ export class UiText {
   private getInputStyles() {
     const isDisabled = this.state === 'disabled';
     const isEdit = this.variant === 'edit';
-    
+
     let baseClasses = 'w-full transition-all duration-200 font-sans text-sm';
-    
+
     // Base styling
     if (isEdit) {
       baseClasses += ' border rounded-md px-3 py-2 focus:outline-none focus:ring-2';
-      
+
       if (isDisabled) {
         baseClasses += ' bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed';
       } else {
@@ -319,7 +319,7 @@ export class UiText {
     } else {
       // Display mode styling
       baseClasses += ' p-3 rounded-md border';
-      
+
       if (this.theme === 'dark') {
         baseClasses += ' bg-gray-800 border-gray-600 text-gray-100';
       } else {
@@ -345,9 +345,9 @@ export class UiText {
 
   private getLabelStyles() {
     const isDisabled = this.state === 'disabled';
-    
+
     let classes = 'block text-sm font-medium mb-2';
-    
+
     if (isDisabled) {
       classes += ' text-gray-400';
     } else {
@@ -405,8 +405,14 @@ export class UiText {
   private highlightXml(text: string): string {
     // Basic XML highlighting
     return text
-      .replace(/(&lt;\/?)([a-zA-Z0-9_-]+)([^&]*?)(&gt;)/g, '<span style="color: #666;">$1</span><span style="color: #0066cc; font-weight: 500;">$2</span><span style="color: #cc0066;">$3</span><span style="color: #666;">$4</span>')
-      .replace(/(<\/?)([a-zA-Z0-9_-]+)([^>]*?)(>)/g, '<span style="color: #666;">$1</span><span style="color: #0066cc; font-weight: 500;">$2</span><span style="color: #cc0066;">$3</span><span style="color: #666;">$4</span>')
+      .replace(
+        /(&lt;\/?)([a-zA-Z0-9_-]+)([^&]*?)(&gt;)/g,
+        '<span style="color: #666;">$1</span><span style="color: #0066cc; font-weight: 500;">$2</span><span style="color: #cc0066;">$3</span><span style="color: #666;">$4</span>',
+      )
+      .replace(
+        /(<\/?)([a-zA-Z0-9_-]+)([^>]*?)(>)/g,
+        '<span style="color: #666;">$1</span><span style="color: #0066cc; font-weight: 500;">$2</span><span style="color: #cc0066;">$3</span><span style="color: #666;">$4</span>',
+      )
       .replace(/([a-zA-Z0-9_-]+)="([^"]+)"/g, '<span style="color: #cc0066;">$1</span>=<span style="color: #008000;">"$2"</span>');
   }
 
@@ -424,7 +430,7 @@ export class UiText {
 
   private shouldShowExpandButton(): boolean {
     if (!this.expandable || this.textType === 'single') return false;
-    
+
     // Check if content exceeds maxHeight (rough estimation)
     const lines = this.currentValue.split('\n').length;
     const estimatedHeight = lines * 20; // Rough estimation of line height
@@ -447,9 +453,7 @@ export class UiText {
         {this.label && (
           <label class={labelStyles}>
             {this.label}
-            {!isEdit && (
-              <span class="ml-1 text-xs text-blue-500 dark:text-blue-400">(Read-only)</span>
-            )}
+            {!isEdit && <span class="ml-1 text-xs text-blue-500 dark:text-blue-400">(Read-only)</span>}
           </label>
         )}
 
@@ -458,7 +462,7 @@ export class UiText {
           {this.showSuccess && (
             <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </div>
           )}
@@ -500,14 +504,9 @@ export class UiText {
                   style={this.expandable && !this.isExpanded ? { maxHeight: `${this.maxHeight}px` } : {}}
                 >
                   {this.structure === 'unstructured' ? (
-                    <pre class="whitespace-pre-wrap m-0 font-sans text-sm">
-                      {this.currentValue || '\u00A0'}
-                    </pre>
+                    <pre class="whitespace-pre-wrap m-0 font-sans text-sm">{this.currentValue || '\u00A0'}</pre>
                   ) : (
-                    <pre 
-                      class="whitespace-pre-wrap m-0 font-mono text-sm"
-                      innerHTML={this.highlightSyntax(this.currentValue || '\u00A0', this.structure)}
-                    ></pre>
+                    <pre class="whitespace-pre-wrap m-0 font-mono text-sm" innerHTML={this.highlightSyntax(this.currentValue || '\u00A0', this.structure)}></pre>
                   )}
                 </div>
               )}
@@ -518,11 +517,7 @@ export class UiText {
           {this.shouldShowExpandButton() && (
             <button
               type="button"
-              class={`mt-2 text-xs font-medium transition-colors ${
-                this.theme === 'dark'
-                  ? 'text-blue-400 hover:text-blue-300'
-                  : 'text-blue-600 hover:text-blue-500'
-              }`}
+              class={`mt-2 text-xs font-medium transition-colors ${this.theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`}
               onClick={this.toggleExpand}
             >
               {this.isExpanded ? '▲ Show Less' : '▼ Show More'}
@@ -546,13 +541,9 @@ export class UiText {
             </div>
           )}
         </div>
-        
+
         {/* Error Message */}
-        {this.errorMessage && (
-          <div class="text-red-500 text-sm mt-1 px-2">
-            {this.errorMessage}
-          </div>
-        )}
+        {this.errorMessage && <div class="text-red-500 text-sm mt-1 px-2">{this.errorMessage}</div>}
       </div>
     );
   }

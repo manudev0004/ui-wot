@@ -81,7 +81,7 @@ export namespace Components {
      * ```
      * @example TD Integration
      * ```html
-     * <ui-calendar 
+     * <ui-calendar
      * td-url="http://device.local/properties/schedule"
      * variant="filled"
      * label="Device Schedule"
@@ -191,7 +191,7 @@ export namespace Components {
      * ```
      * @example TD Integration with HTTP
      * ```html
-     * <ui-number-picker 
+     * <ui-number-picker
      * td-url="http://device.local/properties/volume"
      * label="Device Volume"
      * protocol="http"
@@ -202,7 +202,7 @@ export namespace Components {
      * ```
      * @example TD Integration with MQTT
      * ```html
-     * <ui-number-picker 
+     * <ui-number-picker
      * td-url="mqtt://device"
      * mqtt-host="localhost:1883"
      * mqtt-topic="device/volume"
@@ -213,7 +213,7 @@ export namespace Components {
      * ```
      * @example TD Device Read-Only (shows value only)
      * ```html
-     * <ui-number-picker 
+     * <ui-number-picker
      * td-url="http://sensor.local/temperature"
      * label="Temperature Sensor"
      * mode="read">
@@ -221,7 +221,7 @@ export namespace Components {
      * ```
      * @example Local Control with Custom Handler
      * ```html
-     * <ui-number-picker 
+     * <ui-number-picker
      * value="3"
      * on-change="handleNumberChange"
      * variant="filled"
@@ -276,7 +276,7 @@ export namespace Components {
          */
         "mqttTopic"?: string;
         /**
-          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
+          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol - mqtt: MQTT protocol
           * @default 'http'
          */
         "protocol": 'http' | 'coap' | 'mqtt';
@@ -321,10 +321,10 @@ export namespace Components {
      * ```
      * @example TD Integration
      * ```html
-     * <ui-slider 
+     * <ui-slider
      * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
-     * min="0" 
-     * max="100" 
+     * min="0"
+     * max="100"
      * label="Device Brightness"
      * enable-manual-control="true">
      * </ui-slider>
@@ -409,25 +409,25 @@ export namespace Components {
      * ```
      * @example Multi-line Text Area
      * ```html
-     * <ui-text 
-     * variant="edit" 
-     * text-type="multi" 
-     * value="Line 1\nLine 2" 
+     * <ui-text
+     * variant="edit"
+     * text-type="multi"
+     * value="Line 1\nLine 2"
      * label="Description">
      * </ui-text>
      * ```
      * @example Structured Text with Highlighting
      * ```html
-     * <ui-text 
-     * variant="display" 
-     * text-type="multi" 
-     * structure="json" 
+     * <ui-text
+     * variant="display"
+     * text-type="multi"
+     * structure="json"
      * value='{"key": "value"}'>
      * </ui-text>
      * ```
      * @example TD Integration
      * ```html
-     * <ui-text 
+     * <ui-text
      * td-url="http://device.local/properties/name"
      * variant="edit"
      * label="Device Name">
@@ -520,7 +520,7 @@ export namespace Components {
      * ```
      * @example TD Integration with HTTP
      * ```html
-     * <ui-toggle 
+     * <ui-toggle
      * td-url="http://device.local/properties/power"
      * label="Smart Light"
      * protocol="http"
@@ -529,7 +529,7 @@ export namespace Components {
      * ```
      * @example TD Integration with MQTT
      * ```html
-     * <ui-toggle 
+     * <ui-toggle
      * td-url="mqtt://device"
      * mqtt-host="localhost:1883"
      * mqtt-topic="device/toggle"
@@ -540,7 +540,7 @@ export namespace Components {
      * ```
      * @example TD Device Read-Only (shows colored circle)
      * ```html
-     * <ui-toggle 
+     * <ui-toggle
      * td-url="http://sensor.local/status"
      * label="Door Sensor"
      * mode="read">
@@ -548,7 +548,7 @@ export namespace Components {
      * ```
      * @example Local Control with Custom Handler
      * ```html
-     * <ui-toggle 
+     * <ui-toggle
      * value="true"
      * on-change="myToggleHandler"
      * label="Custom Toggle">
@@ -600,7 +600,7 @@ export namespace Components {
          */
         "mqttTopic"?: string;
         /**
-          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
+          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol - mqtt: MQTT protocol
           * @default 'http'
          */
         "protocol": 'http' | 'coap' | 'mqtt';
@@ -713,7 +713,7 @@ declare global {
      * ```
      * @example TD Integration
      * ```html
-     * <ui-calendar 
+     * <ui-calendar
      * td-url="http://device.local/properties/schedule"
      * variant="filled"
      * label="Device Schedule"
@@ -773,7 +773,7 @@ declare global {
      * ```
      * @example TD Integration with HTTP
      * ```html
-     * <ui-number-picker 
+     * <ui-number-picker
      * td-url="http://device.local/properties/volume"
      * label="Device Volume"
      * protocol="http"
@@ -784,7 +784,7 @@ declare global {
      * ```
      * @example TD Integration with MQTT
      * ```html
-     * <ui-number-picker 
+     * <ui-number-picker
      * td-url="mqtt://device"
      * mqtt-host="localhost:1883"
      * mqtt-topic="device/volume"
@@ -795,7 +795,7 @@ declare global {
      * ```
      * @example TD Device Read-Only (shows value only)
      * ```html
-     * <ui-number-picker 
+     * <ui-number-picker
      * td-url="http://sensor.local/temperature"
      * label="Temperature Sensor"
      * mode="read">
@@ -803,7 +803,7 @@ declare global {
      * ```
      * @example Local Control with Custom Handler
      * ```html
-     * <ui-number-picker 
+     * <ui-number-picker
      * value="3"
      * on-change="handleNumberChange"
      * variant="filled"
@@ -845,10 +845,10 @@ declare global {
      * ```
      * @example TD Integration
      * ```html
-     * <ui-slider 
+     * <ui-slider
      * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
-     * min="0" 
-     * max="100" 
+     * min="0"
+     * max="100"
      * label="Device Brightness"
      * enable-manual-control="true">
      * </ui-slider>
@@ -885,25 +885,25 @@ declare global {
      * ```
      * @example Multi-line Text Area
      * ```html
-     * <ui-text 
-     * variant="edit" 
-     * text-type="multi" 
-     * value="Line 1\nLine 2" 
+     * <ui-text
+     * variant="edit"
+     * text-type="multi"
+     * value="Line 1\nLine 2"
      * label="Description">
      * </ui-text>
      * ```
      * @example Structured Text with Highlighting
      * ```html
-     * <ui-text 
-     * variant="display" 
-     * text-type="multi" 
-     * structure="json" 
+     * <ui-text
+     * variant="display"
+     * text-type="multi"
+     * structure="json"
      * value='{"key": "value"}'>
      * </ui-text>
      * ```
      * @example TD Integration
      * ```html
-     * <ui-text 
+     * <ui-text
      * td-url="http://device.local/properties/name"
      * variant="edit"
      * label="Device Name">
@@ -936,7 +936,7 @@ declare global {
      * ```
      * @example TD Integration with HTTP
      * ```html
-     * <ui-toggle 
+     * <ui-toggle
      * td-url="http://device.local/properties/power"
      * label="Smart Light"
      * protocol="http"
@@ -945,7 +945,7 @@ declare global {
      * ```
      * @example TD Integration with MQTT
      * ```html
-     * <ui-toggle 
+     * <ui-toggle
      * td-url="mqtt://device"
      * mqtt-host="localhost:1883"
      * mqtt-topic="device/toggle"
@@ -956,7 +956,7 @@ declare global {
      * ```
      * @example TD Device Read-Only (shows colored circle)
      * ```html
-     * <ui-toggle 
+     * <ui-toggle
      * td-url="http://sensor.local/status"
      * label="Door Sensor"
      * mode="read">
@@ -964,7 +964,7 @@ declare global {
      * ```
      * @example Local Control with Custom Handler
      * ```html
-     * <ui-toggle 
+     * <ui-toggle
      * value="true"
      * on-change="myToggleHandler"
      * label="Custom Toggle">
@@ -1092,7 +1092,7 @@ declare namespace LocalJSX {
      * ```
      * @example TD Integration
      * ```html
-     * <ui-calendar 
+     * <ui-calendar
      * td-url="http://device.local/properties/schedule"
      * variant="filled"
      * label="Device Schedule"
@@ -1210,7 +1210,7 @@ declare namespace LocalJSX {
      * ```
      * @example TD Integration with HTTP
      * ```html
-     * <ui-number-picker 
+     * <ui-number-picker
      * td-url="http://device.local/properties/volume"
      * label="Device Volume"
      * protocol="http"
@@ -1221,7 +1221,7 @@ declare namespace LocalJSX {
      * ```
      * @example TD Integration with MQTT
      * ```html
-     * <ui-number-picker 
+     * <ui-number-picker
      * td-url="mqtt://device"
      * mqtt-host="localhost:1883"
      * mqtt-topic="device/volume"
@@ -1232,7 +1232,7 @@ declare namespace LocalJSX {
      * ```
      * @example TD Device Read-Only (shows value only)
      * ```html
-     * <ui-number-picker 
+     * <ui-number-picker
      * td-url="http://sensor.local/temperature"
      * label="Temperature Sensor"
      * mode="read">
@@ -1240,7 +1240,7 @@ declare namespace LocalJSX {
      * ```
      * @example Local Control with Custom Handler
      * ```html
-     * <ui-number-picker 
+     * <ui-number-picker
      * value="3"
      * on-change="handleNumberChange"
      * variant="filled"
@@ -1299,7 +1299,7 @@ declare namespace LocalJSX {
          */
         "onValueChange"?: (event: UiNumberPickerCustomEvent<{ value: number; label?: string }>) => void;
         /**
-          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
+          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol - mqtt: MQTT protocol
           * @default 'http'
          */
         "protocol"?: 'http' | 'coap' | 'mqtt';
@@ -1344,10 +1344,10 @@ declare namespace LocalJSX {
      * ```
      * @example TD Integration
      * ```html
-     * <ui-slider 
+     * <ui-slider
      * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
-     * min="0" 
-     * max="100" 
+     * min="0"
+     * max="100"
      * label="Device Brightness"
      * enable-manual-control="true">
      * </ui-slider>
@@ -1436,25 +1436,25 @@ declare namespace LocalJSX {
      * ```
      * @example Multi-line Text Area
      * ```html
-     * <ui-text 
-     * variant="edit" 
-     * text-type="multi" 
-     * value="Line 1\nLine 2" 
+     * <ui-text
+     * variant="edit"
+     * text-type="multi"
+     * value="Line 1\nLine 2"
      * label="Description">
      * </ui-text>
      * ```
      * @example Structured Text with Highlighting
      * ```html
-     * <ui-text 
-     * variant="display" 
-     * text-type="multi" 
-     * structure="json" 
+     * <ui-text
+     * variant="display"
+     * text-type="multi"
+     * structure="json"
      * value='{"key": "value"}'>
      * </ui-text>
      * ```
      * @example TD Integration
      * ```html
-     * <ui-text 
+     * <ui-text
      * td-url="http://device.local/properties/name"
      * variant="edit"
      * label="Device Name">
@@ -1551,7 +1551,7 @@ declare namespace LocalJSX {
      * ```
      * @example TD Integration with HTTP
      * ```html
-     * <ui-toggle 
+     * <ui-toggle
      * td-url="http://device.local/properties/power"
      * label="Smart Light"
      * protocol="http"
@@ -1560,7 +1560,7 @@ declare namespace LocalJSX {
      * ```
      * @example TD Integration with MQTT
      * ```html
-     * <ui-toggle 
+     * <ui-toggle
      * td-url="mqtt://device"
      * mqtt-host="localhost:1883"
      * mqtt-topic="device/toggle"
@@ -1571,7 +1571,7 @@ declare namespace LocalJSX {
      * ```
      * @example TD Device Read-Only (shows colored circle)
      * ```html
-     * <ui-toggle 
+     * <ui-toggle
      * td-url="http://sensor.local/status"
      * label="Door Sensor"
      * mode="read">
@@ -1579,7 +1579,7 @@ declare namespace LocalJSX {
      * ```
      * @example Local Control with Custom Handler
      * ```html
-     * <ui-toggle 
+     * <ui-toggle
      * value="true"
      * on-change="myToggleHandler"
      * label="Custom Toggle">
@@ -1635,7 +1635,7 @@ declare namespace LocalJSX {
          */
         "onToggle"?: (event: UiToggleCustomEvent<{ active: boolean }>) => void;
         /**
-          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol   - mqtt: MQTT protocol
+          * Protocol to use for Thing Description communication. - http: HTTP REST API (default) - coap: CoAP protocol - mqtt: MQTT protocol
           * @default 'http'
          */
         "protocol"?: 'http' | 'coap' | 'mqtt';
@@ -1714,7 +1714,7 @@ declare module "@stencil/core" {
              * ```
              * @example TD Integration
              * ```html
-             * <ui-calendar 
+             * <ui-calendar
              * td-url="http://device.local/properties/schedule"
              * variant="filled"
              * label="Device Schedule"
@@ -1737,7 +1737,7 @@ declare module "@stencil/core" {
              * ```
              * @example TD Integration with HTTP
              * ```html
-             * <ui-number-picker 
+             * <ui-number-picker
              * td-url="http://device.local/properties/volume"
              * label="Device Volume"
              * protocol="http"
@@ -1748,7 +1748,7 @@ declare module "@stencil/core" {
              * ```
              * @example TD Integration with MQTT
              * ```html
-             * <ui-number-picker 
+             * <ui-number-picker
              * td-url="mqtt://device"
              * mqtt-host="localhost:1883"
              * mqtt-topic="device/volume"
@@ -1759,7 +1759,7 @@ declare module "@stencil/core" {
              * ```
              * @example TD Device Read-Only (shows value only)
              * ```html
-             * <ui-number-picker 
+             * <ui-number-picker
              * td-url="http://sensor.local/temperature"
              * label="Temperature Sensor"
              * mode="read">
@@ -1767,7 +1767,7 @@ declare module "@stencil/core" {
              * ```
              * @example Local Control with Custom Handler
              * ```html
-             * <ui-number-picker 
+             * <ui-number-picker
              * value="3"
              * on-change="handleNumberChange"
              * variant="filled"
@@ -1793,10 +1793,10 @@ declare module "@stencil/core" {
              * ```
              * @example TD Integration
              * ```html
-             * <ui-slider 
+             * <ui-slider
              * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
-             * min="0" 
-             * max="100" 
+             * min="0"
+             * max="100"
              * label="Device Brightness"
              * enable-manual-control="true">
              * </ui-slider>
@@ -1817,25 +1817,25 @@ declare module "@stencil/core" {
              * ```
              * @example Multi-line Text Area
              * ```html
-             * <ui-text 
-             * variant="edit" 
-             * text-type="multi" 
-             * value="Line 1\nLine 2" 
+             * <ui-text
+             * variant="edit"
+             * text-type="multi"
+             * value="Line 1\nLine 2"
              * label="Description">
              * </ui-text>
              * ```
              * @example Structured Text with Highlighting
              * ```html
-             * <ui-text 
-             * variant="display" 
-             * text-type="multi" 
-             * structure="json" 
+             * <ui-text
+             * variant="display"
+             * text-type="multi"
+             * structure="json"
              * value='{"key": "value"}'>
              * </ui-text>
              * ```
              * @example TD Integration
              * ```html
-             * <ui-text 
+             * <ui-text
              * td-url="http://device.local/properties/name"
              * variant="edit"
              * label="Device Name">
@@ -1852,7 +1852,7 @@ declare module "@stencil/core" {
              * ```
              * @example TD Integration with HTTP
              * ```html
-             * <ui-toggle 
+             * <ui-toggle
              * td-url="http://device.local/properties/power"
              * label="Smart Light"
              * protocol="http"
@@ -1861,7 +1861,7 @@ declare module "@stencil/core" {
              * ```
              * @example TD Integration with MQTT
              * ```html
-             * <ui-toggle 
+             * <ui-toggle
              * td-url="mqtt://device"
              * mqtt-host="localhost:1883"
              * mqtt-topic="device/toggle"
@@ -1872,7 +1872,7 @@ declare module "@stencil/core" {
              * ```
              * @example TD Device Read-Only (shows colored circle)
              * ```html
-             * <ui-toggle 
+             * <ui-toggle
              * td-url="http://sensor.local/status"
              * label="Door Sensor"
              * mode="read">
@@ -1880,7 +1880,7 @@ declare module "@stencil/core" {
              * ```
              * @example Local Control with Custom Handler
              * ```html
-             * <ui-toggle 
+             * <ui-toggle
              * value="true"
              * on-change="myToggleHandler"
              * label="Custom Toggle">
