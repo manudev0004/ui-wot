@@ -439,11 +439,13 @@ export class UiSlider {
             </div>
           )}
 
-          <div class={trackStyles.track}>
+      <div class={trackStyles.track} role="presentation" part="track">
             {this.variant !== 'rainbow' && (
               <div
-                class={`${trackStyles.progress} ${trackStyles.progressSize}`}
-                style={isVertical ? { height: `${percent}%`, bottom: '0', left: '0', position: 'absolute', width: '100%' } : { width: `${percent}%`, height: '100%' }}
+        class={`${trackStyles.progress} ${trackStyles.progressSize}`}
+        style={isVertical ? { height: `${percent}%`, bottom: '0', left: '0', position: 'absolute', width: '100%' } : { width: `${percent}%`, height: '100%' }}
+        role="presentation"
+        part="progress"
               ></div>
             )}
             {this.renderStepMarks()}
@@ -464,8 +466,15 @@ export class UiSlider {
           <div
             class={`absolute ${isVertical ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2 -translate-x-1/2'} ${thumbStyle} ${
               isDisabled ? 'opacity-50' : ''
-            } pointer-events-none z-0`}
+            } z-0`}
             style={isVertical ? { bottom: `calc(${percent}% - 0.5rem)` } : { left: `${percent}%` }}
+            role="slider"
+            aria-valuemin={this.min}
+            aria-valuemax={this.max}
+            aria-valuenow={this.currentValue}
+            aria-orientation={this.orientation}
+            tabindex={isDisabled ? -1 : 0}
+            part="thumb"
           >
             {this.renderCustomThumb()}
           </div>

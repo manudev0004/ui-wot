@@ -93,6 +93,68 @@ export class UiCalendar {
   /** Calendar open state */
   @State() isOpen: boolean = false;
 
+  private inputEl?: HTMLInputElement | null;
+  private calendarEl?: HTMLElement | null;
+  private previouslyFocused?: Element | null;
+
+  private onDocumentKeyDown = (e: KeyboardEvent) => {
+    if (!this.isOpen) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      this.closeCalendar();
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      // trap focus inside the calendar when open
+      const container = this.calendarEl;
+      if (!container) return;
+      const focusable = Array.from(container.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => !el.hasAttribute('disabled'));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (e.shiftKey) {
+        if (active === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+  };
+
+  private openCalendar() {
+    this.previouslyFocused = document.activeElement;
+    this.isOpen = true;
+    // wait for calendar to render
+    setTimeout(() => {
+      const container = this.calendarEl;
+      const first = container?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      if (first) first.focus();
+      document.addEventListener('keydown', this.onDocumentKeyDown);
+    }, 0);
+  }
+
+  private closeCalendar() {
+    this.isOpen = false;
+    document.removeEventListener('keydown', this.onDocumentKeyDown);
+    if (this.previouslyFocused && (this.previouslyFocused as HTMLElement).focus) {
+      try { (this.previouslyFocused as HTMLElement).focus(); } catch (e) { /* ignore */ }
+    } else if (this.inputEl) {
+      try { this.inputEl.focus(); } catch (e) { /* ignore */ }
+    }
+  }
+
+  private toggleOpen = () => {
+    if (this.isOpen) this.closeCalendar(); else this.openCalendar();
+  };
+
   /** Success feedback state */
   @State() showSuccess: boolean = false;
 
@@ -276,13 +338,16 @@ export class UiCalendar {
         {/* Input Field */}
         <div class="relative">
           <input
+            ref={el => (this.inputEl = el as HTMLInputElement)}
             type="text"
             readonly
             disabled={isDisabled}
             value={this.getDisplayValue()}
             class={styles.inputClass}
-            onClick={() => !isDisabled && (this.isOpen = !this.isOpen)}
+            onClick={() => !isDisabled && this.toggleOpen()}
             placeholder={this.includeTime ? 'Select date and time' : 'Select date'}
+            aria-haspopup="dialog"
+            aria-expanded={this.isOpen ? 'true' : 'false'}
           />
 
           {/* Calendar Icon */}
@@ -303,8 +368,8 @@ export class UiCalendar {
         </div>
 
         {/* Calendar Dropdown */}
-        {this.isOpen && (
-          <div class={styles.calendarClass}>
+          {this.isOpen && (
+          <div ref={el => (this.calendarEl = el as HTMLElement)} class={styles.calendarClass} role="dialog" aria-modal="true">
             {/* Header */}
             <div class="flex items-center justify-between mb-4">
               <button class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => this.navigateMonth(-1)}>

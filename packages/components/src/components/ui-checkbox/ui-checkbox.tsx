@@ -208,12 +208,13 @@ export class UiCheckbox {
                   this.handleClick();
                 }
               }}
+              part="control"
             >
               {this.isChecked && this.renderCheckmark()}
             </div>
           </div>
           {this.label && (
-            <label class={labelStyles} onClick={this.handleClick}>
+            <label class={labelStyles} onClick={this.handleClick} part="label">
               {this.label}
             </label>
           )}
