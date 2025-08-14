@@ -1,5 +1,7 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
 
+export interface UiNumberPickerValueChange { value: number; label?: string }
+
 /**
  * Number picker component with various visual styles, TD integration and customizable range.
  * Supports increment/decrement buttons with Thing Description integration for IoT devices.
@@ -147,7 +149,7 @@ export class UiNumberPicker {
   @State() errorMessage?: string;
 
   /** Event emitted when value changes */
-  @Event() valueChange: EventEmitter<{ value: number; label?: string }>;
+  @Event() valueChange: EventEmitter<UiNumberPickerValueChange>;
 
   /** Watch for value prop changes */
   @Watch('value')

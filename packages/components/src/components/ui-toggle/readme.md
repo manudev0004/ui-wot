@@ -25,10 +25,10 @@ Link a direct property URL for plug-and-play device control.
 
 ## Events
 
-| Event         | Description                                                  | Type                                               |
-| ------------- | ------------------------------------------------------------ | -------------------------------------------------- |
-| `toggle`      | Legacy event emitted when toggle state changes               | `CustomEvent<{ active: boolean; }>`                |
-| `valueChange` | Standardized valueChange event for value-driven integrations | `CustomEvent<{ value: boolean; label?: string; }>` |
+| Event         | Description                                                  | Type                               |
+| ------------- | ------------------------------------------------------------ | ---------------------------------- |
+| `toggle`      | Legacy event emitted when toggle state changes               | `CustomEvent<UiToggleToggleEvent>` |
+| `valueChange` | Standardized valueChange event for value-driven integrations | `CustomEvent<UiToggleValueChange>` |
 
 
 ----------------------------------------------

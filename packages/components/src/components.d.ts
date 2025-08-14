@@ -5,14 +5,20 @@
  * It contains typing information for all components that exist in this project.
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
+import { UiButtonClick } from "./components/ui-button/ui-button";
 import { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 import { UiCheckboxCheckboxChange, UiCheckboxValueChange } from "./components/ui-checkbox/ui-checkbox";
+import { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
 import { UiSliderValueChange } from "./components/ui-slider/ui-slider";
 import { UiTextValueChange } from "./components/ui-text/ui-text";
+import { UiToggleToggleEvent, UiToggleValueChange } from "./components/ui-toggle/ui-toggle";
+export { UiButtonClick } from "./components/ui-button/ui-button";
 export { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 export { UiCheckboxCheckboxChange, UiCheckboxValueChange } from "./components/ui-checkbox/ui-checkbox";
+export { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
 export { UiSliderValueChange } from "./components/ui-slider/ui-slider";
 export { UiTextValueChange } from "./components/ui-text/ui-text";
+export { UiToggleToggleEvent, UiToggleValueChange } from "./components/ui-toggle/ui-toggle";
 export namespace Components {
     /**
      * Button component with various visual styles, matching the ui-number-picker design family.
@@ -523,7 +529,7 @@ export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
 }
 declare global {
     interface HTMLUiButtonElementEventMap {
-        "buttonClick": { label: string };
+        "buttonClick": UiButtonClick;
     }
     /**
      * Button component with various visual styles, matching the ui-number-picker design family.
@@ -626,7 +632,7 @@ declare global {
         new (): HTMLUiHeadingElement;
     };
     interface HTMLUiNumberPickerElementEventMap {
-        "valueChange": { value: number; label?: string };
+        "valueChange": UiNumberPickerValueChange;
     }
     /**
      * Number picker component with various visual styles, TD integration and customizable range.
@@ -751,8 +757,8 @@ declare global {
         new (): HTMLUiTextElement;
     };
     interface HTMLUiToggleElementEventMap {
-        "toggle": { active: boolean };
-        "valueChange": { value: boolean; label?: string };
+        "toggle": UiToggleToggleEvent;
+        "valueChange": UiToggleValueChange;
     }
     /**
      * Toogle switch component with various fetueres, multiple visual styles and TD integration.
@@ -878,7 +884,7 @@ declare namespace LocalJSX {
         /**
           * Event emitted when button is clicked
          */
-        "onButtonClick"?: (event: UiButtonCustomEvent<{ label: string }>) => void;
+        "onButtonClick"?: (event: UiButtonCustomEvent<UiButtonClick>) => void;
         /**
           * Current state of the button. - active: Button is enabled (default) - disabled: Button cannot be interacted with
           * @default 'active'
@@ -1091,7 +1097,7 @@ declare namespace LocalJSX {
         /**
           * Event emitted when value changes
          */
-        "onValueChange"?: (event: UiNumberPickerCustomEvent<{ value: number; label?: string }>) => void;
+        "onValueChange"?: (event: UiNumberPickerCustomEvent<UiNumberPickerValueChange>) => void;
         /**
           * Current state of the number picker. - active: Number picker is enabled (default) - disabled: Number picker cannot be interacted with
           * @default 'active'
@@ -1331,11 +1337,11 @@ declare namespace LocalJSX {
         /**
           * Legacy event emitted when toggle state changes
          */
-        "onToggle"?: (event: UiToggleCustomEvent<{ active: boolean }>) => void;
+        "onToggle"?: (event: UiToggleCustomEvent<UiToggleToggleEvent>) => void;
         /**
           * Standardized valueChange event for value-driven integrations
          */
-        "onValueChange"?: (event: UiToggleCustomEvent<{ value: boolean; label?: string }>) => void;
+        "onValueChange"?: (event: UiToggleCustomEvent<UiToggleValueChange>) => void;
         /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'

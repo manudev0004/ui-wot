@@ -1,5 +1,8 @@
 import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
 
+export interface UiToggleToggleEvent { active: boolean }
+export interface UiToggleValueChange { value: boolean; label?: string }
+
 /**
  * Toogle switch component with various fetueres, multiple visual styles and TD integration.
  * Link a direct property URL for plug-and-play device control.
@@ -152,10 +155,10 @@ export class UiToggle {
   @State() isActive: boolean = true;
 
   /** Legacy event emitted when toggle state changes */
-  @Event() toggle: EventEmitter<{ active: boolean }>;
+  @Event() toggle: EventEmitter<UiToggleToggleEvent>;
 
   /** Standardized valueChange event for value-driven integrations */
-  @Event() valueChange: EventEmitter<{ value: boolean; label?: string }>;
+  @Event() valueChange: EventEmitter<UiToggleValueChange>;
 
   /** Watch for value prop changes */
   // Keep watching `value` only to reflect external prop changes

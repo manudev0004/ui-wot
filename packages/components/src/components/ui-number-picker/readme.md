@@ -28,9 +28,9 @@ Supports increment/decrement buttons with Thing Description integration for IoT 
 
 ## Events
 
-| Event         | Description                      | Type                                              |
-| ------------- | -------------------------------- | ------------------------------------------------- |
-| `valueChange` | Event emitted when value changes | `CustomEvent<{ value: number; label?: string; }>` |
+| Event         | Description                      | Type                                     |
+| ------------- | -------------------------------- | ---------------------------------------- |
+| `valueChange` | Event emitted when value changes | `CustomEvent<UiNumberPickerValueChange>` |
 
 
 ----------------------------------------------

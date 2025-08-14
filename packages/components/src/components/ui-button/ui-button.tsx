@@ -1,5 +1,7 @@
 import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
 
+export interface UiButtonClick { label: string }
+
 /**
  * Button component with various visual styles, matching the ui-number-picker design family.
  * Supports the same variants, colors, and themes as the number picker.
@@ -84,7 +86,7 @@ export class UiButton {
   @State() errorMessage?: string;
 
   /** Event emitted when button is clicked */
-  @Event() buttonClick: EventEmitter<{ label: string }>;
+  @Event() buttonClick: EventEmitter<UiButtonClick>;
 
   /** Handle button click */
   private handleClick = async () => {

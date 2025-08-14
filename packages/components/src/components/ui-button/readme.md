@@ -23,9 +23,9 @@ Supports the same variants, colors, and themes as the number picker.
 
 ## Events
 
-| Event         | Description                          | Type                              |
-| ------------- | ------------------------------------ | --------------------------------- |
-| `buttonClick` | Event emitted when button is clicked | `CustomEvent<{ label: string; }>` |
+| Event         | Description                          | Type                         |
+| ------------- | ------------------------------------ | ---------------------------- |
+| `buttonClick` | Event emitted when button is clicked | `CustomEvent<UiButtonClick>` |
 
 
 ----------------------------------------------
