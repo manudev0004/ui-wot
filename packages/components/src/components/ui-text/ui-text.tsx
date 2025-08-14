@@ -134,9 +134,10 @@ export class UiText {
   // TD integration removed: external integrations should use events
 
   /**
-   * Custom callback function name for value changes.
+   * Deprecated: string-based handler names are removed.
+   * Use the `textChange` DOM event instead:
+   * document.querySelector('ui-text').addEventListener('textChange', (e) => { ... })
    */
-  @Prop() changeHandler?: string;
 
   /**
    * Internal state for text value.
@@ -163,6 +164,9 @@ export class UiText {
    */
   @Event() textChange: EventEmitter<{ value: string }>;
 
+  /** Standardized valueChange alias for textChange to support generic integrations */
+  @Event() valueChange: EventEmitter<{ value: string }>;
+
   /** Watch for value prop changes */
   @Watch('value')
   watchValue() {
@@ -188,13 +192,11 @@ export class UiText {
   this.currentValue = newValue;
     this.value = newValue;
 
-    // Emit the change event
-    this.textChange.emit({ value: newValue });
+  // Emit the change event
+  this.textChange.emit({ value: newValue });
+  this.valueChange.emit({ value: newValue });
 
-    // Call custom callback if provided
-    if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
-      (window as any)[this.changeHandler]({ value: newValue });
-    }
+  // Local-only change: external device writes should be handled by listeners to `textChange`/`valueChange`.
 
   // Local-only change: external device writes should be handled by listeners to `textChange`.
   };

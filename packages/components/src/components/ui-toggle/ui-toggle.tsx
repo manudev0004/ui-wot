@@ -121,14 +121,16 @@ export class UiToggle {
    * When no td-url is provided and value is set, this controls the toggle state.
    * @example "true", "false", "on", "off", "1", "0"
    */
-  @Prop({ mutable: true }) value?: string;
+  /**
+   * Local value for the toggle. Accepts boolean or string values (string will be parsed).
+   */
+  @Prop({ mutable: true }) value?: boolean | string;
 
   /**
-   * Function name to call when toggle state changes (for local control).
-   * User defines this function in their code, component will invoke it.
-   * @example "handleMyToggle"
+   * Deprecated: string-based handler names are removed.
+   * Use the `toggle` DOM event instead:
+   * document.querySelector('ui-toggle').addEventListener('toggle', (e) => { ... })
    */
-  @Prop() changeHandler?: string;
 
   /**
    * Protocol to use for Thing Description communication.
@@ -149,8 +151,11 @@ export class UiToggle {
   /** Internal state tracking if toggle is on/off */
   @State() isActive: boolean = true;
 
-  /** Event emitted when toggle state changes */
+  /** Legacy event emitted when toggle state changes */
   @Event() toggle: EventEmitter<{ active: boolean }>;
+
+  /** Standardized valueChange event for value-driven integrations */
+  @Event() valueChange: EventEmitter<{ value: boolean; label?: string }>;
 
   /** Watch for value prop changes */
   // Keep watching `value` only to reflect external prop changes
@@ -159,10 +164,13 @@ export class UiToggle {
   /** Initialize component */
   async componentWillLoad() {
     this.isActive = this.state === 'active';
-    // Initialize from value prop when provided
-    if (this.value) {
-      const boolValue = this.parseValue(this.value);
-      this.isActive = boolValue;
+    // Initialize from value prop when provided (accept boolean or string)
+    if (this.value !== undefined) {
+      if (typeof this.value === 'string') {
+        this.isActive = this.parseValue(this.value);
+      } else {
+        this.isActive = Boolean(this.value);
+      }
     }
   }
 
@@ -186,24 +194,18 @@ export class UiToggle {
     const newActive = !this.isActive;
     this.isActive = newActive;
 
-    // Emit toggle event for parent to handle
+    // Emit standardized valueChange event for integrators
+    this.valueChange.emit({ value: newActive, label: this.label });
+
+    // Emit legacy toggle event for backward compatibility
     this.toggle.emit({ active: newActive });
 
-    // Call user's changeHandler if provided
-    if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
-      (window as any)[this.changeHandler]({
-        active: newActive,
-        value: newActive ? 'true' : 'false',
-        label: this.label,
-      });
-    }
-
-    // Update value prop for local control
+    // Update value prop for local control (store boolean)
     if (this.value !== undefined) {
-      this.value = newActive ? 'true' : 'false';
+      this.value = newActive;
     }
 
-  // Local-only change: external device updates should be handled by listeners to `toggle` events.
+    // Local-only change: external device updates should be handled by listeners to `valueChange`/`toggle` events.
   }
 
   /** Handle keyboard 'enter' and 'spacebar' input to toggle switch state */

@@ -107,11 +107,10 @@ export class UiNumberPicker {
   @Prop({ mutable: true }) value: number = 0;
 
   /**
-   * Function name to call when value changes.
-   * User defines this function in their code, component will invoke it.
-   * @example "handleNumberChange"
+   * Deprecated: string-based handler names are removed in favor of standard DOM events.
+   * Listen to the `valueChange` event instead:
+   * document.querySelector('ui-number-picker').addEventListener('valueChange', (e) => { ... })
    */
-  @Prop() changeHandler?: string;
 
   // Protocol and MQTT props removed with TD integration
 
@@ -227,15 +226,6 @@ export class UiNumberPicker {
       value: this.currentValue,
       label: this.label,
     });
-
-    // Call user's callback function if provided
-    if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
-      (window as any)[this.changeHandler]({
-        value: this.currentValue,
-        label: this.label,
-      });
-    }
-
     // Update value prop for local control
     if (this.value !== undefined) {
       this.value = this.currentValue;

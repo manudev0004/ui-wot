@@ -40,9 +40,10 @@ export class UiCheckbox {
   @Prop({ mutable: true }) checked: boolean = false;
 
   /**
-   * Custom callback function name.
+   * Deprecated: string-based handler names are removed.
+   * Use the `checkboxChange` DOM event instead:
+   * document.querySelector('ui-checkbox').addEventListener('checkboxChange', (e) => { ... })
    */
-  @Prop() changeHandler?: string;
 
   /**
    * Thing Description URL for property control.
@@ -71,6 +72,9 @@ export class UiCheckbox {
    */
   @Event() checkboxChange: EventEmitter<{ checked: boolean }>;
 
+  /** Standardized valueChange event (boolean value) */
+  @Event() valueChange: EventEmitter<{ value: boolean; label?: string }>;
+
   componentWillLoad() {
     this.isChecked = this.checked;
 
@@ -89,11 +93,8 @@ export class UiCheckbox {
 
     // Emit the change event
     this.checkboxChange.emit({ checked: newValue });
-
-    // Call custom callback if provided
-    if (this.changeHandler && typeof (window as any)[this.changeHandler] === 'function') {
-      (window as any)[this.changeHandler]({ checked: newValue });
-    }
+    // Emit standardized valueChange for integrators
+    this.valueChange.emit({ value: newValue, label: this.label });
 
   // Local control only: external integrations should handle device writes.
   };

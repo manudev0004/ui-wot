@@ -99,6 +99,9 @@ export class UiCalendar {
   /** Event emitted when date changes */
   @Event() dateChange: EventEmitter<{ value: string }>;
 
+  /** Standardized valueChange event for calendar */
+  @Event() valueChange: EventEmitter<{ value: string }>;
+
   /** Watch for TD URL changes */
   // TD watcher removed
 
@@ -135,7 +138,8 @@ export class UiCalendar {
 
   this.selectedDate = newDate;
   this.value = newDate.toISOString();
-    this.dateChange.emit({ value: this.value });
+  this.dateChange.emit({ value: this.value });
+  this.valueChange.emit({ value: this.value });
     this.isOpen = false;
 
   // Local control only: external integrations should listen to the `dateChange` event.

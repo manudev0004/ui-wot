@@ -32,11 +32,6 @@ export namespace Components {
      */
     interface UiButton {
         /**
-          * Function name to call when button is clicked. User defines this function in their code, component will invoke it.
-          * @example "handleButtonClick"
-         */
-        "clickHandler"?: string;
-        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
@@ -127,10 +122,6 @@ export namespace Components {
      */
     interface UiCheckbox {
         /**
-          * Custom callback function name.
-         */
-        "changeHandler"?: string;
-        /**
           * Whether the checkbox is checked.
           * @default false
          */
@@ -219,11 +210,6 @@ export namespace Components {
      * ```
      */
     interface UiNumberPicker {
-        /**
-          * Function name to call when value changes. User defines this function in their code, component will invoke it.
-          * @example "handleNumberChange"
-         */
-        "changeHandler"?: string;
         /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
@@ -395,10 +381,6 @@ export namespace Components {
      */
     interface UiText {
         /**
-          * Custom callback function name for value changes.
-         */
-        "changeHandler"?: string;
-        /**
           * Color scheme to match design system.
           * @default 'primary'
          */
@@ -528,11 +510,6 @@ export namespace Components {
      */
     interface UiToggle {
         /**
-          * Function name to call when toggle state changes (for local control). User defines this function in their code, component will invoke it.
-          * @example "handleMyToggle"
-         */
-        "changeHandler"?: string;
-        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
@@ -557,10 +534,9 @@ export namespace Components {
          */
         "theme": 'light' | 'dark';
         /**
-          * Current value for local control mode (true/false, on/off, 1/0). When no td-url is provided and value is set, this controls the toggle state.
-          * @example "true", "false", "on", "off", "1", "0"
+          * Local value for the toggle. Accepts boolean or string values (string will be parsed).
          */
-        "value"?: string;
+        "value"?: boolean | string;
         /**
           * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
           * @default 'circle'
@@ -640,6 +616,7 @@ declare global {
     };
     interface HTMLUiCalendarElementEventMap {
         "dateChange": { value: string };
+        "valueChange": { value: string };
     }
     /**
      * Calendar component for date-time selection with various visual styles and TD integration.
@@ -674,6 +651,7 @@ declare global {
     };
     interface HTMLUiCheckboxElementEventMap {
         "checkboxChange": { checked: boolean };
+        "valueChange": { value: boolean; label?: string };
     }
     /**
      * Checkbox component with consistent styling to match the design system.
@@ -807,6 +785,7 @@ declare global {
     };
     interface HTMLUiTextElementEventMap {
         "textChange": { value: string };
+        "valueChange": { value: string };
     }
     /**
      * Comprehensive text component for displaying and editing text data.
@@ -863,6 +842,7 @@ declare global {
     };
     interface HTMLUiToggleElementEventMap {
         "toggle": { active: boolean };
+        "valueChange": { value: boolean; label?: string };
     }
     /**
      * Toogle switch component with various fetueres, multiple visual styles and TD integration.
@@ -976,11 +956,6 @@ declare namespace LocalJSX {
      */
     interface UiButton {
         /**
-          * Function name to call when button is clicked. User defines this function in their code, component will invoke it.
-          * @example "handleButtonClick"
-         */
-        "clickHandler"?: string;
-        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
@@ -1055,6 +1030,10 @@ declare namespace LocalJSX {
          */
         "onDateChange"?: (event: UiCalendarCustomEvent<{ value: string }>) => void;
         /**
+          * Standardized valueChange event for calendar
+         */
+        "onValueChange"?: (event: UiCalendarCustomEvent<{ value: string }>) => void;
+        /**
           * Current state of the calendar. - disabled: Calendar cannot be interacted with - default: Calendar is interactive (default)
           * @default 'default'
          */
@@ -1079,10 +1058,6 @@ declare namespace LocalJSX {
      */
     interface UiCheckbox {
         /**
-          * Custom callback function name.
-         */
-        "changeHandler"?: string;
-        /**
           * Whether the checkbox is checked.
           * @default false
          */
@@ -1100,6 +1075,10 @@ declare namespace LocalJSX {
           * Event emitted when checkbox state changes.
          */
         "onCheckboxChange"?: (event: UiCheckboxCustomEvent<{ checked: boolean }>) => void;
+        /**
+          * Standardized valueChange event (boolean value)
+         */
+        "onValueChange"?: (event: UiCheckboxCustomEvent<{ value: boolean; label?: string }>) => void;
         /**
           * Current state of the checkbox.
           * @default 'default'
@@ -1175,11 +1154,6 @@ declare namespace LocalJSX {
      * ```
      */
     interface UiNumberPicker {
-        /**
-          * Function name to call when value changes. User defines this function in their code, component will invoke it.
-          * @example "handleNumberChange"
-         */
-        "changeHandler"?: string;
         /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
@@ -1359,10 +1333,6 @@ declare namespace LocalJSX {
      */
     interface UiText {
         /**
-          * Custom callback function name for value changes.
-         */
-        "changeHandler"?: string;
-        /**
           * Color scheme to match design system.
           * @default 'primary'
          */
@@ -1389,6 +1359,10 @@ declare namespace LocalJSX {
           * Event emitted when text value changes.
          */
         "onTextChange"?: (event: UiTextCustomEvent<{ value: string }>) => void;
+        /**
+          * Standardized valueChange alias for textChange to support generic integrations
+         */
+        "onValueChange"?: (event: UiTextCustomEvent<{ value: string }>) => void;
         /**
           * Placeholder text for edit mode.
          */
@@ -1496,11 +1470,6 @@ declare namespace LocalJSX {
      */
     interface UiToggle {
         /**
-          * Function name to call when toggle state changes (for local control). User defines this function in their code, component will invoke it.
-          * @example "handleMyToggle"
-         */
-        "changeHandler"?: string;
-        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
@@ -1515,9 +1484,13 @@ declare namespace LocalJSX {
          */
         "mode"?: 'read' | 'write' | 'readwrite';
         /**
-          * Event emitted when toggle state changes
+          * Legacy event emitted when toggle state changes
          */
         "onToggle"?: (event: UiToggleCustomEvent<{ active: boolean }>) => void;
+        /**
+          * Standardized valueChange event for value-driven integrations
+         */
+        "onValueChange"?: (event: UiToggleCustomEvent<{ value: boolean; label?: string }>) => void;
         /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'
@@ -1529,10 +1502,9 @@ declare namespace LocalJSX {
          */
         "theme"?: 'light' | 'dark';
         /**
-          * Current value for local control mode (true/false, on/off, 1/0). When no td-url is provided and value is set, this controls the toggle state.
-          * @example "true", "false", "on", "off", "1", "0"
+          * Local value for the toggle. Accepts boolean or string values (string will be parsed).
          */
-        "value"?: string;
+        "value"?: boolean | string;
         /**
           * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
           * @default 'circle'

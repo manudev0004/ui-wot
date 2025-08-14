@@ -65,11 +65,10 @@ export class UiButton {
   @Prop() label: string = 'Button';
 
   /**
-   * Function name to call when button is clicked.
-   * User defines this function in their code, component will invoke it.
-   * @example "handleButtonClick"
+   * Deprecated: string-based handler names are removed.
+   * Use the `buttonClick` DOM event instead:
+   * document.querySelector('ui-button').addEventListener('buttonClick', (e) => { ... })
    */
-  @Prop() clickHandler?: string;
 
   /**
    * Thing Description URL for action invocation.
@@ -102,12 +101,7 @@ export class UiButton {
       label: this.label,
     });
 
-    // Call user's callback function if provided
-    if (this.clickHandler && typeof (window as any)[this.clickHandler] === 'function') {
-      (window as any)[this.clickHandler]({
-        label: this.label,
-      });
-    }
+  // Local-only: consumers should listen to `buttonClick` for custom behavior.
   }
 
   /** Handle keyboard input */
