@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ui-wot — Event-driven examples</title>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; padding: 24px; }
+    .row { display:flex; gap:16px; align-items:flex-start; }
+    .panel { border:1px solid #e5e7eb; padding:12px; border-radius:8px; width:420px; }
+    pre { background:#111827; color:#f9fafb; padding:12px; border-radius:6px; overflow:auto; max-height:240px }
+    h1 { margin-top:0 }
+    button { padding:8px 12px; border-radius:6px }
+  </style>
+</head>
+<body>
+  <h1>ui-wot — Event-driven integration example</h1>
+  <p>This page demonstrates listening to typed DOM events emitted by components (e.g., <code>valueChange</code>, <code>dateChange</code>).</p>
+
+  <p><strong>Note:</strong> Start the components dev server first so the web components are available. From the repository root run:</p>
+  <pre><code>cd packages/components
+npm start
+</code></pre>
+  <p>Then open this file in a browser (or serve it from a local static server). The page expects the dev server to expose the component bundle at <code>http://localhost:3333/build/ui-wot-components.esm.js</code>. If your dev server uses a different port/path, update the <code>&lt;script&gt;</code> tag below.</p>
+
+  <!-- Loader from dev server (adjust host/port/path if different) -->
+  <script type="module" src="http://localhost:3333/build/ui-wot-components.esm.js"></script>
+
+  <div class="row" style="margin-top:12px">
+    <div class="panel">
+      <h3>Controls</h3>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="display:flex;align-items:center;gap:12px"><ui-toggle id="toggle" label="Lamp"></ui-toggle> <span>ui-toggle emits <code>valueChange</code> and <code>toggle</code></span></label>
+        </div>
+
+        <div>
+          <label style="display:flex;align-items:center;gap:12px"><ui-slider id="slider" label="Brightness" min="0" max="100" value="20"></ui-slider></label>
+        </div>
+
+        <div>
+          <label style="display:flex;align-items:center;gap:12px"><ui-number-picker id="number" label="Count" value="3"></ui-number-picker></label>
+        </div>
+
+        <div>
+          <label style="display:flex;align-items:center;gap:12px"><ui-calendar id="calendar" label="Schedule" include-time="true"></ui-calendar></label>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button id="setSlider">Set slider → 75</button>
+          <button id="openCalendar">Open calendar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="flex:1">
+      <h3>Event log (typed event.detail)</h3>
+      <pre id="log">(no events yet)
+</pre>
+    </div>
+  </div>
+
+  <script>
+    function appendLog(obj) {
+      const p = document.getElementById('log');
+      const time = new Date().toLocaleTimeString();
+      const text = `[${time}] ${JSON.stringify(obj, null, 2)}\n`;
+      if (p.innerText.trim() === '(no events yet)') p.innerText = '';
+      p.innerText = text + p.innerText;
+    }
+
+    function safeListen(el, name) {
+      if (!el) return;
+      el.addEventListener(name, (e) => {
+        appendLog({ component: el.tagName.toLowerCase(), event: name, detail: e.detail });
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.getElementById('toggle');
+      const slider = document.getElementById('slider');
+      const number = document.getElementById('number');
+      const calendar = document.getElementById('calendar');
+
+      safeListen(toggle, 'valueChange');
+      safeListen(toggle, 'toggle');
+      safeListen(slider, 'valueChange');
+      safeListen(number, 'valueChange');
+      safeListen(calendar, 'dateChange');
+      safeListen(calendar, 'valueChange');
+
+      document.getElementById('setSlider').addEventListener('click', () => {
+        // set property; components emit events when changed by users, host can also set props
+        slider.value = 75;
+        appendLog({ action: 'set slider property', to: 75 });
+      });
+
+      document.getElementById('openCalendar').addEventListener('click', () => {
+        // many components expose programmatic API through properties; here we toggle open state if present
+        if (calendar.showCalendar !== undefined) {
+          try { calendar.showCalendar = true; } catch (e) { /* ignore */ }
+        }
+        appendLog({ action: 'open calendar (best-effort)' });
+      });
+    });
+  </script>
+</body>
+</html>
