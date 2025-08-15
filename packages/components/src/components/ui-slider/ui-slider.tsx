@@ -495,27 +495,27 @@ export class UiSlider {
             {this.label && <span class="text-xs font-medium text-center mt-1 mb-2">{this.label}</span>}
           </div>
         )}
-        {/* Horizontal value labels: min/max on top, value box below, centered with extra gap */}
-        {!isVertical && (
-          <>
-            <div class={`flex justify-between items-center text-xs mt-3 ${this.theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-              <span>{this.min}</span>
-              <span>{this.max}</span>
-            </div>
-            <div class="flex justify-center mt-0">
-              {' '}
-              {/* Increased gap (mt-4) */}
-              <div
-                class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${
-                  this.theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'
-                } shadow-sm`}
-                style={{ display: 'inline-block' }}
-              >
-                {this.currentValue}
+  {/* Horizontal value labels: min/max on top, value box below, centered with extra gap */}
+          {!isVertical && (
+            <div>
+              <div class={`flex justify-between items-center text-xs mt-3 ${this.theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+                <span>{this.min}</span>
+                <span>{this.max}</span>
+              </div>
+              <div class="flex justify-center mt-0">
+                {' '}
+                {/* Increased gap (mt-4) */}
+                <div
+                  class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${
+                    this.theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'
+                  } shadow-sm`}
+                  style={{ display: 'inline-block' }}
+                >
+                  {this.currentValue}
+                </div>
               </div>
             </div>
-          </>
-        )}
+          )}
         {/* Manual Control Interface */}
         {this.enableManualControl && (
           <div class={`mt-4 p-3 border rounded-lg ${isVertical ? 'w-full max-w-xs' : ''} ${this.theme === 'dark' ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-50'}`}>

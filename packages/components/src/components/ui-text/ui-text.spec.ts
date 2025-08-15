@@ -29,4 +29,17 @@ describe('ui-text', () => {
     expect(html).not.toContain('<span');
     expect(html).not.toContain('<b>');
   });
+
+  it('pretty-prints JSON when structure is json', async () => {
+    const sample = '{"a":1,"b":{"c":2}}';
+    const page = await newSpecPage({ components: [UiText], html: `<ui-text variant="display" text-type="multi" structure="json" value='${sample}'></ui-text>` });
+    await page.waitForChanges();
+
+    const pre = page.root.shadowRoot.querySelector('pre');
+    expect(pre).toBeTruthy();
+    const text = pre.textContent || '';
+    // pretty-printed JSON should contain newlines and indents
+    expect(text).toContain('\n');
+    expect(text).toContain('  "b"');
+  });
 });
