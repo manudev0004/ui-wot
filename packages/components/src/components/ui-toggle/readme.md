@@ -31,6 +31,15 @@ Link a direct property URL for plug-and-play device control.
 | `valueChange` | Standardized valueChange event for value-driven integrations | `CustomEvent<UiToggleValueChange>` |
 
 
+## Shadow Parts
+
+| Part        | Description |
+| ----------- | ----------- |
+| `"control"` |             |
+| `"label"`   |             |
+| `"thumb"`   |             |
+
+
 ----------------------------------------------
 
 *Built with [StencilJS](https://stenciljs.com/)*

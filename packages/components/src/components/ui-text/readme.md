@@ -33,6 +33,15 @@
 | `valueChange` |             | `CustomEvent<UiTextValueChange>` |
 
 
+## Shadow Parts
+
+| Part          | Description |
+| ------------- | ----------- |
+| `"container"` |             |
+| `"input"`     |             |
+| `"preview"`   |             |
+
+
 ----------------------------------------------
 
 *Built with [StencilJS](https://stenciljs.com/)*

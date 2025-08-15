@@ -185,7 +185,7 @@ export class UiButton {
     const isDisabled = this.state === 'disabled';
 
     return (
-      <div class="relative">
+      <div class="relative" part="container" role="group" aria-label={this.label || 'Button'}>
         {/* Success Indicator */}
         {this.showSuccess && (
           <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10" part="success-indicator">
@@ -195,7 +195,7 @@ export class UiButton {
           </div>
         )}
 
-        <button class={this.getButtonStyle()} onClick={this.handleClick} onKeyDown={this.handleKeyDown} disabled={isDisabled} aria-label={this.label} part="button">
+  <button class={this.getButtonStyle()} onClick={this.handleClick} onKeyDown={this.handleKeyDown} disabled={isDisabled} aria-label={this.label} part="button" aria-pressed={isDisabled ? 'false' : undefined}>
           {this.label}
         </button>
 

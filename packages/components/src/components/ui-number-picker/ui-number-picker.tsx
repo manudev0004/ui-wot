@@ -339,9 +339,9 @@ export class UiNumberPicker {
     const containerClasses = `flex flex-col items-center gap-3 ${isDisabled ? 'opacity-75' : ''}`;
 
     return (
-      <div class={containerClasses}>
+      <div class={containerClasses} part="container" role="group" aria-label={this.label || 'Number picker'}>
         {this.label && (
-          <label class={`text-sm font-medium ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`} title={hoverTitle}>
+          <label class={`text-sm font-medium ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`} title={hoverTitle} part="label">
             {this.label}
             {isReadOnly && <span class="ml-1 text-xs text-blue-500 dark:text-blue-400">(Read-only)</span>}
           </label>

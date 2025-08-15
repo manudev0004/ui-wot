@@ -28,6 +28,15 @@ Supports the same variants, colors, and themes as the number picker.
 | `buttonClick` | Event emitted when button is clicked | `CustomEvent<UiButtonClick>` |
 
 
+## Shadow Parts
+
+| Part                  | Description |
+| --------------------- | ----------- |
+| `"button"`            |             |
+| `"container"`         |             |
+| `"success-indicator"` |             |
+
+
 ----------------------------------------------
 
 *Built with [StencilJS](https://stenciljs.com/)*

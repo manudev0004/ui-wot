@@ -33,6 +33,17 @@ Supports increment/decrement buttons with Thing Description integration for IoT 
 | `valueChange` | Event emitted when value changes | `CustomEvent<UiNumberPickerValueChange>` |
 
 
+## Shadow Parts
+
+| Part                 | Description |
+| -------------------- | ----------- |
+| `"container"`        |             |
+| `"decrement-button"` |             |
+| `"increment-button"` |             |
+| `"label"`            |             |
+| `"value-display"`    |             |
+
+
 ----------------------------------------------
 
 *Built with [StencilJS](https://stenciljs.com/)*
