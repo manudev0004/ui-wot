@@ -7,37 +7,49 @@
 
 ## Overview
 
-Toogle switch component with various fetueres, multiple visual styles and TD integration.
-Link a direct property URL for plug-and-play device control.
+Advanced toggle switch component with reactive state management, validation, and TD integration support.
+Provides multiple visual styles, accessibility features, and flexible event handling.
 
 ## Properties
 
-| Property  | Attribute | Description                                                                                                                                                                                                                                                                                                    | Type                                                   | Default       |
-| --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------- |
-| `color`   | `color`   | Color scheme to match thingsweb webpage                                                                                                                                                                                                                                                                        | `"neutral" \| "primary" \| "secondary"`                | `'primary'`   |
-| `label`   | `label`   | Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.                                                                                                                                                                                           | `string`                                               | `undefined`   |
-| `mode`    | `mode`    | Device interaction mode. - read: Only read from device (display current state as colored circle) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default                                                                              | `"read" \| "readwrite" \| "write"`                     | `'readwrite'` |
-| `state`   | `state`   | Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)                                                                                                                                                 | `"active" \| "default" \| "disabled"`                  | `'default'`   |
-| `theme`   | `theme`   | Theme for the component.                                                                                                                                                                                                                                                                                       | `"dark" \| "light"`                                    | `'light'`     |
-| `value`   | `value`   | Local value for the toggle. Accepts boolean or string values (string will be parsed).                                                                                                                                                                                                                          | `boolean \| string`                                    | `undefined`   |
-| `variant` | `variant` | Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active | `"apple" \| "circle" \| "cross" \| "neon" \| "square"` | `'circle'`    |
+| Property       | Attribute       | Description                                                                                                                                                                                                                                                                                                    | Type                                                   | Default       |
+| -------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------- |
+| `color`        | `color`         | Color scheme to match thingsweb webpage                                                                                                                                                                                                                                                                        | `"neutral" \| "primary" \| "secondary"`                | `'primary'`   |
+| `debounce`     | `debounce`      | Debounce delay in milliseconds for value change events. Prevents rapid firing of events during quick toggles. Default: 100ms                                                                                                                                                                                   | `number`                                               | `100`         |
+| `keyboard`     | `keyboard`      | Enable keyboard navigation (Space and Enter keys). Default: true                                                                                                                                                                                                                                               | `boolean`                                              | `true`        |
+| `label`        | `label`         | Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.                                                                                                                                                                                           | `string`                                               | `undefined`   |
+| `mode`         | `mode`          | Device interaction mode. - read: Only read from device (display current state, no user interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default                                                                           | `"read" \| "readwrite" \| "write"`                     | `'readwrite'` |
+| `reactive`     | `reactive`      | Enable automatic state reflection from external value changes. When true, the component will automatically update its visual state when value prop changes. Default: true                                                                                                                                      | `boolean`                                              | `true`        |
+| `state`        | `state`         | Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)                                                                                                                                                 | `"active" \| "default" \| "disabled"`                  | `'default'`   |
+| `syncInterval` | `sync-interval` | Auto-sync interval in milliseconds for read mode. When set, the component will emit 'sync-request' events at this interval. External systems can listen to this event to update the value prop. Default: 0 (disabled)                                                                                          | `number`                                               | `0`           |
+| `theme`        | `theme`         | Theme for the component.                                                                                                                                                                                                                                                                                       | `"dark" \| "light"`                                    | `'light'`     |
+| `validator`    | `validator`     | Custom validation function name for value changes. The function should be available on window object and return boolean.                                                                                                                                                                                       | `string`                                               | `undefined`   |
+| `value`        | `value`         | Local value for the toggle. Accepts boolean or string values (string will be parsed). This is the primary way to control the toggle state externally.                                                                                                                                                          | `boolean \| string`                                    | `undefined`   |
+| `variant`      | `variant`       | Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active | `"apple" \| "circle" \| "cross" \| "neon" \| "square"` | `'circle'`    |
 
 
 ## Events
 
-| Event         | Description                                                  | Type                               |
-| ------------- | ------------------------------------------------------------ | ---------------------------------- |
-| `toggle`      | Legacy event emitted when toggle state changes               | `CustomEvent<UiToggleToggleEvent>` |
-| `valueChange` | Standardized valueChange event for value-driven integrations | `CustomEvent<UiToggleValueChange>` |
+| Event             | Description                                                             | Type                                                                                     |
+| ----------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `beforeChange`    | Event emitted before value changes (can be prevented)                   | `CustomEvent<{ currentValue: boolean; newValue: boolean; preventDefault: () => void; }>` |
+| `ready`           | Event emitted after component is ready and initialized                  | `CustomEvent<{ value: boolean; mode: string; }>`                                         |
+| `syncRequest`     | Event emitted to request sync in read mode (for external data fetching) | `CustomEvent<{ mode: string; label?: string; }>`                                         |
+| `toggle`          | Legacy event emitted when toggle state changes                          | `CustomEvent<UiToggleToggleEvent>`                                                       |
+| `validationError` | Event emitted when validation fails                                     | `CustomEvent<{ value: boolean; message: string; }>`                                      |
+| `valueChange`     | Standardized valueChange event for value-driven integrations            | `CustomEvent<UiToggleValueChange>`                                                       |
 
 
 ## Shadow Parts
 
-| Part        | Description |
-| ----------- | ----------- |
-| `"control"` |             |
-| `"label"`   |             |
-| `"thumb"`   |             |
+| Part                   | Description |
+| ---------------------- | ----------- |
+| `"container"`          |             |
+| `"control"`            |             |
+| `"label"`              |             |
+| `"readonly-indicator"` |             |
+| `"sync-indicator"`     |             |
+| `"thumb"`              |             |
 
 
 ----------------------------------------------

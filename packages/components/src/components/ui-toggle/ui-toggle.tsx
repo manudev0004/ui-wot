@@ -4,69 +4,81 @@ export interface UiToggleToggleEvent { active: boolean }
 export interface UiToggleValueChange { value: boolean; label?: string }
 
 /**
- * Toogle switch component with various fetueres, multiple visual styles and TD integration.
- * Link a direct property URL for plug-and-play device control.
+ * Advanced toggle switch component with reactive state management, validation, and TD integration support.
+ * Provides multiple visual styles, accessibility features, and flexible event handling.
  *
  * @example Basic Usage
  * ```html
- * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+ * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
  * ```
  *
- * @example TD Integration with HTTP
+ * @example Reactive Value Binding (auto-updates when value changes)
  * ```html
- * <ui-toggle
- *   td-url="http://device.local/properties/power"
- *   label="Smart Light"
- *   protocol="http"
- *   mode="readwrite">
+ * <ui-toggle 
+ *   id="device-toggle"
+ *   value="false" 
+ *   reactive="true"
+ *   label="Smart Device"
+ *   debounce="200">
  * </ui-toggle>
  * ```
  *
- * @example TD Integration with MQTT
+ * @example Read-Only Mode with Auto-Sync
  * ```html
  * <ui-toggle
- *   td-url="mqtt://device"
- *   mqtt-host="localhost:1883"
- *   mqtt-topic="device/toggle"
- *   label="MQTT Device"
- *   protocol="mqtt"
- *   mode="readwrite">
+ *   mode="read"
+ *   sync-interval="1000"
+ *   label="Sensor Status"
+ *   reactive="true">
  * </ui-toggle>
  * ```
  *
- * @example TD Device Read-Only (shows colored circle)
+ * @example With Validation
  * ```html
  * <ui-toggle
- *   td-url="http://sensor.local/status"
- *   label="Door Sensor"
- *   mode="read">
+ *   value="false"
+ *   validator="myValidationFunction"
+ *   label="Critical System">
  * </ui-toggle>
  * ```
  *
- * @example Local Control with Custom Handler
- * ```html
- * <ui-toggle
- *   value="true"
- *   on-change="myToggleHandler"
- *   label="Custom Toggle">
- * </ui-toggle>
- * ```
- *
- * @example User's JavaScript Handler
+ * @example JavaScript Integration
  * ```javascript
- * window.myToggleHandler = function(data) {
- *   console.log('Toggle changed:', data.active);
- *   console.log('New value:', data.value);
- *   console.log('Label:', data.label);
- *   // Your custom logic here
+ * const toggle = document.querySelector('ui-toggle');
+ * 
+ * // Listen for value changes
+ * toggle.addEventListener('valueChange', (e) => {
+ *   console.log('New value:', e.detail.value);
+ *   console.log('Label:', e.detail.label);
+ * });
+ * 
+ * // Listen for sync requests (read mode)
+ * toggle.addEventListener('syncRequest', async (e) => {
+ *   const newValue = await fetchDeviceState();
+ *   toggle.value = newValue;
+ * });
+ * 
+ * // Programmatically set value
+ * await toggle.setValue(true);
+ * 
+ * // Get current value
+ * const currentValue = await toggle.getValue();
+ * 
+ * // Custom validation function
+ * window.myValidationFunction = function(newValue, currentValue, label) {
+ *   if (label === 'Critical System' && newValue === true) {
+ *     return confirm('Are you sure you want to enable the critical system?');
+ *   }
+ *   return true;
  * };
  * ```
  *
- * @example Event Handling
+ * @example Event Prevention
  * ```javascript
- * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
- *   console.log('Toggle state:', event.detail.active);
- *   // Your custom logic here
+ * toggle.addEventListener('beforeChange', (e) => {
+ *   if (someCondition) {
+ *     e.detail.preventDefault(); // Prevent the change
+ *   }
  * });
  * ```
  */
@@ -126,33 +138,64 @@ export class UiToggle {
    */
   /**
    * Local value for the toggle. Accepts boolean or string values (string will be parsed).
+   * This is the primary way to control the toggle state externally.
    */
   @Prop({ mutable: true }) value?: boolean | string;
 
   /**
-   * Deprecated: string-based handler names are removed.
-   * Use the `toggle` DOM event instead:
-   * document.querySelector('ui-toggle').addEventListener('toggle', (e) => { ... })
+   * Enable automatic state reflection from external value changes.
+   * When true, the component will automatically update its visual state when value prop changes.
+   * Default: true
    */
+  @Prop() reactive: boolean = true;
 
   /**
-   * Protocol to use for Thing Description communication.
-   * - http: HTTP REST API (default)
-   * - coap: CoAP protocol
-   * - mqtt: MQTT protocol
+   * Debounce delay in milliseconds for value change events.
+   * Prevents rapid firing of events during quick toggles.
+   * Default: 100ms
    */
-  // protocol and mqtt props removed with TD integration
+  @Prop() debounce: number = 100;
+
+  /**
+   * Enable keyboard navigation (Space and Enter keys).
+   * Default: true
+   */
+  @Prop() keyboard: boolean = true;
+
+  /**
+   * Custom validation function name for value changes.
+   * The function should be available on window object and return boolean.
+   * @example validator="myValidationFunction"
+   */
+  @Prop() validator?: string;
 
   /**
    * Device interaction mode.
-   * - read: Only read from device (display current state as colored circle)
+   * - read: Only read from device (display current state, no user interaction)
    * - write: Only write to device (control device but don't sync state)
    * - readwrite: Read and write (full synchronization) - default
    */
   @Prop() mode: 'read' | 'write' | 'readwrite' = 'readwrite';
 
+  /**
+   * Auto-sync interval in milliseconds for read mode.
+   * When set, the component will emit 'sync-request' events at this interval.
+   * External systems can listen to this event to update the value prop.
+   * Default: 0 (disabled)
+   */
+  @Prop() syncInterval: number = 0;
+
   /** Internal state tracking if toggle is on/off */
-  @State() isActive: boolean = true;
+  @State() isActive: boolean = false;
+
+  /** Internal state for tracking if component is initialized */
+  @State() isInitialized: boolean = false;
+
+  /** Timer reference for debouncing */
+  private debounceTimer?: number;
+
+  /** Timer reference for sync interval */
+  private syncTimer?: number;
 
   /** Legacy event emitted when toggle state changes */
   @Event() toggle: EventEmitter<UiToggleToggleEvent>;
@@ -160,75 +203,221 @@ export class UiToggle {
   /** Standardized valueChange event for value-driven integrations */
   @Event() valueChange: EventEmitter<UiToggleValueChange>;
 
+  /** Event emitted when validation fails */
+  @Event() validationError: EventEmitter<{ value: boolean; message: string }>;
+
+  /** Event emitted to request sync in read mode (for external data fetching) */
+  @Event() syncRequest: EventEmitter<{ mode: string; label?: string }>;
+
+  /** Event emitted before value changes (can be prevented) */
+  @Event() beforeChange: EventEmitter<{ currentValue: boolean; newValue: boolean; preventDefault: () => void }>;
+
+  /** Event emitted after component is ready and initialized */
+  @Event() ready: EventEmitter<{ value: boolean; mode: string }>;
+
   /** Watch for value prop changes */
   // Keep watching `value` only to reflect external prop changes
   // (watch decorator not needed here unless explicit reactive handling is required)
 
   /** Initialize component */
   async componentWillLoad() {
-    this.isActive = this.state === 'active';
-    // Initialize from value prop when provided (accept boolean or string)
+    // Initialize from value prop or default to false
     if (this.value !== undefined) {
-      if (typeof this.value === 'string') {
-        this.isActive = this.parseValue(this.value);
-      } else {
-        this.isActive = Boolean(this.value);
-      }
+      this.isActive = this.parseValue(this.value);
+    } else {
+      this.isActive = this.state === 'active';
+    }
+    
+    this.isInitialized = true;
+  }
+
+  /** Component loaded - set up sync interval if needed */
+  componentDidLoad() {
+    // Set up sync interval for read mode
+    if (this.mode === 'read' && this.syncInterval > 0) {
+      this.syncTimer = window.setInterval(() => {
+        this.syncRequest.emit({ mode: this.mode, label: this.label });
+      }, this.syncInterval);
+    }
+
+    // Emit ready event
+    this.ready.emit({ value: this.isActive, mode: this.mode });
+  }
+
+  /** Cleanup timers on disconnect */
+  disconnectedCallback() {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+    if (this.syncTimer) {
+      clearInterval(this.syncTimer);
     }
   }
 
-  /** Keep UI in sync when `value` prop changes from the outside */
+  /** Watch for value prop changes and update state if reactive is enabled */
   @Watch('value')
   watchValue(newVal: boolean | string | undefined) {
+    if (!this.reactive || !this.isInitialized) return;
+    
     if (newVal === undefined) return;
-    if (typeof newVal === 'string') {
-      this.isActive = this.parseValue(newVal);
-    } else {
-      this.isActive = Boolean(newVal);
+    
+    const newActiveState = this.parseValue(newVal);
+    if (this.isActive !== newActiveState) {
+      this.isActive = newActiveState;
+      
+      // Emit events for external listeners
+      this.emitChangeEvents(this.isActive, true);
     }
   }
 
-  /** Parse string value to boolean */
-  private parseValue(value: string): boolean {
+  /** Watch for state prop changes */
+  @Watch('state')
+  watchState(newState: 'active' | 'disabled' | 'default') {
+    if (!this.reactive || !this.isInitialized) return;
+    
+    if (newState === 'active' && !this.isActive) {
+      this.isActive = true;
+      this.emitChangeEvents(this.isActive, true);
+    } else if (newState === 'default' && this.isActive) {
+      this.isActive = false;
+      this.emitChangeEvents(this.isActive, true);
+    }
+  }
+
+  /** Parse value (string or boolean) to boolean */
+  private parseValue(value: string | boolean | undefined): boolean {
+    if (value === undefined) return false;
+    if (typeof value === 'boolean') return value;
+    
     const lowerValue = value.toLowerCase();
     return lowerValue === 'true' || lowerValue === '1' || lowerValue === 'on' || lowerValue === 'yes';
   }
 
+  /** Validate value change using custom validator if provided */
+  private validateChange(newValue: boolean): boolean {
+    if (!this.validator) return true;
+    
+    try {
+      const validatorFn = (window as any)[this.validator];
+      if (typeof validatorFn === 'function') {
+        const isValid = validatorFn(newValue, this.isActive, this.label);
+        if (!isValid) {
+          this.validationError.emit({ 
+            value: newValue, 
+            message: `Validation failed for value: ${newValue}` 
+          });
+        }
+        return isValid;
+      }
+    } catch (error) {
+      this.validationError.emit({ 
+        value: newValue, 
+        message: `Validator function error: ${error}` 
+      });
+      return false;
+    }
+    
+    return true;
+  }
+
+  /** Emit change events with debouncing */
+  private emitChangeEvents(newValue: boolean, isExternal: boolean = false) {
+    // Clear existing timer
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+
+    // Set debounced emission
+    this.debounceTimer = window.setTimeout(() => {
+      // Update value prop if not from external source
+      if (!isExternal && this.value !== undefined) {
+        this.value = newValue;
+      }
+
+      // Emit events
+      this.valueChange.emit({ value: newValue, label: this.label });
+      this.toggle.emit({ active: newValue });
+    }, this.debounce);
+  }
+
   // Device read/write helpers removed; keep UI-only behavior and `mode` prop for visual differences
 
-  /** Toggle click handle */
+  /** Toggle click handler with enhanced features */
   private async handleToggle() {
     if (this.state === 'disabled') return;
 
-    // Don't allow interaction in read-only mode (applies to both TD URL and local control)
+    // Don't allow interaction in read-only mode
     if (this.mode === 'read') {
       return;
     }
 
     const newActive = !this.isActive;
-    this.isActive = newActive;
 
-    // Emit standardized valueChange event for integrators
-    this.valueChange.emit({ value: newActive, label: this.label });
-
-    // Emit legacy toggle event for backward compatibility
-    this.toggle.emit({ active: newActive });
-
-    // Update value prop for local control (store boolean)
-    if (this.value !== undefined) {
-      this.value = newActive;
+    // Validate change if validator is provided
+    if (!this.validateChange(newActive)) {
+      return;
     }
 
-    // Local-only change: external device updates should be handled by listeners to `valueChange`/`toggle` events.
+    // Emit beforeChange event with prevention capability
+    let changeBlocked = false;
+    const beforeChangeEvent = {
+      currentValue: this.isActive,
+      newValue: newActive,
+      preventDefault: () => { changeBlocked = true; }
+    };
+    
+    this.beforeChange.emit(beforeChangeEvent);
+    
+    // If change was prevented, don't proceed
+    if (changeBlocked) {
+      return;
+    }
+
+    // Update state
+    this.isActive = newActive;
+
+    // Emit change events with debouncing
+    this.emitChangeEvents(newActive, false);
   }
 
-  /** Handle keyboard 'enter' and 'spacebar' input to toggle switch state */
+  /** Handle keyboard input to toggle switch state */
   private handleKeyDown = (event: KeyboardEvent) => {
+    if (!this.keyboard) return;
+    
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
       this.handleToggle();
     }
   };
+
+  /** Public method to programmatically set value */
+  async setValue(value: boolean | string, emitEvents: boolean = true): Promise<boolean> {
+    const newValue = this.parseValue(value);
+    
+    if (!this.validateChange(newValue)) {
+      return false;
+    }
+
+    this.isActive = newValue;
+    this.value = newValue;
+    this.state = newValue ? 'active' : 'default';
+    
+    if (emitEvents) {
+      this.emitChangeEvents(newValue, false);
+    }
+    
+    return true;
+  }
+
+  /** Public method to get current value */
+  async getValue(): Promise<boolean> {
+    return this.isActive;
+  }
+
+  /** Public method to force sync request (useful for read mode) */
+  async requestSync(): Promise<void> {
+    this.syncRequest.emit({ mode: this.mode, label: this.label });
+  }
 
   /** Fetch current toggle background style */
   getToggleStyle() {
@@ -328,38 +517,86 @@ export class UiToggle {
     const thumbStyle = this.getThumbStyle();
     const isDisabled = this.state === 'disabled';
     const isReadOnly = this.mode === 'read';
-    const hoverTitle = isReadOnly ? 'Value cannot be changed (Read-only mode)' : '';
+    const canInteract = !isDisabled && !isReadOnly;
+    
+    // Enhanced tooltips
+    let hoverTitle = '';
+    if (isReadOnly) {
+      hoverTitle = 'Read-only mode - Value reflects device state';
+    } else if (isDisabled) {
+      hoverTitle = 'Toggle is disabled';
+    } else {
+      hoverTitle = `Click to ${this.isActive ? 'turn off' : 'turn on'}${this.label ? ` ${this.label}` : ''}`;
+    }
 
     return (
-      <div class="inline-flex items-center space-x-3">
+      <div class="inline-flex items-center space-x-3" part="container">
         {this.label && (
           <label
-            class={`select-none mr-2 ${isDisabled || isReadOnly ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer'} ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-            onClick={() => !isDisabled && !isReadOnly && this.handleToggle()}
+            class={`select-none mr-2 ${
+              !canInteract 
+                ? 'cursor-not-allowed text-gray-400' 
+                : 'cursor-pointer hover:text-opacity-80'
+            } ${
+              this.theme === 'dark' ? 'text-white' : 'text-gray-900'
+            } transition-colors duration-200`}
+            onClick={() => canInteract && this.handleToggle()}
             title={hoverTitle}
             part="label"
           >
             {this.label}
+            {/* Add visual indicator for read-only mode */}
+            {isReadOnly && (
+              <span class="ml-1 text-xs opacity-60" title="Read-only">📖</span>
+            )}
           </label>
         )}
 
         {isReadOnly ? (
-          // Show colored circle for read-only mode
-          <span class={`inline-block w-6 h-6 rounded-full ${this.isActive ? 'bg-green-500' : 'bg-red-500'}`} title={hoverTitle}></span>
+          // Enhanced read-only indicator with pulse animation when active
+          <span 
+            class={`inline-flex items-center justify-center w-6 h-6 rounded-full transition-all duration-300 ${
+              this.isActive 
+                ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' 
+                : 'bg-red-500 shadow-lg shadow-red-500/50'
+            }`} 
+            title={`${hoverTitle} - Current state: ${this.isActive ? 'ON' : 'OFF'}`}
+            part="readonly-indicator"
+          >
+            {/* Add icon to indicate status */}
+            <span class="text-white text-xs font-bold">
+              {this.isActive ? '●' : '○'}
+            </span>
+          </span>
         ) : (
           <span
-            class={toggleStyle}
+            class={`${toggleStyle} ${
+              canInteract 
+                ? 'hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary' 
+                : ''
+            } transition-all duration-200`}
             role="switch"
             aria-checked={this.isActive ? 'true' : 'false'}
             aria-disabled={isDisabled ? 'true' : 'false'}
-            tabIndex={isDisabled ? -1 : 0}
-            onClick={() => !isDisabled && this.handleToggle()}
+            aria-label={this.label || `Toggle switch ${this.isActive ? 'on' : 'off'}`}
+            tabIndex={canInteract ? 0 : -1}
+            onClick={() => canInteract && this.handleToggle()}
             onKeyDown={this.handleKeyDown}
+            title={hoverTitle}
             part="control"
           >
             <span class={thumbStyle} part="thumb"></span>
             {this.showCrossIcons()}
           </span>
+        )}
+
+        {/* Show sync indicator when sync is active */}
+        {this.mode === 'read' && this.syncInterval > 0 && (
+          <span 
+            class="ml-2 w-2 h-2 bg-blue-500 rounded-full animate-ping" 
+            title={`Auto-sync every ${this.syncInterval}ms`}
+            part="sync-indicator"
+          ></span>
         )}
       </div>
     );

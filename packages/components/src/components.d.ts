@@ -404,62 +404,70 @@ export namespace Components {
         "variant": 'display' | 'edit';
     }
     /**
-     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Advanced toggle switch component with reactive state management, validation, and TD integration support.
+     * Provides multiple visual styles, accessibility features, and flexible event handling.
      * @example Basic Usage
      * ```html
-     * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+     * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
      * ```
-     * @example TD Integration with HTTP
+     * @example Reactive Value Binding (auto-updates when value changes)
      * ```html
-     * <ui-toggle
-     * td-url="http://device.local/properties/power"
-     * label="Smart Light"
-     * protocol="http"
-     * mode="readwrite">
+     * <ui-toggle 
+     * id="device-toggle"
+     * value="false" 
+     * reactive="true"
+     * label="Smart Device"
+     * debounce="200">
      * </ui-toggle>
      * ```
-     * @example TD Integration with MQTT
+     * @example Read-Only Mode with Auto-Sync
      * ```html
      * <ui-toggle
-     * td-url="mqtt://device"
-     * mqtt-host="localhost:1883"
-     * mqtt-topic="device/toggle"
-     * label="MQTT Device"
-     * protocol="mqtt"
-     * mode="readwrite">
+     * mode="read"
+     * sync-interval="1000"
+     * label="Sensor Status"
+     * reactive="true">
      * </ui-toggle>
      * ```
-     * @example TD Device Read-Only (shows colored circle)
+     * @example With Validation
      * ```html
      * <ui-toggle
-     * td-url="http://sensor.local/status"
-     * label="Door Sensor"
-     * mode="read">
+     * value="false"
+     * validator="myValidationFunction"
+     * label="Critical System">
      * </ui-toggle>
      * ```
-     * @example Local Control with Custom Handler
-     * ```html
-     * <ui-toggle
-     * value="true"
-     * on-change="myToggleHandler"
-     * label="Custom Toggle">
-     * </ui-toggle>
-     * ```
-     * @example User's JavaScript Handler
+     * @example JavaScript Integration
      * ```javascript
-     * window.myToggleHandler = function(data) {
-     * console.log('Toggle changed:', data.active);
-     * console.log('New value:', data.value);
-     * console.log('Label:', data.label);
-     * // Your custom logic here
+     * const toggle = document.querySelector('ui-toggle');
+     * // Listen for value changes
+     * toggle.addEventListener('valueChange', (e) => {
+     * console.log('New value:', e.detail.value);
+     * console.log('Label:', e.detail.label);
+     * });
+     * // Listen for sync requests (read mode)
+     * toggle.addEventListener('syncRequest', async (e) => {
+     * const newValue = await fetchDeviceState();
+     * toggle.value = newValue;
+     * });
+     * // Programmatically set value
+     * await toggle.setValue(true);
+     * // Get current value
+     * const currentValue = await toggle.getValue();
+     * // Custom validation function
+     * window.myValidationFunction = function(newValue, currentValue, label) {
+     * if (label === 'Critical System' && newValue === true) {
+     * return confirm('Are you sure you want to enable the critical system?');
+     * }
+     * return true;
      * };
      * ```
-     * @example Event Handling
+     * @example Event Prevention
      * ```javascript
-     * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
-     * console.log('Toggle state:', event.detail.active);
-     * // Your custom logic here
+     * toggle.addEventListener('beforeChange', (e) => {
+     * if (someCondition) {
+     * e.detail.preventDefault(); // Prevent the change
+     * }
      * });
      * ```
      */
@@ -470,26 +478,51 @@ export namespace Components {
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
+          * Debounce delay in milliseconds for value change events. Prevents rapid firing of events during quick toggles. Default: 100ms
+          * @default 100
+         */
+        "debounce": number;
+        /**
+          * Enable keyboard navigation (Space and Enter keys). Default: true
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
           * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
          */
         "label"?: string;
         /**
-          * Device interaction mode. - read: Only read from device (display current state as colored circle) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
+          * Device interaction mode. - read: Only read from device (display current state, no user interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
           * @default 'readwrite'
          */
         "mode": 'read' | 'write' | 'readwrite';
+        /**
+          * Enable automatic state reflection from external value changes. When true, the component will automatically update its visual state when value prop changes. Default: true
+          * @default true
+         */
+        "reactive": boolean;
         /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'
          */
         "state": 'active' | 'disabled' | 'default';
         /**
+          * Auto-sync interval in milliseconds for read mode. When set, the component will emit 'sync-request' events at this interval. External systems can listen to this event to update the value prop. Default: 0 (disabled)
+          * @default 0
+         */
+        "syncInterval": number;
+        /**
           * Theme for the component.
           * @default 'light'
          */
         "theme": 'light' | 'dark';
         /**
-          * Local value for the toggle. Accepts boolean or string values (string will be parsed).
+          * Custom validation function name for value changes. The function should be available on window object and return boolean.
+          * @example validator="myValidationFunction"
+         */
+        "validator"?: string;
+        /**
+          * Local value for the toggle. Accepts boolean or string values (string will be parsed). This is the primary way to control the toggle state externally.
          */
         "value"?: boolean | string;
         /**
@@ -759,64 +792,76 @@ declare global {
     interface HTMLUiToggleElementEventMap {
         "toggle": UiToggleToggleEvent;
         "valueChange": UiToggleValueChange;
+        "validationError": { value: boolean; message: string };
+        "syncRequest": { mode: string; label?: string };
+        "beforeChange": { currentValue: boolean; newValue: boolean; preventDefault: () => void };
+        "ready": { value: boolean; mode: string };
     }
     /**
-     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Advanced toggle switch component with reactive state management, validation, and TD integration support.
+     * Provides multiple visual styles, accessibility features, and flexible event handling.
      * @example Basic Usage
      * ```html
-     * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+     * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
      * ```
-     * @example TD Integration with HTTP
+     * @example Reactive Value Binding (auto-updates when value changes)
      * ```html
-     * <ui-toggle
-     * td-url="http://device.local/properties/power"
-     * label="Smart Light"
-     * protocol="http"
-     * mode="readwrite">
+     * <ui-toggle 
+     * id="device-toggle"
+     * value="false" 
+     * reactive="true"
+     * label="Smart Device"
+     * debounce="200">
      * </ui-toggle>
      * ```
-     * @example TD Integration with MQTT
+     * @example Read-Only Mode with Auto-Sync
      * ```html
      * <ui-toggle
-     * td-url="mqtt://device"
-     * mqtt-host="localhost:1883"
-     * mqtt-topic="device/toggle"
-     * label="MQTT Device"
-     * protocol="mqtt"
-     * mode="readwrite">
+     * mode="read"
+     * sync-interval="1000"
+     * label="Sensor Status"
+     * reactive="true">
      * </ui-toggle>
      * ```
-     * @example TD Device Read-Only (shows colored circle)
+     * @example With Validation
      * ```html
      * <ui-toggle
-     * td-url="http://sensor.local/status"
-     * label="Door Sensor"
-     * mode="read">
+     * value="false"
+     * validator="myValidationFunction"
+     * label="Critical System">
      * </ui-toggle>
      * ```
-     * @example Local Control with Custom Handler
-     * ```html
-     * <ui-toggle
-     * value="true"
-     * on-change="myToggleHandler"
-     * label="Custom Toggle">
-     * </ui-toggle>
-     * ```
-     * @example User's JavaScript Handler
+     * @example JavaScript Integration
      * ```javascript
-     * window.myToggleHandler = function(data) {
-     * console.log('Toggle changed:', data.active);
-     * console.log('New value:', data.value);
-     * console.log('Label:', data.label);
-     * // Your custom logic here
+     * const toggle = document.querySelector('ui-toggle');
+     * // Listen for value changes
+     * toggle.addEventListener('valueChange', (e) => {
+     * console.log('New value:', e.detail.value);
+     * console.log('Label:', e.detail.label);
+     * });
+     * // Listen for sync requests (read mode)
+     * toggle.addEventListener('syncRequest', async (e) => {
+     * const newValue = await fetchDeviceState();
+     * toggle.value = newValue;
+     * });
+     * // Programmatically set value
+     * await toggle.setValue(true);
+     * // Get current value
+     * const currentValue = await toggle.getValue();
+     * // Custom validation function
+     * window.myValidationFunction = function(newValue, currentValue, label) {
+     * if (label === 'Critical System' && newValue === true) {
+     * return confirm('Are you sure you want to enable the critical system?');
+     * }
+     * return true;
      * };
      * ```
-     * @example Event Handling
+     * @example Event Prevention
      * ```javascript
-     * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
-     * console.log('Toggle state:', event.detail.active);
-     * // Your custom logic here
+     * toggle.addEventListener('beforeChange', (e) => {
+     * if (someCondition) {
+     * e.detail.preventDefault(); // Prevent the change
+     * }
      * });
      * ```
      */
@@ -1260,62 +1305,70 @@ declare namespace LocalJSX {
         "variant"?: 'display' | 'edit';
     }
     /**
-     * Toogle switch component with various fetueres, multiple visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Advanced toggle switch component with reactive state management, validation, and TD integration support.
+     * Provides multiple visual styles, accessibility features, and flexible event handling.
      * @example Basic Usage
      * ```html
-     * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+     * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
      * ```
-     * @example TD Integration with HTTP
+     * @example Reactive Value Binding (auto-updates when value changes)
      * ```html
-     * <ui-toggle
-     * td-url="http://device.local/properties/power"
-     * label="Smart Light"
-     * protocol="http"
-     * mode="readwrite">
+     * <ui-toggle 
+     * id="device-toggle"
+     * value="false" 
+     * reactive="true"
+     * label="Smart Device"
+     * debounce="200">
      * </ui-toggle>
      * ```
-     * @example TD Integration with MQTT
+     * @example Read-Only Mode with Auto-Sync
      * ```html
      * <ui-toggle
-     * td-url="mqtt://device"
-     * mqtt-host="localhost:1883"
-     * mqtt-topic="device/toggle"
-     * label="MQTT Device"
-     * protocol="mqtt"
-     * mode="readwrite">
+     * mode="read"
+     * sync-interval="1000"
+     * label="Sensor Status"
+     * reactive="true">
      * </ui-toggle>
      * ```
-     * @example TD Device Read-Only (shows colored circle)
+     * @example With Validation
      * ```html
      * <ui-toggle
-     * td-url="http://sensor.local/status"
-     * label="Door Sensor"
-     * mode="read">
+     * value="false"
+     * validator="myValidationFunction"
+     * label="Critical System">
      * </ui-toggle>
      * ```
-     * @example Local Control with Custom Handler
-     * ```html
-     * <ui-toggle
-     * value="true"
-     * on-change="myToggleHandler"
-     * label="Custom Toggle">
-     * </ui-toggle>
-     * ```
-     * @example User's JavaScript Handler
+     * @example JavaScript Integration
      * ```javascript
-     * window.myToggleHandler = function(data) {
-     * console.log('Toggle changed:', data.active);
-     * console.log('New value:', data.value);
-     * console.log('Label:', data.label);
-     * // Your custom logic here
+     * const toggle = document.querySelector('ui-toggle');
+     * // Listen for value changes
+     * toggle.addEventListener('valueChange', (e) => {
+     * console.log('New value:', e.detail.value);
+     * console.log('Label:', e.detail.label);
+     * });
+     * // Listen for sync requests (read mode)
+     * toggle.addEventListener('syncRequest', async (e) => {
+     * const newValue = await fetchDeviceState();
+     * toggle.value = newValue;
+     * });
+     * // Programmatically set value
+     * await toggle.setValue(true);
+     * // Get current value
+     * const currentValue = await toggle.getValue();
+     * // Custom validation function
+     * window.myValidationFunction = function(newValue, currentValue, label) {
+     * if (label === 'Critical System' && newValue === true) {
+     * return confirm('Are you sure you want to enable the critical system?');
+     * }
+     * return true;
      * };
      * ```
-     * @example Event Handling
+     * @example Event Prevention
      * ```javascript
-     * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
-     * console.log('Toggle state:', event.detail.active);
-     * // Your custom logic here
+     * toggle.addEventListener('beforeChange', (e) => {
+     * if (someCondition) {
+     * e.detail.preventDefault(); // Prevent the change
+     * }
      * });
      * ```
      */
@@ -1326,34 +1379,75 @@ declare namespace LocalJSX {
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
+          * Debounce delay in milliseconds for value change events. Prevents rapid firing of events during quick toggles. Default: 100ms
+          * @default 100
+         */
+        "debounce"?: number;
+        /**
+          * Enable keyboard navigation (Space and Enter keys). Default: true
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
           * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
          */
         "label"?: string;
         /**
-          * Device interaction mode. - read: Only read from device (display current state as colored circle) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
+          * Device interaction mode. - read: Only read from device (display current state, no user interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
           * @default 'readwrite'
          */
         "mode"?: 'read' | 'write' | 'readwrite';
+        /**
+          * Event emitted before value changes (can be prevented)
+         */
+        "onBeforeChange"?: (event: UiToggleCustomEvent<{ currentValue: boolean; newValue: boolean; preventDefault: () => void }>) => void;
+        /**
+          * Event emitted after component is ready and initialized
+         */
+        "onReady"?: (event: UiToggleCustomEvent<{ value: boolean; mode: string }>) => void;
+        /**
+          * Event emitted to request sync in read mode (for external data fetching)
+         */
+        "onSyncRequest"?: (event: UiToggleCustomEvent<{ mode: string; label?: string }>) => void;
         /**
           * Legacy event emitted when toggle state changes
          */
         "onToggle"?: (event: UiToggleCustomEvent<UiToggleToggleEvent>) => void;
         /**
+          * Event emitted when validation fails
+         */
+        "onValidationError"?: (event: UiToggleCustomEvent<{ value: boolean; message: string }>) => void;
+        /**
           * Standardized valueChange event for value-driven integrations
          */
         "onValueChange"?: (event: UiToggleCustomEvent<UiToggleValueChange>) => void;
+        /**
+          * Enable automatic state reflection from external value changes. When true, the component will automatically update its visual state when value prop changes. Default: true
+          * @default true
+         */
+        "reactive"?: boolean;
         /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'
          */
         "state"?: 'active' | 'disabled' | 'default';
         /**
+          * Auto-sync interval in milliseconds for read mode. When set, the component will emit 'sync-request' events at this interval. External systems can listen to this event to update the value prop. Default: 0 (disabled)
+          * @default 0
+         */
+        "syncInterval"?: number;
+        /**
           * Theme for the component.
           * @default 'light'
          */
         "theme"?: 'light' | 'dark';
         /**
-          * Local value for the toggle. Accepts boolean or string values (string will be parsed).
+          * Custom validation function name for value changes. The function should be available on window object and return boolean.
+          * @example validator="myValidationFunction"
+         */
+        "validator"?: string;
+        /**
+          * Local value for the toggle. Accepts boolean or string values (string will be parsed). This is the primary way to control the toggle state externally.
          */
         "value"?: boolean | string;
         /**
@@ -1502,62 +1596,70 @@ declare module "@stencil/core" {
             "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
             "ui-text": LocalJSX.UiText & JSXBase.HTMLAttributes<HTMLUiTextElement>;
             /**
-             * Toogle switch component with various fetueres, multiple visual styles and TD integration.
-             * Link a direct property URL for plug-and-play device control.
+             * Advanced toggle switch component with reactive state management, validation, and TD integration support.
+             * Provides multiple visual styles, accessibility features, and flexible event handling.
              * @example Basic Usage
              * ```html
-             * <ui-toggle variant="circle" state="active" label="Light"></ui-toggle>
+             * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
              * ```
-             * @example TD Integration with HTTP
+             * @example Reactive Value Binding (auto-updates when value changes)
              * ```html
-             * <ui-toggle
-             * td-url="http://device.local/properties/power"
-             * label="Smart Light"
-             * protocol="http"
-             * mode="readwrite">
+             * <ui-toggle 
+             * id="device-toggle"
+             * value="false" 
+             * reactive="true"
+             * label="Smart Device"
+             * debounce="200">
              * </ui-toggle>
              * ```
-             * @example TD Integration with MQTT
+             * @example Read-Only Mode with Auto-Sync
              * ```html
              * <ui-toggle
-             * td-url="mqtt://device"
-             * mqtt-host="localhost:1883"
-             * mqtt-topic="device/toggle"
-             * label="MQTT Device"
-             * protocol="mqtt"
-             * mode="readwrite">
+             * mode="read"
+             * sync-interval="1000"
+             * label="Sensor Status"
+             * reactive="true">
              * </ui-toggle>
              * ```
-             * @example TD Device Read-Only (shows colored circle)
+             * @example With Validation
              * ```html
              * <ui-toggle
-             * td-url="http://sensor.local/status"
-             * label="Door Sensor"
-             * mode="read">
+             * value="false"
+             * validator="myValidationFunction"
+             * label="Critical System">
              * </ui-toggle>
              * ```
-             * @example Local Control with Custom Handler
-             * ```html
-             * <ui-toggle
-             * value="true"
-             * on-change="myToggleHandler"
-             * label="Custom Toggle">
-             * </ui-toggle>
-             * ```
-             * @example User's JavaScript Handler
+             * @example JavaScript Integration
              * ```javascript
-             * window.myToggleHandler = function(data) {
-             * console.log('Toggle changed:', data.active);
-             * console.log('New value:', data.value);
-             * console.log('Label:', data.label);
-             * // Your custom logic here
+             * const toggle = document.querySelector('ui-toggle');
+             * // Listen for value changes
+             * toggle.addEventListener('valueChange', (e) => {
+             * console.log('New value:', e.detail.value);
+             * console.log('Label:', e.detail.label);
+             * });
+             * // Listen for sync requests (read mode)
+             * toggle.addEventListener('syncRequest', async (e) => {
+             * const newValue = await fetchDeviceState();
+             * toggle.value = newValue;
+             * });
+             * // Programmatically set value
+             * await toggle.setValue(true);
+             * // Get current value
+             * const currentValue = await toggle.getValue();
+             * // Custom validation function
+             * window.myValidationFunction = function(newValue, currentValue, label) {
+             * if (label === 'Critical System' && newValue === true) {
+             * return confirm('Are you sure you want to enable the critical system?');
+             * }
+             * return true;
              * };
              * ```
-             * @example Event Handling
+             * @example Event Prevention
              * ```javascript
-             * document.querySelector('ui-toggle').addEventListener('toggle', (event) => {
-             * console.log('Toggle state:', event.detail.active);
-             * // Your custom logic here
+             * toggle.addEventListener('beforeChange', (e) => {
+             * if (someCondition) {
+             * e.detail.preventDefault(); // Prevent the change
+             * }
              * });
              * ```
              */

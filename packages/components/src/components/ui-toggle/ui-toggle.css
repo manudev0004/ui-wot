@@ -29,11 +29,31 @@
 
 .text-neutral { color: var(--color-neutral); }
 
+/* Focus ring for primary color */
+.focus\:ring-primary {
+  --tw-ring-color: var(--color-primary);
+}
+
 /* Disabled state */
 .disabled-state { 
   opacity: 0.5; 
   cursor: not-allowed !important;
   pointer-events: none;
+}
+
+/* Enhanced transitions */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover effects */
+.hover\:shadow-md:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.hover\:text-opacity-80:hover {
+  --tw-text-opacity: 0.8;
 }
 
 /* Neon effects */

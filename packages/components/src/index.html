@@ -85,25 +85,71 @@
         <!-- TD Integration (via Node-WoT in page script) -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Thing Description Integration (Node-WoT)</h2>
+          
+          <!-- Connection Status -->
+          <div id="td-connection-status" class="mb-4 p-3 rounded-lg border hidden">
+            <div class="flex items-center gap-2">
+              <div id="td-status-indicator" class="w-3 h-3 rounded-full bg-gray-400"></div>
+              <span id="td-status-text" class="text-sm font-medium">Connecting...</span>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Read-Write Mode using node-wot -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Write Mode (Default)</h3>
-              <ui-toggle id="wotBoolToggle" mode="readwrite" variant="neon" color="primary" label="HTTP Device"></ui-toggle>
-              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js" defer&gt;&lt;/script&gt;
-&lt;ui-toggle id="wotBoolToggle" mode="readwrite" label="HTTP Device"&gt;&lt;/ui-toggle&gt;
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Write Mode (Boolean Property)</h3>
+              <ui-toggle id="wotBoolToggle" mode="readwrite" variant="neon" color="primary" label="HTTP Device Boolean"></ui-toggle>
+              <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <span id="wotBoolValue">Value: -</span> | 
+                <span id="wotBoolLastUpdate">Last update: -</span>
+              </div>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle id="wotBoolToggle" mode="readwrite" 
+  variant="neon" color="primary" 
+  label="HTTP Device Boolean"&gt;&lt;/ui-toggle&gt;
+
 &lt;script&gt;
-// see script block at bottom for full wiring example
+// TD integration handles property synchronization
+// Component emits valueChange events for writes
+// Component receives value updates for reads
 &lt;/script&gt;</pre>
             </div>
 
             <!-- Read-Only Mode (display only) -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode (Status Display)</h3>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode (Integer as Boolean)</h3>
               <div class="flex items-center gap-4">
-                <ui-toggle id="wotBoolStatus" mode="read" label="Sensor Status"></ui-toggle>
+                <ui-toggle id="wotIntStatus" mode="read" variant="apple" color="secondary" label="Integer Status"></ui-toggle>
               </div>
-              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle id="wotBoolStatus" mode="read" label="Sensor Status"&gt;&lt;/ui-toggle&gt;</pre>
+              <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <span id="wotIntValue">Raw value: -</span> | 
+                <span id="wotIntLastUpdate">Last update: -</span>
+              </div>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle id="wotIntStatus" mode="read" 
+  variant="apple" color="secondary" 
+  label="Integer Status"&gt;&lt;/ui-toggle&gt;</pre>
+            </div>
+          </div>
+
+          <!-- TD Information Display -->
+          <div class="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h4 class="font-medium text-gray-900 dark:text-white mb-2">Thing Description Info</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="font-medium text-gray-700 dark:text-gray-300">TD URL:</span>
+                <span id="td-url-display" class="text-gray-600 dark:text-gray-400 ml-2">http://plugfest.thingweb.io/http-data-schema-thing</span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700 dark:text-gray-300">Title:</span>
+                <span id="td-title-display" class="text-gray-600 dark:text-gray-400 ml-2">-</span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700 dark:text-gray-300">Description:</span>
+                <span id="td-description-display" class="text-gray-600 dark:text-gray-400 ml-2">-</span>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700 dark:text-gray-300">Properties:</span>
+                <span id="td-properties-count" class="text-gray-600 dark:text-gray-400 ml-2">-</span>
+              </div>
             </div>
           </div>
         </div>
@@ -228,6 +274,118 @@
                 <ui-toggle label="Turbo mode" variant="neon" color="secondary" state="active"></ui-toggle>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle label="Turbo mode" variant="neon"&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enhanced Features Demo -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Enhanced Features</h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Reactive Toggle -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Reactive Value Binding</h3>
+              <div class="space-y-3 mb-3">
+                <ui-toggle 
+                  id="reactive-demo"
+                  variant="circle" 
+                  value="false" 
+                  reactive="true"
+                  debounce="100"
+                  label="Auto-Update">
+                </ui-toggle>
+                <button onclick="updateReactiveDemo()" class="px-2 py-1 bg-blue-500 text-white rounded text-xs">
+                  Update Externally
+                </button>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle reactive="true" debounce="100"&gt;</pre>
+            </div>
+
+            <!-- Read-Only Mode -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Read-Only with Sync</h3>
+              <div class="space-y-3 mb-3">
+                <ui-toggle 
+                  id="readonly-demo"
+                  mode="read"
+                  sync-interval="3000"
+                  value="false"
+                  reactive="true"
+                  label="Sensor Status">
+                </ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle mode="read" sync-interval="3000"&gt;</pre>
+            </div>
+
+            <!-- Validation -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">With Validation</h3>
+              <div class="space-y-3 mb-3">
+                <ui-toggle 
+                  id="validated-demo"
+                  variant="cross" 
+                  value="false"
+                  validator="confirmAction"
+                  label="Critical Action">
+                </ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle validator="confirmAction"&gt;</pre>
+            </div>
+
+            <!-- Event Monitoring -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Event Monitoring</h3>
+              <div class="space-y-3 mb-3">
+                <ui-toggle 
+                  id="events-demo"
+                  variant="apple" 
+                  value="false"
+                  label="Event Logger">
+                </ui-toggle>
+                <div id="event-output" class="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded max-h-16 overflow-y-auto"></div>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">Listen to: valueChange, toggle, beforeChange</pre>
+            </div>
+
+            <!-- Programmatic Control -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">API Control</h3>
+              <div class="space-y-3 mb-3">
+                <ui-toggle 
+                  id="api-demo"
+                  variant="neon" 
+                  value="false"
+                  label="API Toggle">
+                </ui-toggle>
+                <div class="flex gap-1">
+                  <button onclick="setApiDemo(true)" class="px-2 py-1 bg-green-500 text-white rounded text-xs">ON</button>
+                  <button onclick="setApiDemo(false)" class="px-2 py-1 bg-red-500 text-white rounded text-xs">OFF</button>
+                  <button onclick="getApiDemo()" class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Get</button>
+                </div>
+                <div id="api-output" class="text-xs text-gray-600 dark:text-gray-400"></div>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">await toggle.setValue(true)</pre>
+            </div>
+
+            <!-- Keyboard Navigation -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Keyboard Control</h3>
+              <div class="space-y-3 mb-3">
+                <ui-toggle 
+                  variant="square" 
+                  value="false"
+                  keyboard="true"
+                  label="Press Space/Enter">
+                </ui-toggle>
+                <ui-toggle 
+                  variant="circle" 
+                  value="false"
+                  keyboard="false"
+                  label="Keyboard Disabled">
+                </ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle keyboard="true"&gt;</pre>
             </div>
           </div>
         </div>
@@ -1021,6 +1179,68 @@
         console.log('Text component value changed:', data.value);
       };
 
+      // Enhanced Features Functions
+      
+      // Reactive Demo
+      window.updateReactiveDemo = function() {
+        const toggle = document.getElementById('reactive-demo');
+        const currentValue = toggle.value === 'true' || toggle.value === true;
+        toggle.value = !currentValue;
+        console.log('Reactive demo updated externally to:', !currentValue);
+      };
+
+      // Read-only Demo with Auto-sync
+      let readonlyState = false;
+      document.getElementById('readonly-demo')?.addEventListener('syncRequest', (e) => {
+        console.log('Sync request received:', e.detail);
+        // Simulate fetching data from external source
+        readonlyState = !readonlyState;
+        document.getElementById('readonly-demo').value = readonlyState;
+        console.log('Read-only demo synced to:', readonlyState);
+      });
+
+      // Validation Function
+      window.confirmAction = function(newValue, currentValue, label) {
+        if (newValue === true) {
+          return confirm(`Are you sure you want to enable ${label}?`);
+        }
+        return true;
+      };
+
+      // Event Demo Monitoring
+      const eventOutput = document.getElementById('event-output');
+      const eventsDemo = document.getElementById('events-demo');
+      
+      function logEventDemo(eventType, detail) {
+        if (eventOutput) {
+          const timestamp = new Date().toLocaleTimeString();
+          const log = `${timestamp}: ${eventType} - ${JSON.stringify(detail)}\n`;
+          eventOutput.textContent = (eventOutput.textContent + log).split('\n').slice(-5).join('\n');
+          eventOutput.scrollTop = eventOutput.scrollHeight;
+        }
+      }
+
+      if (eventsDemo) {
+        eventsDemo.addEventListener('valueChange', (e) => logEventDemo('valueChange', e.detail));
+        eventsDemo.addEventListener('toggle', (e) => logEventDemo('toggle', e.detail));
+        eventsDemo.addEventListener('beforeChange', (e) => logEventDemo('beforeChange', e.detail));
+        eventsDemo.addEventListener('ready', (e) => logEventDemo('ready', e.detail));
+        eventsDemo.addEventListener('validationError', (e) => logEventDemo('validationError', e.detail));
+      }
+
+      // API Demo Functions
+      window.setApiDemo = async function(value) {
+        const toggle = document.getElementById('api-demo');
+        const result = await toggle.setValue(value);
+        document.getElementById('api-output').textContent = `setValue(${value}): ${result}`;
+      };
+
+      window.getApiDemo = async function() {
+        const toggle = document.getElementById('api-demo');
+        const value = await toggle.getValue();
+        document.getElementById('api-output').textContent = `getValue(): ${value}`;
+      };
+
       // Listen to component events
       document.addEventListener('toggle', event => {
         logEvent('Toggle', event.detail);
@@ -1134,64 +1354,294 @@
       document.addEventListener('DOMContentLoaded', () => {
         updateDeviceStatus();
 
-        // Node-WoT integration demo for boolean property
-        // TD endpoint (PlugFest demo): boolean property
-        const TD_BOOL_URL = 'http://plugfest.thingweb.io/http-data-schema-thing';
-        const PROPERTY_NAME = 'bool';
+        // ========================================
+        // NODE-WOT THING DESCRIPTION INTEGRATION
+        // ========================================
+        
+        // TD endpoint configuration
+        const TD_URL = 'http://plugfest.thingweb.io/http-data-schema-thing';
+        
+        // UI Element references
+        const statusIndicator = document.getElementById('td-status-indicator');
+        const statusText = document.getElementById('td-status-text');
+        const connectionStatus = document.getElementById('td-connection-status');
+        const tdUrlDisplay = document.getElementById('td-url-display');
+        const tdTitleDisplay = document.getElementById('td-title-display');
+        const tdDescriptionDisplay = document.getElementById('td-description-display');
+        const tdPropertiesCount = document.getElementById('td-properties-count');
+        
+        // Component references
+        const wotBoolToggle = document.getElementById('wotBoolToggle');
+        const wotIntStatus = document.getElementById('wotIntStatus');
+        const wotBoolValue = document.getElementById('wotBoolValue');
+        const wotBoolLastUpdate = document.getElementById('wotBoolLastUpdate');
+        const wotIntValue = document.getElementById('wotIntValue');
+        const wotIntLastUpdate = document.getElementById('wotIntLastUpdate');
+        
+        // Global variables for TD integration
+        let currentThing = null;
+        let observationSubscriptions = new Map();
+        let readIntervals = new Map();
 
-        const statusToggle = document.getElementById('wotBoolStatus');
-        const rwToggle = document.getElementById('wotBoolToggle');
-
-        async function withServient() {
-          // Ensure WoT global is available (script has defer and DOMContentLoaded waits)
-          if (!window.WoT) {
-            console.warn('WoT browser bundle not available yet');
-            return undefined;
+        // Status management functions
+        function setConnectionStatus(status, message) {
+          if (!connectionStatus || !statusIndicator || !statusText) return;
+          
+          connectionStatus.classList.remove('hidden');
+          statusText.textContent = message;
+          
+          switch (status) {
+            case 'connecting':
+              statusIndicator.className = 'w-3 h-3 rounded-full bg-yellow-400';
+              connectionStatus.className = connectionStatus.className.replace(/border-\w+-200/g, '') + ' border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20';
+              break;
+            case 'connected':
+              statusIndicator.className = 'w-3 h-3 rounded-full bg-green-500';
+              connectionStatus.className = connectionStatus.className.replace(/border-\w+-200/g, '') + ' border-green-200 bg-green-50 dark:bg-green-900/20';
+              break;
+            case 'error':
+              statusIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
+              connectionStatus.className = connectionStatus.className.replace(/border-\w+-200/g, '') + ' border-red-200 bg-red-50 dark:bg-red-900/20';
+              break;
           }
-          const servient = new window.WoT.Core.Servient();
-          servient.addClientFactory(new window.WoT.Http.HttpClientFactory());
-          const wot = await servient.start();
-          return wot;
         }
 
-        (async () => {
-          try {
-            const wot = await withServient();
-            if (!wot) return;
-            const td = await (await fetch(TD_BOOL_URL)).json();
-            const thing = await wot.consume(td);
+        function updateTDInfo(td) {
+          if (tdTitleDisplay) tdTitleDisplay.textContent = td.title || 'Unknown';
+          if (tdDescriptionDisplay) tdDescriptionDisplay.textContent = td.description || 'No description';
+          if (tdPropertiesCount) tdPropertiesCount.textContent = Object.keys(td.properties || {}).length;
+        }
 
-            // Initial read
-            const current = await thing.readProperty(PROPERTY_NAME);
-            const boolVal = Boolean(await current.value());
-            if (rwToggle) rwToggle.value = boolVal;
-            if (statusToggle) statusToggle.value = boolVal;
-
-            // Observe changes if supported
-            try {
-              await thing.observeProperty(PROPERTY_NAME, async data => {
-                const v = Boolean(await data.value());
-                if (rwToggle) rwToggle.value = v;
-                if (statusToggle) statusToggle.value = v;
-              });
-            } catch (obsErr) {
-              console.warn('Observation not supported:', obsErr?.message || obsErr);
-            }
-
-            // Write on valueChange (skip if mode=read)
-            if (rwToggle) {
-              rwToggle.addEventListener('valueChange', async e => {
-                try {
-                  await thing.writeProperty(PROPERTY_NAME, !!e.detail.value);
-                } catch (err) {
-                  console.warn('Write failed:', err?.message || err);
-                }
-              });
-            }
-          } catch (err) {
-            console.warn('Node-WoT demo setup failed:', err?.message || err);
+        function updatePropertyValue(elementId, value, rawValue = null) {
+          const element = document.getElementById(elementId);
+          if (element) {
+            element.textContent = rawValue !== null 
+              ? `Value: ${value} (raw: ${rawValue})` 
+              : `Value: ${value}`;
           }
-        })();
+        }
+
+        function updateLastUpdate(elementId) {
+          const element = document.getElementById(elementId);
+          if (element) {
+            element.textContent = `Last update: ${new Date().toLocaleTimeString()}`;
+          }
+        }
+
+        // Main WoT integration function
+        async function initializeWoTIntegration() {
+          try {
+            setConnectionStatus('connecting', 'Initializing node-wot...');
+            
+            // Wait for WoT bundle to be available
+            if (!window.WoT) {
+              throw new Error('WoT browser bundle not loaded');
+            }
+
+            // Create and configure servient
+            const servient = new window.WoT.Core.Servient();
+            servient.addClientFactory(new window.WoT.Http.HttpClientFactory());
+            const wot = await servient.start();
+
+            setConnectionStatus('connecting', 'Fetching Thing Description...');
+            
+            // Fetch and consume Thing Description
+            const tdResponse = await fetch(TD_URL);
+            if (!tdResponse.ok) {
+              throw new Error(`HTTP ${tdResponse.status}: ${tdResponse.statusText}`);
+            }
+            
+            const td = await tdResponse.json();
+            console.log('Thing Description:', td);
+            
+            currentThing = await wot.consume(td);
+            
+            setConnectionStatus('connected', 'Connected to Thing Description');
+            updateTDInfo(td);
+            
+            // Setup property integrations
+            await setupBooleanPropertyIntegration();
+            await setupIntegerPropertyIntegration();
+            
+            console.log('WoT integration initialized successfully');
+            
+          } catch (error) {
+            console.error('WoT integration failed:', error);
+            setConnectionStatus('error', `Connection failed: ${error.message}`);
+          }
+        }
+
+        // Boolean property integration (readwrite mode)
+        async function setupBooleanPropertyIntegration() {
+          if (!currentThing || !wotBoolToggle) return;
+          
+          const propertyName = 'bool';
+          
+          try {
+            // Initial read
+            const initialValue = await currentThing.readProperty(propertyName);
+            const boolValue = Boolean(await initialValue.value());
+            
+            // Update component value
+            wotBoolToggle.value = boolValue;
+            updatePropertyValue('wotBoolValue', boolValue);
+            updateLastUpdate('wotBoolLastUpdate');
+            
+            console.log(`Initial ${propertyName} value:`, boolValue);
+            
+            // Set up observation if supported
+            try {
+              await currentThing.observeProperty(propertyName, async (data) => {
+                const observedValue = Boolean(await data.value());
+                console.log(`Observed ${propertyName} change:`, observedValue);
+                
+                // Update UI component
+                wotBoolToggle.value = observedValue;
+                updatePropertyValue('wotBoolValue', observedValue);
+                updateLastUpdate('wotBoolLastUpdate');
+              });
+              
+              console.log(`Observing ${propertyName} property`);
+            } catch (obsError) {
+              console.warn(`Observation not supported for ${propertyName}:`, obsError.message);
+              
+              // Fallback to polling every 5 seconds
+              const interval = setInterval(async () => {
+                try {
+                  const currentValue = await currentThing.readProperty(propertyName);
+                  const boolValue = Boolean(await currentValue.value());
+                  
+                  if (wotBoolToggle.value !== boolValue) {
+                    wotBoolToggle.value = boolValue;
+                    updatePropertyValue('wotBoolValue', boolValue);
+                    updateLastUpdate('wotBoolLastUpdate');
+                    console.log(`Polled ${propertyName} change:`, boolValue);
+                  }
+                } catch (pollError) {
+                  console.warn(`Polling error for ${propertyName}:`, pollError.message);
+                }
+              }, 5000);
+              
+              readIntervals.set(propertyName, interval);
+            }
+            
+            // Handle writes from component
+            wotBoolToggle.addEventListener('valueChange', async (event) => {
+              if (wotBoolToggle.mode === 'read') return; // Skip if read-only
+              
+              try {
+                const newValue = Boolean(event.detail.value);
+                console.log(`Writing ${propertyName}:`, newValue);
+                
+                await currentThing.writeProperty(propertyName, newValue);
+                
+                updatePropertyValue('wotBoolValue', newValue);
+                updateLastUpdate('wotBoolLastUpdate');
+                
+                console.log(`Successfully wrote ${propertyName}:`, newValue);
+              } catch (writeError) {
+                console.error(`Write error for ${propertyName}:`, writeError.message);
+                // Revert component to previous value on error
+                const currentValue = await currentThing.readProperty(propertyName);
+                const revertValue = Boolean(await currentValue.value());
+                wotBoolToggle.value = revertValue;
+              }
+            });
+            
+          } catch (error) {
+            console.error(`Setup error for ${propertyName}:`, error.message);
+          }
+        }
+
+        // Integer property integration (read-only mode, displayed as boolean)
+        async function setupIntegerPropertyIntegration() {
+          if (!currentThing || !wotIntStatus) return;
+          
+          const propertyName = 'int';
+          
+          try {
+            // Initial read
+            const initialValue = await currentThing.readProperty(propertyName);
+            const intValue = await initialValue.value();
+            const boolValue = intValue > 0; // Convert integer to boolean
+            
+            // Update component value (read-only mode)
+            wotIntStatus.value = boolValue;
+            updatePropertyValue('wotIntValue', boolValue, intValue);
+            updateLastUpdate('wotIntLastUpdate');
+            
+            console.log(`Initial ${propertyName} value:`, intValue, '(as boolean:', boolValue, ')');
+            
+            // Set up observation if supported
+            try {
+              await currentThing.observeProperty(propertyName, async (data) => {
+                const observedIntValue = await data.value();
+                const observedBoolValue = observedIntValue > 0;
+                console.log(`Observed ${propertyName} change:`, observedIntValue, '(as boolean:', observedBoolValue, ')');
+                
+                // Update UI component
+                wotIntStatus.value = observedBoolValue;
+                updatePropertyValue('wotIntValue', observedBoolValue, observedIntValue);
+                updateLastUpdate('wotIntLastUpdate');
+              });
+              
+              console.log(`Observing ${propertyName} property`);
+            } catch (obsError) {
+              console.warn(`Observation not supported for ${propertyName}:`, obsError.message);
+              
+              // Fallback to polling every 5 seconds
+              const interval = setInterval(async () => {
+                try {
+                  const currentValue = await currentThing.readProperty(propertyName);
+                  const intValue = await currentValue.value();
+                  const boolValue = intValue > 0;
+                  
+                  if (wotIntStatus.value !== boolValue) {
+                    wotIntStatus.value = boolValue;
+                    updatePropertyValue('wotIntValue', boolValue, intValue);
+                    updateLastUpdate('wotIntLastUpdate');
+                    console.log(`Polled ${propertyName} change:`, intValue, '(as boolean:', boolValue, ')');
+                  }
+                } catch (pollError) {
+                  console.warn(`Polling error for ${propertyName}:`, pollError.message);
+                }
+              }, 5000);
+              
+              readIntervals.set(propertyName, interval);
+            }
+            
+          } catch (error) {
+            console.error(`Setup error for ${propertyName}:`, error.message);
+          }
+        }
+
+        // Cleanup function
+        window.cleanupWoTIntegration = function() {
+          // Stop observations
+          observationSubscriptions.forEach((subscription, propertyName) => {
+            try {
+              subscription.stop();
+              console.log(`Stopped observation for ${propertyName}`);
+            } catch (error) {
+              console.warn(`Error stopping observation for ${propertyName}:`, error.message);
+            }
+          });
+          observationSubscriptions.clear();
+          
+          // Clear polling intervals
+          readIntervals.forEach((interval, propertyName) => {
+            clearInterval(interval);
+            console.log(`Cleared polling interval for ${propertyName}`);
+          });
+          readIntervals.clear();
+          
+          currentThing = null;
+          setConnectionStatus('error', 'Disconnected');
+        };
+
+        // Initialize integration when page loads
+        // Add a small delay to ensure all components are ready
+        setTimeout(initializeWoTIntegration, 1000);
       });
     </script>
 
