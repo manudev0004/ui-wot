@@ -263,6 +263,7 @@ export class UiToggle {
     
     const newActiveState = this.parseValue(newVal);
     if (this.isActive !== newActiveState) {
+      console.log(`[${this.label || 'ui-toggle'}] Value updated:`, this.isActive, '->', newActiveState);
       this.isActive = newActiveState;
       
       // Emit events for external listeners

@@ -114,21 +114,43 @@
 &lt;/script&gt;</pre>
             </div>
 
-            <!-- Read-Only Mode (display only) -->
+            <!-- Read-Only Mode (same boolean property) -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode (Integer as Boolean)</h3>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode (Same Boolean Property)</h3>
               <div class="flex items-center gap-4">
-                <ui-toggle id="wotIntStatus" mode="read" variant="apple" color="secondary" label="Integer Status"></ui-toggle>
+                <ui-toggle id="wotBoolReadOnly" mode="read" variant="square" color="success" label="Boolean Status (Read-Only)"></ui-toggle>
+              </div>
+              <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <span id="wotBoolReadValue">Value: -</span> | 
+                <span id="wotBoolReadLastUpdate">Last update: -</span>
+              </div>
+              <div class="mt-2 text-xs text-green-600 dark:text-green-400">
+                This toggle mirrors the same 'bool' property as the readwrite toggle above
+              </div>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle id="wotBoolReadOnly" mode="read" 
+  variant="square" color="success" 
+  label="Boolean Status (Read-Only)"&gt;&lt;/ui-toggle&gt;</pre>
+            </div>
+          </div>
+
+          <!-- Additional Read-Only Example (Integer Property) -->
+          <div class="mt-6 grid grid-cols-1 gap-6">
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode (Integer as Boolean) - Different Property</h3>
+              <div class="flex items-center gap-4">
+                <ui-toggle id="wotIntStatus" mode="read" variant="apple" color="secondary" label="Integer Status (TD Connected)"></ui-toggle>
               </div>
               <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 <span id="wotIntValue">Raw value: -</span> | 
                 <span id="wotIntLastUpdate">Last update: -</span>
               </div>
+              <div class="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                This toggle automatically updates from the TD's 'int' property (converted to boolean: >0 = true)
+              </div>
               <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle id="wotIntStatus" mode="read" 
   variant="apple" color="secondary" 
   label="Integer Status"&gt;&lt;/ui-toggle&gt;</pre>
             </div>
-          </div>
 
           <!-- TD Information Display -->
           <div class="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -304,16 +326,24 @@
 
             <!-- Read-Only Mode -->
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Read-Only with Sync</h3>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Read-Only Local Demo (Not TD Connected)</h3>
               <div class="space-y-3 mb-3">
                 <ui-toggle 
                   id="readonly-demo"
                   mode="read"
-                  sync-interval="3000"
+                  sync-interval="30"
                   value="false"
                   reactive="true"
-                  label="Sensor Status">
+                  label="Local Sensor Status">
                 </ui-toggle>
+                <button 
+                  onclick="manualUpdateReadonly()" 
+                  class="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                  Simulate External Update
+                </button>
+              </div>
+              <div class="text-xs text-amber-600 dark:text-amber-400 mb-2">
+                Note: This is a local demo. For real TD integration, see the TD section above.
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle mode="read" sync-interval="3000"&gt;</pre>
             </div>
@@ -1191,13 +1221,41 @@
 
       // Read-only Demo with Auto-sync
       let readonlyState = false;
-      document.getElementById('readonly-demo')?.addEventListener('syncRequest', (e) => {
-        console.log('Sync request received:', e.detail);
-        // Simulate fetching data from external source
-        readonlyState = !readonlyState;
-        document.getElementById('readonly-demo').value = readonlyState;
-        console.log('Read-only demo synced to:', readonlyState);
-      });
+      
+      // Setup read-only demo with proper event handling
+      function setupReadonlyDemo() {
+        const readonlyDemo = document.getElementById('readonly-demo');
+        if (readonlyDemo) {
+          readonlyDemo.addEventListener('syncRequest', (e) => {
+            console.log('Sync request received:', e.detail);
+            // Simulate fetching data from external source
+            readonlyState = !readonlyState;
+            readonlyDemo.value = readonlyState;
+            console.log('Read-only demo synced to:', readonlyState);
+          });
+          
+          // Start with initial state
+          readonlyDemo.value = readonlyState;
+        }
+      }
+      
+      // Manual update function for testing
+      window.manualUpdateReadonly = function() {
+        const readonlyDemo = document.getElementById('readonly-demo');
+        if (readonlyDemo) {
+          readonlyState = !readonlyState;
+          console.log('Before update - Current DOM value:', readonlyDemo.value, 'New state:', readonlyState);
+          
+          // Update the value attribute
+          readonlyDemo.setAttribute('value', readonlyState.toString());
+          readonlyDemo.value = readonlyState;
+          
+          console.log('After update - DOM value:', readonlyDemo.value, 'Attribute:', readonlyDemo.getAttribute('value'));
+          console.log('Manual update - Read-only demo updated to:', readonlyState);
+        } else {
+          console.error('readonly-demo element not found!');
+        }
+      };
 
       // Validation Function
       window.confirmAction = function(newValue, currentValue, label) {
@@ -1300,6 +1358,25 @@
             console.log(`Slider value changed to: ${e.detail.value}`);
           });
         });
+        
+        // Initialize enhanced demo features
+        setupReadonlyDemo();
+        
+        // Add event listeners for enhanced demo components
+        const reactiveDemo = document.getElementById('reactive-demo');
+        if (reactiveDemo) {
+          reactiveDemo.addEventListener('valueChange', (e) => {
+            console.log('Reactive demo value changed:', e.detail.value);
+          });
+        }
+        
+        const validationDemo = document.getElementById('validation-demo');
+        if (validationDemo) {
+          validationDemo.addEventListener('validationError', (e) => {
+            console.log('Validation error:', e.detail.message);
+            alert('Validation failed: ' + e.detail.message);
+          });
+        }
       });
 
       // Demo functions for local control toggles
@@ -1372,9 +1449,12 @@
         
         // Component references
         const wotBoolToggle = document.getElementById('wotBoolToggle');
+        const wotBoolReadOnly = document.getElementById('wotBoolReadOnly');
         const wotIntStatus = document.getElementById('wotIntStatus');
         const wotBoolValue = document.getElementById('wotBoolValue');
         const wotBoolLastUpdate = document.getElementById('wotBoolLastUpdate');
+        const wotBoolReadValue = document.getElementById('wotBoolReadValue');
+        const wotBoolReadLastUpdate = document.getElementById('wotBoolReadLastUpdate');
         const wotIntValue = document.getElementById('wotIntValue');
         const wotIntLastUpdate = document.getElementById('wotIntLastUpdate');
         
@@ -1461,6 +1541,7 @@
             
             // Setup property integrations
             await setupBooleanPropertyIntegration();
+            await setupBooleanReadOnlyIntegration();
             await setupIntegerPropertyIntegration();
             
             console.log('WoT integration initialized successfully');
@@ -1553,11 +1634,90 @@
           }
         }
 
+        // Boolean property integration (read-only mode, same property as readwrite)
+        async function setupBooleanReadOnlyIntegration() {
+          if (!currentThing || !wotBoolReadOnly) {
+            console.error('setupBooleanReadOnlyIntegration: Missing dependencies', { currentThing: !!currentThing, wotBoolReadOnly: !!wotBoolReadOnly });
+            return;
+          }
+          
+          const propertyName = 'bool';
+          console.log('Setting up read-only boolean property integration for:', propertyName);
+          
+          try {
+            // Initial read
+            const initialValue = await currentThing.readProperty(propertyName);
+            const boolValue = Boolean(await initialValue.value());
+            
+            console.log('Initial read-only boolean value read:', { boolValue, component: wotBoolReadOnly.id });
+            
+            // Update component value (read-only mode)
+            wotBoolReadOnly.value = boolValue;
+            updatePropertyValue('wotBoolReadValue', boolValue);
+            updateLastUpdate('wotBoolReadLastUpdate');
+            
+            console.log(`Initial read-only ${propertyName} value:`, boolValue);
+            console.log('Read-only component updated - checking value:', wotBoolReadOnly.value);
+            
+            // Set up observation if supported
+            try {
+              await currentThing.observeProperty(propertyName, async (data) => {
+                const observedValue = Boolean(await data.value());
+                console.log(`Observed read-only ${propertyName} change:`, observedValue);
+                console.log('Before update - read-only component value:', wotBoolReadOnly.value);
+                
+                // Update UI component
+                wotBoolReadOnly.value = observedValue;
+                updatePropertyValue('wotBoolReadValue', observedValue);
+                updateLastUpdate('wotBoolReadLastUpdate');
+                
+                console.log('After update - read-only component value:', wotBoolReadOnly.value);
+              });
+              
+              console.log(`Successfully observing read-only ${propertyName} property`);
+            } catch (obsError) {
+              console.warn(`Observation not supported for read-only ${propertyName}:`, obsError.message);
+              console.log('Setting up polling fallback for read-only...');
+              
+              // Fallback to polling every 3 seconds (faster than integer polling)
+              const interval = setInterval(async () => {
+                try {
+                  const currentValue = await currentThing.readProperty(propertyName);
+                  const boolValue = Boolean(await currentValue.value());
+                  
+                  console.log('Read-only polling update:', { boolValue, currentComponentValue: wotBoolReadOnly.value });
+                  
+                  if (wotBoolReadOnly.value !== boolValue) {
+                    console.log('Read-only value changed - updating component');
+                    wotBoolReadOnly.value = boolValue;
+                    updatePropertyValue('wotBoolReadValue', boolValue);
+                    updateLastUpdate('wotBoolReadLastUpdate');
+                    console.log(`Polled read-only ${propertyName} change:`, boolValue);
+                  } else {
+                    console.log('No change in read-only polled value');
+                  }
+                } catch (pollError) {
+                  console.warn(`Polling error for read-only ${propertyName}:`, pollError.message);
+                }
+              }, 3000);
+              
+              readIntervals.set(`${propertyName}_readonly`, interval);
+            }
+            
+          } catch (error) {
+            console.error(`Setup error for read-only ${propertyName}:`, error.message);
+          }
+        }
+
         // Integer property integration (read-only mode, displayed as boolean)
         async function setupIntegerPropertyIntegration() {
-          if (!currentThing || !wotIntStatus) return;
+          if (!currentThing || !wotIntStatus) {
+            console.error('setupIntegerPropertyIntegration: Missing dependencies', { currentThing: !!currentThing, wotIntStatus: !!wotIntStatus });
+            return;
+          }
           
           const propertyName = 'int';
+          console.log('Setting up integer property integration for:', propertyName);
           
           try {
             // Initial read
@@ -1565,12 +1725,15 @@
             const intValue = await initialValue.value();
             const boolValue = intValue > 0; // Convert integer to boolean
             
+            console.log('Initial integer value read:', { intValue, boolValue, component: wotIntStatus.id });
+            
             // Update component value (read-only mode)
             wotIntStatus.value = boolValue;
             updatePropertyValue('wotIntValue', boolValue, intValue);
             updateLastUpdate('wotIntLastUpdate');
             
             console.log(`Initial ${propertyName} value:`, intValue, '(as boolean:', boolValue, ')');
+            console.log('Component updated - checking value:', wotIntStatus.value);
             
             // Set up observation if supported
             try {
@@ -1578,16 +1741,20 @@
                 const observedIntValue = await data.value();
                 const observedBoolValue = observedIntValue > 0;
                 console.log(`Observed ${propertyName} change:`, observedIntValue, '(as boolean:', observedBoolValue, ')');
+                console.log('Before update - component value:', wotIntStatus.value);
                 
                 // Update UI component
                 wotIntStatus.value = observedBoolValue;
                 updatePropertyValue('wotIntValue', observedBoolValue, observedIntValue);
                 updateLastUpdate('wotIntLastUpdate');
+                
+                console.log('After update - component value:', wotIntStatus.value);
               });
               
-              console.log(`Observing ${propertyName} property`);
+              console.log(`Successfully observing ${propertyName} property`);
             } catch (obsError) {
               console.warn(`Observation not supported for ${propertyName}:`, obsError.message);
+              console.log('Setting up polling fallback...');
               
               // Fallback to polling every 5 seconds
               const interval = setInterval(async () => {
@@ -1596,11 +1763,16 @@
                   const intValue = await currentValue.value();
                   const boolValue = intValue > 0;
                   
+                  console.log('Polling update:', { intValue, boolValue, currentComponentValue: wotIntStatus.value });
+                  
                   if (wotIntStatus.value !== boolValue) {
+                    console.log('Value changed - updating component');
                     wotIntStatus.value = boolValue;
                     updatePropertyValue('wotIntValue', boolValue, intValue);
                     updateLastUpdate('wotIntLastUpdate');
                     console.log(`Polled ${propertyName} change:`, intValue, '(as boolean:', boolValue, ')');
+                  } else {
+                    console.log('No change in polled value');
                   }
                 } catch (pollError) {
                   console.warn(`Polling error for ${propertyName}:`, pollError.message);
