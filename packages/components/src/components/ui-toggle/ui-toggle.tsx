@@ -1,4 +1,4 @@
-import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
+import { Component, Prop, State, h, Event, EventEmitter, Watch } from '@stencil/core';
 
 export interface UiToggleToggleEvent { active: boolean }
 export interface UiToggleValueChange { value: boolean; label?: string }
@@ -174,6 +174,17 @@ export class UiToggle {
       } else {
         this.isActive = Boolean(this.value);
       }
+    }
+  }
+
+  /** Keep UI in sync when `value` prop changes from the outside */
+  @Watch('value')
+  watchValue(newVal: boolean | string | undefined) {
+    if (newVal === undefined) return;
+    if (typeof newVal === 'string') {
+      this.isActive = this.parseValue(newVal);
+    } else {
+      this.isActive = Boolean(newVal);
     }
   }
 

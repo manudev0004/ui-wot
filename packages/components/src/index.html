@@ -82,40 +82,28 @@
 
       <!-- Toggle Content -->
       <div id="toggle-content" class="tab-content">
-        <!-- TD Integration -->
+        <!-- TD Integration (via Node-WoT in page script) -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Thing Description Integration</h2>
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Thing Description Integration (Node-WoT)</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Read-Write Mode -->
+            <!-- Read-Write Mode using node-wot -->
             <div>
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Write Mode (Default)</h3>
-              <ui-toggle
-                td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
-                protocol="http"
-                mode="readwrite"
-                variant="neon"
-                color="primary"
-                label="HTTP Device"
-              >
-              </ui-toggle>
-              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle
-  td-url="http://device.local/power"
-  protocol="http"
-  label="HTTP Device"&gt;
-&lt;/ui-toggle&gt;</pre>
+              <ui-toggle id="wotBoolToggle" mode="readwrite" variant="neon" color="primary" label="HTTP Device"></ui-toggle>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js" defer&gt;&lt;/script&gt;
+&lt;ui-toggle id="wotBoolToggle" mode="readwrite" label="HTTP Device"&gt;&lt;/ui-toggle&gt;
+&lt;script&gt;
+// see script block at bottom for full wiring example
+&lt;/script&gt;</pre>
             </div>
 
-            <!-- Read-Only Mode -->
+            <!-- Read-Only Mode (display only) -->
             <div>
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode (Status Display)</h3>
               <div class="flex items-center gap-4">
-                <ui-toggle td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool" protocol="http" mode="read" label="Sensor Status"> </ui-toggle>
+                <ui-toggle id="wotBoolStatus" mode="read" label="Sensor Status"></ui-toggle>
               </div>
-              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle
-  td-url="http://sensor.local/status"
-  mode="read"
-  label="Sensor Status"&gt;
-&lt;/ui-toggle&gt;</pre>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle id="wotBoolStatus" mode="read" label="Sensor Status"&gt;&lt;/ui-toggle&gt;</pre>
             </div>
           </div>
         </div>
@@ -968,7 +956,8 @@
       
       </div>
 
-    <script>
+  <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js" defer></script>
+  <script>
       const themeToggle = document.getElementById('theme-toggle');
       const html = document.documentElement;
       const toggleTab = document.getElementById('toggle-tab');
@@ -1142,7 +1131,68 @@
       }
 
       // Initialize status on page load
-      document.addEventListener('DOMContentLoaded', updateDeviceStatus);
+      document.addEventListener('DOMContentLoaded', () => {
+        updateDeviceStatus();
+
+        // Node-WoT integration demo for boolean property
+        // TD endpoint (PlugFest demo): boolean property
+        const TD_BOOL_URL = 'http://plugfest.thingweb.io/http-data-schema-thing';
+        const PROPERTY_NAME = 'bool';
+
+        const statusToggle = document.getElementById('wotBoolStatus');
+        const rwToggle = document.getElementById('wotBoolToggle');
+
+        async function withServient() {
+          // Ensure WoT global is available (script has defer and DOMContentLoaded waits)
+          if (!window.WoT) {
+            console.warn('WoT browser bundle not available yet');
+            return undefined;
+          }
+          const servient = new window.WoT.Core.Servient();
+          servient.addClientFactory(new window.WoT.Http.HttpClientFactory());
+          const wot = await servient.start();
+          return wot;
+        }
+
+        (async () => {
+          try {
+            const wot = await withServient();
+            if (!wot) return;
+            const td = await (await fetch(TD_BOOL_URL)).json();
+            const thing = await wot.consume(td);
+
+            // Initial read
+            const current = await thing.readProperty(PROPERTY_NAME);
+            const boolVal = Boolean(await current.value());
+            if (rwToggle) rwToggle.value = boolVal;
+            if (statusToggle) statusToggle.value = boolVal;
+
+            // Observe changes if supported
+            try {
+              await thing.observeProperty(PROPERTY_NAME, async data => {
+                const v = Boolean(await data.value());
+                if (rwToggle) rwToggle.value = v;
+                if (statusToggle) statusToggle.value = v;
+              });
+            } catch (obsErr) {
+              console.warn('Observation not supported:', obsErr?.message || obsErr);
+            }
+
+            // Write on valueChange (skip if mode=read)
+            if (rwToggle) {
+              rwToggle.addEventListener('valueChange', async e => {
+                try {
+                  await thing.writeProperty(PROPERTY_NAME, !!e.detail.value);
+                } catch (err) {
+                  console.warn('Write failed:', err?.message || err);
+                }
+              });
+            }
+          } catch (err) {
+            console.warn('Node-WoT demo setup failed:', err?.message || err);
+          }
+        })();
+      });
     </script>
 
     <style>
