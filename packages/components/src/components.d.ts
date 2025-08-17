@@ -473,6 +473,10 @@ export namespace Components {
      */
     interface UiToggle {
         /**
+          * Apply an external value to this component (will go through validation and emit events).
+         */
+        "applyExternalValue": (value: boolean | string) => Promise<boolean>;
+        /**
           * Auto-sync hint: if present and true or a number (milliseconds) a page-level wiring script may set up polling/observe. Stored as attribute (string) when used in HTML. Parsed by page wiring utilities. Component itself does not start any network activity.
          */
         "autoSync"?: boolean | number | string;
@@ -486,6 +490,11 @@ export namespace Components {
           * @default 100
          */
         "debounce": number;
+        /**
+          * Enable debug logging for development. Gate console output when true.
+          * @default false
+         */
+        "debug": boolean;
         /**
           * Enable keyboard navigation (Space and Enter keys). Default: true
           * @default true
@@ -505,6 +514,10 @@ export namespace Components {
          */
         "mode": 'read' | 'write' | 'readwrite';
         /**
+          * Public method: register a local observer function to be called when the value changes. Useful for page-level wiring utilities.
+         */
+        "observeLocal": (fn: (value: boolean) => void) => Promise<void>;
+        /**
           * Enable automatic state reflection from external value changes. When true, the component will automatically update its visual state when value prop changes. Default: true
           * @default true
          */
@@ -518,6 +531,10 @@ export namespace Components {
           * @default 'default'
          */
         "state": 'active' | 'disabled' | 'default';
+        /**
+          * Stop all registered local observers
+         */
+        "stopObservingLocal": () => Promise<void>;
         /**
           * Auto-sync interval in milliseconds for read mode. When set, the component will emit 'sync-request' events at this interval. External systems can listen to this event to update the value prop. Default: 0 (disabled)
           * @default 0
@@ -542,9 +559,17 @@ export namespace Components {
          */
         "validator"?: string;
         /**
+          * Typed validator callback. Preferred over the string `validator` lookup. Accepts sync or async functions. If provided, it will be called first.
+         */
+        "validatorFn"?: (newValue: boolean, currentValue: boolean, label?: string) => boolean | Promise<boolean>;
+        /**
           * Local value for the toggle. Accepts boolean or string values (string will be parsed). This is the primary way to control the toggle state externally.
          */
         "value"?: boolean | string;
+        /**
+          * Compact source descriptor. Format: "<scheme>://<identifier>". Examples:  - js://myApp.state.lightOn  (read JS path from window safely)  - td://bool                 (map to TD property 'bool', page helper wires)  - el://#otherToggle         (mirror another component by selector) NOTE: component does not resolve network or perform eval; this is a declarative hint.
+         */
+        "valueSource"?: string;
         /**
           * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
           * @default 'circle'
@@ -1413,6 +1438,11 @@ declare namespace LocalJSX {
          */
         "debounce"?: number;
         /**
+          * Enable debug logging for development. Gate console output when true.
+          * @default false
+         */
+        "debug"?: boolean;
+        /**
           * Enable keyboard navigation (Space and Enter keys). Default: true
           * @default true
          */
@@ -1492,9 +1522,17 @@ declare namespace LocalJSX {
          */
         "validator"?: string;
         /**
+          * Typed validator callback. Preferred over the string `validator` lookup. Accepts sync or async functions. If provided, it will be called first.
+         */
+        "validatorFn"?: (newValue: boolean, currentValue: boolean, label?: string) => boolean | Promise<boolean>;
+        /**
           * Local value for the toggle. Accepts boolean or string values (string will be parsed). This is the primary way to control the toggle state externally.
          */
         "value"?: boolean | string;
+        /**
+          * Compact source descriptor. Format: "<scheme>://<identifier>". Examples:  - js://myApp.state.lightOn  (read JS path from window safely)  - td://bool                 (map to TD property 'bool', page helper wires)  - el://#otherToggle         (mirror another component by selector) NOTE: component does not resolve network or perform eval; this is a declarative hint.
+         */
+        "valueSource"?: string;
         /**
           * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
           * @default 'circle'

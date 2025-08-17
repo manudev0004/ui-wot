@@ -1,4 +1,4 @@
-import { Component, Prop, State, h, Event, EventEmitter, Watch } from '@stencil/core';
+import { Component, Prop, State, h, Event, EventEmitter, Watch, Element, Method } from '@stencil/core';
 
 export interface UiToggleToggleEvent { active: boolean }
 export interface UiToggleValueChange { value: boolean; label?: string }
@@ -88,6 +88,7 @@ export interface UiToggleValueChange { value: boolean; label?: string }
   shadow: true,
 })
 export class UiToggle {
+  @Element() hostElement: HTMLElement;
   /**
    * Visual style variant of the toggle.
    * - circle: Common pill-shaped toggle (default)
@@ -183,20 +184,20 @@ export class UiToggle {
    * External systems can listen to this event to update the value prop.
    * Default: 0 (disabled)
    */
-  @Prop() syncInterval: number = 0;
+  @Prop({ reflect: true }) syncInterval: number = 0;
 
   /**
    * Declarative TD property name. Page scripts may use this to auto-wire this element to a TD property.
    * Example: td-property="bool"
    * NOTE: Component does not perform any network operations. This is a lightweight hint only.
    */
-  @Prop() tdProperty?: string;
+  @Prop({ reflect: true }) tdProperty?: string;
 
   /**
    * Lightweight hint to the TD base URL for page-level wiring. Component does not perform network requests.
    * Example: td-url="http://plugfest.thingweb.io/http-data-schema-thing"
    */
-  @Prop() tdUrl?: string;
+  @Prop({ reflect: true }) tdUrl?: string;
 
   /**
    * Auto-sync hint: if present and true or a number (milliseconds) a page-level wiring script may set up polling/observe.
@@ -217,12 +218,33 @@ export class UiToggle {
    * - manual: component will require external explicit writes
    * - none: component is purely read-only from the page wiring perspective
    */
-  @Prop() writeOn: 'auto' | 'manual' | 'none' = 'auto';
+  @Prop({ reflect: true }) writeOn: 'auto' | 'manual' | 'none' = 'auto';
 
   /**
    * Short label for compact UI (accessibility + compact representations).
    */
-  @Prop() shortLabel?: string;
+  @Prop({ reflect: true }) shortLabel?: string;
+
+  /**
+   * Compact source descriptor. Format: "<scheme>://<identifier>".
+   * Examples:
+   *  - js://myApp.state.lightOn  (read JS path from window safely)
+   *  - td://bool                 (map to TD property 'bool', page helper wires)
+   *  - el://#otherToggle         (mirror another component by selector)
+   * NOTE: component does not resolve network or perform eval; this is a declarative hint.
+   */
+  @Prop() valueSource?: string;
+
+  /**
+   * Typed validator callback. Preferred over the string `validator` lookup.
+   * Accepts sync or async functions. If provided, it will be called first.
+   */
+  @Prop() validatorFn?: (newValue: boolean, currentValue: boolean, label?: string) => boolean | Promise<boolean>;
+
+  /**
+   * Enable debug logging for development. Gate console output when true.
+   */
+  @Prop() debug: boolean = false;
 
   /**
    * Normalized autoSync value in milliseconds when attribute is provided as string.
@@ -249,6 +271,9 @@ export class UiToggle {
   /** Timer reference for sync interval */
   private syncTimer?: number;
 
+  /** Local observers registered via observeLocal */
+  private localObservers: Array<(value: boolean) => void> = [];
+
   /** Legacy event emitted when toggle state changes */
   @Event() toggle: EventEmitter<UiToggleToggleEvent>;
 
@@ -266,6 +291,27 @@ export class UiToggle {
 
   /** Event emitted after component is ready and initialized */
   @Event() ready: EventEmitter<{ value: boolean; mode: string }>;
+
+  /**
+   * Public method: register a local observer function to be called when the value changes.
+   * Useful for page-level wiring utilities.
+   */
+  @Method()
+  async observeLocal(fn: (value: boolean) => void) {
+    if (typeof fn === 'function') this.localObservers.push(fn);
+  }
+
+  /** Stop all registered local observers */
+  @Method()
+  async stopObservingLocal() {
+    this.localObservers.length = 0;
+  }
+
+  /** Apply an external value to this component (will go through validation and emit events). */
+  @Method()
+  async applyExternalValue(value: boolean | string) {
+    return this.setValue(value, true);
+  }
 
   /** Watch for value prop changes */
   // Keep watching `value` only to reflect external prop changes
@@ -315,11 +361,19 @@ export class UiToggle {
     
     const newActiveState = this.parseValue(newVal);
     if (this.isActive !== newActiveState) {
-      console.log(`[${this.label || 'ui-toggle'}] Value updated:`, this.isActive, '->', newActiveState);
+      if (this.debug) console.log(`[${this.label || 'ui-toggle'}] Value updated:`, this.isActive, '->', newActiveState);
       this.isActive = newActiveState;
       
+      // Notify local observers
+      this.localObservers.forEach(fn => {
+        try { fn(this.isActive); } catch (e) { if (this.debug) console.warn('observer error', e); }
+      });
+
       // Emit events for external listeners
       this.emitChangeEvents(this.isActive, true);
+      // Announce state change for screen readers
+      const announcer = this.hostElement?.querySelector('.sr-announcer') as HTMLElement | null;
+      if (announcer) announcer.textContent = `${this.label || 'Toggle'} is now ${this.isActive ? 'on' : 'off'}`;
     }
   }
 
@@ -348,28 +402,44 @@ export class UiToggle {
 
   /** Validate value change using custom validator if provided */
   private validateChange(newValue: boolean): boolean {
+    // Prefer typed validatorFn when present
+    if (this.validatorFn) {
+      try {
+        const res = this.validatorFn(newValue, this.isActive, this.label);
+        // handle promise or boolean
+        if (res && typeof (res as any).then === 'function') {
+          // synchronous API expected; if caller passed async, block and return false (page should use applyExternalValue)
+          // We will not await here to keep component synchronous; emit validation error
+          this.validationError.emit({ value: newValue, message: 'Async validatorFn not supported synchronously' });
+          return false;
+        }
+        if (!res) {
+          this.validationError.emit({ value: newValue, message: `Validation failed for value: ${newValue}` });
+        }
+        return !!res;
+      } catch (err) {
+        this.validationError.emit({ value: newValue, message: `validatorFn error: ${err}` });
+        return false;
+      }
+    }
+
+    // Fallback to legacy string-based validator if provided (backwards compatibility)
     if (!this.validator) return true;
-    
+
     try {
       const validatorFn = (window as any)[this.validator];
       if (typeof validatorFn === 'function') {
         const isValid = validatorFn(newValue, this.isActive, this.label);
         if (!isValid) {
-          this.validationError.emit({ 
-            value: newValue, 
-            message: `Validation failed for value: ${newValue}` 
-          });
+          this.validationError.emit({ value: newValue, message: `Validation failed for value: ${newValue}` });
         }
         return isValid;
       }
     } catch (error) {
-      this.validationError.emit({ 
-        value: newValue, 
-        message: `Validator function error: ${error}` 
-      });
+      this.validationError.emit({ value: newValue, message: `Validator function error: ${error}` });
       return false;
     }
-    
+
     return true;
   }
 
@@ -388,8 +458,18 @@ export class UiToggle {
       }
 
       // Emit events
+      // Preferred kebab-case event names
       this.valueChange.emit({ value: newValue, label: this.label });
       this.toggle.emit({ active: newValue });
+
+      // Also dispatch DOM CustomEvents with kebab-case names for consumers that use addEventListener('value-change')
+      try {
+        const detail = { value: newValue, label: this.label };
+        this.hostElement?.dispatchEvent(new CustomEvent('value-change', { detail, bubbles: true }));
+        this.hostElement?.dispatchEvent(new CustomEvent('toggle-change', { detail: { active: newValue }, bubbles: true }));
+      } catch (e) {
+        if (this.debug) console.warn('Dispatch kebab-case events failed', e);
+      }
     }, this.debounce);
   }
 
@@ -426,8 +506,9 @@ export class UiToggle {
       return;
     }
 
-    // Update state
-    this.isActive = newActive;
+  // Update state
+  this.isActive = newActive;
+  if (this.debug) console.log('handleToggle -> newActive', newActive);
 
     // Emit change events with debouncing
     this.emitChangeEvents(newActive, false);
@@ -584,6 +665,8 @@ export class UiToggle {
 
     return (
       <div class="inline-flex items-center space-x-3" part="container">
+  {/* Screen reader announcer for state changes */}
+  <span class="sr-only sr-announcer" aria-live="polite" style={{position: 'absolute', left: '-9999px'}}></span>
         {this.label && (
           <label
             class={`select-none mr-2 ${
@@ -596,6 +679,7 @@ export class UiToggle {
             onClick={() => canInteract && this.handleToggle()}
             title={hoverTitle}
             part="label"
+            id={`${this.hostElement?.id || 'ui-toggle'}-label`}
           >
             {this.label}
             {/* Add visual indicator for read-only mode */}
