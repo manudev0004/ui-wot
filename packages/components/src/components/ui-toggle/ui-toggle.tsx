@@ -185,6 +185,58 @@ export class UiToggle {
    */
   @Prop() syncInterval: number = 0;
 
+  /**
+   * Declarative TD property name. Page scripts may use this to auto-wire this element to a TD property.
+   * Example: td-property="bool"
+   * NOTE: Component does not perform any network operations. This is a lightweight hint only.
+   */
+  @Prop() tdProperty?: string;
+
+  /**
+   * Lightweight hint to the TD base URL for page-level wiring. Component does not perform network requests.
+   * Example: td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+   */
+  @Prop() tdUrl?: string;
+
+  /**
+   * Auto-sync hint: if present and true or a number (milliseconds) a page-level wiring script may set up polling/observe.
+   * Stored as attribute (string) when used in HTML. Parsed by page wiring utilities.
+   * Component itself does not start any network activity.
+   */
+  @Prop() autoSync?: boolean | number | string;
+
+  /**
+   * Mirror selector(s) to link other components (page wiring utility may use this).
+   * Example: mirror="#otherToggle" or mirror="#a,#b"
+   */
+  @Prop() mirror?: string;
+
+  /**
+   * Write behavior hint for page wiring: 'auto'|'manual'|'none'
+   * - auto: component suggests writes when user interacts (default)
+   * - manual: component will require external explicit writes
+   * - none: component is purely read-only from the page wiring perspective
+   */
+  @Prop() writeOn: 'auto' | 'manual' | 'none' = 'auto';
+
+  /**
+   * Short label for compact UI (accessibility + compact representations).
+   */
+  @Prop() shortLabel?: string;
+
+  /**
+   * Normalized autoSync value in milliseconds when attribute is provided as string.
+   * Returns 0 when autoSync is not set or invalid. This is a helper for page wiring to read.
+   */
+  get autoSyncMs(): number {
+    if (this.autoSync === undefined || this.autoSync === null) return 0;
+    if (typeof this.autoSync === 'number') return Number(this.autoSync) || 0;
+    if (typeof this.autoSync === 'boolean') return this.autoSync ? 3000 : 0;
+    // string
+    const parsed = parseInt(String(this.autoSync), 10);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+
   /** Internal state tracking if toggle is on/off */
   @State() isActive: boolean = false;
 

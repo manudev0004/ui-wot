@@ -473,6 +473,10 @@ export namespace Components {
      */
     interface UiToggle {
         /**
+          * Auto-sync hint: if present and true or a number (milliseconds) a page-level wiring script may set up polling/observe. Stored as attribute (string) when used in HTML. Parsed by page wiring utilities. Component itself does not start any network activity.
+         */
+        "autoSync"?: boolean | number | string;
+        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
@@ -492,6 +496,10 @@ export namespace Components {
          */
         "label"?: string;
         /**
+          * Mirror selector(s) to link other components (page wiring utility may use this). Example: mirror="#otherToggle" or mirror="#a,#b"
+         */
+        "mirror"?: string;
+        /**
           * Device interaction mode. - read: Only read from device (display current state, no user interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
           * @default 'readwrite'
          */
@@ -502,6 +510,10 @@ export namespace Components {
          */
         "reactive": boolean;
         /**
+          * Short label for compact UI (accessibility + compact representations).
+         */
+        "shortLabel"?: string;
+        /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'
          */
@@ -511,6 +523,14 @@ export namespace Components {
           * @default 0
          */
         "syncInterval": number;
+        /**
+          * Declarative TD property name. Page scripts may use this to auto-wire this element to a TD property. Example: td-property="bool" NOTE: Component does not perform any network operations. This is a lightweight hint only.
+         */
+        "tdProperty"?: string;
+        /**
+          * Lightweight hint to the TD base URL for page-level wiring. Component does not perform network requests. Example: td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+         */
+        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -530,6 +550,11 @@ export namespace Components {
           * @default 'circle'
          */
         "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
+        /**
+          * Write behavior hint for page wiring: 'auto'|'manual'|'none' - auto: component suggests writes when user interacts (default) - manual: component will require external explicit writes - none: component is purely read-only from the page wiring perspective
+          * @default 'auto'
+         */
+        "writeOn": 'auto' | 'manual' | 'none';
     }
 }
 export interface UiButtonCustomEvent<T> extends CustomEvent<T> {
@@ -1374,6 +1399,10 @@ declare namespace LocalJSX {
      */
     interface UiToggle {
         /**
+          * Auto-sync hint: if present and true or a number (milliseconds) a page-level wiring script may set up polling/observe. Stored as attribute (string) when used in HTML. Parsed by page wiring utilities. Component itself does not start any network activity.
+         */
+        "autoSync"?: boolean | number | string;
+        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
@@ -1392,6 +1421,10 @@ declare namespace LocalJSX {
           * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
          */
         "label"?: string;
+        /**
+          * Mirror selector(s) to link other components (page wiring utility may use this). Example: mirror="#otherToggle" or mirror="#a,#b"
+         */
+        "mirror"?: string;
         /**
           * Device interaction mode. - read: Only read from device (display current state, no user interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
           * @default 'readwrite'
@@ -1427,6 +1460,10 @@ declare namespace LocalJSX {
          */
         "reactive"?: boolean;
         /**
+          * Short label for compact UI (accessibility + compact representations).
+         */
+        "shortLabel"?: string;
+        /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'
          */
@@ -1436,6 +1473,14 @@ declare namespace LocalJSX {
           * @default 0
          */
         "syncInterval"?: number;
+        /**
+          * Declarative TD property name. Page scripts may use this to auto-wire this element to a TD property. Example: td-property="bool" NOTE: Component does not perform any network operations. This is a lightweight hint only.
+         */
+        "tdProperty"?: string;
+        /**
+          * Lightweight hint to the TD base URL for page-level wiring. Component does not perform network requests. Example: td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+         */
+        "tdUrl"?: string;
         /**
           * Theme for the component.
           * @default 'light'
@@ -1455,6 +1500,11 @@ declare namespace LocalJSX {
           * @default 'circle'
          */
         "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
+        /**
+          * Write behavior hint for page wiring: 'auto'|'manual'|'none' - auto: component suggests writes when user interacts (default) - manual: component will require external explicit writes - none: component is purely read-only from the page wiring perspective
+          * @default 'auto'
+         */
+        "writeOn"?: 'auto' | 'manual' | 'none';
     }
     interface IntrinsicElements {
         "ui-button": UiButton;
