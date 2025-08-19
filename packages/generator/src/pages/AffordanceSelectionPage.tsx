@@ -93,33 +93,33 @@ export function AffordanceSelectionPage() {
 
   const getComponentBadgeColor = (component: string) => {
     const colorMap: Record<string, string> = {
-      'ui-button': 'bg-blue-100 text-blue-800',
-      'ui-toggle': 'bg-green-100 text-green-800',
-      'ui-slider': 'bg-purple-100 text-purple-800',
-      'ui-number-picker': 'bg-orange-100 text-orange-800',
-      'ui-text': 'bg-gray-100 text-gray-800',
-      'ui-calendar': 'bg-pink-100 text-pink-800',
-      'ui-checkbox': 'bg-indigo-100 text-indigo-800',
+      'ui-button': 'bg-primary/10 text-primary',
+      'ui-toggle': 'bg-accent/10 text-accent',
+      'ui-slider': 'bg-primary-light/10 text-primary-light',
+      'ui-number-picker': 'bg-accent/20 text-primary',
+      'ui-text': 'bg-neutral-light/50 text-primary',
+      'ui-calendar': 'bg-primary/20 text-primary',
+      'ui-checkbox': 'bg-primary-light/20 text-primary-light',
     };
-    return colorMap[component] || 'bg-gray-100 text-gray-800';
+    return colorMap[component] || 'bg-neutral-light/50 text-primary';
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-light">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-primary/20">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <button onClick={handleBack} className="mr-4 p-2 text-gray-600 hover:text-gray-900" aria-label="Go back">
+              <button onClick={handleBack} className="mr-4 p-2 text-primary hover:text-primary-light font-heading" aria-label="Go back">
                 ← Back
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Select Affordances</h1>
-                <p className="text-sm text-gray-600 mt-1">
+                <h1 className="text-2xl font-hero text-primary">SELECT AFFORDANCES</h1>
+                <p className="text-sm text-primary/70 font-body mt-1">
                   {state.parsedTD?.title} - Choose which affordances to include
                   {state.components.length > 0 && (
-                    <span className="ml-2 text-blue-600">
+                    <span className="ml-2 text-accent">
                       (Adding to existing dashboard with {state.components.length} components)
                     </span>
                   )}
@@ -127,16 +127,16 @@ export function AffordanceSelectionPage() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <button onClick={handleSelectAll} className="text-sm text-blue-600 hover:text-blue-700">
+              <button onClick={handleSelectAll} className="text-sm text-accent hover:text-accent/80 font-heading">
                 Select All
               </button>
-              <button onClick={handleSelectNone} className="text-sm text-gray-600 hover:text-gray-700">
+              <button onClick={handleSelectNone} className="text-sm text-primary/70 hover:text-primary font-heading">
                 Select None
               </button>
               <button
                 onClick={handleLoad}
                 disabled={selectedAffordances.length === 0 || loading}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                className="bg-primary hover:bg-primary-light disabled:bg-gray-300 text-white font-heading font-medium py-2 px-6 rounded-lg transition-colors"
               >
                 {loading ? 'Loading...' : `Load (${selectedAffordances.length})`}
               </button>
@@ -152,7 +152,7 @@ export function AffordanceSelectionPage() {
             <div
               key={affordance.key}
               className={`bg-white rounded-lg border-2 transition-all cursor-pointer hover:shadow-md ${
-                selectedAffordances.includes(affordance.key) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                selectedAffordances.includes(affordance.key) ? 'border-accent bg-accent/5' : 'border-primary/20 hover:border-primary/40'
               }`}
               onClick={() => handleAffordanceToggle(affordance.key)}
             >
@@ -160,25 +160,25 @@ export function AffordanceSelectionPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center">
                     <div>
-                      <h3 className="font-medium text-gray-900">{affordance.title}</h3>
-                      <p className="text-sm text-gray-500 capitalize">{affordance.type}</p>
+                      <h3 className="font-heading font-medium text-primary">{affordance.title}</h3>
+                      <p className="text-sm text-primary/70 font-body capitalize">{affordance.type}</p>
                     </div>
                   </div>
                   <input
                     type="checkbox"
                     checked={selectedAffordances.includes(affordance.key)}
                     onChange={() => handleAffordanceToggle(affordance.key)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-primary border-primary/30 rounded focus:ring-primary"
                   />
                 </div>
 
-                {affordance.description && <p className="text-sm text-gray-600 mb-3">{affordance.description}</p>}
+                {affordance.description && <p className="text-sm text-black font-body mb-3">{affordance.description}</p>}
 
                 <div className="flex items-center justify-between">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getComponentBadgeColor(affordance.suggestedComponent)}`}>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-heading font-medium ${getComponentBadgeColor(affordance.suggestedComponent)}`}>
                     {affordance.suggestedComponent}
                   </span>
-                  {affordance.availableVariants.length > 1 && <span className="text-xs text-gray-500">+{affordance.availableVariants.length - 1} variants</span>}
+                  {affordance.availableVariants.length > 1 && <span className="text-xs text-primary/50 font-body">+{affordance.availableVariants.length - 1} variants</span>}
                 </div>
               </div>
             </div>
@@ -187,7 +187,7 @@ export function AffordanceSelectionPage() {
 
         {state.availableAffordances.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No affordances found in the Thing Description.</p>
+            <p className="text-primary/70 font-body">No affordances found in the Thing Description.</p>
           </div>
         )}
       </div>

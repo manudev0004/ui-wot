@@ -5,21 +5,21 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#1e40af', // blue-800
-          light: '#3b82f6',   // blue-500
+          DEFAULT: '#067362', // Primary Base
+          light: '#08967f',   // Primary Light
         },
         accent: {
-          DEFAULT: '#f59e0b', // amber-500
-          light: '#fbbf24',   // amber-400
+          DEFAULT: '#33b8a4', // Accent Highlight
+          light: '#33b8a4',   // Accent Highlight
         },
         neutral: {
-          light: '#f3f4f6',   // gray-100
+          light: '#E4E6E6',   // Neutral Light
         },
       },
       fontFamily: {
-        hero: ['Inter', 'system-ui', 'sans-serif'],
-        heading: ['Inter', 'system-ui', 'sans-serif'],
-        body: ['Inter', 'system-ui', 'sans-serif'],
+        hero: ['Bebas Neue', 'cursive'],
+        heading: ['Josefin Sans', 'sans-serif'],
+        body: ['Josefin Sans', 'sans-serif'],
       },
     },
   },

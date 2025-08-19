@@ -316,7 +316,7 @@ export function ComponentCanvasPage() {
                 </svg>
               </button>
               <div>
-                <h1 className="text-2xl font-hero font-bold text-primary">COMPONENT CANVAS</h1>
+                <h1 className="text-2xl font-hero font-bold text-primary">DASHBOARD</h1>
                 <p className="text-sm font-body text-gray-600 mt-1">
                   {state.tdInfos.length > 0 
                     ? `${state.tdInfos.length} TD${state.tdInfos.length > 1 ? 's' : ''} loaded - ${state.components.length} components`
@@ -330,13 +330,15 @@ export function ComponentCanvasPage() {
                 <label className="text-sm font-heading font-medium text-primary">Edit Mode:</label>
                 <button
                   onClick={() => setIsEditMode(!isEditMode)}
+                  aria-pressed={isEditMode}
+                  aria-label={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
+                  title={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
                     isEditMode ? 'bg-primary' : 'bg-gray-200'
                   }`}
                 >
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isEditMode ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
-                <span className="text-sm font-body text-gray-500">{isEditMode ? 'Enabled' : 'Disabled'}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <button

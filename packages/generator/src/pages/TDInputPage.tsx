@@ -109,18 +109,18 @@ export function TDInputPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-neutral-light py-8">
       <div className="max-w-2xl mx-auto px-4">
         {/* Header */}
         <div className="flex items-center mb-8">
-          <button onClick={handleBack} className="mr-4 p-2 text-gray-600 hover:text-gray-900" aria-label="Go back">
+          <button onClick={handleBack} className="mr-4 p-2 text-primary hover:text-primary-light font-heading" aria-label="Go back">
             ← Back
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {state.components.length > 0 ? 'Add Another Thing Description' : 'Add Thing Description'}
+          <h1 className="text-3xl font-hero text-primary">
+            {state.components.length > 0 ? 'ADD ANOTHER THING DESCRIPTION' : 'ADD THING DESCRIPTION'}
           </h1>
           {state.components.length > 0 && (
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-primary/70 font-body mt-1">
               Adding to existing dashboard with {state.components.length} components from {state.tdInfos.length} TD{state.tdInfos.length !== 1 ? 's' : ''}
             </p>
           )}
@@ -128,16 +128,16 @@ export function TDInputPage() {
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800">{error}</p>
+            <p className="text-red-800 font-body">{error}</p>
           </div>
         )}
 
         {/* URL Input */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">From URL</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-primary/20 p-6 mb-6">
+          <h2 className="text-xl font-heading font-semibold text-primary mb-4">From URL</h2>
           <form onSubmit={handleUrlSubmit} className="space-y-4">
             <div>
-              <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="url" className="block text-sm font-heading font-medium text-primary mb-2">
                 Thing Description URL
               </label>
               <input
@@ -146,14 +146,14 @@ export function TDInputPage() {
                 value={urlInput}
                 onChange={e => setUrlInput(e.target.value)}
                 placeholder="https://example.com/thing-description.json"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-primary/30 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-body"
                 disabled={loading}
               />
             </div>
             <button
               type="submit"
               disabled={loading || !urlInput.trim()}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              className="w-full bg-primary hover:bg-primary-light disabled:bg-gray-300 text-white font-heading font-medium py-2 px-4 rounded-lg transition-colors"
             >
               {loading ? 'Loading...' : 'Load from URL'}
             </button>
@@ -161,29 +161,29 @@ export function TDInputPage() {
         </div>
 
         {/* File Upload */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">From File</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-primary/20 p-6">
+          <h2 className="text-xl font-heading font-semibold text-primary mb-4">From File</h2>
           <div
             {...getRootProps()}
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-              isDragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+              isDragActive ? 'border-accent bg-accent/10' : 'border-primary/30 hover:border-primary/50'
             } ${loading ? 'pointer-events-none opacity-50' : ''}`}
           >
             <input {...getInputProps()} />
-            <div className="text-gray-600">
+            <div className="text-primary">
               {loading ? (
                 <div>
-                  <div className="text-lg font-medium">Processing...</div>
+                  <div className="text-lg font-heading font-medium">Processing...</div>
                 </div>
               ) : isDragActive ? (
                 <div>
-                  <div className="text-lg font-medium">Drop the file here</div>
+                  <div className="text-lg font-heading font-medium">Drop the file here</div>
                 </div>
               ) : (
                 <div>
-                  <div className="text-lg font-medium mb-2">Drag & drop a Thing Description file here</div>
-                  <div className="text-sm text-gray-500 mb-4">or click to select a file</div>
-                  <div className="text-xs text-gray-400">Supports .json and .jsonld files</div>
+                  <div className="text-lg font-heading font-medium mb-2">Drag & drop a Thing Description file here</div>
+                  <div className="text-sm text-primary/70 font-body mb-4">or click to select a file</div>
+                  <div className="text-xs text-primary/50 font-body">Supports .json and .jsonld files</div>
                 </div>
               )}
             </div>
