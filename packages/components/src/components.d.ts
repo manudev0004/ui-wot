@@ -424,7 +424,7 @@ export namespace Components {
      * ```html
      * <ui-toggle
      * mode="read"
-     * sync-interval="1000"
+     * syncInterval="1000"
      * label="Sensor Status"
      * reactive="true">
      * </ui-toggle>
@@ -477,14 +477,15 @@ export namespace Components {
          */
         "applyExternalValue": (value: boolean | string) => Promise<boolean>;
         /**
-          * Auto-sync hint: if present and true or a number (milliseconds) a page-level wiring script may set up polling/observe. Stored as attribute (string) when used in HTML. Parsed by page wiring utilities. Component itself does not start any network activity.
-         */
-        "autoSync"?: boolean | number | string;
-        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark": boolean;
         /**
           * Debounce delay in milliseconds for value change events. Prevents rapid firing of events during quick toggles. Default: 100ms
           * @default 100
@@ -504,9 +505,6 @@ export namespace Components {
           * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
          */
         "label"?: string;
-        /**
-          * Mirror selector(s) to link other components (page wiring utility may use this). Example: mirror="#otherToggle" or mirror="#a,#b"
-         */
         "mirror"?: string;
         /**
           * Device interaction mode. - read: Only read from device (display current state, no user interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
@@ -523,10 +521,6 @@ export namespace Components {
          */
         "reactive": boolean;
         /**
-          * Short label for compact UI (accessibility + compact representations).
-         */
-        "shortLabel"?: string;
-        /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'
          */
@@ -536,50 +530,27 @@ export namespace Components {
          */
         "stopObservingLocal": () => Promise<void>;
         /**
-          * Auto-sync interval in milliseconds for read mode. When set, the component will emit 'sync-request' events at this interval. External systems can listen to this event to update the value prop. Default: 0 (disabled)
+          * Auto-sync interval in milliseconds for read mode. When set, the component will emit 'syncRequest' events at this interval. External systems can listen to this event to update the value prop. Set to 0 to disable auto-sync. Default: 0 (disabled)
           * @default 0
          */
         "syncInterval": number;
         /**
-          * Declarative TD property name. Page scripts may use this to auto-wire this element to a TD property. Example: td-property="bool" NOTE: Component does not perform any network operations. This is a lightweight hint only.
+          * Declarative TD property name. Page scripts may use this to auto-wire this element to a TD property. Example: tdProperty="bool" NOTE: Component does not perform any network operations. This is a lightweight hint only.
          */
         "tdProperty"?: string;
         /**
-          * Lightweight hint to the TD base URL for page-level wiring. Component does not perform network requests. Example: td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+          * Lightweight hint to the TD base URL for page-level wiring. Component does not perform network requests. Example: tdUrl="http://plugfest.thingweb.io/http-data-schema-thing"
          */
         "tdUrl"?: string;
-        /**
-          * Theme for the component.
-          * @default 'light'
-         */
-        "theme": 'light' | 'dark';
-        /**
-          * Custom validation function name for value changes. The function should be available on window object and return boolean.
-          * @example validator="myValidationFunction"
-         */
-        "validator"?: string;
-        /**
-          * Typed validator callback. Preferred over the string `validator` lookup. Accepts sync or async functions. If provided, it will be called first.
-         */
-        "validatorFn"?: (newValue: boolean, currentValue: boolean, label?: string) => boolean | Promise<boolean>;
         /**
           * Local value for the toggle. Accepts boolean or string values (string will be parsed). This is the primary way to control the toggle state externally.
          */
         "value"?: boolean | string;
         /**
-          * Compact source descriptor. Format: "<scheme>://<identifier>". Examples:  - js://myApp.state.lightOn  (read JS path from window safely)  - td://bool                 (map to TD property 'bool', page helper wires)  - el://#otherToggle         (mirror another component by selector) NOTE: component does not resolve network or perform eval; this is a declarative hint.
-         */
-        "valueSource"?: string;
-        /**
           * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
           * @default 'circle'
          */
         "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
-        /**
-          * Write behavior hint for page wiring: 'auto'|'manual'|'none' - auto: component suggests writes when user interacts (default) - manual: component will require external explicit writes - none: component is purely read-only from the page wiring perspective
-          * @default 'auto'
-         */
-        "writeOn": 'auto' | 'manual' | 'none';
     }
 }
 export interface UiButtonCustomEvent<T> extends CustomEvent<T> {
@@ -842,7 +813,6 @@ declare global {
     interface HTMLUiToggleElementEventMap {
         "toggle": UiToggleToggleEvent;
         "valueChange": UiToggleValueChange;
-        "validationError": { value: boolean; message: string };
         "syncRequest": { mode: string; label?: string };
         "beforeChange": { currentValue: boolean; newValue: boolean; preventDefault: () => void };
         "ready": { value: boolean; mode: string };
@@ -868,7 +838,7 @@ declare global {
      * ```html
      * <ui-toggle
      * mode="read"
-     * sync-interval="1000"
+     * syncInterval="1000"
      * label="Sensor Status"
      * reactive="true">
      * </ui-toggle>
@@ -1375,7 +1345,7 @@ declare namespace LocalJSX {
      * ```html
      * <ui-toggle
      * mode="read"
-     * sync-interval="1000"
+     * syncInterval="1000"
      * label="Sensor Status"
      * reactive="true">
      * </ui-toggle>
@@ -1424,14 +1394,15 @@ declare namespace LocalJSX {
      */
     interface UiToggle {
         /**
-          * Auto-sync hint: if present and true or a number (milliseconds) a page-level wiring script may set up polling/observe. Stored as attribute (string) when used in HTML. Parsed by page wiring utilities. Component itself does not start any network activity.
-         */
-        "autoSync"?: boolean | number | string;
-        /**
           * Color scheme to match thingsweb webpage
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark"?: boolean;
         /**
           * Debounce delay in milliseconds for value change events. Prevents rapid firing of events during quick toggles. Default: 100ms
           * @default 100
@@ -1451,9 +1422,6 @@ declare namespace LocalJSX {
           * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
          */
         "label"?: string;
-        /**
-          * Mirror selector(s) to link other components (page wiring utility may use this). Example: mirror="#otherToggle" or mirror="#a,#b"
-         */
         "mirror"?: string;
         /**
           * Device interaction mode. - read: Only read from device (display current state, no user interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
@@ -1477,10 +1445,6 @@ declare namespace LocalJSX {
          */
         "onToggle"?: (event: UiToggleCustomEvent<UiToggleToggleEvent>) => void;
         /**
-          * Event emitted when validation fails
-         */
-        "onValidationError"?: (event: UiToggleCustomEvent<{ value: boolean; message: string }>) => void;
-        /**
           * Standardized valueChange event for value-driven integrations
          */
         "onValueChange"?: (event: UiToggleCustomEvent<UiToggleValueChange>) => void;
@@ -1490,59 +1454,32 @@ declare namespace LocalJSX {
          */
         "reactive"?: boolean;
         /**
-          * Short label for compact UI (accessibility + compact representations).
-         */
-        "shortLabel"?: string;
-        /**
           * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
           * @default 'default'
          */
         "state"?: 'active' | 'disabled' | 'default';
         /**
-          * Auto-sync interval in milliseconds for read mode. When set, the component will emit 'sync-request' events at this interval. External systems can listen to this event to update the value prop. Default: 0 (disabled)
+          * Auto-sync interval in milliseconds for read mode. When set, the component will emit 'syncRequest' events at this interval. External systems can listen to this event to update the value prop. Set to 0 to disable auto-sync. Default: 0 (disabled)
           * @default 0
          */
         "syncInterval"?: number;
         /**
-          * Declarative TD property name. Page scripts may use this to auto-wire this element to a TD property. Example: td-property="bool" NOTE: Component does not perform any network operations. This is a lightweight hint only.
+          * Declarative TD property name. Page scripts may use this to auto-wire this element to a TD property. Example: tdProperty="bool" NOTE: Component does not perform any network operations. This is a lightweight hint only.
          */
         "tdProperty"?: string;
         /**
-          * Lightweight hint to the TD base URL for page-level wiring. Component does not perform network requests. Example: td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+          * Lightweight hint to the TD base URL for page-level wiring. Component does not perform network requests. Example: tdUrl="http://plugfest.thingweb.io/http-data-schema-thing"
          */
         "tdUrl"?: string;
-        /**
-          * Theme for the component.
-          * @default 'light'
-         */
-        "theme"?: 'light' | 'dark';
-        /**
-          * Custom validation function name for value changes. The function should be available on window object and return boolean.
-          * @example validator="myValidationFunction"
-         */
-        "validator"?: string;
-        /**
-          * Typed validator callback. Preferred over the string `validator` lookup. Accepts sync or async functions. If provided, it will be called first.
-         */
-        "validatorFn"?: (newValue: boolean, currentValue: boolean, label?: string) => boolean | Promise<boolean>;
         /**
           * Local value for the toggle. Accepts boolean or string values (string will be parsed). This is the primary way to control the toggle state externally.
          */
         "value"?: boolean | string;
         /**
-          * Compact source descriptor. Format: "<scheme>://<identifier>". Examples:  - js://myApp.state.lightOn  (read JS path from window safely)  - td://bool                 (map to TD property 'bool', page helper wires)  - el://#otherToggle         (mirror another component by selector) NOTE: component does not resolve network or perform eval; this is a declarative hint.
-         */
-        "valueSource"?: string;
-        /**
           * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
           * @default 'circle'
          */
         "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
-        /**
-          * Write behavior hint for page wiring: 'auto'|'manual'|'none' - auto: component suggests writes when user interacts (default) - manual: component will require external explicit writes - none: component is purely read-only from the page wiring perspective
-          * @default 'auto'
-         */
-        "writeOn"?: 'auto' | 'manual' | 'none';
     }
     interface IntrinsicElements {
         "ui-button": UiButton;
@@ -1704,7 +1641,7 @@ declare module "@stencil/core" {
              * ```html
              * <ui-toggle
              * mode="read"
-             * sync-interval="1000"
+             * syncInterval="1000"
              * label="Sensor Status"
              * reactive="true">
              * </ui-toggle>

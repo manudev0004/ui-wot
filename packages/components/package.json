@@ -40,8 +40,8 @@
     "loader/"
   ],
   "scripts": {
-    "build": "stencil build",
-    "start": "stencil build --dev --watch --serve",
+  "build": "stencil build",
+  "start": "node ./dev-serve.js",
     "test": "stencil test --spec --e2e",
     "test.watch": "stencil test --spec --e2e --watchAll",
     "generate": "stencil generate"

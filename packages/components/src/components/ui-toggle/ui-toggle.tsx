@@ -27,7 +27,7 @@ export interface UiToggleValueChange { value: boolean; label?: string }
  * ```html
  * <ui-toggle
  *   mode="read"
- *   sync-interval="1000"
+ *   syncInterval="1000"
  *   label="Sensor Status"
  *   reactive="true">
  * </ui-toggle>
@@ -108,9 +108,10 @@ export class UiToggle {
   @Prop({ mutable: true }) state: 'active' | 'disabled' | 'default' = 'default';
 
   /**
-   * Theme for the component.
+   * Enable dark theme for the component.
+   * When true, uses light text on dark backgrounds.
    */
-  @Prop() theme: 'light' | 'dark' = 'light';
+  @Prop() dark: boolean = false;
 
   /**
    * Color scheme to match thingsweb webpage
@@ -164,13 +165,6 @@ export class UiToggle {
   @Prop() keyboard: boolean = true;
 
   /**
-   * Custom validation function name for value changes.
-   * The function should be available on window object and return boolean.
-   * @example validator="myValidationFunction"
-   */
-  @Prop() validator?: string;
-
-  /**
    * Device interaction mode.
    * - read: Only read from device (display current state, no user interaction)
    * - write: Only write to device (control device but don't sync state)
@@ -180,96 +174,45 @@ export class UiToggle {
 
   /**
    * Auto-sync interval in milliseconds for read mode.
-   * When set, the component will emit 'sync-request' events at this interval.
+   * When set, the component will emit 'syncRequest' events at this interval.
    * External systems can listen to this event to update the value prop.
-   * Default: 0 (disabled)
+   * Set to 0 to disable auto-sync. Default: 0 (disabled)
    */
   @Prop({ reflect: true }) syncInterval: number = 0;
 
   /**
    * Declarative TD property name. Page scripts may use this to auto-wire this element to a TD property.
-   * Example: td-property="bool"
+   * Example: tdProperty="bool"
    * NOTE: Component does not perform any network operations. This is a lightweight hint only.
    */
   @Prop({ reflect: true }) tdProperty?: string;
 
   /**
    * Lightweight hint to the TD base URL for page-level wiring. Component does not perform network requests.
-   * Example: td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+   * Example: tdUrl="http://plugfest.thingweb.io/http-data-schema-thing"
    */
   @Prop({ reflect: true }) tdUrl?: string;
-
-  /**
-   * Auto-sync hint: if present and true or a number (milliseconds) a page-level wiring script may set up polling/observe.
-   * Stored as attribute (string) when used in HTML. Parsed by page wiring utilities.
-   * Component itself does not start any network activity.
-   */
-  @Prop() autoSync?: boolean | number | string;
-
-  /**
-   * Mirror selector(s) to link other components (page wiring utility may use this).
-   * Example: mirror="#otherToggle" or mirror="#a,#b"
-   */
-  @Prop() mirror?: string;
-
-  /**
-   * Write behavior hint for page wiring: 'auto'|'manual'|'none'
-   * - auto: component suggests writes when user interacts (default)
-   * - manual: component will require external explicit writes
-   * - none: component is purely read-only from the page wiring perspective
-   */
-  @Prop({ reflect: true }) writeOn: 'auto' | 'manual' | 'none' = 'auto';
-
-  /**
-   * Short label for compact UI (accessibility + compact representations).
-   */
-  @Prop({ reflect: true }) shortLabel?: string;
-
-  /**
-   * Compact source descriptor. Format: "<scheme>://<identifier>".
-   * Examples:
-   *  - js://myApp.state.lightOn  (read JS path from window safely)
-   *  - td://bool                 (map to TD property 'bool', page helper wires)
-   *  - el://#otherToggle         (mirror another component by selector)
-   * NOTE: component does not resolve network or perform eval; this is a declarative hint.
-   */
-  @Prop() valueSource?: string;
-
-  /**
-   * Typed validator callback. Preferred over the string `validator` lookup.
-   * Accepts sync or async functions. If provided, it will be called first.
-   */
-  @Prop() validatorFn?: (newValue: boolean, currentValue: boolean, label?: string) => boolean | Promise<boolean>;
 
   /**
    * Enable debug logging for development. Gate console output when true.
    */
   @Prop() debug: boolean = false;
 
-  /**
-   * Normalized autoSync value in milliseconds when attribute is provided as string.
-   * Returns 0 when autoSync is not set or invalid. This is a helper for page wiring to read.
-   */
-  get autoSyncMs(): number {
-    if (this.autoSync === undefined || this.autoSync === null) return 0;
-    if (typeof this.autoSync === 'number') return Number(this.autoSync) || 0;
-    if (typeof this.autoSync === 'boolean') return this.autoSync ? 3000 : 0;
-    // string
-    const parsed = parseInt(String(this.autoSync), 10);
-    return isNaN(parsed) ? 0 : parsed;
-  }
-
   /** Internal state tracking if toggle is on/off */
   @State() isActive: boolean = false;
 
   /** Internal state for tracking if component is initialized */
   @State() isInitialized: boolean = false;
+  @Prop({ reflect: true }) mirror?: string;
 
   /** Timer reference for debouncing */
   private debounceTimer?: number;
 
   /** Timer reference for sync interval */
   private syncTimer?: number;
+  
+  /** Guards for propagation to avoid infinite mirror loops */
+  private propagationToken: WeakSet<HTMLElement> = new WeakSet();
 
   /** Local observers registered via observeLocal */
   private localObservers: Array<(value: boolean) => void> = [];
@@ -279,9 +222,6 @@ export class UiToggle {
 
   /** Standardized valueChange event for value-driven integrations */
   @Event() valueChange: EventEmitter<UiToggleValueChange>;
-
-  /** Event emitted when validation fails */
-  @Event() validationError: EventEmitter<{ value: boolean; message: string }>;
 
   /** Event emitted to request sync in read mode (for external data fetching) */
   @Event() syncRequest: EventEmitter<{ mode: string; label?: string }>;
@@ -310,7 +250,8 @@ export class UiToggle {
   /** Apply an external value to this component (will go through validation and emit events). */
   @Method()
   async applyExternalValue(value: boolean | string) {
-    return this.setValue(value, true);
+  // Treat as external-origin update so internal handlers can distinguish source
+  return this.setValue(value, true, true);
   }
 
   /** Watch for value prop changes */
@@ -340,6 +281,65 @@ export class UiToggle {
 
     // Emit ready event
     this.ready.emit({ value: this.isActive, mode: this.mode });
+
+  // If mirror attribute explicitly present and equals '' or 'parent', auto-subscribe to nearest
+  // ancestor ui-toggle so this element mirrors its parent's value without page JS wiring.
+    try {
+      const hasAttr = !!this.hostElement?.hasAttribute && this.hostElement.hasAttribute('mirror');
+      const m = (this.mirror || '').trim();
+      if (hasAttr && (m === '' || m === 'parent')) {
+        const ancestor = this.hostElement ? (this.hostElement.parentElement ? this.hostElement.parentElement.closest('ui-toggle') : null) : null;
+        if (ancestor && ancestor !== this.hostElement) {
+          const handler = (ev: Event) => {
+            const detail = (ev as CustomEvent)?.detail;
+            const val = detail?.value ?? (ancestor as any).value ?? false;
+            if (typeof this.applyExternalValue === 'function') {
+              this.applyExternalValue(val);
+            } else {
+              this.value = val;
+            }
+          };
+          ancestor.addEventListener('valueChange', handler);
+          ancestor.addEventListener('value-change', handler);
+          (this as any).__mirrorParent = ancestor;
+          (this as any).__mirrorParentHandler = handler;
+        }
+      }
+    } catch (e) {
+      if (this.debug) console.warn('parent mirror setup failed', e);
+    }
+
+    // If mirror attribute is provided as selector(s) (e.g. "#id" or ".class"), subscribe to
+    // those source elements' valueChange events so this element mirrors them.
+    try {
+      const hasAttr = !!this.hostElement?.hasAttribute && this.hostElement.hasAttribute('mirror');
+      const m = (this.mirror || '').trim();
+      if (hasAttr && m && m !== 'parent') {
+        // parse selectors
+        const selectors = m.split(',').map(s => s.trim()).filter(Boolean);
+        const sources: Array<any> = [];
+        selectors.forEach(sel => {
+          try {
+            const nodes = Array.from(document.querySelectorAll(sel));
+            nodes.forEach(node => {
+              if (node === this.hostElement) return;
+              const handler = (ev: Event) => {
+                const detail = (ev as CustomEvent)?.detail;
+                const val = detail?.value ?? (node as any).value ?? false;
+                if (typeof this.applyExternalValue === 'function') this.applyExternalValue(val);
+                else this.value = val;
+              };
+              node.addEventListener('valueChange', handler);
+              node.addEventListener('value-change', handler);
+              sources.push({ node, handler });
+            });
+          } catch (e) {
+            if (this.debug) console.warn('mirror selector subscribe failed', sel, e);
+          }
+        });
+        if (sources.length) (this as any).__mirrorSources = sources;
+      }
+    } catch (e) { if (this.debug) console.warn('mirror subscribe failed', e); }
   }
 
   /** Cleanup timers on disconnect */
@@ -350,6 +350,27 @@ export class UiToggle {
     if (this.syncTimer) {
       clearInterval(this.syncTimer);
     }
+    // remove any parent-mirror listeners
+    try {
+      const parent = (this as any).__mirrorParent as HTMLElement | undefined;
+      const handler = (this as any).__mirrorParentHandler as EventListener | undefined;
+      if (parent && handler) {
+        parent.removeEventListener('valueChange', handler);
+        parent.removeEventListener('value-change', handler);
+      }
+    } catch (e) { /* ignore */ }
+    // remove any selector-based mirror sources
+    try {
+      const sources = (this as any).__mirrorSources as Array<any> | undefined;
+      if (sources && sources.length) {
+        sources.forEach(s => {
+          try {
+            s.node.removeEventListener('valueChange', s.handler);
+            s.node.removeEventListener('value-change', s.handler);
+          } catch (e) {}
+        });
+      }
+    } catch (e) { /* ignore */ }
   }
 
   /** Watch for value prop changes and update state if reactive is enabled */
@@ -401,45 +422,8 @@ export class UiToggle {
   }
 
   /** Validate value change using custom validator if provided */
-  private validateChange(newValue: boolean): boolean {
-    // Prefer typed validatorFn when present
-    if (this.validatorFn) {
-      try {
-        const res = this.validatorFn(newValue, this.isActive, this.label);
-        // handle promise or boolean
-        if (res && typeof (res as any).then === 'function') {
-          // synchronous API expected; if caller passed async, block and return false (page should use applyExternalValue)
-          // We will not await here to keep component synchronous; emit validation error
-          this.validationError.emit({ value: newValue, message: 'Async validatorFn not supported synchronously' });
-          return false;
-        }
-        if (!res) {
-          this.validationError.emit({ value: newValue, message: `Validation failed for value: ${newValue}` });
-        }
-        return !!res;
-      } catch (err) {
-        this.validationError.emit({ value: newValue, message: `validatorFn error: ${err}` });
-        return false;
-      }
-    }
-
-    // Fallback to legacy string-based validator if provided (backwards compatibility)
-    if (!this.validator) return true;
-
-    try {
-      const validatorFn = (window as any)[this.validator];
-      if (typeof validatorFn === 'function') {
-        const isValid = validatorFn(newValue, this.isActive, this.label);
-        if (!isValid) {
-          this.validationError.emit({ value: newValue, message: `Validation failed for value: ${newValue}` });
-        }
-        return isValid;
-      }
-    } catch (error) {
-      this.validationError.emit({ value: newValue, message: `Validator function error: ${error}` });
-      return false;
-    }
-
+  private validateChange(_newValue: boolean): boolean {
+    // No validation by default - simplified component
     return true;
   }
 
@@ -470,7 +454,50 @@ export class UiToggle {
       } catch (e) {
         if (this.debug) console.warn('Dispatch kebab-case events failed', e);
       }
+      // After emitting events, propagate to mirror targets if configured. We avoid propagation
+      // when this host was recently marked in the propagationToken to prevent echo loops.
+      if (this.mirror) {
+        const host = this.hostElement as HTMLElement | undefined;
+        const hasFunc = this.propagationToken && typeof (this.propagationToken as any).has === 'function';
+        const isMarked = host && hasFunc ? (this.propagationToken as any).has(host) : false;
+        if (!isMarked) {
+          this.propagateMirror(newValue);
+        }
+      }
     }, this.debounce);
+  }
+
+  /** Propagate the value to mirror targets specified by `this.mirror` */
+  private propagateMirror(value: boolean) {
+    if (!this.mirror) return;
+    const selectors = this.mirror.split(',').map(s => s.trim()).filter(Boolean);
+    selectors.forEach(sel => {
+      try {
+        const nodes = Array.from(document.querySelectorAll(sel));
+        nodes.forEach((node) => {
+          // Skip self
+          if (node === this.hostElement) return;
+
+          // Mark target to avoid it re-propagating back
+          try { this.propagationToken.add(node as HTMLElement); } catch (e) {}
+
+          const anyNode: any = node;
+          if (typeof anyNode.applyExternalValue === 'function') {
+            try { anyNode.applyExternalValue(value); } catch (e) { if (this.debug) console.warn('mirror applyExternalValue failed', e); }
+          } else {
+            try { (node as any).value = value; } catch (e) {}
+            try { (node as Element).setAttribute('value', String(value)); } catch (e) {}
+          }
+
+          // Unmark after short delay to allow the target to process without propagating back
+          setTimeout(() => {
+            try { this.propagationToken.delete(node as HTMLElement); } catch (e) {}
+          }, 50);
+        });
+      } catch (e) {
+        if (this.debug) console.warn('mirror propagation failed for selector', sel, e);
+      }
+    });
   }
 
   // Device read/write helpers removed; keep UI-only behavior and `mode` prop for visual differences
@@ -525,7 +552,7 @@ export class UiToggle {
   };
 
   /** Public method to programmatically set value */
-  async setValue(value: boolean | string, emitEvents: boolean = true): Promise<boolean> {
+  async setValue(value: boolean | string, emitEvents: boolean = true, isExternal: boolean = false): Promise<boolean> {
     const newValue = this.parseValue(value);
     
     if (!this.validateChange(newValue)) {
@@ -537,7 +564,7 @@ export class UiToggle {
     this.state = newValue ? 'active' : 'default';
     
     if (emitEvents) {
-      this.emitChangeEvents(newValue, false);
+      this.emitChangeEvents(newValue, isExternal);
     }
     
     return true;
@@ -674,7 +701,7 @@ export class UiToggle {
                 ? 'cursor-not-allowed text-gray-400' 
                 : 'cursor-pointer hover:text-opacity-80'
             } ${
-              this.theme === 'dark' ? 'text-white' : 'text-gray-900'
+              this.dark ? 'text-white' : 'text-gray-900'
             } transition-colors duration-200`}
             onClick={() => canInteract && this.handleToggle()}
             title={hoverTitle}

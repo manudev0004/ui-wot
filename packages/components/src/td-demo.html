@@ -1,335 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>UI-Toggle TD Integration Demo</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ui-toggle</title>
     <style>
-      body {
-        font-family: system-ui, -apple-system, sans-serif;
-        max-width: 800px;
-        margin: 40px auto;
-        padding: 20px;
-        background: #f9fafb;
-      }
-      .demo-container {
-        background: white;
-        border-radius: 12px;
-        padding: 30px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      }
-      .toggle-section {
-        margin-bottom: 30px;
-        padding: 20px;
-        background: #f8fafc;
-        border-radius: 8px;
-        border-left: 4px solid #0ea5e9;
-      }
-      .status {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 14px;
-        margin-bottom: 20px;
-      }
-      .status.connecting {
-        background: #fef3c7;
-        color: #92400e;
-      }
-      .status.connected {
-        background: #d1fae5;
-        color: #065f46;
-      }
-      .status.error {
-        background: #fee2e2;
-        color: #991b1b;
-      }
-      .status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-      }
-      .connecting .status-dot {
-        background: #f59e0b;
-      }
-      .connected .status-dot {
-        background: #10b981;
-      }
-      .error .status-dot {
-        background: #ef4444;
-      }
-      .info {
-        font-size: 14px;
-        color: #6b7280;
-        margin-top: 10px;
-      }
-      h1 {
-        color: #1f2937;
-        margin-bottom: 10px;
-      }
-      h2 {
-        color: #374151;
-        margin-bottom: 15px;
-        font-size: 18px;
-      }
-      p {
-        color: #6b7280;
-        margin-bottom: 20px;
-      }
+      body { font-family: system-ui, -apple-system, sans-serif; max-width:800px; margin:36px auto; padding:18px; background:#f8fafc }
+      .card { background:white; padding:20px; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.06) }
+      .row { display:flex; gap:18px; align-items:center; margin-bottom:14px }
+      .meta { color:#6b7280; font-size:13px }
     </style>
   </head>
   <body>
-    <div class="demo-container">
-      <h1>UI-Toggle Thing Description Demo</h1>
-      <p>Minimal demonstration of ui-toggle components connected to a Thing Description</p>
+    <div class="card">
+      <h1>ui-toggle TD demo (simplified)</h1>
+      <p class="meta">Uses current attributes: <code>td-url</code>, <code>td-property</code>, <code>sync-interval</code>, <code>mode</code>, <code>mirror</code></p>
 
-      <!-- Connection Status -->
-      <div id="connection-status" class="status connecting" style="display: none">
-        <div class="status-dot"></div>
-        <span id="status-text">Connecting...</span>
+      <div class="row">
+        <div>
+          <h3>Controller (readwrite)</h3>
+          <ui-toggle id="readwrite-toggle" mode="readwrite" td-property="bool" td-url="http://plugfest.thingweb.io/http-data-schema-thing" sync-interval="3000" label="Controller"></ui-toggle>
+        </div>
+  <div class="meta">Property: <strong>bool</strong></div>
       </div>
 
-      <!-- Read-Write Toggle -->
-      <div class="toggle-section">
-        <h2>Read-Write Mode</h2>
-        <ui-toggle
-          id="readwrite-toggle"
-          mode="readwrite"
-          td-property="bool"
-          td-url="http://plugfest.thingweb.io/http-data-schema-thing"
-          auto-sync="3000"
-          write-on="auto"
-          short-label="RW"
-          variant="neon"
-          color="primary"
-          label="Boolean Property Control"
-        >
-        </ui-toggle>
-        <div class="info">
-          <strong>Property:</strong> bool | <span id="rw-value">Value: -</span> |
-          <span id="rw-update">Last update: -</span>
+      <div class="row">
+        <div>
+          <h3>Monitor (read-only)</h3>
+          <ui-toggle id="readonly-toggle" mode="read" mirror="#readwrite-toggle" sync-interval="3000" variant="square" label="Monitor"></ui-toggle>
         </div>
-      </div>
-
-      <!-- Read-Only Toggle -->
-      <div class="toggle-section">
-        <h2>Read-Only Mode</h2>
-        <ui-toggle
-          id="readonly-toggle"
-          mode="read"
-          td-property="bool"
-          auto-sync="30"
-          write-on="none"
-          mirror="#readwrite-toggle"
-          variant="square"
-          color="secondary"
-          label="Boolean Property Monitor"
-        >
-        </ui-toggle>
-        <div class="info">
-          <strong>Property:</strong> bool | <span id="ro-value">Value: -</span> |
-          <span id="ro-update">Last update: -</span>
-        </div>
+  <div class="meta">Property: <strong>bool</strong></div>
       </div>
     </div>
 
-    <!-- Load WoT Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
-
-    <!-- Load UI Components -->
     <script type="module" src="./build/ui-wot-components.esm.js"></script>
 
     <script>
-      // Configuration
+      // Minimal wiring: only the controller is wired to the TD. The readonly monitor mirrors
+      // the controller via `mirror="#readwrite-toggle"` and requires no extra JS.
       const TD_URL = 'http://plugfest.thingweb.io/http-data-schema-thing';
+  const RW = document.getElementById('readwrite-toggle');
 
-      // UI Elements
-      const statusEl = document.getElementById('connection-status');
-      const statusText = document.getElementById('status-text');
-      const rwToggle = document.getElementById('readwrite-toggle');
-      const roToggle = document.getElementById('readonly-toggle');
-      const rwValue = document.getElementById('rw-value');
-      const rwUpdate = document.getElementById('rw-update');
-      const roValue = document.getElementById('ro-value');
-      const roUpdate = document.getElementById('ro-update');
-
-      // Global variables
-      let currentThing = null;
-
-      // Helper functions
-      function setStatus(type, message) {
-        statusEl.className = `status ${type}`;
-        statusEl.style.display = 'block';
-        statusText.textContent = message;
+      async function waitForWoT() {
+        while (!window.WoT) await new Promise(r => setTimeout(r, 100));
+        return window.WoT;
       }
 
-      function updateValue(valueEl, updateEl, value) {
-        valueEl.textContent = `Value: ${value}`;
-        updateEl.textContent = `Last update: ${new Date().toLocaleTimeString()}`;
-      }
-
-      // Main integration function
-      async function initTD() {
+      document.addEventListener('DOMContentLoaded', async () => {
         try {
-          setStatus('connecting', 'Initializing WoT...');
-
-          // Wait for WoT bundle
-          while (!window.WoT) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
-
-          // Create servient and start WoT
-          const servient = new window.WoT.Core.Servient();
-          servient.addClientFactory(new window.WoT.Http.HttpClientFactory());
+          const WoT = await waitForWoT();
+          const servient = new WoT.Core.Servient();
+          servient.addClientFactory(new WoT.Http.HttpClientFactory());
           const wot = await servient.start();
 
-          setStatus('connecting', 'Fetching Thing Description...');
+          const res = await fetch(TD_URL);
+          if (!res.ok) throw new Error('TD fetch failed ' + res.status);
+          const td = await res.json();
+          const thing = await wot.consume(td);
 
-          // Fetch TD
-          const response = await fetch(TD_URL);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const prop = RW.getAttribute('td-property');
+          if (!prop) return;
 
-          const td = await response.json();
-          currentThing = await wot.consume(td);
+          // initial read
+          const p = await thing.readProperty(prop);
+          const initial = Boolean(await p.value());
+          if (typeof RW.applyExternalValue === 'function') RW.applyExternalValue(initial); else RW.value = initial;
 
-          setStatus('connected', 'Connected to TD');
+          // observe updates
+          await thing.observeProperty(prop, async data => {
+            const v = Boolean(await data.value());
+            if (typeof RW.applyExternalValue === 'function') RW.applyExternalValue(v); else RW.value = v;
+          });
 
-          // Auto-wire elements using external helper
-          if (window.tdWire && typeof window.tdWire.autoWireAll === 'function') {
-            await window.tdWire.autoWireAll(currentThing, { defaultAutoSync: 3000 });
-          } else {
-            console.warn('tdWire helper not loaded');
-          }
-        } catch (error) {
-          console.error('TD integration failed:', error);
-          setStatus('error', `Failed: ${error.message}`);
+          // write when controller emits valueChange
+          RW.addEventListener('valueChange', async e => {
+            try { await thing.writeProperty(prop, Boolean(e.detail?.value)); } catch (err) { console.error('write failed', err); }
+          });
+        } catch (err) {
+          console.error('TD wiring failed', err);
         }
-      }
-
-      // Generic auto-wiring: reads element attributes and wires them to TD properties or other elements
-      async function autoWireAll() {
-        // find all ui-toggle elements with td-property or value-source
-        const toggles = Array.from(document.querySelectorAll('ui-toggle'));
-
-        const wirePromises = toggles.map(async el => {
-          const cfg = readElementConfig(el);
-
-          // Determine target property name (td-property or valueSource with td://)
-          let propertyName = cfg.tdProperty || undefined;
-          if (!propertyName && cfg.valueSource && cfg.valueSource.startsWith('td://')) {
-            propertyName = cfg.valueSource.slice('td://'.length);
-          }
-
-          // If valueSource refers to another element (el://), set up mirror wiring
-          if (cfg.valueSource && cfg.valueSource.startsWith('el://')) {
-            const selector = cfg.valueSource.slice('el://'.length);
-            try {
-              const sourceEl = document.querySelector(selector);
-              if (sourceEl) {
-                // Listen to source changes and apply to this element
-                const handler = e => {
-                  const val = e.detail?.value ?? sourceEl.value ?? false;
-                  if (typeof el.applyExternalValue === 'function') {
-                    el.applyExternalValue(val);
-                  } else {
-                    el.value = val;
-                  }
-                };
-                sourceEl.addEventListener('value-change', handler);
-                sourceEl.addEventListener('valueChange', handler);
-              }
-            } catch (e) {
-              console.warn('el:// wiring failed', e);
-            }
-          }
-
-          if (!propertyName) return;
-
-          try {
-            // initial read
-            const p = await currentThing.readProperty(propertyName);
-            const initial = Boolean(await p.value());
-            if (typeof el.applyExternalValue === 'function') {
-              await el.applyExternalValue(initial);
-            } else {
-              el.value = initial;
-            }
-
-            // Update UI small info if present
-            if (el.id === 'readwrite-toggle') updateValue(rwValue, rwUpdate, initial);
-            if (el.id === 'readonly-toggle') updateValue(roValue, roUpdate, initial);
-
-            // observe or polling
-            try {
-              await currentThing.observeProperty(propertyName, async data => {
-                const v = Boolean(await data.value());
-                if (typeof el.applyExternalValue === 'function') await el.applyExternalValue(v);
-                else el.value = v;
-
-                if (el.id === 'readwrite-toggle') updateValue(rwValue, rwUpdate, v);
-                if (el.id === 'readonly-toggle') updateValue(roValue, roUpdate, v);
-              });
-            } catch (obsError) {
-              // polling fallback
-              const interval = parseInt(cfg.autoSync || '0', 10) || 3000;
-              setInterval(async () => {
-                try {
-                  const cur = await currentThing.readProperty(propertyName);
-                  const v = Boolean(await cur.value());
-                  if (el.value !== v) {
-                    if (typeof el.applyExternalValue === 'function') await el.applyExternalValue(v);
-                    else el.value = v;
-                    if (el.id === 'readwrite-toggle') updateValue(rwValue, rwUpdate, v);
-                    if (el.id === 'readonly-toggle') updateValue(roValue, roUpdate, v);
-                  }
-                } catch (e) {
-                  /* ignore */
-                }
-              }, interval);
-            }
-
-            // writes from element -> TD
-            if (cfg.writeOn === 'auto' || cfg.writeOn === undefined) {
-              const writeHandler = async ev => {
-                const newVal = Boolean(ev.detail?.value ?? ev.detail ?? ev);
-                try {
-                  await currentThing.writeProperty(propertyName, newVal);
-                  if (el.id === 'readwrite-toggle') updateValue(rwValue, rwUpdate, newVal);
-                  if (el.id === 'readonly-toggle') updateValue(roValue, roUpdate, newVal);
-                  // mirrors
-                  if (cfg.mirror) {
-                    cfg.mirror
-                      .split(',')
-                      .map(s => s.trim())
-                      .forEach(sel => {
-                        const target = document.querySelector(sel);
-                        if (target) {
-                          if (typeof target.applyExternalValue === 'function') target.applyExternalValue(newVal);
-                          else target.value = newVal;
-                        }
-                      });
-                  }
-                } catch (writeError) {
-                  console.error('Write failed', writeError);
-                }
-              };
-              el.addEventListener('value-change', writeHandler);
-              el.addEventListener('valueChange', writeHandler);
-            }
-          } catch (err) {
-            console.error('Auto-wire error for', propertyName, err);
-          }
-        });
-
-        await Promise.all(wirePromises);
-      }
-
-      // Initialize when page loads
-      document.addEventListener('DOMContentLoaded', () => {
-        // Small delay to ensure components are loaded
-        setTimeout(initTD, 500);
       });
     </script>
   </body>
