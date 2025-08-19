@@ -14,51 +14,54 @@ class WoTService {
   async start() {
     try {
       if (typeof WoT !== 'undefined') {
-        this.wot = WoT;
-        console.log('WoT Service started with browser bundle');
+        // Check if WoT has the expected structure from @node-wot/browser-bundle
+        if (WoT.Core && WoT.Core.Servient && WoT.Http) {
+          // Use the proper WoT browser bundle pattern
+          const servient = new WoT.Core.Servient();
+          servient.addClientFactory(new WoT.Http.HttpClientFactory());
+          this.wot = await servient.start();
+          console.log('WoT Service started with browser bundle');
+        } else if (typeof WoT.consume === 'function') {
+          // Direct WoT object with consume method
+          this.wot = WoT;
+          console.log('WoT Service started with direct WoT object');
+        } else {
+          // WoT object exists but doesn't have expected API
+          console.warn('WoT object found but API structure unexpected, using no-op mode');
+          this.initNoopMode();
+        }
       } else {
-        throw new Error('WoT not available');
+        // Do not attempt to start real WoT in this environment.
+        // Use a lightweight no-op implementation so the rest of the app can operate
+        // without attempting network connections or producing noisy logs.
+        this.initNoopMode();
       }
     } catch (error) {
-      console.warn('Failed to start WoT service, using mock mode:', error);
-      this.initMockMode();
+      // If anything unexpected happens, fall back silently to noop mode
+      console.warn('Failed to initialize WoT, using no-op mode:', error);
+      this.initNoopMode();
     }
   }
-
-  private initMockMode() {
+  private initNoopMode() {
     this.wot = {
-      consume: (td: any) => this.createMockThing(td),
+      // consume returns a lightweight no-op thing instance
+      consume: (td: any) => this.createNoopThing(td),
     };
   }
 
-  private createMockThing(td: any) {
+  private createNoopThing(_td: any) {
     return {
-      readProperty: async (propertyKey: string) => {
-        const property = td.properties?.[propertyKey];
-        if (property) {
-          switch (property.type) {
-            case 'boolean':
-              return Math.random() > 0.5;
-            case 'integer':
-            case 'number':
-              const min = property.minimum || 0;
-              const max = property.maximum || 100;
-              return Math.floor(Math.random() * (max - min + 1)) + min;
-            case 'string':
-              return `Mock value for ${propertyKey}`;
-            default:
-              return null;
-          }
-        }
-        return null;
+      // readProperty returns undefined (no real data)
+      readProperty: async (_propertyKey: string) => {
+        return undefined;
       },
-      writeProperty: async (propertyKey: string, value: any) => {
-        console.log(`Mock write ${propertyKey}:`, value);
+      // writeProperty resolves to the provided value but performs no network calls
+      writeProperty: async (_propertyKey: string, value: any) => {
         return value;
       },
-      invokeAction: async (actionKey: string, input?: any) => {
-        console.log(`Mock action ${actionKey}:`, input);
-        return { result: 'success' };
+      // invokeAction resolves with a neutral result
+      invokeAction: async (_actionKey: string, _input?: any) => {
+        return { result: 'noop' };
       },
     };
   }
@@ -105,7 +108,7 @@ class WoTService {
 
   async createThing(td: any): Promise<any> {
     try {
-      const thing = this.wot ? await this.wot.consume(td) : this.createMockThing(td);
+  const thing = this.wot ? await this.wot.consume(td) : this.createNoopThing(td);
 
       if (td.id) {
         this.things.set(td.id, thing);

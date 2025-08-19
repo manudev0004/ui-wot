@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { wotService } from '../services/wotService';
 import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import { useAppContext } from '../context/AppContext';
@@ -7,6 +7,8 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
+// Use an `any`-typed alias to allow advanced props like draggableHandle/draggableCancel without TS friction
+const AnyResponsiveGridLayout = ResponsiveGridLayout as unknown as React.ComponentType<any>;
 
 export function ComponentCanvasPage() {
   const { state, dispatch } = useAppContext();
@@ -15,6 +17,13 @@ export function ComponentCanvasPage() {
   // attributes state for the currently editing component
   const [attributesList, setAttributesList] = useState<string[]>([]);
   const [attributesValues, setAttributesValues] = useState<Record<string, string>>({});
+
+  // Close the sidebar whenever Edit Mode is turned off
+  useEffect(() => {
+    if (!isEditMode && editingComponent) {
+      setEditingComponent(null);
+    }
+  }, [isEditMode]);
 
   const handleLayoutChange = (layout: Layout[]) => {
     if (!isEditMode) return;
@@ -34,11 +43,16 @@ export function ComponentCanvasPage() {
   };
 
   const handleComponentEdit = (componentId: string) => {
-  console.log('[ComponentCanvas] handleComponentEdit called for', componentId, { isEditMode, editingComponent });
-  const nextId = editingComponent === componentId ? null : componentId;
-    // ensure edit mode is enabled when opening editor
-    if (!isEditMode) setIsEditMode(true);
+    console.log('[ComponentCanvas] handleComponentEdit called for', componentId, { isEditMode, editingComponent });
+    const nextId = editingComponent === componentId ? null : componentId;
+    
+    // Always ensure edit mode is enabled when opening editor
+    if (!isEditMode) {
+      setIsEditMode(true);
+    }
+    
     setEditingComponent(nextId);
+    
     // populate attributes when opening
     if (nextId) {
       // small timeout to ensure the element has been rendered into DOM
@@ -50,8 +64,15 @@ export function ComponentCanvasPage() {
   };
 
   const handleComponentClose = (componentId: string) => {
-  if (!isEditMode) setIsEditMode(true);
-  dispatch({ type: 'REMOVE_COMPONENT', payload: componentId });
+    console.log('[ComponentCanvas] handleComponentClose called for', componentId);
+    // Always ensure edit mode is enabled for removal
+    if (!isEditMode) {
+      setIsEditMode(true);
+    }
+    // Close any open editing panel first
+    setEditingComponent(null);
+    // Remove the component
+    dispatch({ type: 'REMOVE_COMPONENT', payload: componentId });
   };
 
   const handleVariantChange = (componentId: string, variant: string) => {
@@ -59,6 +80,8 @@ export function ComponentCanvasPage() {
       type: 'UPDATE_COMPONENT',
       payload: { id: componentId, updates: { variant } },
     });
+    // also update the runtime element attribute immediately
+    applyAttributeChange(componentId, 'variant', variant);
   };
 
   // Helper: populate attributes from the actual DOM element for a component
@@ -66,18 +89,18 @@ export function ComponentCanvasPage() {
     try {
       // find the rendered element container by matching data-component-id attribute on wrapper
       const wrapper = document.querySelector(`[data-component-id="${componentId}"]`);
-    // If wrapper not found, try to find by component id in state
-    const comp = state.components.find(c => c.id === componentId);
-    if (!comp) return;
+      // If wrapper not found, try to find by component id in state
+      const comp = state.components.find(c => c.id === componentId);
+      if (!comp) return;
 
-    // look for the custom element inside the wrapper
-    let el: HTMLElement | null = null;
-    if (wrapper) {
-      el = wrapper.querySelector(comp.uiComponent) as HTMLElement | null;
-    } else {
-      // fallback: search document for first matching tag with td-url attribute or label text
-      el = document.querySelector(comp.uiComponent) as HTMLElement | null;
-    }
+      // look for the custom element inside the wrapper
+      let el: HTMLElement | null = null;
+      if (wrapper) {
+        el = wrapper.querySelector(comp.uiComponent) as HTMLElement | null;
+      } else {
+        // fallback: search document for first matching tag
+        el = document.querySelector(comp.uiComponent) as HTMLElement | null;
+      }
 
       if (!el) {
         setAttributesList([]);
@@ -85,7 +108,11 @@ export function ComponentCanvasPage() {
         return;
       }
 
-      const attrs = Array.from(el.attributes).map(a => a.name);
+      // Only include a small set of useful, non-redundant attributes
+      const allowed = new Set(['value', 'min', 'max', 'color']);
+      const rawAttrs = Array.from(el.attributes).map(a => a.name);
+      const attrs = Array.from(new Set(rawAttrs))
+        .filter(name => allowed.has(name));
       const vals: Record<string, string> = {};
       attrs.forEach(name => {
         vals[name] = el!.getAttribute(name) || '';
@@ -101,13 +128,20 @@ export function ComponentCanvasPage() {
   };
 
   const applyAttributeChange = (componentId: string, name: string, value: string) => {
+    if (!isEditMode) return; // block edits when not in edit mode
     // update local state
     setAttributesValues(prev => ({ ...prev, [name]: value }));
 
-    // find the element and apply attribute
+    // find the element within this card wrapper and apply attribute
     const comp = state.components.find(c => c.id === componentId);
     if (!comp) return;
-    const el = document.querySelector(comp.uiComponent) as HTMLElement | null;
+    const wrapper = document.querySelector(`[data-component-id="${componentId}"]`);
+    let el: HTMLElement | null = null;
+    if (wrapper) {
+      el = wrapper.querySelector(comp.uiComponent) as HTMLElement | null;
+    } else {
+      el = document.querySelector(comp.uiComponent) as HTMLElement | null;
+    }
     if (!el) return;
     el.setAttribute(name, value);
   };
@@ -121,19 +155,37 @@ export function ComponentCanvasPage() {
     const affordance = state.availableAffordances.find(a => a.key === component.affordanceKey);
 
     return (
-      <div key={component.layout.i} data-component-id={component.id} className="bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative group" style={{ zIndex: isEditing ? 1000 : 1 }}>
+      <div
+        key={component.layout.i}
+        data-component-id={component.id}
+        className="bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative group"
+        style={{ zIndex: isEditing ? 1000 : 1 }}
+        onClick={(e) => {
+          // When edit mode is on, clicking the card opens its editor
+          if (isEditMode) {
+            e.stopPropagation();
+            handleComponentEdit(component.id);
+          }
+        }}
+      >
         {/* Component Header */}
         <div className="bg-neutral-light px-3 py-2 border-b border-primary flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-1 component-drag-handle" style={{ cursor: isEditMode ? 'move' : 'default' }}>
             <span className="text-sm font-heading font-medium text-primary truncate">{component.title}</span>
             <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded">{component.type}</span>
           </div>
           {isEditMode && (
-            <div className="flex items-center space-x-1">
-                  <button
-                onClick={(e) => { e.stopPropagation(); handleComponentEdit(component.id); }}
+            <div className="flex items-center space-x-1 relative no-drag edit-controls" style={{ zIndex: 2000 }}>
+              <button
+                type="button"
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  e.stopPropagation(); 
+                  handleComponentEdit(component.id); 
+                }}
                 className={`p-1 rounded transition-colors ${isEditing ? 'bg-accent text-white' : 'text-primary hover:text-accent'}`}
                 title="Edit component"
+                style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2001 }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -144,7 +196,17 @@ export function ComponentCanvasPage() {
                   />
                 </svg>
               </button>
-              <button onClick={(e) => { e.stopPropagation(); handleComponentClose(component.id); }} className="p-1 rounded text-primary hover:text-red-600 transition-colors" title="Remove component">
+              <button 
+                type="button"
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  e.stopPropagation(); 
+                  handleComponentClose(component.id); 
+                }} 
+                className="p-1 rounded text-primary hover:text-red-600 transition-colors" 
+                title="Remove component"
+                style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2001 }}
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -153,8 +215,8 @@ export function ComponentCanvasPage() {
           )}
         </div>
 
-        {/* Component Content */}
-        <div className="p-4 relative">
+  {/* Component Content */}
+  <div className="p-4 relative no-drag">
           <div
             ref={el => {
               if (el && !isEditing) {
@@ -265,175 +327,7 @@ export function ComponentCanvasPage() {
             className="min-h-16 flex items-center justify-center"
           />
 
-          {/* Improved Edit Panel - Sidebar */}
-          {isEditing && (
-            <div className="fixed top-0 right-0 h-full w-80 bg-white border-l border-primary shadow-xl z-50 overflow-y-auto">
-              <div className="p-4 space-y-4">
-                <div className="flex items-center justify-between border-b border-gray-200 pb-4">
-                  <h4 className="font-heading font-medium text-lg text-primary">Component Settings</h4>
-                  <button
-                    onClick={() => setEditingComponent(null)}
-                    className="p-1 rounded text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Basic Settings */}
-                <div className="space-y-3">
-                  <h5 className="text-sm font-heading font-medium text-primary">Basic Settings</h5>
-                  
-                  <div>
-                    <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Title</label>
-                    <input
-                      type="text"
-                      value={component.title}
-                      onChange={e => dispatch({
-                        type: 'UPDATE_COMPONENT',
-                        payload: { id: component.id, updates: { title: e.target.value } }
-                      })}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Variant</label>
-                    <select
-                      value={component.variant || 'minimal'}
-                      onChange={e => handleVariantChange(component.id, e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                    >
-                      {affordance?.availableVariants.map(variant => (
-                        <option key={variant} value={variant}>
-                          {variant.charAt(0).toUpperCase() + variant.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Layout Settings */}
-                  <div>
-                    <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Width</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="12"
-                      value={component.layout.w}
-                      onChange={e => dispatch({
-                        type: 'UPDATE_LAYOUT',
-                        payload: {
-                          id: component.id,
-                          layout: { ...component.layout, w: parseInt(e.target.value) || 1 }
-                        }
-                      })}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Height</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={component.layout.h}
-                      onChange={e => dispatch({
-                        type: 'UPDATE_LAYOUT',
-                        payload: {
-                          id: component.id,
-                          layout: { ...component.layout, h: parseInt(e.target.value) || 1 }
-                        }
-                      })}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                    />
-                  </div>
-                </div>
-
-                {/* Attributes Editor */}
-                <div className="pt-4 border-t border-gray-200">
-                  <h5 className="text-sm font-heading font-medium text-primary mb-3">Attributes</h5>
-                  <div className="space-y-2">
-                    {attributesList.length === 0 && (
-                      <div className="text-sm text-primary/70">No editable attributes detected.</div>
-                    )}
-                    {attributesList.map(name => (
-                      <div key={name} className="space-y-1">
-                        <label className="block text-xs font-heading text-primary/80">{name}</label>
-                        <input
-                          type="text"
-                          value={attributesValues[name] ?? ''}
-                          onChange={e => applyAttributeChange(component.id, name, e.target.value)}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* WoT Integration Info */}
-                <div className="pt-4 border-t border-gray-200">
-                  <h5 className="text-sm font-heading font-medium text-primary mb-3">WoT Integration</h5>
-                  <div className="text-xs text-gray-600 space-y-2 font-body">
-                    <div className="p-2 bg-gray-50 rounded">
-                      <strong>TD:</strong> <span className="ml-1">{state.tdInfos.find(td => td.id === component.tdId)?.title || 'Unknown'}</span>
-                    </div>
-                    <div className="p-2 bg-gray-50 rounded">
-                      <strong>Type:</strong> <span className="ml-1">{component.type}</span>
-                    </div>
-                    <div className="p-2 bg-gray-50 rounded">
-                      <strong>Affordance:</strong> <span className="ml-1">{component.affordanceKey}</span>
-                    </div>
-                    {affordance?.description && (
-                      <div className="p-2 bg-gray-50 rounded">
-                        <strong>Description:</strong> <span className="ml-1">{affordance.description}</span>
-                      </div>
-                    )}
-                    {affordance?.forms?.[0]?.href && (
-                      <div className="p-2 bg-gray-50 rounded">
-                        <strong>Endpoint:</strong> 
-                        <div className="font-mono text-xs mt-1 break-all">{affordance.forms[0].href}</div>
-                      </div>
-                    )}
-                    {affordance?.schema && (
-                      <div className="p-2 bg-gray-50 rounded">
-                        <strong>Schema:</strong>
-                        <pre className="text-xs mt-1 overflow-x-auto">{JSON.stringify(affordance.schema, null, 2)}</pre>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Loaded TDs Info */}
-                {state.tdInfos.length > 0 && (
-                  <div className="pt-4 border-t border-gray-200">
-                    <h5 className="text-sm font-heading font-medium text-primary mb-3">Loaded TDs ({state.tdInfos.length})</h5>
-                    <div className="space-y-2">
-                      {state.tdInfos.map(tdInfo => (
-                        <div key={tdInfo.id} className="p-2 bg-blue-50 rounded text-xs">
-                          <div className="font-medium">{tdInfo.title}</div>
-                          <div className="text-gray-500">
-                            {state.components.filter(c => c.tdId === tdInfo.id).length} components
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="pt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => handleComponentClose(component.id)}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-                  >
-                    Remove Component
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Per-card editor removed; page-level sidebar is used */}
         </div>
       </div>
     );
@@ -469,7 +363,11 @@ export function ComponentCanvasPage() {
               <div className="flex items-center space-x-2">
                 <label className="text-sm font-heading font-medium text-primary">Edit Mode:</label>
                 <button
-                  onClick={() => setIsEditMode(!isEditMode)}
+                  onClick={() => {
+                    const next = !isEditMode;
+                    setIsEditMode(next);
+                    if (!next) setEditingComponent(null);
+                  }}
                   aria-pressed={isEditMode}
                   aria-label={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
                   title={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
@@ -505,9 +403,10 @@ export function ComponentCanvasPage() {
       </div>
 
       {/* Canvas */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className={`${editingComponent ? 'mr-80 transition-all duration-200' : 'transition-all duration-200'}`}>
+        <div className="max-w-7xl mx-auto px-4 py-6">
         {state.components.length > 0 ? (
-          <ResponsiveGridLayout
+          <AnyResponsiveGridLayout
             className="layout"
             layouts={{
               lg: state.components.map(c => ({ ...c.layout, minW: 2, minH: 2, maxW: 6 })),
@@ -524,9 +423,11 @@ export function ComponentCanvasPage() {
             isResizable={isEditMode}
             margin={[16, 16]}
             containerPadding={[0, 0]}
+            draggableHandle={'.component-drag-handle'}
+            draggableCancel={'.no-drag, button, input, select, textarea, .edit-controls'}
           >
             {state.components.map(renderComponent)}
-          </ResponsiveGridLayout>
+          </AnyResponsiveGridLayout>
         ) : (
           <div className="text-center py-12">
             <div className="max-w-md mx-auto">
@@ -546,15 +447,138 @@ export function ComponentCanvasPage() {
             </div>
           </div>
         )}
+        </div>
       </div>
 
-      {/* Overlay when edit panel is open */}
-      {editingComponent && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setEditingComponent(null)}
-        />
-      )}
+      {/* Page-level right sidebar */}
+  {editingComponent && isEditMode && (() => {
+        const comp = state.components.find(c => c.id === editingComponent);
+        if (!comp) return null;
+        const afford = state.availableAffordances.find(a => a.key === comp.affordanceKey);
+        return (
+          <div className="fixed top-0 right-0 h-full w-80 bg-white border-l border-primary shadow-xl z-50 overflow-y-auto">
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+                <h4 className="font-heading font-medium text-lg text-primary">Component Settings</h4>
+                <button
+                  onClick={() => setEditingComponent(null)}
+                  className="p-1 rounded text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Basic Settings */}
+              <div className="space-y-3">
+                <h5 className="text-sm font-heading font-medium text-primary">Basic</h5>
+                
+                <div>
+                  <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Title</label>
+                  <input
+                    type="text"
+                    value={comp.title}
+                    onChange={e => {
+                      const next = e.target.value;
+                      dispatch({
+                        type: 'UPDATE_COMPONENT',
+                        payload: { id: comp.id, updates: { title: next } }
+                      });
+                      // reflect immediately on element
+                      applyAttributeChange(comp.id, 'label', next);
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Variant</label>
+                  <select
+                    value={comp.variant || 'minimal'}
+                    onChange={e => handleVariantChange(comp.id, e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
+                  >
+                    {afford?.availableVariants.map(variant => (
+                      <option key={variant} value={variant}>
+                        {variant.charAt(0).toUpperCase() + variant.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Layout */}
+                <div>
+                  <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Width</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="12"
+                    value={comp.layout.w}
+                    onChange={e => dispatch({
+                      type: 'UPDATE_LAYOUT',
+                      payload: {
+                        id: comp.id,
+                        layout: { ...comp.layout, w: parseInt(e.target.value) || 1 }
+                      }
+                    })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Height</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={comp.layout.h}
+                    onChange={e => dispatch({
+                      type: 'UPDATE_LAYOUT',
+                      payload: {
+                        id: comp.id,
+                        layout: { ...comp.layout, h: parseInt(e.target.value) || 1 }
+                      }
+                    })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+              </div>
+
+              {/* Attributes */}
+              <div className="pt-4 border-t border-gray-200">
+                <h5 className="text-sm font-heading font-medium text-primary mb-3">Attributes</h5>
+                <div className="space-y-2">
+                  {attributesList.length === 0 && (
+                    <div className="text-sm text-primary/70">No editable attributes detected.</div>
+                  )}
+                  {attributesList.map(name => (
+                    <div key={name} className="space-y-1">
+                      <label className="block text-xs font-heading text-primary/80">{name}</label>
+                      <input
+                        type="text"
+                        value={attributesValues[name] ?? ''}
+                        onChange={e => applyAttributeChange(comp.id, name, e.target.value)}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => handleComponentClose(comp.id)}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  Remove Component
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

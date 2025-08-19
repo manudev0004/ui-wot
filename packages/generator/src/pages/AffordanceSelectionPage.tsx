@@ -33,6 +33,10 @@ export function AffordanceSelectionPage() {
     setLoading(true);
 
     try {
+      // Reset previous selection in context when loading for a new TD
+      dispatch({ type: 'SELECT_AFFORDANCES', payload: [] });
+      // Reset local map for component choice
+      setSelectedComponentMap({});
       // Create WoT thing
       const thing = await wotService.createThing(state.parsedTD);
 
@@ -150,7 +154,7 @@ export function AffordanceSelectionPage() {
               </button>
               <button
                 onClick={handleLoad}
-                disabled={selectedAffordances.length === 0 || loading}
+                disabled={selectedAffordances.length === 0 || loading || !state.parsedTD}
                 className="bg-primary hover:bg-primary-light disabled:bg-gray-300 text-white font-heading font-medium py-2 px-6 rounded-lg transition-colors"
               >
                 {loading ? 'Loading...' : `Load (${selectedAffordances.length})`}

@@ -28,17 +28,11 @@ export function TDInputPage() {
           source: tdSource
         };
 
-        if (state.components.length > 0) {
-          // Adding to existing dashboard
-          dispatch({ type: 'ADD_TD', payload: tdInfo });
-          dispatch({ type: 'SET_AFFORDANCES', payload: [...state.availableAffordances, ...affordances] });
-        } else {
-          // First TD
-          dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
-          dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
-          dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
-          dispatch({ type: 'ADD_TD', payload: tdInfo });
-        }
+  // Always replace current parsed TD and available affordances when loading a new TD from this page
+  dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
+  dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
+  dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
+  dispatch({ type: 'ADD_TD', payload: tdInfo });
         
         dispatch({ type: 'SET_VIEW', payload: 'affordance-selection' });
       } catch (err) {
@@ -78,17 +72,11 @@ export function TDInputPage() {
         source: tdSource
       };
 
-      if (state.components.length > 0) {
-        // Adding to existing dashboard
-        dispatch({ type: 'ADD_TD', payload: tdInfo });
-        dispatch({ type: 'SET_AFFORDANCES', payload: [...state.availableAffordances, ...affordances] });
-      } else {
-        // First TD
-        dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
-        dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
-        dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
-        dispatch({ type: 'ADD_TD', payload: tdInfo });
-      }
+  // Always replace current parsed TD and available affordances when loading a new TD from this page
+  dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
+  dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
+  dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
+  dispatch({ type: 'ADD_TD', payload: tdInfo });
 
       dispatch({ type: 'SET_VIEW', payload: 'affordance-selection' });
     } catch (err) {
