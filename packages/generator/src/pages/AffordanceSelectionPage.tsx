@@ -34,6 +34,9 @@ export function AffordanceSelectionPage() {
         payload: { id: state.parsedTD.id || 'default', thing },
       });
 
+      // Get the active TD ID
+      const activeTdId = state.activeTdId || (state.tdInfos.length > 0 ? state.tdInfos[0].id : 'default');
+
       // Create components for selected affordances
       const components: WoTComponent[] = selectedAffordances
         .map((affordanceKey, index) => {
@@ -65,6 +68,7 @@ export function AffordanceSelectionPage() {
             },
             thing,
             affordanceKey,
+            tdId: activeTdId, // Assign the correct TD ID
           };
         })
         .filter(Boolean) as WoTComponent[];
@@ -112,7 +116,14 @@ export function AffordanceSelectionPage() {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Select Affordances</h1>
-                <p className="text-sm text-gray-600 mt-1">{state.parsedTD?.title} - Choose which affordances to include</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {state.parsedTD?.title} - Choose which affordances to include
+                  {state.components.length > 0 && (
+                    <span className="ml-2 text-blue-600">
+                      (Adding to existing dashboard with {state.components.length} components)
+                    </span>
+                  )}
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-3">

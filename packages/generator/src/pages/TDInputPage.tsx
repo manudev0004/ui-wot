@@ -4,7 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import { wotService } from '../services/wotService';
 
 export function TDInputPage() {
-  const { dispatch } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const [urlInput, setUrlInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,9 +20,26 @@ export function TDInputPage() {
         const parsedTD = await wotService.parseTDFromSource(tdSource);
         const affordances = wotService.parseAffordances(parsedTD);
 
-        dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
-        dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
-        dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
+        // Create TD info object
+        const tdInfo = {
+          id: Date.now().toString(), // Simple ID generation
+          title: parsedTD.title || 'Untitled TD',
+          td: parsedTD,
+          source: tdSource
+        };
+
+        if (state.components.length > 0) {
+          // Adding to existing dashboard
+          dispatch({ type: 'ADD_TD', payload: tdInfo });
+          dispatch({ type: 'SET_AFFORDANCES', payload: [...state.availableAffordances, ...affordances] });
+        } else {
+          // First TD
+          dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
+          dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
+          dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
+          dispatch({ type: 'ADD_TD', payload: tdInfo });
+        }
+        
         dispatch({ type: 'SET_VIEW', payload: 'affordance-selection' });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to parse Thing Description');
@@ -53,9 +70,26 @@ export function TDInputPage() {
       const parsedTD = await wotService.parseTDFromSource(tdSource);
       const affordances = wotService.parseAffordances(parsedTD);
 
-      dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
-      dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
-      dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
+      // Create TD info object
+      const tdInfo = {
+        id: Date.now().toString(), // Simple ID generation
+        title: parsedTD.title || 'Untitled TD',
+        td: parsedTD,
+        source: tdSource
+      };
+
+      if (state.components.length > 0) {
+        // Adding to existing dashboard
+        dispatch({ type: 'ADD_TD', payload: tdInfo });
+        dispatch({ type: 'SET_AFFORDANCES', payload: [...state.availableAffordances, ...affordances] });
+      } else {
+        // First TD
+        dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
+        dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
+        dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
+        dispatch({ type: 'ADD_TD', payload: tdInfo });
+      }
+
       dispatch({ type: 'SET_VIEW', payload: 'affordance-selection' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch Thing Description');
@@ -65,7 +99,13 @@ export function TDInputPage() {
   };
 
   const handleBack = () => {
-    dispatch({ type: 'SET_VIEW', payload: 'home' });
+    if (state.components.length > 0) {
+      // If we have existing components, go back to canvas
+      dispatch({ type: 'SET_VIEW', payload: 'component-canvas' });
+    } else {
+      // Otherwise go to home
+      dispatch({ type: 'SET_VIEW', payload: 'home' });
+    }
   };
 
   return (
@@ -76,7 +116,14 @@ export function TDInputPage() {
           <button onClick={handleBack} className="mr-4 p-2 text-gray-600 hover:text-gray-900" aria-label="Go back">
             ← Back
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Add Thing Description</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {state.components.length > 0 ? 'Add Another Thing Description' : 'Add Thing Description'}
+          </h1>
+          {state.components.length > 0 && (
+            <p className="text-sm text-gray-600 mt-1">
+              Adding to existing dashboard with {state.components.length} components from {state.tdInfos.length} TD{state.tdInfos.length !== 1 ? 's' : ''}
+            </p>
+          )}
         </div>
 
         {error && (

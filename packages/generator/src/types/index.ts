@@ -1,5 +1,3 @@
-import { ThingDescription } from 'wot-thing-description-types';
-
 export interface ComponentLayout {
   i: string;
   x: number;
@@ -24,6 +22,7 @@ export interface WoTComponent {
   layout: ComponentLayout;
   thing: any; // Reference to the WoT thing
   affordanceKey: string; // Key of the affordance in TD
+  tdId: string; // Reference to the TD this component belongs to
 }
 
 export interface TDSource {
@@ -42,10 +41,19 @@ export interface ParsedAffordance {
   availableVariants: string[];
 }
 
+export interface TDInfo {
+  id: string;
+  title: string;
+  td: any; // ThingDescription type
+  source: TDSource;
+}
+
 export interface AppState {
   currentView: 'home' | 'td-input' | 'affordance-selection' | 'component-canvas';
+  tdInfos: TDInfo[]; // Support multiple TDs
+  activeTdId?: string; // Currently active TD for affordance selection
   tdSource?: TDSource;
-  parsedTD?: ThingDescription;
+  parsedTD?: any; // ThingDescription type
   availableAffordances: ParsedAffordance[];
   selectedAffordances: string[];
   components: WoTComponent[];

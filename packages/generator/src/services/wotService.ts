@@ -1,5 +1,4 @@
-import '@node-wot/browser-bundle';
-import { ThingDescription } from 'wot-thing-description-types';
+// import '@node-wot/browser-bundle';
 import { ParsedAffordance, TDSource } from '../types';
 
 declare global {
@@ -28,11 +27,11 @@ class WoTService {
 
   private initMockMode() {
     this.wot = {
-      consume: (td: ThingDescription) => this.createMockThing(td),
+      consume: (td: any) => this.createMockThing(td),
     };
   }
 
-  private createMockThing(td: ThingDescription) {
+  private createMockThing(td: any) {
     return {
       readProperty: async (propertyKey: string) => {
         const property = td.properties?.[propertyKey];
@@ -64,7 +63,7 @@ class WoTService {
     };
   }
 
-  async parseTDFromSource(source: TDSource): Promise<ThingDescription> {
+  async parseTDFromSource(source: TDSource): Promise<any> {
     let tdContent: string;
 
     if (source.type === 'url') {
@@ -78,7 +77,7 @@ class WoTService {
     }
 
     try {
-      const td = JSON.parse(tdContent) as ThingDescription;
+      const td = JSON.parse(tdContent) as any;
       this.validateTD(td);
       return td;
     } catch (error) {
@@ -95,7 +94,7 @@ class WoTService {
     });
   }
 
-  private validateTD(td: ThingDescription): void {
+  private validateTD(td: any): void {
     if (!td['@context']) {
       throw new Error('Missing @context in Thing Description');
     }
@@ -104,7 +103,7 @@ class WoTService {
     }
   }
 
-  async createThing(td: ThingDescription): Promise<any> {
+  async createThing(td: any): Promise<any> {
     try {
       const thing = this.wot ? await this.wot.consume(td) : this.createMockThing(td);
 
@@ -119,12 +118,12 @@ class WoTService {
     }
   }
 
-  parseAffordances(td: ThingDescription): ParsedAffordance[] {
+  parseAffordances(td: any): ParsedAffordance[] {
     const affordances: ParsedAffordance[] = [];
 
     // Parse properties
     if (td.properties) {
-      Object.entries(td.properties).forEach(([key, property]) => {
+      Object.entries(td.properties).forEach(([key, property]: [string, any]) => {
         affordances.push({
           key,
           type: 'property',
@@ -140,7 +139,7 @@ class WoTService {
 
     // Parse actions
     if (td.actions) {
-      Object.entries(td.actions).forEach(([key, action]) => {
+      Object.entries(td.actions).forEach(([key, action]: [string, any]) => {
         affordances.push({
           key,
           type: 'action',
@@ -156,7 +155,7 @@ class WoTService {
 
     // Parse events
     if (td.events) {
-      Object.entries(td.events).forEach(([key, event]) => {
+      Object.entries(td.events).forEach(([key, event]: [string, any]) => {
         affordances.push({
           key,
           type: 'event',

@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { AppState, WoTComponent, ParsedAffordance, TDSource } from '../types';
-import { ThingDescription } from 'wot-thing-description-types';
+import { AppState, WoTComponent, ParsedAffordance, TDSource, TDInfo } from '../types';
 
 type AppAction =
   | { type: 'SET_VIEW'; payload: AppState['currentView'] }
+  | { type: 'ADD_TD'; payload: TDInfo }
+  | { type: 'SET_ACTIVE_TD'; payload: string }
   | { type: 'SET_TD_SOURCE'; payload: TDSource }
-  | { type: 'SET_PARSED_TD'; payload: ThingDescription }
+  | { type: 'SET_PARSED_TD'; payload: any }
   | { type: 'SET_AFFORDANCES'; payload: ParsedAffordance[] }
   | { type: 'SELECT_AFFORDANCES'; payload: string[] }
   | { type: 'ADD_COMPONENT'; payload: WoTComponent }
@@ -17,6 +18,7 @@ type AppAction =
 
 const initialState: AppState = {
   currentView: 'home',
+  tdInfos: [],
   availableAffordances: [],
   selectedAffordances: [],
   components: [],
@@ -27,6 +29,25 @@ function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'SET_VIEW':
       return { ...state, currentView: action.payload };
+
+    case 'ADD_TD':
+      return { 
+        ...state, 
+        tdInfos: [...state.tdInfos, action.payload],
+        activeTdId: action.payload.id
+      };
+
+    case 'SET_ACTIVE_TD':
+      const activeTd = state.tdInfos.find(td => td.id === action.payload);
+      if (activeTd) {
+        return {
+          ...state,
+          activeTdId: action.payload,
+          parsedTD: activeTd.td,
+          tdSource: activeTd.source
+        };
+      }
+      return state;
 
     case 'SET_TD_SOURCE':
       return { ...state, tdSource: action.payload };
