@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { wotService } from '../services/wotService';
 import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import { useAppContext } from '../context/AppContext';
 import { WoTComponent } from '../types';
@@ -11,6 +12,9 @@ export function ComponentCanvasPage() {
   const { state, dispatch } = useAppContext();
   const [editingComponent, setEditingComponent] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  // attributes state for the currently editing component
+  const [attributesList, setAttributesList] = useState<string[]>([]);
+  const [attributesValues, setAttributesValues] = useState<Record<string, string>>({});
 
   const handleLayoutChange = (layout: Layout[]) => {
     if (!isEditMode) return;
@@ -30,13 +34,24 @@ export function ComponentCanvasPage() {
   };
 
   const handleComponentEdit = (componentId: string) => {
-    if (!isEditMode) return;
-    setEditingComponent(editingComponent === componentId ? null : componentId);
+  console.log('[ComponentCanvas] handleComponentEdit called for', componentId, { isEditMode, editingComponent });
+  const nextId = editingComponent === componentId ? null : componentId;
+    // ensure edit mode is enabled when opening editor
+    if (!isEditMode) setIsEditMode(true);
+    setEditingComponent(nextId);
+    // populate attributes when opening
+    if (nextId) {
+      // small timeout to ensure the element has been rendered into DOM
+      setTimeout(() => populateAttributes(nextId), 150);
+    } else {
+      setAttributesList([]);
+      setAttributesValues({});
+    }
   };
 
   const handleComponentClose = (componentId: string) => {
-    if (!isEditMode) return;
-    dispatch({ type: 'REMOVE_COMPONENT', payload: componentId });
+  if (!isEditMode) setIsEditMode(true);
+  dispatch({ type: 'REMOVE_COMPONENT', payload: componentId });
   };
 
   const handleVariantChange = (componentId: string, variant: string) => {
@@ -44,6 +59,57 @@ export function ComponentCanvasPage() {
       type: 'UPDATE_COMPONENT',
       payload: { id: componentId, updates: { variant } },
     });
+  };
+
+  // Helper: populate attributes from the actual DOM element for a component
+  const populateAttributes = (componentId: string) => {
+    try {
+      // find the rendered element container by matching data-component-id attribute on wrapper
+      const wrapper = document.querySelector(`[data-component-id="${componentId}"]`);
+    // If wrapper not found, try to find by component id in state
+    const comp = state.components.find(c => c.id === componentId);
+    if (!comp) return;
+
+    // look for the custom element inside the wrapper
+    let el: HTMLElement | null = null;
+    if (wrapper) {
+      el = wrapper.querySelector(comp.uiComponent) as HTMLElement | null;
+    } else {
+      // fallback: search document for first matching tag with td-url attribute or label text
+      el = document.querySelector(comp.uiComponent) as HTMLElement | null;
+    }
+
+      if (!el) {
+        setAttributesList([]);
+        setAttributesValues({});
+        return;
+      }
+
+      const attrs = Array.from(el.attributes).map(a => a.name);
+      const vals: Record<string, string> = {};
+      attrs.forEach(name => {
+        vals[name] = el!.getAttribute(name) || '';
+      });
+
+      setAttributesList(attrs);
+      setAttributesValues(vals);
+    } catch (err) {
+      console.error('[ComponentCanvas] populateAttributes error for', componentId, err);
+      setAttributesList([]);
+      setAttributesValues({});
+    }
+  };
+
+  const applyAttributeChange = (componentId: string, name: string, value: string) => {
+    // update local state
+    setAttributesValues(prev => ({ ...prev, [name]: value }));
+
+    // find the element and apply attribute
+    const comp = state.components.find(c => c.id === componentId);
+    if (!comp) return;
+    const el = document.querySelector(comp.uiComponent) as HTMLElement | null;
+    if (!el) return;
+    el.setAttribute(name, value);
   };
 
   const handleBack = () => {
@@ -55,7 +121,7 @@ export function ComponentCanvasPage() {
     const affordance = state.availableAffordances.find(a => a.key === component.affordanceKey);
 
     return (
-      <div key={component.layout.i} className="bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative group" style={{ zIndex: isEditing ? 1000 : 1 }}>
+      <div key={component.layout.i} data-component-id={component.id} className="bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative group" style={{ zIndex: isEditing ? 1000 : 1 }}>
         {/* Component Header */}
         <div className="bg-neutral-light px-3 py-2 border-b border-primary flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -64,8 +130,8 @@ export function ComponentCanvasPage() {
           </div>
           {isEditMode && (
             <div className="flex items-center space-x-1">
-              <button
-                onClick={() => handleComponentEdit(component.id)}
+                  <button
+                onClick={(e) => { e.stopPropagation(); handleComponentEdit(component.id); }}
                 className={`p-1 rounded transition-colors ${isEditing ? 'bg-accent text-white' : 'text-primary hover:text-accent'}`}
                 title="Edit component"
               >
@@ -78,7 +144,7 @@ export function ComponentCanvasPage() {
                   />
                 </svg>
               </button>
-              <button onClick={() => handleComponentClose(component.id)} className="p-1 rounded text-primary hover:text-red-600 transition-colors" title="Remove component">
+              <button onClick={(e) => { e.stopPropagation(); handleComponentClose(component.id); }} className="p-1 rounded text-primary hover:text-red-600 transition-colors" title="Remove component">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -126,6 +192,59 @@ export function ComponentCanvasPage() {
                   // Add TD URL for WoT integration
                   if (affordance?.forms?.[0]?.href) {
                     element.setAttribute('td-url', affordance.forms[0].href);
+                  }
+
+                  // attach runtime listeners to the created element so it talks to WoT
+                    try {
+                    // Try to locate the WoT thing. component.tdId may be the generated tdInfo.id
+                    // while wotService stores the thing under the parsed TD's id (td.id).
+                    let thing: any = null;
+                    if (component.tdId) thing = wotService.getThing(component.tdId);
+                    if (!thing) {
+                      const tdInfo = state.tdInfos.find(td => td.id === component.tdId);
+                      if (tdInfo && tdInfo.td && tdInfo.td.id) {
+                        thing = wotService.getThing(tdInfo.td.id);
+                      }
+                    }
+
+                    // If property, listen for change/input to write property
+                    if (affordance?.type === 'property') {
+                      element.addEventListener('change', async (ev: any) => {
+                        const val = ev.target?.value ?? ev.detail?.value ?? null;
+                        try {
+                          if (thing) await wotService.interactWithProperty(thing, affordance.key, val);
+                        } catch (err) {
+                          console.error('Failed to write property via WoT:', err);
+                        }
+                      });
+
+                      // try to read initial value
+                      (async () => {
+                        try {
+                          if (thing) {
+                            const current = await wotService.interactWithProperty(thing, affordance.key);
+                            if (current !== undefined && current !== null) {
+                              element.setAttribute('value', String(current));
+                            }
+                          }
+                        } catch (err) {
+                          // ignore read errors
+                        }
+                      })();
+                    }
+
+                    // If action, hook click to invoke action
+                    if (affordance?.type === 'action') {
+                      element.addEventListener('click', async () => {
+                        try {
+                          if (thing) await wotService.invokeAction(thing, affordance.key);
+                        } catch (err) {
+                          console.error('Failed to invoke action via WoT:', err);
+                        }
+                      });
+                    }
+                  } catch (listenerErr) {
+                    console.warn('Failed to attach WoT listeners to element', listenerErr);
                   }
 
                   el.appendChild(element);
@@ -229,6 +348,27 @@ export function ComponentCanvasPage() {
                       })}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
                     />
+                  </div>
+                </div>
+
+                {/* Attributes Editor */}
+                <div className="pt-4 border-t border-gray-200">
+                  <h5 className="text-sm font-heading font-medium text-primary mb-3">Attributes</h5>
+                  <div className="space-y-2">
+                    {attributesList.length === 0 && (
+                      <div className="text-sm text-primary/70">No editable attributes detected.</div>
+                    )}
+                    {attributesList.map(name => (
+                      <div key={name} className="space-y-1">
+                        <label className="block text-xs font-heading text-primary/80">{name}</label>
+                        <input
+                          type="text"
+                          value={attributesValues[name] ?? ''}
+                          onChange={e => applyAttributeChange(component.id, name, e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
 

@@ -118,6 +118,17 @@ class WoTService {
     }
   }
 
+  // Allow external code to register a thing under a custom key (for example, tdInfo.id)
+  registerThing(key: string, thing: any) {
+    try {
+      if (key && thing) {
+        this.things.set(key, thing);
+      }
+    } catch (err) {
+      console.error('Failed to register thing:', err);
+    }
+  }
+
   parseAffordances(td: any): ParsedAffordance[] {
     const affordances: ParsedAffordance[] = [];
 
@@ -133,6 +144,8 @@ class WoTService {
           forms: property.forms,
           suggestedComponent: this.suggestComponentForProperty(property),
           availableVariants: this.getAvailableVariants(this.suggestComponentForProperty(property)),
+          // Provide a list of possible components (e.g., slider and number-picker for numeric types)
+          possibleComponents: this.getPossibleComponentsForProperty(property),
         });
       });
     }
@@ -149,6 +162,7 @@ class WoTService {
           forms: action.forms,
           suggestedComponent: 'ui-button',
           availableVariants: ['minimal', 'outlined', 'filled'],
+          possibleComponents: ['ui-button'],
         });
       });
     }
@@ -165,6 +179,7 @@ class WoTService {
           forms: event.forms,
           suggestedComponent: 'ui-text',
           availableVariants: ['minimal'],
+          possibleComponents: ['ui-text'],
         });
       });
     }
@@ -212,6 +227,21 @@ class WoTService {
     };
 
     return variantMap[componentType] || ['minimal'];
+  }
+
+  // Return possible components for a property based on its type and schema
+  private getPossibleComponentsForProperty(property: any): string[] {
+    if (!property.type) return ['ui-text'];
+    if (property.type === 'boolean') return ['ui-toggle', 'ui-checkbox'];
+    if (property.type === 'integer' || property.type === 'number') {
+      // For numeric properties, allow slider and number-picker
+      return ['ui-slider', 'ui-number-picker'];
+    }
+    if (property.type === 'string') {
+      if (property.format === 'date' || property.format === 'date-time') return ['ui-calendar', 'ui-text'];
+      return ['ui-text'];
+    }
+    return ['ui-text'];
   }
 
   async interactWithProperty(thing: any, propertyKey: string, value?: any): Promise<any> {

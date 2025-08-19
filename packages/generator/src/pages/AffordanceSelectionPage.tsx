@@ -7,6 +7,8 @@ export function AffordanceSelectionPage() {
   const { state, dispatch } = useAppContext();
   const [selectedAffordances, setSelectedAffordances] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  // map affordanceKey -> selected component type (when multiple are available)
+  const [selectedComponentMap, setSelectedComponentMap] = useState<Record<string, string>>({});
 
   const handleAffordanceToggle = (affordanceKey: string) => {
     setSelectedAffordances(prev => (prev.includes(affordanceKey) ? prev.filter(key => key !== affordanceKey) : [...prev, affordanceKey]));
@@ -20,6 +22,10 @@ export function AffordanceSelectionPage() {
     setSelectedAffordances([]);
   };
 
+  const handleComponentChoice = (affordanceKey: string, componentType: string) => {
+    setSelectedComponentMap(prev => ({ ...prev, [affordanceKey]: componentType }));
+  };
+
   const handleLoad = async () => {
     if (selectedAffordances.length === 0) return;
     if (!state.parsedTD) return;
@@ -29,13 +35,22 @@ export function AffordanceSelectionPage() {
     try {
       // Create WoT thing
       const thing = await wotService.createThing(state.parsedTD);
+
+      // Register the created thing under the existing tdInfo id when possible so components can resolve it
+      // Try to find the tdInfo that corresponds to the currently parsed TD
+      const foundTdInfo = state.tdInfos.find(t => t.td === state.parsedTD) || state.tdInfos[0];
+      const registerKey = foundTdInfo?.id || state.parsedTD.id || 'default';
+
+      if (state.parsedTD.id) wotService.registerThing(state.parsedTD.id, thing);
+      wotService.registerThing(registerKey, thing);
+
       dispatch({
         type: 'SET_THING',
-        payload: { id: state.parsedTD.id || 'default', thing },
+        payload: { id: state.parsedTD.id || registerKey, thing },
       });
 
-      // Get the active TD ID
-      const activeTdId = state.activeTdId || (state.tdInfos.length > 0 ? state.tdInfos[0].id : 'default');
+      // Get the active TD ID (prefer existing tdInfo id, fallback to parsedTD.id)
+      const activeTdId = state.activeTdId || registerKey || (state.tdInfos.length > 0 ? state.tdInfos[0].id : 'default');
 
       // Create components for selected affordances
       const components: WoTComponent[] = selectedAffordances
@@ -48,14 +63,14 @@ export function AffordanceSelectionPage() {
             y: Math.floor(index / 3) * 4, // 4 units height per row
           };
 
-          return {
+            return {
             id: `${affordanceKey}-${Date.now()}-${index}`,
             type: affordance.type,
             title: affordance.title || affordanceKey,
             name: affordanceKey,
             description: affordance.description,
             schema: affordance.schema,
-            uiComponent: affordance.suggestedComponent,
+            uiComponent: selectedComponentMap[affordance.key] || affordance.suggestedComponent,
             variant: affordance.availableVariants[0],
             layout: {
               i: `${affordanceKey}-${Date.now()}-${index}`,
@@ -175,9 +190,23 @@ export function AffordanceSelectionPage() {
                 {affordance.description && <p className="text-sm text-black font-body mb-3">{affordance.description}</p>}
 
                 <div className="flex items-center justify-between">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-heading font-medium ${getComponentBadgeColor(affordance.suggestedComponent)}`}>
-                    {affordance.suggestedComponent}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-heading font-medium ${getComponentBadgeColor(selectedComponentMap[affordance.key] || affordance.suggestedComponent)}`}>
+                      {selectedComponentMap[affordance.key] || affordance.suggestedComponent}
+                    </span>
+                    {affordance.possibleComponents && affordance.possibleComponents.length > 1 && (
+                      <select
+                        value={selectedComponentMap[affordance.key] || affordance.suggestedComponent}
+                        onChange={e => handleComponentChoice(affordance.key, e.target.value)}
+                        className="text-sm border border-gray-200 rounded px-2 py-1"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        {affordance.possibleComponents.map(pc => (
+                          <option key={pc} value={pc}>{pc}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                   {affordance.availableVariants.length > 1 && <span className="text-xs text-primary/50 font-body">+{affordance.availableVariants.length - 1} variants</span>}
                 </div>
               </div>

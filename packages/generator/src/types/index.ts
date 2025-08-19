@@ -39,6 +39,8 @@ export interface ParsedAffordance {
   forms?: any[];
   suggestedComponent: string;
   availableVariants: string[];
+  // List of possible component types that can be used for this affordance (first is preferred)
+  possibleComponents?: string[];
 }
 
 export interface TDInfo {
