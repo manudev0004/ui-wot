@@ -1,4 +1,5 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
+import { StatusIndicator, type OperationStatus } from '../../utils/status-indicator';
 
 export interface UiSliderValueChange { value: number }
 
@@ -113,11 +114,9 @@ export class UiSlider {
   /** Manual input value */
   @State() manualInputValue: string = '';
 
-  /** Success feedback state */
-  @State() showSuccess: boolean = false;
-
-  /** Last error message */
-  @State() errorMessage?: string;
+  /** Unified status indicator state */
+  @State() operationStatus: OperationStatus = 'idle';
+  @State() lastError?: string;
 
   /** Event emitted when value changes */
   @Event() valueChange: EventEmitter<UiSliderValueChange>;
@@ -153,6 +152,8 @@ export class UiSlider {
   this.currentValue = newValue;
     this.manualInputValue = String(newValue);
     this.valueChange.emit({ value: newValue });
+    this.operationStatus = 'success';
+    setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
   // Local-only change: external device writes should be handled by listeners to `valueChange`.
   }
 
@@ -178,6 +179,8 @@ export class UiSlider {
   this.currentValue = clampedValue;
   this.manualInputValue = String(clampedValue);
   this.valueChange.emit({ value: clampedValue });
+  this.operationStatus = 'success';
+  setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
   // Local-only change: external device writes should be handled by listeners to `valueChange`.
   };
 
@@ -431,11 +434,9 @@ export class UiSlider {
           aria-disabled={isDisabled ? 'true' : 'false'}
         >
           {/* Success Indicator */}
-          {this.showSuccess && (
-            <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+          {StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError) && (
+            <div class={StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.classes} title={StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.tooltip}>
+              {StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.icon}
             </div>
           )}
 
@@ -547,7 +548,7 @@ export class UiSlider {
           </div>
         )}
         {/* Error Message */}
-        {this.errorMessage && <div class="text-red-500 text-sm mt-2 px-2">{this.errorMessage}</div>}
+  {this.lastError && <div class="text-red-500 text-sm mt-2 px-2">{this.lastError}</div>}
       </div>
     );
   }

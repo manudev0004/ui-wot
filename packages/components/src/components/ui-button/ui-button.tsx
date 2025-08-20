@@ -1,4 +1,5 @@
 import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
+import { StatusIndicator, type OperationStatus } from '../../utils/status-indicator';
 
 export interface UiButtonClick { label: string }
 
@@ -79,11 +80,9 @@ export class UiButton {
    */
   // TD integration removed: use normal clickHandler or events for external integration
 
-  /** Operation status for user feedback */
-  @State() showSuccess: boolean = false;
-
-  /** Last error message */
-  @State() errorMessage?: string;
+  /** Unified status indicator state */
+  @State() operationStatus: OperationStatus = 'idle';
+  @State() lastError?: string;
 
   /** Event emitted when button is clicked */
   @Event() buttonClick: EventEmitter<UiButtonClick>;
@@ -92,8 +91,18 @@ export class UiButton {
   private handleClick = async () => {
     if (this.state === 'disabled') return;
 
-  // Emit event and call local handler; TD integration removed
-  this.emitClick();
+    // Show quick feedback
+    this.operationStatus = 'loading';
+
+    // Emit event and call local handler; TD integration removed
+    this.emitClick();
+
+    // Assume success for local-only action; external handlers can override via attributes/events
+    setTimeout(() => {
+      this.operationStatus = 'success';
+      // Auto clear
+      setTimeout(() => { this.operationStatus = 'idle'; this.lastError = undefined; }, 1200);
+    }, 50);
   };
 
   /** Emit click events */
@@ -183,24 +192,15 @@ export class UiButton {
   /** Render component */
   render() {
     const isDisabled = this.state === 'disabled';
+    const indicator = StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError);
 
     return (
       <div class="relative" part="container" role="group" aria-label={this.label || 'Button'}>
-        {/* Success Indicator */}
-        {this.showSuccess && (
-          <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10" part="success-indicator">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </div>
-        )}
+        {indicator && <div class={indicator.classes} title={indicator.tooltip} part="status-indicator">{indicator.icon}</div>}
 
   <button class={this.getButtonStyle()} onClick={this.handleClick} onKeyDown={this.handleKeyDown} disabled={isDisabled} aria-label={this.label} part="button" aria-pressed={isDisabled ? 'false' : undefined}>
           {this.label}
         </button>
-
-        {/* Error Message */}
-        {this.errorMessage && <div class="text-red-500 text-sm mt-1 px-2">{this.errorMessage}</div>}
       </div>
     );
   }

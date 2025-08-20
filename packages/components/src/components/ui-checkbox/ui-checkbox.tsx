@@ -1,4 +1,5 @@
 import { Component, Prop, State, h, Event, EventEmitter, Watch } from '@stencil/core';
+import { StatusIndicator, type OperationStatus } from '../../utils/status-indicator';
 
 export interface UiCheckboxCheckboxChange { checked: boolean }
 export interface UiCheckboxValueChange { value: boolean; label?: string }
@@ -55,15 +56,9 @@ export class UiCheckbox {
    */
   // TD integration removed: use events or external handlers instead
 
-  /**
-   * Success feedback state.
-   */
-  @State() showSuccess: boolean = false;
-
-  /**
-   * Last error message.
-   */
-  @State() errorMessage?: string;
+  /** Unified status indicator state */
+  @State() operationStatus: OperationStatus = 'idle';
+  @State() lastError?: string;
 
   /**
    * Internal state for checked status.
@@ -105,6 +100,8 @@ export class UiCheckbox {
     this.valueChange.emit({ value: newValue, label: this.label });
 
   // Local control only: external integrations should handle device writes.
+  this.operationStatus = 'success';
+  setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
   };
 
   private getCheckboxStyles() {
@@ -186,12 +183,9 @@ export class UiCheckbox {
       <div class="inline-block">
         <div class="flex items-center">
           <div class="relative">
-            {/* Success Indicator */}
-            {this.showSuccess && (
-              <div class="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5 z-10">
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
+            {StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError) && (
+              <div class={StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.classes} title={StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.tooltip}>
+                {StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.icon}
               </div>
             )}
 
@@ -220,8 +214,8 @@ export class UiCheckbox {
           )}
         </div>
 
-        {/* Error Message */}
-        {this.errorMessage && <div class="text-red-500 text-sm mt-1 px-2">{this.errorMessage}</div>}
+  {/* Error Message */}
+  {this.lastError && <div class="text-red-500 text-sm mt-1 px-2">{this.lastError}</div>}
       </div>
     );
   }

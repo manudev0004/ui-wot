@@ -1,4 +1,5 @@
 import { Component, Prop, State, h, Event, EventEmitter, Watch } from '@stencil/core';
+import { StatusIndicator, type OperationStatus } from '../../utils/status-indicator';
 
 export interface UiTextValueChange { value: string }
 
@@ -20,8 +21,8 @@ export class UiText {
   @Prop() rows: number = 4;
 
   @State() currentValue: string = '';
-  @State() showSuccess = false;
-  @State() errorMessage?: string;
+  @State() operationStatus: OperationStatus = 'idle';
+  @State() lastError?: string;
   @State() isExpanded = false;
 
   @Event() textChange: EventEmitter<UiTextValueChange>;
@@ -38,6 +39,8 @@ export class UiText {
     this.currentValue = v; this.value = v;
     this.textChange.emit({ value: v });
     this.valueChange.emit({ value: v });
+  this.operationStatus = 'success';
+  setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
   }
 
   private escapeHtml(s: string) { return s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
@@ -72,9 +75,11 @@ export class UiText {
       <div class='relative w-full' part="container">
         {this.label && <label class={`block text-sm font-medium mb-2 ${isDisabled ? 'text-gray-400' : (this.theme === 'dark' ? 'text-white' : 'text-gray-900')}`}>{this.label}{!isEdit && <span class='ml-1 text-xs text-blue-500 dark:text-blue-400'>(Read-only)</span>}</label>}
         <div class='relative'>
-          {this.showSuccess && <div class='absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10'>
-            <svg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M10 3L4.5 8.5L2 6' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' /></svg>
-          </div>}
+          {StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError) && (
+            <div class={StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.classes} title={StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.tooltip}>
+              {StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.icon}
+            </div>
+          )}
 
               {isEdit ? (
             this.textType === 'single' ? (
@@ -97,7 +102,7 @@ export class UiText {
           {isEdit && this.currentValue && <div class={`mt-1 text-xs ${this.theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{this.textType === 'single' ? <span>{this.currentValue.length}{this.maxLength && ` / ${this.maxLength}`} characters</span> : <span>{this.currentValue.split('\n').length} lines, {this.currentValue.length} characters{this.maxLength && ` / ${this.maxLength}`}</span>}</div>}
         </div>
 
-        {this.errorMessage && <div class='text-red-500 text-sm mt-1 px-2'>{this.errorMessage}</div>}
+  {this.lastError && <div class='text-red-500 text-sm mt-1 px-2'>{this.lastError}</div>}
       </div>
     )
   }

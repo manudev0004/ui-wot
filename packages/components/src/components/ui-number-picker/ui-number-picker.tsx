@@ -1,4 +1,5 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
+import { StatusIndicator, type OperationStatus } from '../../utils/status-indicator';
 
 export interface UiNumberPickerValueChange { value: number; label?: string }
 
@@ -142,11 +143,9 @@ export class UiNumberPicker {
   /** Internal state tracking current value */
   @State() currentValue: number = 0;
 
-  /** Success feedback state */
-  @State() showSuccess: boolean = false;
-
-  /** Last error message */
-  @State() errorMessage?: string;
+  /** Unified status indicator state */
+  @State() operationStatus: OperationStatus = 'idle';
+  @State() lastError?: string;
 
   /** Event emitted when value changes */
   @Event() valueChange: EventEmitter<UiNumberPickerValueChange>;
@@ -200,6 +199,8 @@ export class UiNumberPicker {
   this.currentValue = newValue;
   this.value = newValue;
   this.emitChange();
+  this.operationStatus = 'success';
+  setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
   // Local-only change: external device updates should be handled by listeners to `valueChange`.
   };
 
@@ -218,6 +219,8 @@ export class UiNumberPicker {
   this.currentValue = newValue;
   this.value = newValue;
   this.emitChange();
+  this.operationStatus = 'success';
+  setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
   // Local-only change: external device updates should be handled by listeners to `valueChange`.
   };
 
@@ -358,12 +361,9 @@ export class UiNumberPicker {
         ) : (
           // Show interactive number picker
           <div class="relative flex items-center gap-3" tabindex={isDisabled ? -1 : 0} onKeyDown={this.handleKeyDown}>
-            {/* Success Indicator */}
-            {this.showSuccess && (
-              <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
+            {StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError) && (
+              <div class={StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.classes} title={StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.tooltip}>
+                {StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.icon}
               </div>
             )}
 
@@ -394,8 +394,8 @@ export class UiNumberPicker {
           </div>
         )}
 
-        {/* Error Message */}
-        {this.errorMessage && <div class="text-red-500 text-sm mt-2 px-2">{this.errorMessage}</div>}
+  {/* Error Message (optional) */}
+  {this.lastError && <div class="text-red-500 text-sm mt-2 px-2">{this.lastError}</div>}
       </div>
     );
   }

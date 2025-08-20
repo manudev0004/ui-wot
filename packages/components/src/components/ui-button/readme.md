@@ -30,11 +30,11 @@ Supports the same variants, colors, and themes as the number picker.
 
 ## Shadow Parts
 
-| Part                  | Description |
-| --------------------- | ----------- |
-| `"button"`            |             |
-| `"container"`         |             |
-| `"success-indicator"` |             |
+| Part                 | Description |
+| -------------------- | ----------- |
+| `"button"`           |             |
+| `"container"`        |             |
+| `"status-indicator"` |             |
 
 
 ----------------------------------------------
