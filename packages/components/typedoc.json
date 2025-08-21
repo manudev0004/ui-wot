@@ -1,0 +1,11 @@
+{
+  "entryPoints": ["src/components.d.ts", "src/global-elements.d.ts"],
+  "tsconfig": "tsconfig.json",
+  "exclude": ["**/__tests__/**", "**/*.spec.ts"],
+  "readme": "README.md",
+  "out": "docs/typedoc",
+  "includeVersion": true,
+  "disableSources": false,
+  "plugin": [],
+  "hideGenerator": false
+}
