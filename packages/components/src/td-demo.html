@@ -39,16 +39,19 @@
     <script>
       // Minimal wiring: only the controller is wired to the TD. The readonly monitor mirrors
       // the controller via `mirror="#readwrite-toggle"` and requires no extra JS.
-      const TD_URL = 'http://plugfest.thingweb.io/http-data-schema-thing';
-  const RW = document.getElementById('readwrite-toggle');
+        // const TD_URL = 'http://plugfest.thingweb.io/http-data-schema-thing';
+  // Move RW and TD_URL inside DOMContentLoaded to ensure the element exists
 
       async function waitForWoT() {
         while (!window.WoT) await new Promise(r => setTimeout(r, 100));
         return window.WoT;
       }
 
+
       document.addEventListener('DOMContentLoaded', async () => {
         try {
+          const RW = document.getElementById('readwrite-toggle');
+          const TD_URL = RW.getAttribute('td-url');
           const WoT = await waitForWoT();
           const servient = new WoT.Core.Servient();
           servient.addClientFactory(new WoT.Http.HttpClientFactory());
@@ -61,7 +64,6 @@
 
           const prop = RW.getAttribute('td-property');
           if (!prop) return;
-
           // initial read
           const p = await thing.readProperty(prop);
           const initial = Boolean(await p.value());
