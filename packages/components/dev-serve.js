@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-// Simple dev launcher: starts Stencil in dev watch/serve and provides a static fallback server for demo pages
-// - runs `stencil build --dev --watch --serve` as a child process
-// - starts a small static server that serves files from www/ and src/ so demo pages load without copying
+// Simple dev launcher:
+// - runs an initial `stencil build --dev` to ensure fresh assets
+// - starts `stencil build --dev --watch` (no built-in server)
+// - serves www/ and src/ with a small static server (www has priority)
 
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -14,11 +15,33 @@ const WWW = path.join(ROOT, 'www');
 const SRC = path.join(ROOT, 'src');
 const PORT = process.env.PORT || 3333;
 
-// Start stencil in dev serve/watch mode
-const stencil = spawn('npx', ['stencil', 'build', '--dev', '--watch', '--serve'], { stdio: 'inherit' });
+// Clean stale build output to avoid serving partial/old chunks
+function cleanDir(dir) {
+  try {
+    if (fs.existsSync(dir)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+      console.log(`[dev-serve] cleaned: ${dir}`);
+    }
+  } catch (err) {
+    console.warn(`[dev-serve] failed to clean ${dir}:`, err?.message || err);
+  }
+}
 
+cleanDir(path.join(ROOT, 'www', 'build'));
+cleanDir(path.join(ROOT, 'dist'));
+
+// Perform a synchronous initial build to guarantee non-empty chunks before serving
+console.log('[dev-serve] running initial build...');
+const initial = spawnSync('npx', ['stencil', 'build', '--dev'], { stdio: 'inherit' });
+if (initial.status !== 0) {
+  console.error('[dev-serve] initial build failed. Exiting.');
+  process.exit(initial.status || 1);
+}
+
+// Start stencil in dev watch mode (no built-in server)
+const stencil = spawn('npx', ['stencil', 'build', '--dev', '--watch'], { stdio: 'inherit' });
 stencil.on('exit', (code) => {
-  console.log('stencil process exited with', code);
+  console.log('stencil (watch) process exited with', code);
   process.exit(code);
 });
 

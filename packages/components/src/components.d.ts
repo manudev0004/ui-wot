@@ -11,6 +11,7 @@ import { UiCheckboxCheckboxChange, UiCheckboxValueChange } from "./components/ui
 import { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
 import { UiSliderValueChange } from "./components/ui-slider/ui-slider";
 import { UiTextValueChange } from "./components/ui-text/ui-text";
+import { UiMsg } from "./utils/types";
 import { UiToggleToggleEvent, UiToggleValueChange } from "./components/ui-toggle/ui-toggle";
 export { UiButtonClick } from "./components/ui-button/ui-button";
 export { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
@@ -18,6 +19,7 @@ export { UiCheckboxCheckboxChange, UiCheckboxValueChange } from "./components/ui
 export { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
 export { UiSliderValueChange } from "./components/ui-slider/ui-slider";
 export { UiTextValueChange } from "./components/ui-text/ui-text";
+export { UiMsg } from "./utils/types";
 export { UiToggleToggleEvent, UiToggleValueChange } from "./components/ui-toggle/ui-toggle";
 export namespace Components {
     /**
@@ -276,6 +278,70 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
+     * Smart wrapper for TD properties that provides visual feedback, status indicators,
+     * and handles the connection between UI controls and Thing Description properties.
+     * @example Basic usage with toggle:
+     * ```html
+     * <ui-property-card property="on" thing-id="light-1" label="Living Room Light">
+     *   <ui-toggle slot="control" value="false"></ui-toggle>
+     * </ui-property-card>
+     * ```
+     */
+    interface UiPropertyCard {
+        /**
+          * Acknowledge a successful operation
+         */
+        "ackSuccess": (message?: string) => Promise<void>;
+        /**
+          * Description text for the property
+         */
+        "description"?: string;
+        /**
+          * Display label for the property
+         */
+        "label"?: string;
+        /**
+          * Property name from the Thing Description
+         */
+        "property"?: string;
+        /**
+          * Report an error
+         */
+        "reportError": (message: string) => Promise<void>;
+        /**
+          * Property schema from Thing Description (for capability detection)
+         */
+        "schema"?: any;
+        /**
+          * Set the current status with optional auto-clear
+         */
+        "setStatus": (status: "idle" | "pending" | "success" | "error", message?: string, autoClearMs?: number) => Promise<void>;
+        /**
+          * Show capability badge (read-only, write-only, etc.)
+          * @default true
+         */
+        "showCapabilityBadge": boolean;
+        /**
+          * Show status indicator (success, error, pending)
+          * @default true
+         */
+        "showStatus": boolean;
+        /**
+          * Show last updated timestamp
+          * @default true
+         */
+        "showTimestamp": boolean;
+        /**
+          * Thing ID this property belongs to
+         */
+        "thingId"?: string;
+        /**
+          * Visual style variant
+          * @default 'default'
+         */
+        "variant": 'default' | 'compact' | 'minimal';
+    }
+    /**
      * Slider component with various features, multiple visual styles and TD integration.
      * Link a direct property URL for plug-and-play device control.
      * @example Basic Usage
@@ -404,150 +470,62 @@ export namespace Components {
         "variant": 'display' | 'edit';
     }
     /**
-     * Advanced toggle switch component with reactive state management, validation, and TD integration support.
-     * Provides multiple visual styles, accessibility features, and flexible event handling.
-     * @example Basic Usage
+     * A clean, accessible boolean toggle switch component.
+     * @example Basic usage:
      * ```html
-     * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+     * <ui-toggle value="true" label="Living Room Light"></ui-toggle>
      * ```
-     * @example Reactive Value Binding (auto-updates when value changes)
-     * ```html
-     * <ui-toggle 
-     * id="device-toggle"
-     * value="false" 
-     * reactive="true"
-     * label="Smart Device"
-     * debounce="200">
-     * </ui-toggle>
-     * ```
-     * @example Read-Only Mode with Auto-Sync
-     * ```html
-     * <ui-toggle
-     * mode="read"
-     * syncInterval="1000"
-     * label="Sensor Status"
-     * reactive="true">
-     * </ui-toggle>
-     * ```
-     * @example With Validation
-     * ```html
-     * <ui-toggle
-     * value="false"
-     * validator="myValidationFunction"
-     * label="Critical System">
-     * </ui-toggle>
-     * ```
-     * @example JavaScript Integration
+     * @example Listen to value changes:
      * ```javascript
-     * const toggle = document.querySelector('ui-toggle');
-     * // Listen for value changes
-     * toggle.addEventListener('valueChange', (e) => {
-     * console.log('New value:', e.detail.value);
-     * console.log('Label:', e.detail.label);
-     * });
-     * // Listen for sync requests (read mode)
-     * toggle.addEventListener('syncRequest', async (e) => {
-     * const newValue = await fetchDeviceState();
-     * toggle.value = newValue;
-     * });
-     * // Programmatically set value
-     * await toggle.setValue(true);
-     * // Get current value
-     * const currentValue = await toggle.getValue();
-     * // Custom validation function
-     * window.myValidationFunction = function(newValue, currentValue, label) {
-     * if (label === 'Critical System' && newValue === true) {
-     * return confirm('Are you sure you want to enable the critical system?');
-     * }
-     * return true;
-     * };
-     * ```
-     * @example Event Prevention
-     * ```javascript
-     * toggle.addEventListener('beforeChange', (e) => {
-     * if (someCondition) {
-     * e.detail.preventDefault(); // Prevent the change
-     * }
+     * toggle.addEventListener('valueMsg', (e) => {
+     *   console.log('New value:', e.detail.payload);
+     *   console.log('Previous:', e.detail.prev);
      * });
      * ```
      */
     interface UiToggle {
         /**
-          * Apply an external value to this component (will go through validation and emit events).
-         */
-        "applyExternalValue": (value: boolean | string) => Promise<boolean>;
-        /**
-          * Color scheme to match thingsweb webpage
+          * Color theme variant.
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
-          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * Whether the toggle is disabled (cannot be interacted with).
           * @default false
          */
-        "dark": boolean;
+        "disabled": boolean;
         /**
-          * Debounce delay in milliseconds for value change events. Prevents rapid firing of events during quick toggles. Default: 100ms
-          * @default 100
+          * Get the current toggle value.
+          * @returns Promise that resolves to the current boolean value
          */
-        "debounce": number;
+        "getValue": () => Promise<boolean>;
         /**
-          * Enable debug logging for development. Gate console output when true.
-          * @default false
-         */
-        "debug": boolean;
-        /**
-          * Enable keyboard navigation (Space and Enter keys). Default: true
-          * @default true
-         */
-        "keyboard": boolean;
-        /**
-          * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
+          * Text label displayed next to the toggle.
          */
         "label"?: string;
-        "mirror"?: string;
         /**
-          * Device interaction mode. - read: Only read from device (display current state, no user interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
-          * @default 'readwrite'
+          * Whether the toggle is read-only (displays value but cannot be changed).
+          * @default false
          */
-        "mode": 'read' | 'write' | 'readwrite';
+        "readonly": boolean;
         /**
-          * Public method: register a local observer function to be called when the value changes. Useful for page-level wiring utilities.
+          * Set the toggle value programmatically.
+          * @param value - The new boolean value
+          * @returns Promise that resolves to true if successful
          */
-        "observeLocal": (fn: (value: boolean) => void) => Promise<void>;
+        "setValue": (value: boolean) => Promise<boolean>;
         /**
-          * Enable automatic state reflection from external value changes. When true, the component will automatically update its visual state when value prop changes. Default: true
-          * @default true
+          * Component size variant.
+          * @default 'md'
          */
-        "reactive": boolean;
+        "size": 'sm' | 'md' | 'lg';
         /**
-          * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
-          * @default 'default'
+          * Current boolean value of the toggle.
+          * @default false
          */
-        "state": 'active' | 'disabled' | 'default';
+        "value": boolean;
         /**
-          * Stop all registered local observers
-         */
-        "stopObservingLocal": () => Promise<void>;
-        /**
-          * Auto-sync interval in milliseconds for read mode. When set, the component will emit 'syncRequest' events at this interval. External systems can listen to this event to update the value prop. Set to 0 to disable auto-sync. Default: 0 (disabled)
-          * @default 0
-         */
-        "syncInterval": number;
-        /**
-          * Declarative TD property name. Page scripts may use this to auto-wire this element to a TD property. Example: tdProperty="bool" NOTE: Component does not perform any network operations. This is a lightweight hint only.
-         */
-        "tdProperty"?: string;
-        /**
-          * Lightweight hint to the TD base URL for page-level wiring. Component does not perform network requests. Example: tdUrl="http://plugfest.thingweb.io/http-data-schema-thing"
-         */
-        "tdUrl"?: string;
-        /**
-          * Local value for the toggle. Accepts boolean or string values (string will be parsed). This is the primary way to control the toggle state externally.
-         */
-        "value"?: boolean | string;
-        /**
-          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
+          * Visual style variant of the toggle.
           * @default 'circle'
          */
         "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
@@ -568,6 +546,10 @@ export interface UiCheckboxCustomEvent<T> extends CustomEvent<T> {
 export interface UiNumberPickerCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiNumberPickerElement;
+}
+export interface UiPropertyCardCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiPropertyCardElement;
 }
 export interface UiSliderCustomEvent<T> extends CustomEvent<T> {
     detail: T;
@@ -757,6 +739,38 @@ declare global {
         prototype: HTMLUiNumberPickerElement;
         new (): HTMLUiNumberPickerElement;
     };
+    interface HTMLUiPropertyCardElementEventMap {
+        "propertyAction": {
+    action: 'read' | 'write' | 'observe' | 'unobserve';
+    thingId?: string;
+    property?: string;
+    value?: any;
+  };
+    }
+    /**
+     * Smart wrapper for TD properties that provides visual feedback, status indicators,
+     * and handles the connection between UI controls and Thing Description properties.
+     * @example Basic usage with toggle:
+     * ```html
+     * <ui-property-card property="on" thing-id="light-1" label="Living Room Light">
+     *   <ui-toggle slot="control" value="false"></ui-toggle>
+     * </ui-property-card>
+     * ```
+     */
+    interface HTMLUiPropertyCardElement extends Components.UiPropertyCard, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiPropertyCardElementEventMap>(type: K, listener: (this: HTMLUiPropertyCardElement, ev: UiPropertyCardCustomEvent<HTMLUiPropertyCardElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiPropertyCardElementEventMap>(type: K, listener: (this: HTMLUiPropertyCardElement, ev: UiPropertyCardCustomEvent<HTMLUiPropertyCardElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiPropertyCardElement: {
+        prototype: HTMLUiPropertyCardElement;
+        new (): HTMLUiPropertyCardElement;
+    };
     interface HTMLUiSliderElementEventMap {
         "valueChange": UiSliderValueChange;
     }
@@ -811,77 +825,21 @@ declare global {
         new (): HTMLUiTextElement;
     };
     interface HTMLUiToggleElementEventMap {
-        "toggle": UiToggleToggleEvent;
+        "valueMsg": UiMsg<boolean>;
         "valueChange": UiToggleValueChange;
-        "syncRequest": { mode: string; label?: string };
-        "beforeChange": { currentValue: boolean; newValue: boolean; preventDefault: () => void };
-        "ready": { value: boolean; mode: string };
+        "toggle": UiToggleToggleEvent;
     }
     /**
-     * Advanced toggle switch component with reactive state management, validation, and TD integration support.
-     * Provides multiple visual styles, accessibility features, and flexible event handling.
-     * @example Basic Usage
+     * A clean, accessible boolean toggle switch component.
+     * @example Basic usage:
      * ```html
-     * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+     * <ui-toggle value="true" label="Living Room Light"></ui-toggle>
      * ```
-     * @example Reactive Value Binding (auto-updates when value changes)
-     * ```html
-     * <ui-toggle 
-     * id="device-toggle"
-     * value="false" 
-     * reactive="true"
-     * label="Smart Device"
-     * debounce="200">
-     * </ui-toggle>
-     * ```
-     * @example Read-Only Mode with Auto-Sync
-     * ```html
-     * <ui-toggle
-     * mode="read"
-     * syncInterval="1000"
-     * label="Sensor Status"
-     * reactive="true">
-     * </ui-toggle>
-     * ```
-     * @example With Validation
-     * ```html
-     * <ui-toggle
-     * value="false"
-     * validator="myValidationFunction"
-     * label="Critical System">
-     * </ui-toggle>
-     * ```
-     * @example JavaScript Integration
+     * @example Listen to value changes:
      * ```javascript
-     * const toggle = document.querySelector('ui-toggle');
-     * // Listen for value changes
-     * toggle.addEventListener('valueChange', (e) => {
-     * console.log('New value:', e.detail.value);
-     * console.log('Label:', e.detail.label);
-     * });
-     * // Listen for sync requests (read mode)
-     * toggle.addEventListener('syncRequest', async (e) => {
-     * const newValue = await fetchDeviceState();
-     * toggle.value = newValue;
-     * });
-     * // Programmatically set value
-     * await toggle.setValue(true);
-     * // Get current value
-     * const currentValue = await toggle.getValue();
-     * // Custom validation function
-     * window.myValidationFunction = function(newValue, currentValue, label) {
-     * if (label === 'Critical System' && newValue === true) {
-     * return confirm('Are you sure you want to enable the critical system?');
-     * }
-     * return true;
-     * };
-     * ```
-     * @example Event Prevention
-     * ```javascript
-     * toggle.addEventListener('beforeChange', (e) => {
-     * if (someCondition) {
-     * e.detail.preventDefault(); // Prevent the change
-     * }
+     * toggle.addEventListener('valueMsg', (e) => {
+     *   console.log('New value:', e.detail.payload);
+     *   console.log('Previous:', e.detail.prev);
      * });
      * ```
      */
@@ -905,6 +863,7 @@ declare global {
         "ui-checkbox": HTMLUiCheckboxElement;
         "ui-heading": HTMLUiHeadingElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
+        "ui-property-card": HTMLUiPropertyCardElement;
         "ui-slider": HTMLUiSliderElement;
         "ui-text": HTMLUiTextElement;
         "ui-toggle": HTMLUiToggleElement;
@@ -1191,6 +1150,67 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
+     * Smart wrapper for TD properties that provides visual feedback, status indicators,
+     * and handles the connection between UI controls and Thing Description properties.
+     * @example Basic usage with toggle:
+     * ```html
+     * <ui-property-card property="on" thing-id="light-1" label="Living Room Light">
+     *   <ui-toggle slot="control" value="false"></ui-toggle>
+     * </ui-property-card>
+     * ```
+     */
+    interface UiPropertyCard {
+        /**
+          * Description text for the property
+         */
+        "description"?: string;
+        /**
+          * Display label for the property
+         */
+        "label"?: string;
+        /**
+          * Emitted when a control action should be performed (read, write, observe)
+         */
+        "onPropertyAction"?: (event: UiPropertyCardCustomEvent<{
+    action: 'read' | 'write' | 'observe' | 'unobserve';
+    thingId?: string;
+    property?: string;
+    value?: any;
+  }>) => void;
+        /**
+          * Property name from the Thing Description
+         */
+        "property"?: string;
+        /**
+          * Property schema from Thing Description (for capability detection)
+         */
+        "schema"?: any;
+        /**
+          * Show capability badge (read-only, write-only, etc.)
+          * @default true
+         */
+        "showCapabilityBadge"?: boolean;
+        /**
+          * Show status indicator (success, error, pending)
+          * @default true
+         */
+        "showStatus"?: boolean;
+        /**
+          * Show last updated timestamp
+          * @default true
+         */
+        "showTimestamp"?: boolean;
+        /**
+          * Thing ID this property belongs to
+         */
+        "thingId"?: string;
+        /**
+          * Visual style variant
+          * @default 'default'
+         */
+        "variant"?: 'default' | 'compact' | 'minimal';
+    }
+    /**
      * Slider component with various features, multiple visual styles and TD integration.
      * Link a direct property URL for plug-and-play device control.
      * @example Basic Usage
@@ -1325,158 +1345,63 @@ declare namespace LocalJSX {
         "variant"?: 'display' | 'edit';
     }
     /**
-     * Advanced toggle switch component with reactive state management, validation, and TD integration support.
-     * Provides multiple visual styles, accessibility features, and flexible event handling.
-     * @example Basic Usage
+     * A clean, accessible boolean toggle switch component.
+     * @example Basic usage:
      * ```html
-     * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+     * <ui-toggle value="true" label="Living Room Light"></ui-toggle>
      * ```
-     * @example Reactive Value Binding (auto-updates when value changes)
-     * ```html
-     * <ui-toggle 
-     * id="device-toggle"
-     * value="false" 
-     * reactive="true"
-     * label="Smart Device"
-     * debounce="200">
-     * </ui-toggle>
-     * ```
-     * @example Read-Only Mode with Auto-Sync
-     * ```html
-     * <ui-toggle
-     * mode="read"
-     * syncInterval="1000"
-     * label="Sensor Status"
-     * reactive="true">
-     * </ui-toggle>
-     * ```
-     * @example With Validation
-     * ```html
-     * <ui-toggle
-     * value="false"
-     * validator="myValidationFunction"
-     * label="Critical System">
-     * </ui-toggle>
-     * ```
-     * @example JavaScript Integration
+     * @example Listen to value changes:
      * ```javascript
-     * const toggle = document.querySelector('ui-toggle');
-     * // Listen for value changes
-     * toggle.addEventListener('valueChange', (e) => {
-     * console.log('New value:', e.detail.value);
-     * console.log('Label:', e.detail.label);
-     * });
-     * // Listen for sync requests (read mode)
-     * toggle.addEventListener('syncRequest', async (e) => {
-     * const newValue = await fetchDeviceState();
-     * toggle.value = newValue;
-     * });
-     * // Programmatically set value
-     * await toggle.setValue(true);
-     * // Get current value
-     * const currentValue = await toggle.getValue();
-     * // Custom validation function
-     * window.myValidationFunction = function(newValue, currentValue, label) {
-     * if (label === 'Critical System' && newValue === true) {
-     * return confirm('Are you sure you want to enable the critical system?');
-     * }
-     * return true;
-     * };
-     * ```
-     * @example Event Prevention
-     * ```javascript
-     * toggle.addEventListener('beforeChange', (e) => {
-     * if (someCondition) {
-     * e.detail.preventDefault(); // Prevent the change
-     * }
+     * toggle.addEventListener('valueMsg', (e) => {
+     *   console.log('New value:', e.detail.payload);
+     *   console.log('Previous:', e.detail.prev);
      * });
      * ```
      */
     interface UiToggle {
         /**
-          * Color scheme to match thingsweb webpage
+          * Color theme variant.
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
-          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * Whether the toggle is disabled (cannot be interacted with).
           * @default false
          */
-        "dark"?: boolean;
+        "disabled"?: boolean;
         /**
-          * Debounce delay in milliseconds for value change events. Prevents rapid firing of events during quick toggles. Default: 100ms
-          * @default 100
-         */
-        "debounce"?: number;
-        /**
-          * Enable debug logging for development. Gate console output when true.
-          * @default false
-         */
-        "debug"?: boolean;
-        /**
-          * Enable keyboard navigation (Space and Enter keys). Default: true
-          * @default true
-         */
-        "keyboard"?: boolean;
-        /**
-          * Optional text label, to display text left to the toggle. When given, clicking the label will also toggle the switch.
+          * Text label displayed next to the toggle.
          */
         "label"?: string;
-        "mirror"?: string;
         /**
-          * Device interaction mode. - read: Only read from device (display current state, no user interaction) - write: Only write to device (control device but don't sync state) - readwrite: Read and write (full synchronization) - default
-          * @default 'readwrite'
-         */
-        "mode"?: 'read' | 'write' | 'readwrite';
-        /**
-          * Event emitted before value changes (can be prevented)
-         */
-        "onBeforeChange"?: (event: UiToggleCustomEvent<{ currentValue: boolean; newValue: boolean; preventDefault: () => void }>) => void;
-        /**
-          * Event emitted after component is ready and initialized
-         */
-        "onReady"?: (event: UiToggleCustomEvent<{ value: boolean; mode: string }>) => void;
-        /**
-          * Event emitted to request sync in read mode (for external data fetching)
-         */
-        "onSyncRequest"?: (event: UiToggleCustomEvent<{ mode: string; label?: string }>) => void;
-        /**
-          * Legacy event emitted when toggle state changes
+          * @deprecated Use valueMsg instead
          */
         "onToggle"?: (event: UiToggleCustomEvent<UiToggleToggleEvent>) => void;
         /**
-          * Standardized valueChange event for value-driven integrations
+          * @deprecated Use valueMsg instead
          */
         "onValueChange"?: (event: UiToggleCustomEvent<UiToggleValueChange>) => void;
         /**
-          * Enable automatic state reflection from external value changes. When true, the component will automatically update its visual state when value prop changes. Default: true
-          * @default true
+          * Primary event emitted when the toggle value changes. Use this event for all value change handling.
          */
-        "reactive"?: boolean;
+        "onValueMsg"?: (event: UiToggleCustomEvent<UiMsg<boolean>>) => void;
         /**
-          * Current state of the toggle. - active: Toggle is on/active - disabled: Toggle cannot be clicked or interacted with - default: Toggle is off/inactive (default)
-          * @default 'default'
+          * Whether the toggle is read-only (displays value but cannot be changed).
+          * @default false
          */
-        "state"?: 'active' | 'disabled' | 'default';
+        "readonly"?: boolean;
         /**
-          * Auto-sync interval in milliseconds for read mode. When set, the component will emit 'syncRequest' events at this interval. External systems can listen to this event to update the value prop. Set to 0 to disable auto-sync. Default: 0 (disabled)
-          * @default 0
+          * Component size variant.
+          * @default 'md'
          */
-        "syncInterval"?: number;
+        "size"?: 'sm' | 'md' | 'lg';
         /**
-          * Declarative TD property name. Page scripts may use this to auto-wire this element to a TD property. Example: tdProperty="bool" NOTE: Component does not perform any network operations. This is a lightweight hint only.
+          * Current boolean value of the toggle.
+          * @default false
          */
-        "tdProperty"?: string;
+        "value"?: boolean;
         /**
-          * Lightweight hint to the TD base URL for page-level wiring. Component does not perform network requests. Example: tdUrl="http://plugfest.thingweb.io/http-data-schema-thing"
-         */
-        "tdUrl"?: string;
-        /**
-          * Local value for the toggle. Accepts boolean or string values (string will be parsed). This is the primary way to control the toggle state externally.
-         */
-        "value"?: boolean | string;
-        /**
-          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
+          * Visual style variant of the toggle.
           * @default 'circle'
          */
         "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
@@ -1487,6 +1412,7 @@ declare namespace LocalJSX {
         "ui-checkbox": UiCheckbox;
         "ui-heading": UiHeading;
         "ui-number-picker": UiNumberPicker;
+        "ui-property-card": UiPropertyCard;
         "ui-slider": UiSlider;
         "ui-text": UiText;
         "ui-toggle": UiToggle;
@@ -1601,6 +1527,17 @@ declare module "@stencil/core" {
              */
             "ui-number-picker": LocalJSX.UiNumberPicker & JSXBase.HTMLAttributes<HTMLUiNumberPickerElement>;
             /**
+             * Smart wrapper for TD properties that provides visual feedback, status indicators,
+             * and handles the connection between UI controls and Thing Description properties.
+             * @example Basic usage with toggle:
+             * ```html
+             * <ui-property-card property="on" thing-id="light-1" label="Living Room Light">
+             *   <ui-toggle slot="control" value="false"></ui-toggle>
+             * </ui-property-card>
+             * ```
+             */
+            "ui-property-card": LocalJSX.UiPropertyCard & JSXBase.HTMLAttributes<HTMLUiPropertyCardElement>;
+            /**
              * Slider component with various features, multiple visual styles and TD integration.
              * Link a direct property URL for plug-and-play device control.
              * @example Basic Usage
@@ -1621,70 +1558,16 @@ declare module "@stencil/core" {
             "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
             "ui-text": LocalJSX.UiText & JSXBase.HTMLAttributes<HTMLUiTextElement>;
             /**
-             * Advanced toggle switch component with reactive state management, validation, and TD integration support.
-             * Provides multiple visual styles, accessibility features, and flexible event handling.
-             * @example Basic Usage
+             * A clean, accessible boolean toggle switch component.
+             * @example Basic usage:
              * ```html
-             * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+             * <ui-toggle value="true" label="Living Room Light"></ui-toggle>
              * ```
-             * @example Reactive Value Binding (auto-updates when value changes)
-             * ```html
-             * <ui-toggle 
-             * id="device-toggle"
-             * value="false" 
-             * reactive="true"
-             * label="Smart Device"
-             * debounce="200">
-             * </ui-toggle>
-             * ```
-             * @example Read-Only Mode with Auto-Sync
-             * ```html
-             * <ui-toggle
-             * mode="read"
-             * syncInterval="1000"
-             * label="Sensor Status"
-             * reactive="true">
-             * </ui-toggle>
-             * ```
-             * @example With Validation
-             * ```html
-             * <ui-toggle
-             * value="false"
-             * validator="myValidationFunction"
-             * label="Critical System">
-             * </ui-toggle>
-             * ```
-             * @example JavaScript Integration
+             * @example Listen to value changes:
              * ```javascript
-             * const toggle = document.querySelector('ui-toggle');
-             * // Listen for value changes
-             * toggle.addEventListener('valueChange', (e) => {
-             * console.log('New value:', e.detail.value);
-             * console.log('Label:', e.detail.label);
-             * });
-             * // Listen for sync requests (read mode)
-             * toggle.addEventListener('syncRequest', async (e) => {
-             * const newValue = await fetchDeviceState();
-             * toggle.value = newValue;
-             * });
-             * // Programmatically set value
-             * await toggle.setValue(true);
-             * // Get current value
-             * const currentValue = await toggle.getValue();
-             * // Custom validation function
-             * window.myValidationFunction = function(newValue, currentValue, label) {
-             * if (label === 'Critical System' && newValue === true) {
-             * return confirm('Are you sure you want to enable the critical system?');
-             * }
-             * return true;
-             * };
-             * ```
-             * @example Event Prevention
-             * ```javascript
-             * toggle.addEventListener('beforeChange', (e) => {
-             * if (someCondition) {
-             * e.detail.preventDefault(); // Prevent the change
-             * }
+             * toggle.addEventListener('valueMsg', (e) => {
+             *   console.log('New value:', e.detail.payload);
+             *   console.log('Previous:', e.detail.prev);
              * });
              * ```
              */
