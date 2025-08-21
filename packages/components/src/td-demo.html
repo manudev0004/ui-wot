@@ -67,11 +67,29 @@
           const initial = Boolean(await p.value());
           if (typeof RW.applyExternalValue === 'function') RW.applyExternalValue(initial); else RW.value = initial;
 
-          // observe updates
-          await thing.observeProperty(prop, async data => {
-            const v = Boolean(await data.value());
-            if (typeof RW.applyExternalValue === 'function') RW.applyExternalValue(v); else RW.value = v;
-          });
+          // observe updates. If the TD doesn't provide an observable form for this property
+          // (some HTTP TDs don't), fall back to a simple polling loop instead of failing.
+          try {
+            await thing.observeProperty(prop, async data => {
+              const v = Boolean(await data.value());
+              if (typeof RW.applyExternalValue === 'function') RW.applyExternalValue(v); else RW.value = v;
+            });
+          } catch (observeErr) {
+            console.warn('observeProperty failed, falling back to polling:', observeErr.message || observeErr);
+            // Poll every 3 seconds
+            const pollInterval = 3000;
+            const poller = setInterval(async () => {
+              try {
+                const p2 = await thing.readProperty(prop);
+                const v2 = Boolean(await p2.value());
+                if (typeof RW.applyExternalValue === 'function') RW.applyExternalValue(v2); else RW.value = v2;
+              } catch (pollErr) {
+                console.warn('Polling readProperty failed:', pollErr.message || pollErr);
+              }
+            }, pollInterval);
+            // store poller on the element so it can be cleared externally if needed
+            RW.__td_poller = poller;
+          }
 
           // write when controller emits valueChange
           RW.addEventListener('valueChange', async e => {
