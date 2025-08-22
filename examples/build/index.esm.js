@@ -1,2 +1,0 @@
-import"./ui-heading.entry.esm.js";import"./p-DtJ3qTBE.js";function n(n,t,e){return(n||"")+(t?` ${t}`:"")+(e?` ${e}`:"")}function t(n,t){const e=document.createElement("ui-heading");e.setAttribute("text",n);t.innerHTML="";t.appendChild(e);console.log("Final container content:",t.innerHTML);console.log("Final container children:",t.children)}export{n as format,t as renderHeading};
-//# sourceMappingURL=index.esm.js.map

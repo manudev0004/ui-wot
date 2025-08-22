@@ -13,9 +13,12 @@
     "start": "vite preview"
   },
   "dependencies": {
+    "@types/react-dropzone": "^4.2.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "ui-wot-components": "file:../components"
+    "react-dropzone": "^14.3.8",
+  "react-grid-layout": "^1.5.2",
+  "@thingweb/ui-wot-components": "file:../components"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

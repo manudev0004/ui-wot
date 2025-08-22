@@ -45,4 +45,3 @@ export type {
 } from './services/wot-binder';
 
 export { setMode } from '@stencil/core';
-export { renderHeading } from './lib/renderHeading';

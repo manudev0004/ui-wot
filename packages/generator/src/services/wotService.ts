@@ -1,29 +1,61 @@
 // import '@node-wot/browser-bundle';
 import { ParsedAffordance, TDSource } from '../types';
 
-declare global {
-  const WoT: any;
-}
-
 class WoTService {
   private wot: any;
   private things: Map<string, any> = new Map();
+  // When available, this will hold the components library WoT service instance
+  private libService: any | undefined;
 
   constructor() {}
 
   async start() {
     try {
-      if (typeof WoT !== 'undefined') {
+      // Try to dynamically import the components library service so we don't
+      // trigger top-level module failures in browser environments where
+      // node-wot or other Node-only modules are not available.
+      try {
+  // Prevent Vite/Rollup from statically resolving this optional runtime-only
+  // dependency during bundling. Use a variable for the module specifier so
+  // bundlers cannot treat it as a static import. At runtime the import will
+  // be attempted and the code already handles failure by falling back to
+  // browser/no-op behavior.
+  const moduleName = '@thingweb/ui-wot-components/services';
+  const libModule = await import(/* @vite-ignore */ moduleName);
+        // The module shape may vary (named exports, default export, or built bundle).
+        const lib: any = (libModule && (libModule as any).default) ? (libModule as any).default : libModule;
+
+        // Prefer a provided factory if available, otherwise use exported instance
+        if (lib && typeof lib.createWoTService === 'function') {
+          // create a non-debug instance for generator usage
+          this.libService = lib.createWoTService({ debug: false });
+          console.log('Using components library WoT service (factory)');
+        } else if (lib && lib.wotService) {
+          this.libService = lib.wotService;
+          console.log('Using components library WoT service (instance)');
+        }
+      } catch (importErr) {
+        // Import may fail in browser builds if the components package requires
+        // Node-specific runtime. We'll fall back to the original browser logic.
+        console.warn('Could not import components WoT service, falling back to local/browser behavior:', String(importErr));
+      }
+
+      if (this.libService) {
+        // Library will handle TDs and network operations if available.
+        return;
+      }
+      const globalWoT = (globalThis as any).WoT;
+      if (typeof globalWoT !== 'undefined') {
         // Check if WoT has the expected structure from @node-wot/browser-bundle
-        if (WoT.Core && WoT.Core.Servient && WoT.Http) {
+        if (globalWoT.Core && globalWoT.Core.Servient && globalWoT.Http) {
           // Use the proper WoT browser bundle pattern
-          const servient = new WoT.Core.Servient();
-          servient.addClientFactory(new WoT.Http.HttpClientFactory());
+          const servient = new globalWoT.Core.Servient();
+          servient.addClientFactory(new globalWoT.Http.HttpClientFactory());
           this.wot = await servient.start();
           console.log('WoT Service started with browser bundle');
-        } else if (typeof WoT.consume === 'function') {
+        } else if (typeof globalWoT.consume === 'function') {
           // Direct WoT object with consume method
-          this.wot = WoT;
+          this.wot = globalWoT;
           console.log('WoT Service started with direct WoT object');
         } else {
           // WoT object exists but doesn't have expected API
@@ -108,7 +140,18 @@ class WoTService {
 
   async createThing(td: any): Promise<any> {
     try {
-  const thing = this.wot ? await this.wot.consume(td) : this.createNoopThing(td);
+      // If the components library WoT service is available, delegate consumption to it.
+      if (this.libService) {
+        const consumeId = td?.id || `td-${Date.now()}`;
+        const thing = await this.libService.consumeThing(consumeId, td);
+
+        // Keep a local reference for generator-specific keys (registerThing uses this map)
+        if (td?.id) this.things.set(td.id, thing);
+
+        return thing;
+      }
+
+      const thing = this.wot ? await this.wot.consume(td) : this.createNoopThing(td);
 
       if (td.id) {
         this.things.set(td.id, thing);
@@ -125,7 +168,11 @@ class WoTService {
   registerThing(key: string, thing: any) {
     try {
       if (key && thing) {
+        // Always keep a local registry for generator pages to look up by arbitrary keys
         this.things.set(key, thing);
+
+        // If the library exposes an API to register aliases, prefer using it in future.
+        // Currently the components library does not provide a register/alias API.
       }
     } catch (err) {
       console.error('Failed to register thing:', err);
@@ -270,11 +317,29 @@ class WoTService {
   }
 
   getThing(thingId: string): any {
-    return this.things.get(thingId);
+    // Prefer local registry first
+    const local = this.things.get(thingId);
+    if (local) return local;
+
+    // If the components library WoT service is available, ask it for the consumed thing
+    if (this.libService && typeof this.libService.getConsumedThing === 'function') {
+      return this.libService.getConsumedThing(thingId);
+    }
+
+    return undefined;
   }
 
   async stop() {
     this.things.clear();
+    // If the library provided a running servient, request shutdown
+    if (this.libService && typeof this.libService.shutdown === 'function') {
+      try {
+        await this.libService.shutdown();
+      } catch (err) {
+        // non-fatal
+      }
+    }
+
     console.log('WoT Service stopped');
   }
 }
