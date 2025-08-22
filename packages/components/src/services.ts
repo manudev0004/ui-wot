@@ -3,7 +3,11 @@ export { WoTService, wotService } from './services/wot-service';
 export { WoTBinder, createBinder } from './services/wot-binder';
 
 export type {
-  WoTThing,
+  ConsumedThing as WoTThing,
+  ThingDescription,
+  PropertyElement,
+  ActionElement,
+  EventElement,
   WoTServiceConfig
 } from './services/wot-service';
 

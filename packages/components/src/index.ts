@@ -31,7 +31,11 @@ export { classifyTdProperty } from './utils/types';
 
 // Type definitions
 export type {
-  WoTThing,
+  ConsumedThing as WoTThing,
+  ThingDescription,
+  PropertyElement,
+  ActionElement,
+  EventElement,
   WoTServiceConfig
 } from './services/wot-service';
 
