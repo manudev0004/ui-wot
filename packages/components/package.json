@@ -14,6 +14,21 @@
       "types": "./dist/types/index.d.ts",
       "require": "./dist/index.cjs.js"
     },
+    "./components": {
+      "import": "./dist/components.js",
+      "types": "./dist/types/components.d.ts",
+      "require": "./dist/components.cjs.js"
+    },
+    "./services": {
+      "import": "./dist/services.js", 
+      "types": "./dist/types/services.d.ts",
+      "require": "./dist/services.cjs.js"
+    },
+    "./utils": {
+      "import": "./dist/utils.js",
+      "types": "./dist/types/utils.d.ts", 
+      "require": "./dist/utils.cjs.js"
+    },
     "./loader": {
       "import": "./loader/index.js",
       "require": "./loader/index.cjs",
@@ -27,7 +42,13 @@
   "keywords": [
     "ui-components",
     "iot",
-    "dashboard"
+    "dashboard",
+    "web-of-things",
+    "wot",
+    "thing-description",
+    "web-components",
+    "stencil",
+    "typescript"
   ],
   "author": "Eclipse Thingweb <thingweb-dev@eclipse.org> (https://thingweb.io/)",
   "license": "EPL-2.0 OR W3C-20150513",
@@ -37,8 +58,10 @@
   "homepage": "https://github.com/eclipse-thingweb/ui-wot/packages/components#readme",
   "files": [
     "dist/",
-    "loader/"
+    "loader/",
+    "README.md"
   ],
+  "sideEffects": false,
   "scripts": {
   "build": "stencil build",
   "start": "node ./dev-serve.js",

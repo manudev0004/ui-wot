@@ -8,5 +8,37 @@
  * to consume components of this package as outlined in the `README.md`.
  */
 
-export type * from './components';
+// Core components
+export { UiButton } from './components/ui-button/ui-button';
+export { UiToggle } from './components/ui-toggle/ui-toggle';
+export { UiSlider } from './components/ui-slider/ui-slider';
+export { UiNumberPicker } from './components/ui-number-picker/ui-number-picker';
+export { UiCalendar } from './components/ui-calendar/ui-calendar';
+export { UiCheckbox } from './components/ui-checkbox/ui-checkbox';
+export { UiText } from './components/ui-text/ui-text';
+export { UiHeading } from './components/ui-heading/ui-heading';
+
+// Smart wrapper
+export { UiPropertyCard } from './components/ui-property-card/ui-property-card';
+
+// Services
+export { WoTService, wotService } from './services/wot-service';
+export { WoTBinder, createBinder } from './services/wot-binder';
+
+// Types and utilities
+export * from './utils/types';
+export { classifyTdProperty } from './utils/types';
+
+// Type definitions
+export type {
+  WoTThing,
+  WoTServiceConfig
+} from './services/wot-service';
+
+export type {
+  PropertyBinding,
+  ActiveBinding
+} from './services/wot-binder';
+
+export { setMode } from '@stencil/core';
 export { renderHeading } from './lib/renderHeading';
