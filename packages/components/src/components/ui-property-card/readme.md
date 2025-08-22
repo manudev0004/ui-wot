@@ -74,7 +74,7 @@ Set the current status with optional auto-clear
 
 | Name          | Type                                          | Description |
 | ------------- | --------------------------------------------- | ----------- |
-| `status`      | `"error" \| "success" \| "idle" \| "pending"` |             |
+| `status`      | `"idle" \| "success" \| "error" \| "pending"` |             |
 | `message`     | `string`                                      |             |
 | `autoClearMs` | `number`                                      |             |
 

@@ -12,7 +12,7 @@ A comprehensive TypeScript library for building Web of Things (WoT) user interfa
 ⚡ **Auto-Binding**: Automatic UI binding to WoT device properties  
 🔌 **Protocol Support**: HTTP/HTTPS with extensible protocol bindings  
 
-## Installation
+# Installation
 
 ```bash
 npm install @thingweb/ui-wot-components @node-wot/core
@@ -20,7 +20,7 @@ npm install @thingweb/ui-wot-components @node-wot/core
 
 ### Optional Dependencies
 
-For enhanced functionality, install additional node-wot packages:
+For enhanced functionality, install additional node-wot protocol bindings:
 
 ```bash
 # HTTP binding (recommended)
@@ -28,9 +28,6 @@ npm install @node-wot/binding-http
 
 # WebSocket binding
 npm install @node-wot/binding-websockets
-
-# TD utilities
-npm install @thingweb/td-utils
 ```
 
 ## Quick Start

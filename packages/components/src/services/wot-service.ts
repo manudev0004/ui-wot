@@ -1,25 +1,20 @@
 import { UiMsg } from '../utils/types';
 
-// Runtime imports with fallbacks
-let Servient: any;
-let HttpClientFactory: any;
+// Import node-wot modules - these are now required dependencies
+import { Servient } from '@node-wot/core';
+import { HttpClientFactory } from '@node-wot/binding-http';
 
+// Optional WebSocket binding
+let WebSocketClientFactory: any;
 try {
-  const nodeWoTCore = require('@node-wot/core');
-  Servient = nodeWoTCore.Servient || nodeWoTCore.default;
-  
-  try {
-    const httpBinding = require('@node-wot/binding-http');
-    HttpClientFactory = httpBinding.HttpClientFactory;
-  } catch {
-    console.warn('HTTP binding not available');
-  }
+  const wsBinding = require('@node-wot/binding-websockets');
+  WebSocketClientFactory = wsBinding.WebSocketClientFactory;
 } catch (error) {
-  console.warn('node-wot not available:', error);
+  console.warn('WebSocket binding not available (optional):', error.message);
 }
 
 /**
- * WoT Thing Description interface
+ * Thing Description interface - compatible with WoT TD standard
  */
 export interface ThingDescription {
   '@context'?: string | string[];
@@ -39,7 +34,7 @@ export interface ThingDescription {
 }
 
 /**
- * Property element interface
+ * Property element interface from WoT
  */
 export interface PropertyElement {
   type?: string;
@@ -52,7 +47,7 @@ export interface PropertyElement {
 }
 
 /**
- * Action element interface
+ * Action element interface from WoT
  */
 export interface ActionElement {
   description?: string;
@@ -63,7 +58,7 @@ export interface ActionElement {
 }
 
 /**
- * Event element interface
+ * Event element interface from WoT
  */
 export interface EventElement {
   description?: string;
@@ -73,7 +68,7 @@ export interface EventElement {
 }
 
 /**
- * Form interface
+ * Form interface from WoT
  */
 export interface Form {
   href: string;
@@ -83,22 +78,10 @@ export interface Form {
 }
 
 /**
- * Security scheme interface
+ * Security scheme interface from WoT
  */
 export interface SecurityScheme {
   scheme: string;
-  [key: string]: any;
-}
-
-/**
- * WoT Consumed Thing interface
- */
-export interface ConsumedThing {
-  getThingDescription(): ThingDescription;
-  readProperty(propertyName: string): Promise<any>;
-  writeProperty(propertyName: string, value: any): Promise<void>;
-  observeProperty?(propertyName: string, listener: (value: any) => void, errorListener?: (error: Error) => void): Promise<Subscription>;
-  invokeAction?(actionName: string, parameter?: any): Promise<any>;
   [key: string]: any;
 }
 
@@ -111,136 +94,159 @@ export interface Subscription {
 }
 
 /**
- * Configuration for WoT service
+ * WoT Consumed Thing interface simplified for node-wot
+ */
+export interface ConsumedThing {
+  getThingDescription(): ThingDescription;
+  readProperty(propertyName: string, options?: any): Promise<any>;
+  writeProperty(propertyName: string, value: any, options?: any): Promise<void>;
+  observeProperty(propertyName: string, listener: (value: any) => void, errorListener?: (error: Error) => void, options?: any): Promise<Subscription>;
+  invokeAction(actionName: string, parameter?: any, options?: any): Promise<any>;
+}
+
+/**
+ * Configuration for WoT service using node-wot exclusively
  */
 export interface WoTServiceConfig {
   /** Enable debug logging */
   debug?: boolean;
   /** Request timeout in milliseconds */
   timeout?: number;
-  /** Maximum retries for failed requests */
-  maxRetries?: number;
-  /** Retry delay in milliseconds */
-  retryDelay?: number;
-  /** Use node-wot if available, otherwise fallback to custom implementation */
-  preferNodeWoT?: boolean;
+  /** HTTP client configuration */
+  http?: {
+    allowSelfSigned?: boolean;
+    proxy?: string; // Will be converted to HttpProxyConfig
+  };
+  /** WebSocket client configuration */
+  ws?: {
+    allowSelfSigned?: boolean;
+  };
+  /** Custom servient instance (advanced users) */
+  servient?: Servient;
 }
 
 /**
- * WoT Service with node-wot integration and custom fallbacks
+ * WoT Service using Eclipse Thingweb node-wot exclusively
  * 
- * This service automatically uses node-wot when available and falls back 
- * to a custom implementation when node-wot is not available or fails.
+ * This service leverages node-wot for all TD handling and device communication.
+ * No custom fallback implementations - requires node-wot dependencies.
  */
 export class WoTService {
-  private servient: any;
-  private wot: any;
+  private servient: Servient;
+  private wot: any = null; // WoT instance from node-wot
   private consumedThings = new Map<string, ConsumedThing>();
-  private subscriptions = new Map<string, Subscription>();
-  private config: Required<WoTServiceConfig>;
+  private subscriptions = new Map<string, any>(); // Use any for subscription compatibility
+  private config: Required<Omit<WoTServiceConfig, 'servient'>> & { servient?: Servient };
   private eventTarget = new EventTarget();
   private isInitialized = false;
-  private useNodeWoT = false;
 
   constructor(config: WoTServiceConfig = {}) {
     this.config = {
       debug: false,
       timeout: 10000,
-      maxRetries: 3,
-      retryDelay: 1000,
-      preferNodeWoT: true,
+      http: {},
+      ws: {},
       ...config
     };
 
-    // Check if node-wot is available and should be used
-    this.useNodeWoT = !!Servient && this.config.preferNodeWoT;
-    
-    if (this.useNodeWoT) {
-      this.initializeNodeWoT();
-    } else {
-      this.log('Using custom WoT implementation');
-      this.isInitialized = true;
-    }
+    // Use provided servient or create new one
+    this.servient = config.servient || new Servient();
+    this.initializeServient();
   }
 
   /**
-   * Initialize node-wot servient
+   * Initialize the node-wot servient with protocol bindings
    */
-  private async initializeNodeWoT(): Promise<void> {
+  private async initializeServient(): Promise<void> {
     try {
-      this.servient = new Servient();
-      
       // Add HTTP client factory if available
       if (HttpClientFactory) {
-        this.servient.addClientFactory(new HttpClientFactory());
+        const httpClientFactory = new HttpClientFactory({
+          allowSelfSigned: this.config.http?.allowSelfSigned || false,
+          proxy: this.config.http?.proxy ? { 
+            href: this.config.http.proxy 
+          } : undefined
+        });
+        this.servient.addClientFactory(httpClientFactory);
         this.log('HTTP client factory added');
+      } else {
+        throw new Error('HTTP binding is required but not available. Install @node-wot/binding-http');
       }
 
+      // Add WebSocket client factory if available
+      if (WebSocketClientFactory) {
+        const wsClientFactory = new WebSocketClientFactory({
+          allowSelfSigned: this.config.ws?.allowSelfSigned || false
+        });
+        this.servient.addClientFactory(wsClientFactory);
+        this.log('WebSocket client factory added');
+      }
+
+      // Start the servient
       this.wot = await this.servient.start();
       this.isInitialized = true;
-      this.log('node-wot initialized successfully');
+      
+      this.log('node-wot Servient initialized successfully');
       this.emit('servientReady', { timestamp: Date.now() });
 
     } catch (error) {
-      this.log('node-wot initialization failed, using custom implementation:', error);
-      this.useNodeWoT = false;
-      this.isInitialized = true;
+      this.log('Failed to initialize node-wot servient:', error);
+      throw new Error(`WoT Service initialization failed: ${error.message}. Ensure @node-wot/core and @node-wot/binding-http are installed.`);
     }
   }
 
   /**
-   * Ensure service is ready
+   * Ensure servient is ready before operations
    */
   private async ensureReady(): Promise<void> {
-    if (!this.isInitialized) {
-      if (this.useNodeWoT) {
-        await this.initializeNodeWoT();
-      } else {
-        this.isInitialized = true;
-      }
+    if (!this.isInitialized || !this.wot) {
+      await this.initializeServient();
     }
   }
 
   /**
-   * Consume a Thing Description
+   * Consume a Thing Description using node-wot exclusively
+   * 
+   * @param thingId - Unique identifier for the thing
+   * @param tdSource - TD URL, TD object, or TD string
    */
   async consumeThing(thingId: string, tdSource: string | ThingDescription): Promise<ConsumedThing> {
     await this.ensureReady();
 
+    if (!this.wot) {
+      throw new Error('WoT runtime not available. Ensure node-wot is properly initialized.');
+    }
+
     try {
       let td: ThingDescription;
 
-      // Parse or fetch TD
+      // Handle different TD source types using node-wot
       if (typeof tdSource === 'string') {
         if (tdSource.startsWith('http')) {
-          const response = await fetch(tdSource);
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-          td = await response.json();
+          // Let node-wot handle TD fetching
+          td = await this.fetchThingDescription(tdSource);
         } else {
-          td = JSON.parse(tdSource);
+          // Parse TD from JSON string
+          try {
+            td = JSON.parse(tdSource);
+          } catch (parseError) {
+            throw new Error(`Invalid TD JSON: ${parseError.message}`);
+          }
         }
       } else {
+        // Use provided TD object
         td = tdSource;
       }
 
-      let consumedThing: ConsumedThing;
+      // Validate TD structure
+      this.validateThingDescription(td);
 
-      if (this.useNodeWoT && this.wot) {
-        // Use node-wot
-        try {
-          const nodeWoTThing = await this.wot.consume(td);
-          consumedThing = this.wrapNodeWoTThing(nodeWoTThing);
-        } catch (error) {
-          this.log('node-wot consume failed, using custom implementation:', error);
-          consumedThing = this.createCustomConsumedThing(td);
-        }
-      } else {
-        // Use custom implementation
-        consumedThing = this.createCustomConsumedThing(td);
-      }
-
+      // Consume the thing using node-wot
+      const nodeWoTThing = await this.wot.consume(td);
+      
+      // Wrap the node-wot thing to match our interface
+      const consumedThing = this.wrapNodeWoTThing(nodeWoTThing);
+      
       this.consumedThings.set(thingId, consumedThing);
       this.log(`Successfully consumed thing: ${thingId} (${td.title || 'Unknown'})`);
       this.emit('thingConsumed', { thingId, td });
@@ -254,185 +260,85 @@ export class WoTService {
   }
 
   /**
+   * Fetch Thing Description from URL using node-wot helpers
+   */
+  private async fetchThingDescription(url: string): Promise<ThingDescription> {
+    try {
+      const response = await fetch(url, {
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(this.config.timeout)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const td = await response.json();
+      return td as ThingDescription; // Type assertion to avoid conflicts
+    } catch (error) {
+      throw new Error(`Failed to fetch TD from ${url}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Validate Thing Description structure
+   */
+  private validateThingDescription(td: any): void {
+    if (!td || typeof td !== 'object') {
+      throw new Error('Thing Description must be an object');
+    }
+
+    if (!td['@context']) {
+      throw new Error('Thing Description must have @context');
+    }
+
+    if (!td.title) {
+      throw new Error('Thing Description must have a title');
+    }
+
+    if (!td.id && !td['@id']) {
+      throw new Error('Thing Description must have an id or @id');
+    }
+  }
+
+  /**
    * Wrap node-wot ConsumedThing to match our interface
    */
   private wrapNodeWoTThing(nodeWoTThing: any): ConsumedThing {
     return {
-      getThingDescription: () => nodeWoTThing.getThingDescription(),
+      getThingDescription: () => nodeWoTThing.getThingDescription() as ThingDescription,
       
-      readProperty: async (propertyName: string) => {
-        const result = await nodeWoTThing.readProperty(propertyName);
+      readProperty: async (propertyName: string, options?: any) => {
+        const result = await nodeWoTThing.readProperty(propertyName, options);
         return typeof result.value === 'function' ? await result.value() : result;
       },
       
-      writeProperty: async (propertyName: string, value: any) => {
-        await nodeWoTThing.writeProperty(propertyName, value);
+      writeProperty: async (propertyName: string, value: any, options?: any) => {
+        await nodeWoTThing.writeProperty(propertyName, value, options);
       },
       
-      observeProperty: async (propertyName: string, listener: (value: any) => void, errorListener?: (error: Error) => void) => {
+      observeProperty: async (propertyName: string, listener: (value: any) => void, errorListener?: (error: Error) => void, options?: any) => {
         const subscription = await nodeWoTThing.observeProperty(
           propertyName,
           async (data: any) => {
             const value = typeof data.value === 'function' ? await data.value() : data;
             listener(value);
           },
-          errorListener
+          errorListener,
+          options
         );
-        return subscription;
+        return subscription as Subscription;
       },
       
-      invokeAction: async (actionName: string, parameter?: any) => {
-        const result = await nodeWoTThing.invokeAction(actionName, parameter);
+      invokeAction: async (actionName: string, parameter?: any, options?: any) => {
+        const result = await nodeWoTThing.invokeAction(actionName, parameter, options);
         return typeof result.value === 'function' ? await result.value() : result;
       }
     };
   }
 
   /**
-   * Create custom ConsumedThing implementation
-   */
-  private createCustomConsumedThing(td: ThingDescription): ConsumedThing {
-    const baseUrl = td.base || '';
-
-    const resolveUrl = (href: string): string => {
-      if (href.startsWith('http')) return href;
-      if (!baseUrl) return href;
-      return new URL(href, baseUrl).toString();
-    };
-
-    return {
-      getThingDescription: () => td,
-
-      readProperty: async (propertyName: string): Promise<any> => {
-        const property = td.properties?.[propertyName];
-        if (!property) {
-          throw new Error(`Property not found: ${propertyName}`);
-        }
-
-        const form = property.forms?.[0];
-        if (!form) {
-          throw new Error(`No form found for property: ${propertyName}`);
-        }
-
-        const url = resolveUrl(form.href);
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: { 'Accept': 'application/json' },
-          signal: AbortSignal.timeout(this.config.timeout)
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        return await response.json();
-      },
-
-      writeProperty: async (propertyName: string, value: any): Promise<void> => {
-        const property = td.properties?.[propertyName];
-        if (!property) {
-          throw new Error(`Property not found: ${propertyName}`);
-        }
-
-        if (property.readOnly) {
-          throw new Error(`Property is read-only: ${propertyName}`);
-        }
-
-        const form = property.forms?.[0];
-        if (!form) {
-          throw new Error(`No form found for property: ${propertyName}`);
-        }
-
-        const url = resolveUrl(form.href);
-        const response = await fetch(url, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(value),
-          signal: AbortSignal.timeout(this.config.timeout)
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-      },
-
-      observeProperty: async (propertyName: string, listener: (value: any) => void): Promise<Subscription> => {
-        const property = td.properties?.[propertyName];
-        if (!property?.observable) {
-          throw new Error(`Property is not observable: ${propertyName}`);
-        }
-
-        // Simple polling implementation for custom fallback
-        let stopped = false;
-        const poll = async () => {
-          if (stopped) return;
-          try {
-            const form = property.forms?.[0];
-            if (form) {
-              const url = resolveUrl(form.href);
-              const response = await fetch(url, {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' },
-                signal: AbortSignal.timeout(10000)
-              });
-              if (response.ok) {
-                const value = await response.json();
-                listener(value);
-              }
-            }
-          } catch (error) {
-            // Silent polling errors to avoid spam
-          }
-          if (!stopped) {
-            setTimeout(poll, 3000);
-          }
-        };
-
-        poll();
-
-        return {
-          stop: async () => {
-            stopped = true;
-          }
-        };
-      },
-
-      invokeAction: async (actionName: string, params?: any): Promise<any> => {
-        const action = td.actions?.[actionName];
-        if (!action) {
-          throw new Error(`Action not found: ${actionName}`);
-        }
-
-        const form = action.forms?.[0];
-        if (!form) {
-          throw new Error(`No form found for action: ${actionName}`);
-        }
-
-        const url = resolveUrl(form.href);
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: params ? JSON.stringify(params) : undefined,
-          signal: AbortSignal.timeout(this.config.timeout)
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        return await response.json();
-      }
-    };
-  }
-
-  /**
-   * Get a consumed thing
+   * Get a consumed thing by ID
    */
   getConsumedThing(thingId: string): ConsumedThing | undefined {
     return this.consumedThings.get(thingId);
@@ -446,9 +352,9 @@ export class WoTService {
   }
 
   /**
-   * Read a property with UiMsg wrapper
+   * Read a property using node-wot with UiMsg wrapper
    */
-  async readProperty(thingId: string, propertyName: string): Promise<UiMsg<any>> {
+  async readProperty(thingId: string, propertyName: string, options?: any): Promise<UiMsg<any>> {
     const startTime = Date.now();
 
     try {
@@ -457,7 +363,7 @@ export class WoTService {
         throw new Error(`Thing not consumed: ${thingId}`);
       }
 
-      const value = await thing.readProperty(propertyName);
+      const value = await thing.readProperty(propertyName, options);
       
       const msg: UiMsg<any> = {
         payload: value,
@@ -469,7 +375,7 @@ export class WoTService {
           latency: Date.now() - startTime,
           thingId,
           propertyName,
-          implementation: this.useNodeWoT ? 'node-wot' : 'custom'
+          implementation: 'node-wot'
         }
       };
 
@@ -491,7 +397,7 @@ export class WoTService {
           latency: Date.now() - startTime,
           thingId,
           propertyName,
-          implementation: this.useNodeWoT ? 'node-wot' : 'custom'
+          implementation: 'node-wot'
         }
       };
 
@@ -501,9 +407,9 @@ export class WoTService {
   }
 
   /**
-   * Write a property with UiMsg wrapper
+   * Write a property using node-wot with UiMsg wrapper
    */
-  async writeProperty(thingId: string, propertyName: string, value: any): Promise<UiMsg<any>> {
+  async writeProperty(thingId: string, propertyName: string, value: any, options?: any): Promise<UiMsg<any>> {
     const startTime = Date.now();
 
     try {
@@ -512,7 +418,14 @@ export class WoTService {
         throw new Error(`Thing not consumed: ${thingId}`);
       }
 
-      await thing.writeProperty(propertyName, value);
+      // Check if property is writable using TD
+      const td = thing.getThingDescription();
+      const property = td.properties?.[propertyName];
+      if (property?.readOnly) {
+        throw new Error(`Property is read-only: ${propertyName}`);
+      }
+
+      await thing.writeProperty(propertyName, value, options);
 
       const msg: UiMsg<any> = {
         payload: value,
@@ -524,7 +437,7 @@ export class WoTService {
           latency: Date.now() - startTime,
           thingId,
           propertyName,
-          implementation: this.useNodeWoT ? 'node-wot' : 'custom'
+          implementation: 'node-wot'
         }
       };
 
@@ -546,7 +459,7 @@ export class WoTService {
           latency: Date.now() - startTime,
           thingId,
           propertyName,
-          implementation: this.useNodeWoT ? 'node-wot' : 'custom'
+          implementation: 'node-wot'
         }
       };
 
@@ -556,13 +469,13 @@ export class WoTService {
   }
 
   /**
-   * Observe a property
+   * Observe a property using node-wot exclusively
    */
   async observeProperty(
     thingId: string,
     propertyName: string,
     callback: (msg: UiMsg<any>) => void,
-    _pollIntervalMs?: number
+    options?: any
   ): Promise<() => void> {
     try {
       const thing = this.getConsumedThing(thingId);
@@ -570,13 +483,18 @@ export class WoTService {
         throw new Error(`Thing not consumed: ${thingId}`);
       }
 
-      let subscription: Subscription;
+      // Check if property is observable
+      const td = thing.getThingDescription();
+      const property = td.properties?.[propertyName];
+      if (!property?.observable) {
+        throw new Error(`Property is not observable: ${propertyName}`);
+      }
 
-      try {
-        // Try native observation
-        subscription = await thing.observeProperty!(
-          propertyName,
-          (value: any) => {
+      // Use node-wot's native observation
+      const subscription = await thing.observeProperty(
+        propertyName,
+        (value: any) => {
+          try {
             const msg: UiMsg<any> = {
               payload: value,
               ts: Date.now(),
@@ -587,51 +505,67 @@ export class WoTService {
                 method: 'native',
                 thingId,
                 propertyName,
-                implementation: this.useNodeWoT ? 'node-wot' : 'custom'
+                implementation: 'node-wot'
               }
             };
             callback(msg);
             this.emit('propertyObserved', msg);
-          },
-          (error: Error) => {
+          } catch (valueError) {
             const msg: UiMsg<any> = {
               payload: null,
               ts: Date.now(),
               source: `${thingId}.${propertyName}`,
               ok: false,
               error: {
-                code: 'OBSERVE_ERROR',
-                message: error.message
+                code: 'VALUE_EXTRACTION_ERROR',
+                message: valueError.message
               },
               meta: {
                 operation: 'observe',
                 method: 'native',
                 thingId,
                 propertyName,
-                implementation: this.useNodeWoT ? 'node-wot' : 'custom'
+                implementation: 'node-wot'
               }
             };
             callback(msg);
             this.emit('propertyObserveError', msg);
           }
-        );
+        },
+        (error: Error) => {
+          const msg: UiMsg<any> = {
+            payload: null,
+            ts: Date.now(),
+            source: `${thingId}.${propertyName}`,
+            ok: false,
+            error: {
+              code: 'OBSERVE_ERROR',
+              message: error.message
+            },
+            meta: {
+              operation: 'observe',
+              method: 'native',
+              thingId,
+              propertyName,
+              implementation: 'node-wot'
+            }
+          };
+          callback(msg);
+          this.emit('propertyObserveError', msg);
+        },
+        options
+      );
 
-        const subscriptionKey = `${thingId}.${propertyName}`;
-        this.subscriptions.set(subscriptionKey, subscription);
+      const subscriptionKey = `${thingId}.${propertyName}`;
+      this.subscriptions.set(subscriptionKey, subscription);
 
-        this.log(`Started observation for ${subscriptionKey}`);
+      this.log(`Started native observation for ${subscriptionKey}`);
 
-        return async () => {
-          await subscription.stop();
-          this.subscriptions.delete(subscriptionKey);
-          this.log(`Stopped observation for ${subscriptionKey}`);
-        };
-
-      } catch (error) {
-        // Fallback to polling
-        this.log(`Native observation failed, using polling for ${thingId}.${propertyName}`);
-        return this.fallbackPolling(thingId, propertyName, callback, _pollIntervalMs || 3000);
-      }
+      return async () => {
+        await subscription.stop();
+        this.subscriptions.delete(subscriptionKey);
+        this.log(`Stopped observation for ${subscriptionKey}`);
+      };
 
     } catch (error) {
       this.log(`Observation setup failed for ${thingId}.${propertyName}:`, error);
@@ -640,57 +574,21 @@ export class WoTService {
   }
 
   /**
-   * Fallback polling implementation
+   * Invoke an action using node-wot
    */
-  private fallbackPolling(
-    thingId: string,
-    propertyName: string,
-    callback: (msg: UiMsg<any>) => void,
-    intervalMs: number
-  ): () => void {
-    let stopped = false;
-
-    const poll = async () => {
-      if (stopped) return;
-
-      try {
-        const msg = await this.readProperty(thingId, propertyName);
-        msg.meta = { ...msg.meta, method: 'polling' };
-        callback(msg);
-      } catch (error) {
-        this.log(`Polling error for ${thingId}.${propertyName}:`, error);
-      }
-
-      if (!stopped) {
-        setTimeout(poll, intervalMs);
-      }
-    };
-
-    poll();
-    this.log(`Started polling observation for ${thingId}.${propertyName} (${intervalMs}ms)`);
-
-    return () => {
-      stopped = true;
-      this.log(`Stopped polling for ${thingId}.${propertyName}`);
-    };
-  }
-
-  /**
-   * Invoke an action
-   */
-  async invokeAction(thingId: string, actionName: string, params?: any): Promise<UiMsg<any>> {
+  async invokeAction(thingId: string, actionName: string, params?: any, options?: any): Promise<UiMsg<any>> {
     const startTime = Date.now();
 
     try {
       const thing = this.getConsumedThing(thingId);
-      if (!thing || !thing.invokeAction) {
-        throw new Error(`Thing not found or actions not supported: ${thingId}`);
+      if (!thing) {
+        throw new Error(`Thing not found: ${thingId}`);
       }
 
-      const result = await thing.invokeAction(actionName, params);
+      const value = await thing.invokeAction(actionName, params, options);
 
       const msg: UiMsg<any> = {
-        payload: result,
+        payload: value,
         ts: Date.now(),
         source: `${thingId}.${actionName}`,
         ok: true,
@@ -700,7 +598,7 @@ export class WoTService {
           thingId,
           actionName,
           params,
-          implementation: this.useNodeWoT ? 'node-wot' : 'custom'
+          implementation: 'node-wot'
         }
       };
 
@@ -723,7 +621,7 @@ export class WoTService {
           thingId,
           actionName,
           params,
-          implementation: this.useNodeWoT ? 'node-wot' : 'custom'
+          implementation: 'node-wot'
         }
       };
 
@@ -733,7 +631,7 @@ export class WoTService {
   }
 
   /**
-   * Get Thing Description
+   * Get Thing Description for a consumed thing
    */
   getThingDescription(thingId: string): ThingDescription | undefined {
     const thing = this.getConsumedThing(thingId);
@@ -741,7 +639,7 @@ export class WoTService {
   }
 
   /**
-   * Get property capabilities
+   * Get property capabilities from TD
    */
   getPropertyCapabilities(thingId: string, propertyName: string): {
     canRead: boolean;
@@ -755,14 +653,14 @@ export class WoTService {
 
     const property = td.properties[propertyName];
     return {
-      canRead: true,
+      canRead: true, // All properties are readable by default in WoT
       canWrite: !property.readOnly,
       canObserve: !!property.observable
     };
   }
 
   /**
-   * Get health status
+   * Get connection health status using node-wot
    */
   async getHealthStatus(): Promise<{ [thingId: string]: 'connected' | 'error' | 'unknown' }> {
     const status: { [thingId: string]: 'connected' | 'error' | 'unknown' } = {};
@@ -773,6 +671,7 @@ export class WoTService {
         const properties = Object.keys(td.properties || {});
         
         if (properties.length > 0) {
+          // Try to read the first available property
           await thing.readProperty(properties[0]);
           status[thingId] = 'connected';
         } else {
@@ -787,10 +686,10 @@ export class WoTService {
   }
 
   /**
-   * Shutdown service
+   * Shutdown the service and clean up resources
    */
   async shutdown(): Promise<void> {
-    // Stop all subscriptions
+    // Stop all subscriptions using node-wot
     for (const [key, subscription] of this.subscriptions) {
       try {
         await subscription.stop();
@@ -801,28 +700,32 @@ export class WoTService {
     }
     this.subscriptions.clear();
 
-    // Shutdown servient if using node-wot
-    if (this.useNodeWoT && this.servient) {
+    // Shutdown the servient
+    if (this.isInitialized && this.servient) {
       try {
         await this.servient.shutdown();
+        this.isInitialized = false;
+        this.wot = null;
         this.log('node-wot Servient shutdown completed');
       } catch (error) {
         this.log('Error shutting down servient:', error);
       }
     }
 
-    this.isInitialized = false;
     this.consumedThings.clear();
     this.emit('serviceShutdown', { timestamp: Date.now() });
   }
 
   /**
-   * Event listeners
+   * Listen to WoT service events
    */
   addEventListener(type: string, listener: (event: CustomEvent) => void): void {
     this.eventTarget.addEventListener(type, listener as EventListener);
   }
 
+  /**
+   * Remove event listener
+   */
   removeEventListener(type: string, listener: (event: CustomEvent) => void): void {
     this.eventTarget.removeEventListener(type, listener as EventListener);
   }
@@ -846,7 +749,7 @@ export class WoTService {
 }
 
 /**
- * Create a WoT service instance
+ * Create a WoT service instance using node-wot exclusively
  */
 export function createWoTService(config?: WoTServiceConfig): WoTService {
   return new WoTService(config);

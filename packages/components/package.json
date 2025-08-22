@@ -74,17 +74,9 @@
     "docs": "npx typedoc --options typedoc.json"
   },
   "peerDependencies": {
-    "@node-wot/binding-http": "^0.9.0",
-    "@node-wot/binding-websockets": "^0.9.0",
-    "@node-wot/core": "^0.9.1"
+    "@node-wot/binding-websockets": "^0.9.0"
   },
   "peerDependenciesMeta": {
-    "@node-wot/core": {
-      "optional": true
-    },
-    "@node-wot/binding-http": {
-      "optional": true
-    },
     "@node-wot/binding-websockets": {
       "optional": true
     }
@@ -111,6 +103,7 @@
     "typedoc": "^0.26.0"
   },
   "dependencies": {
-    "@thingweb/td-utils": "^1.0.0"
+    "@node-wot/core": "^0.9.1",
+  "@node-wot/binding-http": "^0.9.0"
   }
 }

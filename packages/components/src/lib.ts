@@ -46,9 +46,6 @@ export type {
   PropertyElement,
   ActionElement,
   EventElement,
-  Form,
-  SecurityScheme,
-  Subscription,
   
   // Service Configuration
   WoTServiceConfig
@@ -96,7 +93,7 @@ export function isNodeWoTAvailable(): boolean {
  */
 export const CAPABILITIES = {
   nodeWoT: isNodeWoTAvailable(),
-  customFallback: true,
+  customFallback: false,
   components: [
     'ui-button',
     'ui-heading', 

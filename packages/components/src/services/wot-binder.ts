@@ -72,7 +72,7 @@ export class WoTBinder {
         config.thingId,
         config.property,
         (msg: UiMsg<any>) => this.handlePropertyUpdate(binding, msg),
-        config.observeInterval
+        { interval: config.observeInterval }
       );
 
       binding.unsubscribe = unsubscribe;
