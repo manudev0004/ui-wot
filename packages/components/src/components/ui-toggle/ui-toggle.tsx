@@ -7,24 +7,58 @@ export interface UiToggleToggleEvent { active: boolean }
 export interface UiToggleValueChange { value: boolean; label?: string }
 
 /**
- * A clean, accessible boolean toggle switch component.
- * 
- * @slot label - Custom label content (overrides label prop)
- * 
- * @example
- * Basic usage:
+ * Advanced toggle switch component with reactive state management and multiple visual styles.
+ * Provides accessibility features, flexible event handling, and beautiful UI variants.
+ *
+ * @example Basic Usage
  * ```html
- * <ui-toggle value="true" label="Living Room Light"></ui-toggle>
+ * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
  * ```
- * 
- * @example
- * Listen to value changes:
+ *
+ * @example Different Variants
+ * ```html
+ * <ui-toggle variant="apple" value="false" label="iOS Style"></ui-toggle>
+ * <ui-toggle variant="square" value="true" label="Square Style"></ui-toggle>
+ * <ui-toggle variant="cross" value="false" label="Cross/Tick Style"></ui-toggle>
+ * <ui-toggle variant="neon" value="true" label="Neon Glow"></ui-toggle>
+ * ```
+ *
+ * @example Read-Only Mode
+ * ```html
+ * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
+ * ```
+ *
+ * @example JavaScript Integration
  * ```javascript
+ * const toggle = document.querySelector('ui-toggle');
+ * 
+ * // Listen for value changes (preferred)
  * toggle.addEventListener('valueMsg', (e) => {
  *   console.log('New value:', e.detail.payload);
  *   console.log('Previous:', e.detail.prev);
+ *   console.log('Timestamp:', e.detail.ts);
+ * });
+ * 
+ * // Programmatically set value
+ * await toggle.setValue(true);
+ * 
+ * // Get current value
+ * const currentValue = await toggle.getValue();
+ * ```
+ *
+ * <!-- @deprecated The following events are deprecated, use valueMsg instead
+ * @example Legacy Events (Deprecated)
+ * ```javascript
+ * // DON'T USE - Deprecated events
+ * toggle.addEventListener('valueChange', (e) => {
+ *   console.log('Legacy value change:', e.detail.value);
+ * });
+ * 
+ * toggle.addEventListener('toggle', (e) => {
+ *   console.log('Legacy toggle:', e.detail.active);
  * });
  * ```
+ * -->
  */
 @Component({
   tag: 'ui-toggle',
@@ -55,6 +89,12 @@ export class UiToggle {
   @Prop() readonly: boolean = false;
 
   /**
+   * Legacy mode prop for backward compatibility with older demos.
+   * Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
+   */
+  @Prop() mode?: 'read' | 'readwrite';
+
+  /**
    * Text label displayed next to the toggle.
    */
   @Prop() label?: string;
@@ -65,15 +105,22 @@ export class UiToggle {
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
   /**
-   * Component size variant.
+   * Enable dark theme for the component.
+   * When true, uses light text on dark backgrounds.
    */
-  @Prop() size: 'sm' | 'md' | 'lg' = 'md';
+  @Prop() dark: boolean = false;
+
+  /**
+   * Enable keyboard navigation (Space and Enter keys).
+   * Default: true
+   */
+  @Prop() keyboard: boolean = true;
 
   /** Internal state tracking current visual state */
-  @State() isActive: boolean = false;
+  @State() private isActive: boolean = false;
 
   /** Internal state for tracking if component is initialized */
-  @State() isInitialized: boolean = false;
+  @State() private isInitialized: boolean = false;
 
   /**
    * Primary event emitted when the toggle value changes.
@@ -81,11 +128,11 @@ export class UiToggle {
    */
   @Event() valueMsg: EventEmitter<UiMsg<boolean>>;
 
-  /** @deprecated Use valueMsg instead */
-  @Event() valueChange: EventEmitter<UiToggleValueChange>;
+  // /** @deprecated Use valueMsg instead */
+  // @Event() valueChange: EventEmitter<UiToggleValueChange>;
 
-  /** @deprecated Use valueMsg instead */
-  @Event() toggle: EventEmitter<UiToggleToggleEvent>;
+  // /** @deprecated Use valueMsg instead */
+  // @Event() toggle: EventEmitter<UiToggleToggleEvent>;
 
   /**
    * Set the toggle value programmatically.
@@ -116,7 +163,20 @@ export class UiToggle {
   /** Initialize component state from props */
   componentWillLoad() {
     this.isActive = Boolean(this.value);
+    // Support legacy `mode="read"` used across the demos/docs
+    if (!this.readonly && this.mode === 'read') {
+      this.readonly = true;
+    }
     this.isInitialized = true;
+  }
+
+  @Watch('mode')
+  watchMode(newMode?: 'read' | 'readwrite') {
+    if (newMode === 'read') {
+      this.readonly = true;
+    } else if (newMode === 'readwrite') {
+      this.readonly = false;
+    }
   }
 
   /** Watch for value prop changes and update internal state */
@@ -143,9 +203,9 @@ export class UiToggle {
     };
     this.valueMsg.emit(msg);
 
-    // Legacy events for backward compatibility
-    this.valueChange.emit({ value, label: this.label });
-    this.toggle.emit({ active: value });
+    // Legacy events commented out - use valueMsg instead
+    // this.valueChange.emit({ value, label: this.label });
+    // this.toggle.emit({ active: value });
   }
 
   /** Handle toggle click */
@@ -158,7 +218,7 @@ export class UiToggle {
 
   /** Handle keyboard navigation */
   private handleKeyDown = (event: KeyboardEvent) => {
-    if (this.disabled || this.readonly) return;
+    if (this.disabled || this.readonly || !this.keyboard) return;
     
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
@@ -166,89 +226,64 @@ export class UiToggle {
     }
   };
 
-  /** Generate CSS classes for the toggle background */
-  private getToggleClasses(): string {
-    const baseClasses = 'relative inline-block cursor-pointer transition-all duration-300 ease-in-out';
-    
-    // Size classes
-    const sizeClasses = {
-      sm: 'w-8 h-4',
-      md: 'w-12 h-6', 
-      lg: 'w-16 h-8'
-    };
-    
-    // Shape classes based on variant
-    const shapeClasses = {
-      circle: 'rounded-full',
-      square: 'rounded-md',
-      apple: 'rounded-full shadow-inner border-2 border-gray-500',
-      cross: 'rounded-full',
-      neon: 'rounded-full'
-    };
-    
-    // Background color based on state and variant
-    let bgClass = 'bg-gray-300';
-    if (this.isActive) {
-      if (this.variant === 'cross') {
-        bgClass = this.getActiveColor();
-      } else if (this.variant === 'apple') {
-        bgClass = 'bg-green-500';
-      } else if (this.variant === 'neon') {
-        bgClass = this.getNeonColor();
-      } else {
-        bgClass = this.getActiveColor();
-      }
-    } else {
-      if (this.variant === 'cross') {
-        bgClass = 'bg-red-500';
-      } else if (this.variant === 'apple') {
-        bgClass = 'bg-gray-700';
-      } else if (this.variant === 'neon') {
-        bgClass = 'neon-red';
-      }
+  /** Get toggle background style classes - enhanced from old component */
+  private getToggleStyle(): string {
+    const isDisabled = this.disabled;
+    const isActive = this.isActive;
+
+    // Different sizes based on variant
+    let size = 'w-12 h-6'; // default
+    if (this.variant === 'apple') size = 'w-11 h-7';
+
+    // Different shapes based on variant
+    let shape = 'rounded-full';
+    if (this.variant === 'square') shape = 'rounded-md';
+    if (this.variant === 'apple') shape = 'rounded-full shadow-inner border-2 border-gray-500';
+
+    // Background color logic from old component
+    let bgColor = 'bg-gray-300';
+
+    if (this.color === 'neutral') {
+      bgColor = isActive ? 'bg-gray-500' : 'bg-gray-300';
+    } else if (this.variant === 'cross') {
+      bgColor = isActive ? this.getActiveColor() : 'bg-red-500';
+    } else if (this.variant === 'apple') {
+      bgColor = isActive ? 'bg-green-500' : 'bg-gray-700';
+    } else if (this.variant === 'neon') {
+      bgColor = isActive ? this.getNeonColor() : 'neon-red';
+    } else if (isActive) {
+      bgColor = this.getActiveColor();
     }
-    
-    const disabledClass = this.disabled ? 'opacity-50 cursor-not-allowed' : '';
-    const readonlyClass = this.readonly ? 'opacity-75' : '';
-    
-    return `${baseClasses} ${sizeClasses[this.size]} ${shapeClasses[this.variant]} ${bgClass} ${disabledClass} ${readonlyClass}`.trim();
+
+    const disabled = isDisabled ? 'disabled-state' : '';
+    const base = 'relative inline-block cursor-pointer transition-all duration-300 ease-in-out';
+
+    return `${base} ${size} ${shape} ${bgColor} ${disabled}`.trim();
   }
 
-  /** Generate CSS classes for the toggle thumb */
-  private getThumbClasses(): string {
-    const baseClasses = 'absolute bg-white transition-transform duration-300 ease-in-out shadow-sm';
-    
-    // Size based on parent size
-    const thumbSizes = {
-      sm: 'w-3 h-3',
-      md: 'w-4 h-4',
-      lg: 'w-6 h-6'
-    };
-    
-    // Position based on size
-    const positions = {
-      sm: 'top-0.5 left-0.5',
-      md: 'top-1 left-1', 
-      lg: 'top-1 left-1'
-    };
-    
-    // Movement distance based on size
-    const movements = {
-      sm: this.isActive ? 'translate-x-4' : 'translate-x-0',
-      md: this.isActive ? 'translate-x-6' : 'translate-x-0',
-      lg: this.isActive ? 'translate-x-8' : 'translate-x-0'
-    };
-    
-    // Shape
-    const shape = this.variant === 'square' ? 'rounded-sm' : 'rounded-full';
-    
-    // Special handling for apple variant
+  /** Get thumb style classes - enhanced from old component */
+  private getThumbStyle(): string {
+    const isActive = this.isActive;
+
+    // Apple variant special handling
     if (this.variant === 'apple') {
-      const appleMovement = this.isActive ? 'translate-x-4' : 'translate-x-0';
-      return `absolute w-6 h-6 bg-white transition-all duration-200 ease-in-out shadow-md rounded-full top-0 left-0 ${appleMovement}`;
+      const baseStyle = 'absolute w-6 h-6 bg-white transition-all duration-200 ease-in-out shadow-md rounded-full top-0 left-0';
+      const movement = isActive ? 'translate-x-4' : 'translate-x-0';
+      return `${baseStyle} ${movement}`;
     }
-    
-    return `${baseClasses} ${thumbSizes[this.size]} ${positions[this.size]} ${movements[this.size]} ${shape}`;
+
+    // Standard thumb styling
+    const baseStyle = 'absolute w-4 h-4 bg-white transition-transform duration-300 ease-in-out shadow-sm';
+    const shape = this.variant === 'square' ? 'rounded-sm' : 'rounded-full';
+
+    let position = 'top-1 left-1';
+    if (this.variant === 'neon') {
+      position = 'top-0.5 left-1';
+    }
+
+    const movement = isActive ? 'translate-x-6' : 'translate-x-0';
+
+    return `${baseStyle} ${shape} ${position} ${movement}`;
   }
 
   /** Get active color class based on color prop */
@@ -256,9 +291,11 @@ export class UiToggle {
     const colorMap = {
       primary: 'bg-primary',
       secondary: 'bg-secondary', 
-      neutral: 'bg-gray-500'
+      neutral: 'bg-gray-500',
+      // legacy alias used in some demos
+      success: 'bg-green-500'
     };
-    return colorMap[this.color];
+    return colorMap[this.color] || 'bg-primary';
   }
 
   /** Get neon color class */
@@ -266,7 +303,7 @@ export class UiToggle {
     return this.color === 'secondary' ? 'neon-secondary' : 'neon-primary';
   }
 
-  /** Render cross/tick icons for cross variant */
+  /** Render cross/tick icons for cross variant - from old component */
   private renderCrossIcons() {
     if (this.variant !== 'cross') return null;
 
@@ -308,7 +345,9 @@ export class UiToggle {
               class={`select-none mr-2 transition-colors duration-200 ${
                 !canInteract 
                   ? 'cursor-not-allowed text-gray-400' 
-                  : 'cursor-pointer hover:text-opacity-80 text-gray-900'
+                  : 'cursor-pointer hover:text-opacity-80'
+              } ${
+                this.dark ? 'text-white' : 'text-gray-900'
               }`}
               onClick={() => canInteract && this.handleToggle()}
               title={hoverTitle}
@@ -316,19 +355,21 @@ export class UiToggle {
               id={`${this.hostElement?.id || 'ui-toggle'}-label`}
             >
               {this.label}
-              {/* Read-only indicator */}
-              {this.readonly && (
-                <span class="ml-1 text-xs opacity-60" title="Read-only">📖</span>
-              )}
             </label>
           )}
         </slot>
 
         {/* Toggle control */}
         {this.readonly ? (
-          // Read-only indicator
+          // Read-only indicator respecting variant styling
           <span 
-            class={`inline-flex items-center justify-center w-6 h-6 rounded-full transition-all duration-300 ${
+            class={`inline-flex items-center justify-center transition-all duration-300 ${
+              this.variant === 'square' 
+                ? 'w-6 h-6 rounded-md' 
+                : this.variant === 'apple'
+                ? 'w-7 h-7 rounded-full'
+                : 'w-6 h-6 rounded-full'
+            } ${
               this.isActive 
                 ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' 
                 : 'bg-red-500 shadow-lg shadow-red-500/50'
@@ -336,18 +377,23 @@ export class UiToggle {
             title={`${hoverTitle} - Current state: ${this.isActive ? 'ON' : 'OFF'}`}
             part="readonly-indicator"
           >
-            <span class="text-white text-xs font-bold">
-              {this.isActive ? '●' : '○'}
+            <span class={`text-white text-xs font-bold ${
+              this.variant === 'square' ? 'text-[10px]' : ''
+            }`}>
+              {this.variant === 'square' 
+                ? (this.isActive ? '■' : '□')
+                : (this.isActive ? '●' : '○')
+              }
             </span>
           </span>
         ) : (
-          // Interactive toggle
+          // Interactive toggle - using enhanced styling from old component
           <span
-            class={`${this.getToggleClasses()} ${
+            class={`${this.getToggleStyle()} ${
               canInteract 
                 ? 'hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary' 
                 : ''
-            }`}
+            } transition-all duration-200`}
             role="switch"
             aria-checked={this.isActive ? 'true' : 'false'}
             aria-disabled={this.disabled ? 'true' : 'false'}
@@ -358,7 +404,7 @@ export class UiToggle {
             title={hoverTitle}
             part="control"
           >
-            <span class={this.getThumbClasses()} part="thumb"></span>
+            <span class={this.getThumbStyle()} part="thumb"></span>
             {this.renderCrossIcons()}
           </span>
         )}
