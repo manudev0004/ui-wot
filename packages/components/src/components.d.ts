@@ -5,22 +5,20 @@
  * It contains typing information for all components that exist in this project.
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
+import { UiMsg } from "./utils/types";
 import { UiButtonClick } from "./components/ui-button/ui-button";
 import { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 import { UiCheckboxCheckboxChange, UiCheckboxValueChange } from "./components/ui-checkbox/ui-checkbox";
 import { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
 import { UiSliderValueChange } from "./components/ui-slider/ui-slider";
 import { UiTextValueChange } from "./components/ui-text/ui-text";
-import { UiMsg } from "./utils/types";
-import { UiToggleToggleEvent, UiToggleValueChange } from "./components/ui-toggle/ui-toggle";
+export { UiMsg } from "./utils/types";
 export { UiButtonClick } from "./components/ui-button/ui-button";
 export { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 export { UiCheckboxCheckboxChange, UiCheckboxValueChange } from "./components/ui-checkbox/ui-checkbox";
 export { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
 export { UiSliderValueChange } from "./components/ui-slider/ui-slider";
 export { UiTextValueChange } from "./components/ui-text/ui-text";
-export { UiMsg } from "./utils/types";
-export { UiToggleToggleEvent, UiToggleValueChange } from "./components/ui-toggle/ui-toggle";
 export namespace Components {
     /**
      * Button component with various visual styles, matching the ui-number-picker design family.
@@ -53,10 +51,34 @@ export namespace Components {
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
+          * Whether the component is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled": boolean;
+        "getValue": () => Promise<string>;
+        /**
+          * Enable keyboard navigation. Default: true
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
           * Button text label.
           * @default 'Button'
          */
         "label": string;
+        /**
+          * Legacy mode prop for backward compatibility with older demos. Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
+         */
+        "mode"?: 'read' | 'readwrite';
+        /**
+          * Whether the component is read-only (displays value but cannot be changed).
+          * @default false
+         */
+        "readonly": boolean;
+        /**
+          * Implement base class abstract methods
+         */
+        "setValue": (value: string) => Promise<boolean>;
         /**
           * Current state of the button. - active: Button is enabled (default) - disabled: Button cannot be interacted with
           * @default 'active'
@@ -148,9 +170,29 @@ export namespace Components {
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
-          * Optional text label for the checkbox.
+          * Disabled state
+          * @default false
          */
-        "label"?: string;
+        "disabled": boolean;
+        /**
+          * Keyboard interaction
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Label text
+          * @default 'Checkbox'
+         */
+        "label": string;
+        /**
+          * Legacy mode mapping
+         */
+        "mode"?: 'read' | 'readwrite';
+        /**
+          * Readonly mode
+          * @default false
+         */
+        "readonly": boolean;
         /**
           * Current state of the checkbox.
           * @default 'default'
@@ -470,18 +512,50 @@ export namespace Components {
         "variant": 'display' | 'edit';
     }
     /**
-     * A clean, accessible boolean toggle switch component.
-     * @example Basic usage:
+     * Advanced toggle switch component with reactive state management and multiple visual styles.
+     * Provides accessibility features, flexible event handling, and beautiful UI variants.
+     * @example Basic Usage
      * ```html
-     * <ui-toggle value="true" label="Living Room Light"></ui-toggle>
+     * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
      * ```
-     * @example Listen to value changes:
+     * @example Different Variants
+     * ```html
+     * <ui-toggle variant="apple" value="false" label="iOS Style"></ui-toggle>
+     * <ui-toggle variant="square" value="true" label="Square Style"></ui-toggle>
+     * <ui-toggle variant="cross" value="false" label="Cross/Tick Style"></ui-toggle>
+     * <ui-toggle variant="neon" value="true" label="Neon Glow"></ui-toggle>
+     * ```
+     * @example Read-Only Mode
+     * ```html
+     * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
+     * ```
+     * @example JavaScript Integration
      * ```javascript
+     * const toggle = document.querySelector('ui-toggle');
+     * // Listen for value changes (preferred)
      * toggle.addEventListener('valueMsg', (e) => {
-     *   console.log('New value:', e.detail.payload);
-     *   console.log('Previous:', e.detail.prev);
+     * console.log('New value:', e.detail.payload);
+     * console.log('Previous:', e.detail.prev);
+     * console.log('Timestamp:', e.detail.ts);
+     * });
+     * // Programmatically set value
+     * await toggle.setValue(true);
+     * // Get current value
+     * const currentValue = await toggle.getValue();
+     * ```
+     * <!--
+     * @deprecated The following events are deprecated, use valueMsg instead
+     * @example Legacy Events (Deprecated)
+     * ```javascript
+     * // DON'T USE - Deprecated events
+     * toggle.addEventListener('valueChange', (e) => {
+     * console.log('Legacy value change:', e.detail.value);
+     * });
+     * toggle.addEventListener('toggle', (e) => {
+     * console.log('Legacy toggle:', e.detail.active);
      * });
      * ```
+     * -->
      */
     interface UiToggle {
         /**
@@ -489,6 +563,11 @@ export namespace Components {
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark": boolean;
         /**
           * Whether the toggle is disabled (cannot be interacted with).
           * @default false
@@ -500,9 +579,18 @@ export namespace Components {
          */
         "getValue": () => Promise<boolean>;
         /**
+          * Enable keyboard navigation (Space and Enter keys). Default: true
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
           * Text label displayed next to the toggle.
          */
         "label"?: string;
+        /**
+          * Legacy mode prop for backward compatibility with older demos. Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
+         */
+        "mode"?: 'read' | 'readwrite';
         /**
           * Whether the toggle is read-only (displays value but cannot be changed).
           * @default false
@@ -514,11 +602,6 @@ export namespace Components {
           * @returns Promise that resolves to true if successful
          */
         "setValue": (value: boolean) => Promise<boolean>;
-        /**
-          * Component size variant.
-          * @default 'md'
-         */
-        "size": 'sm' | 'md' | 'lg';
         /**
           * Current boolean value of the toggle.
           * @default false
@@ -565,6 +648,7 @@ export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
 }
 declare global {
     interface HTMLUiButtonElementEventMap {
+        "valueMsg": UiMsg<string>;
         "buttonClick": UiButtonClick;
     }
     /**
@@ -643,6 +727,7 @@ declare global {
     interface HTMLUiCheckboxElementEventMap {
         "checkboxChange": UiCheckboxCheckboxChange;
         "valueChange": UiCheckboxValueChange;
+        "valueMsg": import('../../utils/types').UiMsg<boolean>;
     }
     /**
      * Checkbox component with consistent styling to match the design system.
@@ -826,22 +911,52 @@ declare global {
     };
     interface HTMLUiToggleElementEventMap {
         "valueMsg": UiMsg<boolean>;
-        "valueChange": UiToggleValueChange;
-        "toggle": UiToggleToggleEvent;
     }
     /**
-     * A clean, accessible boolean toggle switch component.
-     * @example Basic usage:
+     * Advanced toggle switch component with reactive state management and multiple visual styles.
+     * Provides accessibility features, flexible event handling, and beautiful UI variants.
+     * @example Basic Usage
      * ```html
-     * <ui-toggle value="true" label="Living Room Light"></ui-toggle>
+     * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
      * ```
-     * @example Listen to value changes:
+     * @example Different Variants
+     * ```html
+     * <ui-toggle variant="apple" value="false" label="iOS Style"></ui-toggle>
+     * <ui-toggle variant="square" value="true" label="Square Style"></ui-toggle>
+     * <ui-toggle variant="cross" value="false" label="Cross/Tick Style"></ui-toggle>
+     * <ui-toggle variant="neon" value="true" label="Neon Glow"></ui-toggle>
+     * ```
+     * @example Read-Only Mode
+     * ```html
+     * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
+     * ```
+     * @example JavaScript Integration
      * ```javascript
+     * const toggle = document.querySelector('ui-toggle');
+     * // Listen for value changes (preferred)
      * toggle.addEventListener('valueMsg', (e) => {
-     *   console.log('New value:', e.detail.payload);
-     *   console.log('Previous:', e.detail.prev);
+     * console.log('New value:', e.detail.payload);
+     * console.log('Previous:', e.detail.prev);
+     * console.log('Timestamp:', e.detail.ts);
+     * });
+     * // Programmatically set value
+     * await toggle.setValue(true);
+     * // Get current value
+     * const currentValue = await toggle.getValue();
+     * ```
+     * <!--
+     * @deprecated The following events are deprecated, use valueMsg instead
+     * @example Legacy Events (Deprecated)
+     * ```javascript
+     * // DON'T USE - Deprecated events
+     * toggle.addEventListener('valueChange', (e) => {
+     * console.log('Legacy value change:', e.detail.value);
+     * });
+     * toggle.addEventListener('toggle', (e) => {
+     * console.log('Legacy toggle:', e.detail.active);
      * });
      * ```
+     * -->
      */
     interface HTMLUiToggleElement extends Components.UiToggle, HTMLStencilElement {
         addEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
@@ -901,14 +1016,37 @@ declare namespace LocalJSX {
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
+          * Whether the component is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Enable keyboard navigation. Default: true
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
           * Button text label.
           * @default 'Button'
          */
         "label"?: string;
         /**
+          * Legacy mode prop for backward compatibility with older demos. Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
+         */
+        "mode"?: 'read' | 'readwrite';
+        /**
           * Event emitted when button is clicked
          */
         "onButtonClick"?: (event: UiButtonCustomEvent<UiButtonClick>) => void;
+        /**
+          * Primary event emitted when the component value changes. Use this event for all value change handling.
+         */
+        "onValueMsg"?: (event: UiButtonCustomEvent<UiMsg<string>>) => void;
+        /**
+          * Whether the component is read-only (displays value but cannot be changed).
+          * @default false
+         */
+        "readonly"?: boolean;
         /**
           * Current state of the button. - active: Button is enabled (default) - disabled: Button cannot be interacted with
           * @default 'active'
@@ -1008,9 +1146,24 @@ declare namespace LocalJSX {
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
-          * Optional text label for the checkbox.
+          * Disabled state
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Keyboard interaction
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Label text
+          * @default 'Checkbox'
          */
         "label"?: string;
+        /**
+          * Legacy mode mapping
+         */
+        "mode"?: 'read' | 'readwrite';
         /**
           * Event emitted when checkbox state changes.
          */
@@ -1019,6 +1172,15 @@ declare namespace LocalJSX {
           * Standardized valueChange event (boolean value)
          */
         "onValueChange"?: (event: UiCheckboxCustomEvent<UiCheckboxValueChange>) => void;
+        /**
+          * Unified UiMsg event
+         */
+        "onValueMsg"?: (event: UiCheckboxCustomEvent<import('../../utils/types').UiMsg<boolean>>) => void;
+        /**
+          * Readonly mode
+          * @default false
+         */
+        "readonly"?: boolean;
         /**
           * Current state of the checkbox.
           * @default 'default'
@@ -1345,18 +1507,50 @@ declare namespace LocalJSX {
         "variant"?: 'display' | 'edit';
     }
     /**
-     * A clean, accessible boolean toggle switch component.
-     * @example Basic usage:
+     * Advanced toggle switch component with reactive state management and multiple visual styles.
+     * Provides accessibility features, flexible event handling, and beautiful UI variants.
+     * @example Basic Usage
      * ```html
-     * <ui-toggle value="true" label="Living Room Light"></ui-toggle>
+     * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
      * ```
-     * @example Listen to value changes:
+     * @example Different Variants
+     * ```html
+     * <ui-toggle variant="apple" value="false" label="iOS Style"></ui-toggle>
+     * <ui-toggle variant="square" value="true" label="Square Style"></ui-toggle>
+     * <ui-toggle variant="cross" value="false" label="Cross/Tick Style"></ui-toggle>
+     * <ui-toggle variant="neon" value="true" label="Neon Glow"></ui-toggle>
+     * ```
+     * @example Read-Only Mode
+     * ```html
+     * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
+     * ```
+     * @example JavaScript Integration
      * ```javascript
+     * const toggle = document.querySelector('ui-toggle');
+     * // Listen for value changes (preferred)
      * toggle.addEventListener('valueMsg', (e) => {
-     *   console.log('New value:', e.detail.payload);
-     *   console.log('Previous:', e.detail.prev);
+     * console.log('New value:', e.detail.payload);
+     * console.log('Previous:', e.detail.prev);
+     * console.log('Timestamp:', e.detail.ts);
+     * });
+     * // Programmatically set value
+     * await toggle.setValue(true);
+     * // Get current value
+     * const currentValue = await toggle.getValue();
+     * ```
+     * <!--
+     * @deprecated The following events are deprecated, use valueMsg instead
+     * @example Legacy Events (Deprecated)
+     * ```javascript
+     * // DON'T USE - Deprecated events
+     * toggle.addEventListener('valueChange', (e) => {
+     * console.log('Legacy value change:', e.detail.value);
+     * });
+     * toggle.addEventListener('toggle', (e) => {
+     * console.log('Legacy toggle:', e.detail.active);
      * });
      * ```
+     * -->
      */
     interface UiToggle {
         /**
@@ -1365,22 +1559,28 @@ declare namespace LocalJSX {
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
           * Whether the toggle is disabled (cannot be interacted with).
           * @default false
          */
         "disabled"?: boolean;
         /**
+          * Enable keyboard navigation (Space and Enter keys). Default: true
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
           * Text label displayed next to the toggle.
          */
         "label"?: string;
         /**
-          * @deprecated Use valueMsg instead
+          * Legacy mode prop for backward compatibility with older demos. Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
          */
-        "onToggle"?: (event: UiToggleCustomEvent<UiToggleToggleEvent>) => void;
-        /**
-          * @deprecated Use valueMsg instead
-         */
-        "onValueChange"?: (event: UiToggleCustomEvent<UiToggleValueChange>) => void;
+        "mode"?: 'read' | 'readwrite';
         /**
           * Primary event emitted when the toggle value changes. Use this event for all value change handling.
          */
@@ -1390,11 +1590,6 @@ declare namespace LocalJSX {
           * @default false
          */
         "readonly"?: boolean;
-        /**
-          * Component size variant.
-          * @default 'md'
-         */
-        "size"?: 'sm' | 'md' | 'lg';
         /**
           * Current boolean value of the toggle.
           * @default false
@@ -1558,18 +1753,50 @@ declare module "@stencil/core" {
             "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
             "ui-text": LocalJSX.UiText & JSXBase.HTMLAttributes<HTMLUiTextElement>;
             /**
-             * A clean, accessible boolean toggle switch component.
-             * @example Basic usage:
+             * Advanced toggle switch component with reactive state management and multiple visual styles.
+             * Provides accessibility features, flexible event handling, and beautiful UI variants.
+             * @example Basic Usage
              * ```html
-             * <ui-toggle value="true" label="Living Room Light"></ui-toggle>
+             * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
              * ```
-             * @example Listen to value changes:
+             * @example Different Variants
+             * ```html
+             * <ui-toggle variant="apple" value="false" label="iOS Style"></ui-toggle>
+             * <ui-toggle variant="square" value="true" label="Square Style"></ui-toggle>
+             * <ui-toggle variant="cross" value="false" label="Cross/Tick Style"></ui-toggle>
+             * <ui-toggle variant="neon" value="true" label="Neon Glow"></ui-toggle>
+             * ```
+             * @example Read-Only Mode
+             * ```html
+             * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
+             * ```
+             * @example JavaScript Integration
              * ```javascript
+             * const toggle = document.querySelector('ui-toggle');
+             * // Listen for value changes (preferred)
              * toggle.addEventListener('valueMsg', (e) => {
-             *   console.log('New value:', e.detail.payload);
-             *   console.log('Previous:', e.detail.prev);
+             * console.log('New value:', e.detail.payload);
+             * console.log('Previous:', e.detail.prev);
+             * console.log('Timestamp:', e.detail.ts);
+             * });
+             * // Programmatically set value
+             * await toggle.setValue(true);
+             * // Get current value
+             * const currentValue = await toggle.getValue();
+             * ```
+             * <!--
+             * @deprecated The following events are deprecated, use valueMsg instead
+             * @example Legacy Events (Deprecated)
+             * ```javascript
+             * // DON'T USE - Deprecated events
+             * toggle.addEventListener('valueChange', (e) => {
+             * console.log('Legacy value change:', e.detail.value);
+             * });
+             * toggle.addEventListener('toggle', (e) => {
+             * console.log('Legacy toggle:', e.detail.active);
              * });
              * ```
+             * -->
              */
             "ui-toggle": LocalJSX.UiToggle & JSXBase.HTMLAttributes<HTMLUiToggleElement>;
         }

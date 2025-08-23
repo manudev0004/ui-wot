@@ -2,9 +2,14 @@ import { Component, Prop, State, h, Event, EventEmitter, Watch, Element, Method 
 import { UiMsg } from '../../utils/types';
 
 /** @deprecated Use UiMsg<boolean> instead */
-export interface UiToggleToggleEvent { active: boolean }
+export interface UiToggleToggleEvent {
+  active: boolean;
+}
 /** @deprecated Use UiMsg<boolean> instead */
-export interface UiToggleValueChange { value: boolean; label?: string }
+export interface UiToggleValueChange {
+  value: boolean;
+  label?: string;
+}
 
 /**
  * Advanced toggle switch component with reactive state management and multiple visual styles.
@@ -31,17 +36,17 @@ export interface UiToggleValueChange { value: boolean; label?: string }
  * @example JavaScript Integration
  * ```javascript
  * const toggle = document.querySelector('ui-toggle');
- * 
+ *
  * // Listen for value changes (preferred)
  * toggle.addEventListener('valueMsg', (e) => {
  *   console.log('New value:', e.detail.payload);
  *   console.log('Previous:', e.detail.prev);
  *   console.log('Timestamp:', e.detail.ts);
  * });
- * 
+ *
  * // Programmatically set value
  * await toggle.setValue(true);
- * 
+ *
  * // Get current value
  * const currentValue = await toggle.getValue();
  * ```
@@ -53,7 +58,7 @@ export interface UiToggleValueChange { value: boolean; label?: string }
  * toggle.addEventListener('valueChange', (e) => {
  *   console.log('Legacy value change:', e.detail.value);
  * });
- * 
+ *
  * toggle.addEventListener('toggle', (e) => {
  *   console.log('Legacy toggle:', e.detail.active);
  * });
@@ -144,10 +149,10 @@ export class UiToggle {
     const prevValue = this.isActive;
     this.isActive = value;
     this.value = value;
-    
+
     // Emit the unified message event
     this.emitValueMsg(value, prevValue);
-    
+
     return true;
   }
 
@@ -183,7 +188,7 @@ export class UiToggle {
   @Watch('value')
   watchValue(newVal: boolean) {
     if (!this.isInitialized) return;
-    
+
     if (this.isActive !== newVal) {
       const prevValue = this.isActive;
       this.isActive = newVal;
@@ -199,7 +204,7 @@ export class UiToggle {
       prev: prevValue,
       ts: Date.now(),
       source: this.hostElement?.id || 'ui-toggle',
-      ok: true
+      ok: true,
     };
     this.valueMsg.emit(msg);
 
@@ -211,7 +216,7 @@ export class UiToggle {
   /** Handle toggle click */
   private handleToggle = () => {
     if (this.disabled || this.readonly) return;
-    
+
     const newValue = !this.isActive;
     this.setValue(newValue);
   };
@@ -219,7 +224,7 @@ export class UiToggle {
   /** Handle keyboard navigation */
   private handleKeyDown = (event: KeyboardEvent) => {
     if (this.disabled || this.readonly || !this.keyboard) return;
-    
+
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
       this.handleToggle();
@@ -290,10 +295,10 @@ export class UiToggle {
   private getActiveColor(): string {
     const colorMap = {
       primary: 'bg-primary',
-      secondary: 'bg-secondary', 
+      secondary: 'bg-secondary',
       neutral: 'bg-gray-500',
       // legacy alias used in some demos
-      success: 'bg-green-500'
+      success: 'bg-green-500',
     };
     return colorMap[this.color] || 'bg-primary';
   }
@@ -325,7 +330,7 @@ export class UiToggle {
   /** Render the component */
   render() {
     const canInteract = !this.disabled && !this.readonly;
-    
+
     // Tooltip text
     let hoverTitle = '';
     if (this.readonly) {
@@ -342,11 +347,7 @@ export class UiToggle {
         <slot name="label">
           {this.label && (
             <label
-              class={`select-none mr-2 transition-colors duration-200 ${
-                !canInteract 
-                  ? 'cursor-not-allowed text-gray-400' 
-                  : 'cursor-pointer hover:text-opacity-80'
-              } ${
+              class={`select-none mr-2 transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer hover:text-opacity-80'} ${
                 this.dark ? 'text-white' : 'text-gray-900'
               }`}
               onClick={() => canInteract && this.handleToggle()}
@@ -362,37 +363,22 @@ export class UiToggle {
         {/* Toggle control */}
         {this.readonly ? (
           // Read-only indicator respecting variant styling
-          <span 
+          <span
             class={`inline-flex items-center justify-center transition-all duration-300 ${
-              this.variant === 'square' 
-                ? 'w-6 h-6 rounded-md' 
-                : this.variant === 'apple'
-                ? 'w-7 h-7 rounded-full'
-                : 'w-6 h-6 rounded-full'
-            } ${
-              this.isActive 
-                ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' 
-                : 'bg-red-500 shadow-lg shadow-red-500/50'
-            }`} 
+              this.variant === 'square' ? 'w-6 h-6 rounded-md' : this.variant === 'apple' ? 'w-7 h-7 rounded-full' : 'w-6 h-6 rounded-full'
+            } ${this.isActive ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`}
             title={`${hoverTitle} - Current state: ${this.isActive ? 'ON' : 'OFF'}`}
             part="readonly-indicator"
           >
-            <span class={`text-white text-xs font-bold ${
-              this.variant === 'square' ? 'text-[10px]' : ''
-            }`}>
-              {this.variant === 'square' 
-                ? (this.isActive ? '■' : '□')
-                : (this.isActive ? '●' : '○')
-              }
+            <span class={`text-white text-xs font-bold ${this.variant === 'square' ? 'text-[10px]' : ''}`}>
+              {this.variant === 'square' ? (this.isActive ? '■' : '□') : this.isActive ? '●' : '○'}
             </span>
           </span>
         ) : (
           // Interactive toggle - using enhanced styling from old component
           <span
             class={`${this.getToggleStyle()} ${
-              canInteract 
-                ? 'hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary' 
-                : ''
+              canInteract ? 'hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary' : ''
             } transition-all duration-200`}
             role="switch"
             aria-checked={this.isActive ? 'true' : 'false'}

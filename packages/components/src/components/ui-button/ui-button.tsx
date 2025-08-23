@@ -1,5 +1,10 @@
-import { Component, Prop, State, h, Event, EventEmitter } from '@stencil/core';
+import { Component, Prop, State, h, Event, EventEmitter, Element, Watch, Method } from '@stencil/core';
 import { StatusIndicator, type OperationStatus } from '../../utils/status-indicator';
+import { UiMsg } from '../../utils/types';
+import { handleLegacyMode } from '../../utils/common-props';
+import { applyUiComponentMixin } from '../../utils/component-base';
+
+export interface UiButtonClick { label: string }
 
 export interface UiButtonClick { label: string }
 
@@ -37,6 +42,8 @@ export interface UiButtonClick { label: string }
   shadow: true,
 })
 export class UiButton {
+  @Element() hostElement!: HTMLElement;
+
   /**
    * Visual style variant of the button.
    * - minimal: Clean button with subtle background (default)
@@ -68,6 +75,37 @@ export class UiButton {
   @Prop() label: string = 'Button';
 
   /**
+   * Whether the component is disabled (cannot be interacted with).
+   */
+  @Prop() disabled: boolean = false;
+
+  /**
+   * Whether the component is read-only (displays value but cannot be changed).
+   */
+  @Prop() readonly: boolean = false;
+
+  /**
+   * Legacy mode prop for backward compatibility with older demos.
+   * Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
+   */
+  @Prop() mode?: 'read' | 'readwrite';
+
+  /**
+   * Enable keyboard navigation.
+   * Default: true
+   */
+  @Prop() keyboard: boolean = true;
+
+  /** Internal state for tracking if component is initialized */
+  @State() isInitialized: boolean = false;
+
+  /**
+   * Primary event emitted when the component value changes.
+   * Use this event for all value change handling.
+   */
+  @Event() valueMsg!: EventEmitter<UiMsg<string>>;
+
+  /**
    * Deprecated: string-based handler names are removed.
    * Use the `buttonClick` DOM event instead:
    * document.querySelector('ui-button').addEventListener('buttonClick', (e) => { ... })
@@ -87,15 +125,65 @@ export class UiButton {
   /** Event emitted when button is clicked */
   @Event() buttonClick: EventEmitter<UiButtonClick>;
 
+  /** Implement base class abstract methods */
+  @Method()
+  async setValue(value: string): Promise<boolean> {
+    if (this.state === 'disabled') return false;
+    this.label = value;
+    this.emitValueMsg(value);
+    return true;
+  }
+
+  @Method()
+  async getValue(): Promise<string> {
+    return this.label;
+  }
+
+  /** Override disabled prop to sync with state */
+  componentWillLoad() {
+    // Support legacy mode compatibility
+    this.readonly = handleLegacyMode(this.readonly, this.mode);
+    this.isInitialized = true;
+    
+    // Sync state with disabled prop
+    if (this.disabled) {
+      this.state = 'disabled';
+    }
+  }
+
+  /** Watch for mode prop changes and update readonly state */
+  @Watch('mode')
+  protected watchMode(newValue: 'read' | 'readwrite' | undefined) {
+    this.readonly = handleLegacyMode(this.readonly, newValue);
+  }
+
+  /** Emit the unified UiMsg event */
+  private emitValueMsg(value: string, prevValue?: string) {
+    const msg: UiMsg<string> = {
+      payload: value,
+      prev: prevValue,
+      ts: Date.now(),
+      source: this.hostElement?.id || 'ui-button',
+      ok: true
+    };
+    this.valueMsg.emit(msg);
+  }
+
+  /** Check if component can be interacted with */
+  private get canInteract(): boolean {
+    return !this.disabled && !this.readonly;
+  }
+
   /** Handle button click */
   private handleClick = async () => {
-    if (this.state === 'disabled') return;
+    if (this.state === 'disabled' || !this.canInteract) return;
 
     // Show quick feedback
     this.operationStatus = 'loading';
 
-    // Emit event and call local handler; TD integration removed
+    // Emit both legacy and unified events
     this.emitClick();
+    this.emitValueMsg(this.label);
 
     // Assume success for local-only action; external handlers can override via attributes/events
     setTimeout(() => {
@@ -117,7 +205,7 @@ export class UiButton {
 
   /** Handle keyboard input */
   private handleKeyDown = (event: KeyboardEvent) => {
-    if (this.state === 'disabled') return;
+    if (this.state === 'disabled' || !this.canInteract || !this.keyboard) return;
 
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -205,3 +293,6 @@ export class UiButton {
     );
   }
 }
+
+// Apply shared mixin behaviors (accessibility helpers, legacy mode wrapping, etc.)
+applyUiComponentMixin<string>(UiButton.prototype, 'ui-button');

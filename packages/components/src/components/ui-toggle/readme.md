@@ -5,30 +5,33 @@
 <!-- Auto Generated Below -->
 
 
+> **[DEPRECATED]** The following events are deprecated, use valueMsg instead
+
 ## Overview
 
-A clean, accessible boolean toggle switch component.
+Advanced toggle switch component with reactive state management and multiple visual styles.
+Provides accessibility features, flexible event handling, and beautiful UI variants.
 
 ## Properties
 
-| Property   | Attribute  | Description                                                             | Type                                                   | Default     |
-| ---------- | ---------- | ----------------------------------------------------------------------- | ------------------------------------------------------ | ----------- |
-| `color`    | `color`    | Color theme variant.                                                    | `"neutral" \| "primary" \| "secondary"`                | `'primary'` |
-| `disabled` | `disabled` | Whether the toggle is disabled (cannot be interacted with).             | `boolean`                                              | `false`     |
-| `label`    | `label`    | Text label displayed next to the toggle.                                | `string`                                               | `undefined` |
-| `readonly` | `readonly` | Whether the toggle is read-only (displays value but cannot be changed). | `boolean`                                              | `false`     |
-| `size`     | `size`     | Component size variant.                                                 | `"lg" \| "md" \| "sm"`                                 | `'md'`      |
-| `value`    | `value`    | Current boolean value of the toggle.                                    | `boolean`                                              | `false`     |
-| `variant`  | `variant`  | Visual style variant of the toggle.                                     | `"apple" \| "circle" \| "cross" \| "neon" \| "square"` | `'circle'`  |
+| Property   | Attribute  | Description                                                                                                                           | Type                                                   | Default     |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ----------- |
+| `color`    | `color`    | Color theme variant.                                                                                                                  | `"neutral" \| "primary" \| "secondary"`                | `'primary'` |
+| `dark`     | `dark`     | Enable dark theme for the component. When true, uses light text on dark backgrounds.                                                  | `boolean`                                              | `false`     |
+| `disabled` | `disabled` | Whether the toggle is disabled (cannot be interacted with).                                                                           | `boolean`                                              | `false`     |
+| `keyboard` | `keyboard` | Enable keyboard navigation (Space and Enter keys). Default: true                                                                      | `boolean`                                              | `true`      |
+| `label`    | `label`    | Text label displayed next to the toggle.                                                                                              | `string`                                               | `undefined` |
+| `mode`     | `mode`     | Legacy mode prop for backward compatibility with older demos. Accepts 'read' to indicate read-only mode, 'readwrite' for interactive. | `"read" \| "readwrite"`                                | `undefined` |
+| `readonly` | `readonly` | Whether the toggle is read-only (displays value but cannot be changed).                                                               | `boolean`                                              | `false`     |
+| `value`    | `value`    | Current boolean value of the toggle.                                                                                                  | `boolean`                                              | `false`     |
+| `variant`  | `variant`  | Visual style variant of the toggle.                                                                                                   | `"apple" \| "circle" \| "cross" \| "neon" \| "square"` | `'circle'`  |
 
 
 ## Events
 
-| Event         | Description                                                                                        | Type                               |
-| ------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| `toggle`      | <span style="color:red">**[DEPRECATED]**</span> Use valueMsg instead<br/><br/>                     | `CustomEvent<UiToggleToggleEvent>` |
-| `valueChange` | <span style="color:red">**[DEPRECATED]**</span> Use valueMsg instead<br/><br/>                     | `CustomEvent<UiToggleValueChange>` |
-| `valueMsg`    | Primary event emitted when the toggle value changes. Use this event for all value change handling. | `CustomEvent<UiMsg<boolean>>`      |
+| Event      | Description                                                                                        | Type                          |
+| ---------- | -------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `valueMsg` | Primary event emitted when the toggle value changes. Use this event for all value change handling. | `CustomEvent<UiMsg<boolean>>` |
 
 
 ## Methods
@@ -58,13 +61,6 @@ Set the toggle value programmatically.
 Type: `Promise<boolean>`
 
 Promise that resolves to true if successful
-
-
-## Slots
-
-| Slot      | Description                                 |
-| --------- | ------------------------------------------- |
-| `"label"` | Custom label content (overrides label prop) |
 
 
 ## Shadow Parts

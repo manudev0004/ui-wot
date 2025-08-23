@@ -1,5 +1,7 @@
-import { Component, Prop, State, h, Event, EventEmitter, Watch } from '@stencil/core';
+import { Component, Prop, State, h, Event, EventEmitter, Watch, Element } from '@stencil/core';
 import { StatusIndicator, type OperationStatus } from '../../utils/status-indicator';
+import { handleLegacyMode } from '../../utils/common-props';
+import { applyUiComponentMixin } from '../../utils/component-base';
 
 export interface UiCheckboxCheckboxChange { checked: boolean }
 export interface UiCheckboxValueChange { value: boolean; label?: string }
@@ -13,6 +15,7 @@ export interface UiCheckboxValueChange { value: boolean; label?: string }
   shadow: true,
 })
 export class UiCheckbox {
+  @Element() hostElement!: HTMLElement;
   /**
    * Visual style variant of the checkbox.
    */
@@ -33,10 +36,20 @@ export class UiCheckbox {
    */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
-  /**
-   * Optional text label for the checkbox.
-   */
-  @Prop() label?: string;
+  /** Label text */
+  @Prop() label: string = 'Checkbox';
+
+  /** Disabled state */
+  @Prop() disabled: boolean = false;
+
+  /** Readonly mode */
+  @Prop() readonly: boolean = false;
+
+  /** Legacy mode mapping */
+  @Prop() mode?: 'read' | 'readwrite';
+
+  /** Keyboard interaction */
+  @Prop() keyboard: boolean = true;
 
   /**
    * Whether the checkbox is checked.
@@ -73,35 +86,61 @@ export class UiCheckbox {
   /** Standardized valueChange event (boolean value) */
   @Event() valueChange: EventEmitter<UiCheckboxValueChange>;
 
+  /** Unified UiMsg event */
+  @Event() valueMsg!: EventEmitter<import('../../utils/types').UiMsg<boolean>>;
+
+  /** Mixin-injected emitter method (declared for TS) */
+  emitValueMsg?: (value: boolean, prev?: boolean) => void;
+
+  /** Implement value API */
+  async setValue(value: boolean): Promise<boolean> {
+    if (this.state === 'disabled' || this.disabled || this.readonly) return false;
+    const prev = this.isChecked;
+    this.checked = value;
+    this.isChecked = value;
+    this.emitValueMsg?.(value, prev);
+    return true;
+  }
+
+  async getValue(): Promise<boolean> {
+    return this.checked;
+  }
+
+  protected getComponentName(): string {
+    return 'ui-checkbox';
+  }
+
   @Watch('checked')
   watchChecked(newVal: boolean) {
     this.isChecked = !!newVal;
   }
 
   componentWillLoad() {
+    this.readonly = handleLegacyMode(this.readonly, this.mode);
     this.isChecked = this.checked;
+    if (this.disabled) this.state = 'disabled';
+  }
 
-    // Initialize from TD if URL provided
-  // External integrations should listen for events; no device reads performed here.
+  @Watch('mode')
+  protected watchMode(newValue: 'read' | 'readwrite' | undefined) {
+    this.readonly = handleLegacyMode(this.readonly, newValue);
   }
 
   // Device integration removed; external systems should use events.
 
+  private get canInteract(): boolean { return !this.disabled && !this.readonly; }
+
   private handleClick = async () => {
-    if (this.state === 'disabled') return;
-
-  const newValue = !this.isChecked;
-  this.isChecked = newValue;
-  this.checked = newValue;
-
-    // Emit the change event
+    if (this.state === 'disabled' || !this.canInteract) return;
+    const prev = this.isChecked;
+    const newValue = !prev;
+    this.isChecked = newValue;
+    this.checked = newValue;
     this.checkboxChange.emit({ checked: newValue });
-    // Emit standardized valueChange for integrators
     this.valueChange.emit({ value: newValue, label: this.label });
-
-  // Local control only: external integrations should handle device writes.
-  this.operationStatus = 'success';
-  setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
+    this.emitValueMsg?.(newValue, prev);
+    this.operationStatus = 'success';
+    setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
   };
 
   private getCheckboxStyles() {
@@ -197,6 +236,7 @@ export class UiCheckbox {
               aria-disabled={isDisabled ? 'true' : 'false'}
               tabIndex={isDisabled ? -1 : 0}
               onKeyDown={e => {
+                if (!this.keyboard) return;
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   this.handleClick();
@@ -241,3 +281,9 @@ export class UiCheckbox {
     }
   }
 }
+
+// Apply shared mixin
+applyUiComponentMixin<boolean>(UiCheckbox.prototype, 'ui-checkbox');
+
+// Mixin contract interface (for type awareness only)
+export interface UiCheckboxMixin { emitValueMsg?: (value: boolean, prevValue?: boolean) => void }

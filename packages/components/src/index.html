@@ -28,7 +28,7 @@
         <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Wot-Components</h1>
         <div class="flex items-center gap-3">
           <span class="text-sm text-gray-600 dark:text-gray-300">Light</span>
-          <ui-toggle id="theme-toggle" variant="default" ></ui-toggle>
+          <ui-toggle id="theme-toggle" variant="circle" value="false"></ui-toggle>
           <span class="text-sm text-gray-600 dark:text-gray-300">Dark</span>
         </div>
       </div>
@@ -183,9 +183,9 @@
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Circle (Default)</h3>
               <div class="flex gap-2 mb-3">
-                <ui-toggle variant="circle" state="default"></ui-toggle>
-                <ui-toggle variant="circle" state="active"></ui-toggle>
-                <ui-toggle variant="circle" state="disabled"></ui-toggle>
+                <ui-toggle variant="circle" value="false" label="Off"></ui-toggle>
+                <ui-toggle variant="circle" value="true" label="On"></ui-toggle>
+                <ui-toggle variant="circle" value="false" disabled="true" label="Disabled"></ui-toggle>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle variant="circle"&gt;</pre>
             </div>
@@ -193,9 +193,9 @@
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Square</h3>
               <div class="flex gap-2 mb-3">
-                <ui-toggle variant="square" state="default"></ui-toggle>
-                <ui-toggle variant="square" state="active"></ui-toggle>
-                <ui-toggle variant="square" state="disabled"></ui-toggle>
+                <ui-toggle variant="square" value="false" label="Off"></ui-toggle>
+                <ui-toggle variant="square" value="true" label="On"></ui-toggle>
+                <ui-toggle variant="square" value="false" disabled="true" label="Disabled"></ui-toggle>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle variant="square"&gt;</pre>
             </div>
@@ -203,9 +203,9 @@
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Apple (iOS Style)</h3>
               <div class="flex gap-2 mb-3">
-                <ui-toggle variant="apple" state="default"></ui-toggle>
-                <ui-toggle variant="apple" state="active"></ui-toggle>
-                <ui-toggle variant="apple" state="disabled"></ui-toggle>
+                <ui-toggle variant="apple" value="false" label="Off"></ui-toggle>
+                <ui-toggle variant="apple" value="true" label="On"></ui-toggle>
+                <ui-toggle variant="apple" value="false" disabled="true" label="Disabled"></ui-toggle>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle variant="apple"&gt;</pre>
             </div>
@@ -213,9 +213,9 @@
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Cross (✓/×)</h3>
               <div class="flex gap-2 mb-3">
-                <ui-toggle variant="cross" state="default"></ui-toggle>
-                <ui-toggle variant="cross" state="active"></ui-toggle>
-                <ui-toggle variant="cross" state="disabled"></ui-toggle>
+                <ui-toggle variant="cross" value="false" label="Off"></ui-toggle>
+                <ui-toggle variant="cross" value="true" label="On"></ui-toggle>
+                <ui-toggle variant="cross" value="false" disabled="true" label="Disabled"></ui-toggle>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle variant="cross"&gt;</pre>
             </div>
@@ -223,9 +223,9 @@
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Neon (Glowing)</h3>
               <div class="flex gap-2 mb-3">
-                <ui-toggle variant="neon" state="default"></ui-toggle>
-                <ui-toggle variant="neon" state="active"></ui-toggle>
-                <ui-toggle variant="neon" state="disabled"></ui-toggle>
+                <ui-toggle variant="neon" value="false" label="Off"></ui-toggle>
+                <ui-toggle variant="neon" value="true" label="On"></ui-toggle>
+                <ui-toggle variant="neon" value="false" disabled="true" label="Disabled"></ui-toggle>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle variant="neon"&gt;</pre>
             </div>
@@ -233,7 +233,7 @@
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">With Label</h3>
               <div class="flex flex-col gap-2 mb-3">
-                <ui-toggle variant="apple" label="Smart Light" state="active"></ui-toggle>
+                <ui-toggle variant="apple" label="Smart Light" value="true"></ui-toggle>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle label="Smart Light"&gt;</pre>
             </div>
@@ -247,10 +247,10 @@
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Primary</h3>
               <div class="flex gap-2 mb-3">
-                <ui-toggle color="primary" state="active"></ui-toggle>
-                <ui-toggle color="primary" variant="square" state="active"></ui-toggle>
-                <ui-toggle color="primary" variant="apple" state="active"></ui-toggle>
-                <ui-toggle color="primary" variant="neon" state="active"></ui-toggle>
+                <ui-toggle color="primary" value="true"></ui-toggle>
+                <ui-toggle color="primary" variant="square" value="true"></ui-toggle>
+                <ui-toggle color="primary" variant="apple" value="true"></ui-toggle>
+                <ui-toggle color="primary" variant="neon" value="true"></ui-toggle>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle color="primary"&gt;</pre>
             </div>
@@ -258,10 +258,10 @@
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Secondary</h3>
               <div class="flex gap-2 mb-3">
-                <ui-toggle color="secondary" state="active"></ui-toggle>
-                <ui-toggle color="secondary" variant="square" state="active"></ui-toggle>
-                <ui-toggle color="secondary" variant="apple" state="active"></ui-toggle>
-                <ui-toggle color="secondary" variant="neon" state="active"></ui-toggle>
+                <ui-toggle color="secondary" value="true"></ui-toggle>
+                <ui-toggle color="secondary" variant="square" value="true"></ui-toggle>
+                <ui-toggle color="secondary" variant="apple" value="true"></ui-toggle>
+                <ui-toggle color="secondary" variant="neon" value="true"></ui-toggle>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle color="secondary"&gt;</pre>
             </div>
@@ -269,9 +269,9 @@
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Neutral</h3>
               <div class="flex gap-2 mb-3">
-                <ui-toggle color="neutral" state="active"></ui-toggle>
-                <ui-toggle color="neutral" variant="square" state="active"></ui-toggle>
-                <ui-toggle color="neutral" variant="apple" state="active"></ui-toggle>
+                <ui-toggle color="neutral" value="true"></ui-toggle>
+                <ui-toggle color="neutral" variant="square" value="true"></ui-toggle>
+                <ui-toggle color="neutral" variant="apple" value="true"></ui-toggle>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle color="neutral"&gt;</pre>
             </div>
@@ -285,7 +285,7 @@
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Basic Labels</h3>
               <div class="space-y-3 mb-3">
-                <ui-toggle label="Switch" state="default" variant="circle"></ui-toggle>
+                <ui-toggle label="Switch" value="false" variant="circle"></ui-toggle>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle label="Switch"&gt;</pre>
             </div>
@@ -293,7 +293,7 @@
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Styled Labels</h3>
               <div class="space-y-3 mb-3">
-                <ui-toggle label="Turbo mode" variant="neon" color="secondary" state="active"></ui-toggle>
+                <ui-toggle label="Turbo mode" variant="neon" color="secondary" value="true"></ui-toggle>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle label="Turbo mode" variant="neon"&gt;</pre>
             </div>
@@ -1167,9 +1167,11 @@
         html.classList.toggle('dark', isDark);
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
         document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox, ui-text, ui-calendar').forEach(component => {
-          component.theme = isDark ? 'dark' : 'light';
+          component.dark = isDark;
         });
-        themeToggle.state = isDark ? 'active' : 'default';
+        if (themeToggle) {
+          themeToggle.value = isDark;
+        }
       }
 
       function switchTab(activeTab, activeContent, ...inactivePairs) {
@@ -1279,11 +1281,9 @@
       }
 
       if (eventsDemo) {
-        eventsDemo.addEventListener('valueChange', (e) => logEventDemo('valueChange', e.detail));
-        eventsDemo.addEventListener('toggle', (e) => logEventDemo('toggle', e.detail));
-        eventsDemo.addEventListener('beforeChange', (e) => logEventDemo('beforeChange', e.detail));
-        eventsDemo.addEventListener('ready', (e) => logEventDemo('ready', e.detail));
-        eventsDemo.addEventListener('validationError', (e) => logEventDemo('validationError', e.detail));
+        if (eventsDemo) {
+          eventsDemo.addEventListener('valueMsg', (e) => logEventDemo('valueMsg', e.detail));
+        }
       }
 
       // API Demo Functions
@@ -1300,16 +1300,8 @@
       };
 
       // Listen to component events
-      document.addEventListener('toggle', event => {
-        logEvent('Toggle', event.detail);
-      });
-
-      document.addEventListener('connectionChange', event => {
-        logEvent('Connection Change', event.detail);
-      });
-
-      document.addEventListener('valueChange', event => {
-        logEvent('Value Change', event.detail);
+      document.addEventListener('valueMsg', event => {
+        logEvent('Value Message', event.detail);
       });
 
       document.addEventListener('checkboxChange', event => {
@@ -1349,7 +1341,7 @@
       const savedTheme = localStorage.getItem('theme');
       setTheme(savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches));
 
-      themeToggle.addEventListener('toggle', e => setTheme(e.detail.active));
+      themeToggle.addEventListener('valueMsg', e => setTheme(e.detail.payload));
 
       // Add event listeners to see slider values change
       document.addEventListener('DOMContentLoaded', () => {
@@ -1365,8 +1357,8 @@
         // Add event listeners for enhanced demo components
         const reactiveDemo = document.getElementById('reactive-demo');
         if (reactiveDemo) {
-          reactiveDemo.addEventListener('valueChange', (e) => {
-            console.log('Reactive demo value changed:', e.detail.value);
+          reactiveDemo.addEventListener('valueMsg', (e) => {
+            console.log('Reactive demo value changed:', e.detail.payload);
           });
         }
         
@@ -1607,11 +1599,11 @@
             }
             
             // Handle writes from component
-            wotBoolToggle.addEventListener('valueChange', async (event) => {
+            wotBoolToggle.addEventListener('valueMsg', async (event) => {
               if (wotBoolToggle.mode === 'read') return; // Skip if read-only
               
               try {
-                const newValue = Boolean(event.detail.value);
+                const newValue = Boolean(event.detail.payload);
                 console.log(`Writing ${propertyName}:`, newValue);
                 
                 await currentThing.writeProperty(propertyName, newValue);
