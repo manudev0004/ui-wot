@@ -1,17 +1,10 @@
 import { UiMsg } from '../utils/types';
 
-// Import node-wot modules - these are now required dependencies
-import { Servient } from '@node-wot/core';
-import { HttpClientFactory } from '@node-wot/binding-http';
-
-// Optional WebSocket binding
-let WebSocketClientFactory: any;
-try {
-  const wsBinding = require('@node-wot/binding-websockets');
-  WebSocketClientFactory = wsBinding.WebSocketClientFactory;
-} catch (error) {
-  console.warn('WebSocket binding not available (optional):', error.message);
-}
+// Lazy references for node-wot modules to avoid static top-level imports that
+// significantly increase build time and bundle processing during Stencil builds.
+let Servient: any = undefined;
+let HttpClientFactory: any = undefined;
+let WebSocketClientFactory: any = undefined;
 
 /**
  * Thing Description interface - compatible with WoT TD standard
@@ -122,7 +115,7 @@ export interface WoTServiceConfig {
     allowSelfSigned?: boolean;
   };
   /** Custom servient instance (advanced users) */
-  servient?: Servient;
+  servient?: any;
 }
 
 /**
@@ -132,11 +125,11 @@ export interface WoTServiceConfig {
  * No custom fallback implementations - requires node-wot dependencies.
  */
 export class WoTService {
-  private servient: Servient;
+  private servient: any;
   private wot: any = null; // WoT instance from node-wot
   private consumedThings = new Map<string, ConsumedThing>();
   private subscriptions = new Map<string, any>(); // Use any for subscription compatibility
-  private config: Required<Omit<WoTServiceConfig, 'servient'>> & { servient?: Servient };
+  private config: Required<Omit<WoTServiceConfig, 'servient'>> & { servient?: any };
   private eventTarget = new EventTarget();
   private isInitialized = false;
 
@@ -159,27 +152,49 @@ export class WoTService {
    */
   private async initializeServient(): Promise<void> {
     try {
-      // Add HTTP client factory if available
-      if (HttpClientFactory) {
+      // Dynamically load node-wot modules to avoid heavy top-level bundling work
+      if (!Servient) {
+        try {
+          const core = require('@node-wot/core');
+          Servient = core.Servient;
+        } catch (err) {
+          throw new Error('Failed to require @node-wot/core: ' + err.message);
+        }
+      }
+
+      // Create servient instance if not provided
+      if (!this.servient) {
+        this.servient = this.config.servient || new Servient();
+      }
+
+      // HTTP binding
+      try {
+        const httpBinding = require('@node-wot/binding-http');
+        HttpClientFactory = httpBinding.HttpClientFactory;
         const httpClientFactory = new HttpClientFactory({
           allowSelfSigned: this.config.http?.allowSelfSigned || false,
-          proxy: this.config.http?.proxy ? { 
-            href: this.config.http.proxy 
-          } : undefined
+          proxy: this.config.http?.proxy ? { href: this.config.http?.proxy } : undefined
         });
         this.servient.addClientFactory(httpClientFactory);
         this.log('HTTP client factory added');
-      } else {
+      } catch (err) {
         throw new Error('HTTP binding is required but not available. Install @node-wot/binding-http');
       }
 
-      // Add WebSocket client factory if available
-      if (WebSocketClientFactory) {
-        const wsClientFactory = new WebSocketClientFactory({
-          allowSelfSigned: this.config.ws?.allowSelfSigned || false
-        });
-        this.servient.addClientFactory(wsClientFactory);
-        this.log('WebSocket client factory added');
+      // Optional WebSocket binding
+      try {
+        const wsBinding = require('@node-wot/binding-websockets');
+        WebSocketClientFactory = wsBinding.WebSocketClientFactory;
+        if (WebSocketClientFactory) {
+          const wsClientFactory = new WebSocketClientFactory({
+            allowSelfSigned: this.config.ws?.allowSelfSigned || false
+          });
+          this.servient.addClientFactory(wsClientFactory);
+          this.log('WebSocket client factory added');
+        }
+      } catch (err) {
+        // optional - don't block initialization
+        this.log('WebSocket binding not available (optional): ' + (err?.message || err));
       }
 
       // Start the servient

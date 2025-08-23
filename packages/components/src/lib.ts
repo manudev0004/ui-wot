@@ -24,9 +24,9 @@
  * ```
  */
 
-// Core services
-export { WoTService, wotService, createWoTService } from './services/wot-service';
-export { WoTBinder, createBinder } from './services/wot-binder';
+// Core services (runtime implementations are not re-exported to prevent
+// bundling node-only modules into the web build. Import services at
+// application runtime when needed.)
 
 // Component classes for framework integration
 export { UiButton } from './components/ui-button/ui-button';

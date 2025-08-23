@@ -21,9 +21,11 @@ export { UiHeading } from './components/ui-heading/ui-heading';
 // Smart wrapper
 export { UiPropertyCard } from './components/ui-property-card/ui-property-card';
 
-// Services
-export { WoTService, wotService } from './services/wot-service';
-export { WoTBinder, createBinder } from './services/wot-binder';
+// Services (runtime implementations are intentionally not exported here to avoid
+// bundling server-side/node-only dependencies into the web component build.
+// Consumers who need the WoT runtime can import from the services module
+// directly at application runtime.)
+// Type-only exports for TypeScript consumers remain below.
 
 // Types and utilities
 export * from './utils/types';
