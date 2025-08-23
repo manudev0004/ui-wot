@@ -5,31 +5,78 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>ui-toggle</title>
     <style>
-      body { font-family: system-ui, -apple-system, sans-serif; max-width:800px; margin:36px auto; padding:18px; background:#f8fafc }
-      .card { background:white; padding:20px; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.06) }
-      .row { display:flex; gap:18px; align-items:center; margin-bottom:14px }
-      .meta { color:#6b7280; font-size:13px }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 800px;
+        margin: 36px auto;
+        padding: 18px;
+        background: #f8fafc;
+      }
+      .card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      }
+      .row {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+      .meta {
+        color: #6b7280;
+        font-size: 13px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      @keyframes ping {
+        75%,
+        100% {
+          transform: scale(1.5);
+          opacity: 0;
+        }
+      }
     </style>
   </head>
   <body>
     <div class="card">
       <h1>ui-toggle TD demo (simplified)</h1>
-      <p class="meta">Uses current attributes: <code>td-url</code>, <code>td-property</code>, <code>sync-interval</code>, <code>mode</code>, <code>mirror</code></p>
+      <p class="meta">Uses current attributes: <code>td-url</code>, <code>td-property</code>, <code>sync-interval</code>, <code>mode</code></p>
 
       <div class="row">
         <div>
           <h3>Controller (readwrite)</h3>
-          <ui-toggle id="readwrite-toggle" mode="readwrite" td-property="bool" td-url="http://plugfest.thingweb.io/http-data-schema-thing" sync-interval="3000" label="Controller"></ui-toggle>
+          <ui-toggle
+            id="readwrite-toggle"
+            mode="readwrite"
+            td-property="bool"
+            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+            sync-interval="3000"
+            label="Controller"
+          ></ui-toggle>
         </div>
-  <div class="meta">Property: <strong>bool</strong></div>
+        <div class="meta">Property: <strong>bool</strong></div>
       </div>
 
       <div class="row">
         <div>
           <h3>Monitor (read-only)</h3>
-          <ui-toggle id="readonly-toggle" mode="read" mirror="#readwrite-toggle" sync-interval="3000" variant="square" label="Monitor"></ui-toggle>
+          <ui-toggle id="readonly-toggle" mode="read" sync-interval="3000" variant="square" label="Monitor"></ui-toggle>
         </div>
-  <div class="meta">Property: <strong>bool</strong></div>
+        <div class="meta">Property: <strong>bool</strong></div>
       </div>
     </div>
 
@@ -39,42 +86,169 @@
     <script>
       // Minimal wiring: only the controller is wired to the TD. The readonly monitor mirrors
       // the controller via `mirror="#readwrite-toggle"` and requires no extra JS.
-        // const TD_URL = 'http://plugfest.thingweb.io/http-data-schema-thing';
-  // Move RW and TD_URL inside DOMContentLoaded to ensure the element exists
+      // const TD_URL = 'http://plugfest.thingweb.io/http-data-schema-thing';
+      // Move RW and TD_URL inside DOMContentLoaded to ensure the element exists
 
       async function waitForWoT() {
         while (!window.WoT) await new Promise(r => setTimeout(r, 100));
         return window.WoT;
       }
 
-
       document.addEventListener('DOMContentLoaded', async () => {
         try {
           const RW = document.getElementById('readwrite-toggle');
+          const RO = document.getElementById('readonly-toggle');
+
+          // Wait for Stencil to upgrade the custom elements so prototype/mixin methods are present
+          // Prefer componentOnReady (stencil) but fallback to whenDefined for older flows
+          try {
+            await (RW.componentOnReady ? RW.componentOnReady() : customElements.whenDefined('ui-toggle'));
+            await (RO.componentOnReady ? RO.componentOnReady() : customElements.whenDefined('ui-toggle'));
+          } catch (waitErr) {
+            // ignore - we'll still attempt to use methods and fallbacks
+            console.warn('Component upgrade wait failed or timed out, continuing with best-effort', waitErr);
+          }
+
+          // Debug: Check if mixin methods are available on upgraded instances
+          console.log('RW mixin methods (post-upgrade):', {
+            startWriteOperation: typeof RW.startWriteOperation,
+            finishWriteOperation: typeof RW.finishWriteOperation,
+            renderStatusBadge: typeof RW.renderStatusBadge,
+            manualFallback: typeof RW.manualStartWriteOperation,
+          });
+          console.log('RO mixin methods (post-upgrade):', {
+            markReadUpdate: typeof RO.markReadUpdate,
+            renderStatusBadge: typeof RO.renderStatusBadge,
+            manualFallback: typeof RO.manualMarkReadUpdate,
+          });
+
+          // Wait until the instance exposes the status methods (avoid race). Poll for up to 2s.
+          async function waitForMethods(el, methods = ['startWriteOperation', 'finishWriteOperation', 'markReadUpdate'], timeout = 2000) {
+            const start = Date.now();
+            while (Date.now() - start < timeout) {
+              const ok = methods.every(m => typeof el[m] === 'function');
+              if (ok) return true;
+              await new Promise(r => setTimeout(r, 100));
+            }
+            return false;
+          }
+
+          // Wait for methods on instances before using them elsewhere. We intentionally
+          // do not force a write success badge here on initial load because the TD
+          // may not be available yet. A small test sequence will run only after
+          // the TD has been successfully fetched/consumed below.
+          (async () => {
+            console.log('Waiting for methods on instances...');
+            const rwReady = await waitForMethods(RW, ['startWriteOperation', 'finishWriteOperation']);
+            const roReady = await waitForMethods(RO, ['markReadUpdate']);
+            console.log('Methods ready:', { rwReady, roReady });
+            // do not trigger any status badge tests here; TD wiring below will
+            // perform a conservative update when the TD is available.
+          })();
+
           const TD_URL = RW.getAttribute('td-url');
           const WoT = await waitForWoT();
           const servient = new WoT.Core.Servient();
           servient.addClientFactory(new WoT.Http.HttpClientFactory());
           const wot = await servient.start();
 
-          const res = await fetch(TD_URL);
-          if (!res.ok) throw new Error('TD fetch failed ' + res.status);
-          const td = await res.json();
-          const thing = await wot.consume(td);
+          let thing;
+          try {
+            const res = await fetch(TD_URL);
+            if (!res.ok) throw new Error('TD fetch failed ' + res.status);
+            const td = await res.json();
+            thing = await wot.consume(td);
+          } catch (tdErr) {
+            console.error('TD fetch/consume failed', tdErr);
+            // Immediately mark readonly monitor as error and set connected=false so
+            // the status badge updates to the red/disconnected state in real time.
+            if (RO) {
+              try {
+                if (typeof RO.markReadUpdate === 'function') RO.markReadUpdate(false);
+                else if (typeof RO.manualMarkReadUpdate === 'function') RO.manualMarkReadUpdate();
+              } catch (e) {
+                /* ignore */
+              }
+              // flag as disconnected for rendering fallback
+              try {
+                RO.connected = false;
+              } catch (e) {
+                /* ignore */
+              }
+            }
+            try {
+              RW.connected = false;
+            } catch (e) {
+              /* ignore */
+            }
+            // stop further TD wiring since we couldn't fetch/consume the TD
+            return;
+          }
 
           const prop = RW.getAttribute('td-property');
           if (!prop) return;
+
+          // Run a small status badge test now that the TD was consumed successfully
+          (async () => {
+            try {
+              const rwReady = await waitForMethods(RW, ['startWriteOperation', 'finishWriteOperation']);
+              const roReady = await waitForMethods(RO, ['markReadUpdate']);
+              console.log('Methods ready (post-TD):', { rwReady, roReady });
+
+              if (rwReady && typeof RW.startWriteOperation === 'function') {
+                RW.startWriteOperation();
+              } else if (typeof RW.manualStartWriteOperation === 'function') {
+                RW.manualStartWriteOperation();
+              }
+
+              setTimeout(() => {
+                if (rwReady && typeof RW.finishWriteOperation === 'function') {
+                  RW.finishWriteOperation(true);
+                } else if (typeof RW.manualFinishWriteOperation === 'function') {
+                  RW.manualFinishWriteOperation(true);
+                }
+              }, 1200);
+
+              if (roReady && typeof RO.markReadUpdate === 'function') {
+                RO.markReadUpdate();
+              } else if (typeof RO.manualMarkReadUpdate === 'function') {
+                RO.manualMarkReadUpdate();
+              }
+            } catch (e) {
+              console.warn('Post-TD badge test failed', e);
+            }
+          })();
+
+          function applyToReadonly(v) {
+            if (RO) {
+              RO.value = v;
+              console.log('Applying read update to readonly toggle');
+              // Use mixin method or fallback and indicate success
+              if (typeof RO.markReadUpdate === 'function') {
+                try {
+                  RO.markReadUpdate(true);
+                } catch (e) {
+                  RO.manualMarkReadUpdate && RO.manualMarkReadUpdate();
+                }
+              } else if (typeof RO.manualMarkReadUpdate === 'function') {
+                RO.manualMarkReadUpdate();
+              }
+            }
+          }
           // initial read
           const p = await thing.readProperty(prop);
           const initial = Boolean(await p.value());
-          if (typeof RW.applyExternalValue === 'function') RW.applyExternalValue(initial); else RW.value = initial;
+          if (typeof RW.applyExternalValue === 'function') RW.applyExternalValue(initial);
+          else RW.value = initial;
 
           // observe updates. If the TD doesn't provide an observable form for this property
           // (some HTTP TDs don't), fall back to a simple polling loop instead of failing.
           try {
             await thing.observeProperty(prop, async data => {
               const v = Boolean(await data.value());
-              if (typeof RW.applyExternalValue === 'function') RW.applyExternalValue(v); else RW.value = v;
+              if (typeof RW.applyExternalValue === 'function') RW.applyExternalValue(v);
+              else RW.value = v;
+              applyToReadonly(v);
             });
           } catch (observeErr) {
             console.warn('observeProperty failed, falling back to polling:', observeErr.message || observeErr);
@@ -84,18 +258,71 @@
               try {
                 const p2 = await thing.readProperty(prop);
                 const v2 = Boolean(await p2.value());
-                if (typeof RW.applyExternalValue === 'function') RW.applyExternalValue(v2); else RW.value = v2;
+                if (typeof RW.applyExternalValue === 'function') RW.applyExternalValue(v2);
+                else RW.value = v2;
+                applyToReadonly(v2);
               } catch (pollErr) {
                 console.warn('Polling readProperty failed:', pollErr.message || pollErr);
+                if (typeof RO.markReadUpdate === 'function') {
+                  try {
+                    RO.markReadUpdate(false);
+                  } catch (e) {
+                    RO.manualMarkReadUpdate && RO.manualMarkReadUpdate();
+                  }
+                } else if (typeof RO.manualMarkReadUpdate === 'function') {
+                  RO.manualMarkReadUpdate();
+                }
+                // For polling failures, also set connected=false so the UI shows disconnected
+                try {
+                  RO.connected = false;
+                } catch (e) {
+                  /* ignore */
+                }
+                try {
+                  RW.connected = false;
+                } catch (e) {
+                  /* ignore */
+                }
               }
             }, pollInterval);
             // store poller on the element so it can be cleared externally if needed
             RW.__td_poller = poller;
           }
 
-          // write when controller emits valueChange
-          RW.addEventListener('valueChange', async e => {
-            try { await thing.writeProperty(prop, Boolean(e.detail?.value)); } catch (err) { console.error('write failed', err); }
+          applyToReadonly(initial);
+
+          // write when controller emits unified valueMsg
+          RW.addEventListener('valueMsg', async e => {
+            const newVal = Boolean(e.detail?.payload);
+            console.log('Toggle clicked, starting write operation');
+
+            // Use mixin method or fallback
+            if (RW.startWriteOperation) {
+              RW.startWriteOperation();
+            } else {
+              RW.manualStartWriteOperation && RW.manualStartWriteOperation();
+            }
+
+            try {
+              await thing.writeProperty(prop, newVal);
+              console.log('Write successful, finishing operation');
+
+              if (RW.finishWriteOperation) {
+                RW.finishWriteOperation(true);
+              } else {
+                RW.manualFinishWriteOperation && RW.manualFinishWriteOperation(true);
+              }
+
+              applyToReadonly(newVal);
+            } catch (err) {
+              console.error('write failed', err);
+
+              if (RW.finishWriteOperation) {
+                RW.finishWriteOperation(false, err.message || 'write failed');
+              } else {
+                RW.manualFinishWriteOperation && RW.manualFinishWriteOperation(false, err.message || 'write failed');
+              }
+            }
           });
         } catch (err) {
           console.error('TD wiring failed', err);

@@ -564,6 +564,11 @@ export namespace Components {
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
+          * Connection state (readonly)
+          * @default true
+         */
+        "connected": boolean;
+        /**
           * Enable dark theme for the component. When true, uses light text on dark backgrounds.
           * @default false
          */
@@ -573,6 +578,7 @@ export namespace Components {
           * @default false
          */
         "disabled": boolean;
+        "finishWriteOperation": (success: boolean, errorMsg?: string) => Promise<void>;
         /**
           * Get the current toggle value.
           * @returns Promise that resolves to the current boolean value
@@ -587,6 +593,7 @@ export namespace Components {
           * Text label displayed next to the toggle.
          */
         "label"?: string;
+        "markReadUpdate": () => Promise<void>;
         /**
           * Legacy mode prop for backward compatibility with older demos. Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
          */
@@ -602,6 +609,10 @@ export namespace Components {
           * @returns Promise that resolves to true if successful
          */
         "setValue": (value: boolean) => Promise<boolean>;
+        /**
+          * Expose status methods as component methods so they exist on the element instance
+         */
+        "startWriteOperation": () => Promise<void>;
         /**
           * Current boolean value of the toggle.
           * @default false
@@ -1558,6 +1569,11 @@ declare namespace LocalJSX {
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state (readonly)
+          * @default true
+         */
+        "connected"?: boolean;
         /**
           * Enable dark theme for the component. When true, uses light text on dark backgrounds.
           * @default false

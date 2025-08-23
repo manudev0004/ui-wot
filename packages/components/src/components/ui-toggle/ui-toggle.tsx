@@ -1,4 +1,5 @@
 import { Component, Prop, State, h, Event, EventEmitter, Watch, Element, Method } from '@stencil/core';
+import { applyUiComponentMixin } from '../../utils/component-base';
 import { UiMsg } from '../../utils/types';
 
 /** @deprecated Use UiMsg<boolean> instead */
@@ -71,6 +72,13 @@ export interface UiToggleValueChange {
   shadow: true,
 })
 export class UiToggle {
+  constructor() {
+    // Attach manual status methods directly to the instance
+    this.manualStartWriteOperation = this.manualStartWriteOperation.bind(this);
+    this.manualFinishWriteOperation = this.manualFinishWriteOperation.bind(this);
+    this.manualMarkReadUpdate = this.manualMarkReadUpdate.bind(this);
+    this.manualRenderStatusBadge = this.manualRenderStatusBadge.bind(this);
+  }
   @Element() hostElement: HTMLElement;
 
   /**
@@ -91,7 +99,7 @@ export class UiToggle {
   /**
    * Whether the toggle is read-only (displays value but cannot be changed).
    */
-  @Prop() readonly: boolean = false;
+  @Prop({ mutable: true }) readonly: boolean = false;
 
   /**
    * Legacy mode prop for backward compatibility with older demos.
@@ -126,6 +134,107 @@ export class UiToggle {
 
   /** Internal state for tracking if component is initialized */
   @State() private isInitialized: boolean = false;
+
+  /** Operation status for write mode indicators */
+  @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
+  @State() lastError?: string;
+  /** Timestamp of last read pulse (readonly updates) */
+  @State() readPulseTs?: number;
+  /** Connection state (readonly) */
+  @Prop() connected: boolean = true;
+
+  /** Mixin injected status badge renderer */
+  renderStatusBadge?: () => any;
+  
+  /** Mixin injected status methods (accessed via @Method wrappers on the instance) */
+
+  /** Expose status methods as component methods so they exist on the element instance */
+  @Method()
+  async startWriteOperation(): Promise<void> {
+    const proto = Object.getPrototypeOf(this);
+    if (typeof proto.startWriteOperation === 'function') {
+      proto.startWriteOperation.call(this);
+      return;
+    }
+    if (typeof this.manualStartWriteOperation === 'function') this.manualStartWriteOperation();
+  }
+
+  @Method()
+  async finishWriteOperation(success: boolean, errorMsg?: string): Promise<void> {
+    const proto = Object.getPrototypeOf(this);
+    if (typeof proto.finishWriteOperation === 'function') {
+      proto.finishWriteOperation.call(this, success, errorMsg);
+      return;
+    }
+    if (typeof this.manualFinishWriteOperation === 'function') this.manualFinishWriteOperation(success, errorMsg);
+  }
+
+  @Method()
+  async markReadUpdate(): Promise<void> {
+    const proto = Object.getPrototypeOf(this);
+    if (typeof proto.markReadUpdate === 'function') {
+      proto.markReadUpdate.call(this);
+      return;
+    }
+    if (typeof this.manualMarkReadUpdate === 'function') this.manualMarkReadUpdate();
+  }
+
+  /** Manual implementation of status methods in case mixin fails */
+  manualStartWriteOperation() {
+    this.operationStatus = 'loading';
+  }
+
+  manualFinishWriteOperation(success: boolean, errorMsg?: string) {
+    this.operationStatus = success ? 'success' : 'error';
+    this.lastError = success ? undefined : (errorMsg || 'Operation failed');
+    const clearDelay = success ? 1200 : 2000;
+    setTimeout(() => { 
+      if (this.operationStatus === (success ? 'success' : 'error')) 
+        this.operationStatus = 'idle'; 
+    }, clearDelay);
+  }
+
+  manualMarkReadUpdate() {
+    this.readPulseTs = Date.now();
+  }
+
+  private manualRenderStatusBadge() {
+    const isReadonly = this.readonly;
+    const connected = this.connected !== false;
+    
+    if (isReadonly) {
+      if (!connected) {
+        return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}}>
+          <span style={{width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block'}}></span>
+        </span>;
+      }
+      const active = this.readPulseTs && (Date.now() - this.readPulseTs < 1200);
+      if (active) {
+        return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}}>
+          <span style={{position: 'absolute', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#60a5fa', opacity: '0.75', animation: 'ping 1s cubic-bezier(0, 0, 0.2, 1) infinite'}}></span>
+          <span style={{width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#3b82f6', display: 'inline-block'}}></span>
+        </span>;
+      }
+      return null;
+    }
+
+    switch (this.operationStatus) {
+      case 'loading':
+        return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}} title="Sending...">
+          <span style={{width: '12px', height: '12px', borderRadius: '50%', border: '2px solid currentColor', borderTopColor: 'transparent', animation: 'spin 1s linear infinite'}}></span>
+        </span>;
+      case 'success':
+          return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: '8px'}} title="Sent">
+            <span style={{width: '16px', height: '16px', borderRadius: '9999px', backgroundColor: '#22c55e', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '12px', fontWeight: '800', lineHeight: '16px'}}>✓</span>
+          </span>;
+      case 'error':
+          return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: '8px'}} title={this.lastError || 'Error'}>
+            <span style={{width: '16px', height: '16px', borderRadius: '9999px', backgroundColor: '#ef4444', color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800', lineHeight: '16px'}}>×</span>
+          </span>;
+      default:
+        return null;
+    }
+  }
 
   /**
    * Primary event emitted when the toggle value changes.
@@ -173,7 +282,39 @@ export class UiToggle {
       this.readonly = true;
     }
     this.isInitialized = true;
-  }
+
+    // Ensure all mixin/manual methods are present on the instance for demo wiring
+    const proto = Object.getPrototypeOf(this);
+    [
+      'startWriteOperation',
+      'finishWriteOperation',
+      'markReadUpdate',
+      'renderStatusBadge',
+      'manualStartWriteOperation',
+      'manualFinishWriteOperation',
+      'manualMarkReadUpdate',
+      'manualRenderStatusBadge'
+    ].forEach(fn => {
+      if (typeof this[fn] !== 'function' && typeof proto[fn] === 'function') {
+        this[fn] = proto[fn].bind(this);
+      }
+    });
+    // Also attach safe runtime wrappers to the instance to guarantee availability
+    // Use (this as any) to avoid TypeScript duplicate identifier issues
+    const inst: any = this as any;
+    inst.startWriteOperation = inst.startWriteOperation || function() {
+      if (typeof proto.startWriteOperation === 'function') return proto.startWriteOperation.call(this);
+      if (typeof inst.manualStartWriteOperation === 'function') return inst.manualStartWriteOperation();
+    };
+    inst.finishWriteOperation = inst.finishWriteOperation || function(success: boolean, errorMsg?: string) {
+      if (typeof proto.finishWriteOperation === 'function') return proto.finishWriteOperation.call(this, success, errorMsg);
+      if (typeof inst.manualFinishWriteOperation === 'function') return inst.manualFinishWriteOperation(success, errorMsg);
+    };
+    inst.markReadUpdate = inst.markReadUpdate || function() {
+      if (typeof proto.markReadUpdate === 'function') return proto.markReadUpdate.call(this);
+      if (typeof inst.manualMarkReadUpdate === 'function') return inst.manualMarkReadUpdate();
+    };
+    }
 
   @Watch('mode')
   watchMode(newMode?: 'read' | 'readwrite') {
@@ -342,7 +483,7 @@ export class UiToggle {
     }
 
     return (
-      <div class="inline-flex items-center space-x-3" part="container">
+      <div class="inline-flex items-center space-x-2" part="container">
         {/* Label slot or prop */}
         <slot name="label">
           {this.label && (
@@ -394,7 +535,12 @@ export class UiToggle {
             {this.renderCrossIcons()}
           </span>
         )}
+  {/* Status badge placed to the right of the control */}
+  {this.renderStatusBadge?.() || this.manualRenderStatusBadge()}
       </div>
     );
   }
 }
+
+// Apply shared mixin for status badge utilities
+applyUiComponentMixin<boolean>(UiToggle.prototype, 'ui-toggle');
