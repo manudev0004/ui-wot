@@ -2,19 +2,8 @@ import { Component, Prop, State, h, Event, EventEmitter, Watch, Element, Method 
 import { applyUiComponentMixin } from '../../utils/component-base';
 import { UiMsg } from '../../utils/types';
 
-/** @deprecated Use UiMsg<boolean> instead */
-export interface UiToggleToggleEvent {
-  active: boolean;
-}
-/** @deprecated Use UiMsg<boolean> instead */
-export interface UiToggleValueChange {
-  value: boolean;
-  label?: string;
-}
-
 /**
  * Advanced toggle switch component with reactive state management and multiple visual styles.
- * Provides accessibility features, flexible event handling, and beautiful UI variants.
  *
  * @example Basic Usage
  * ```html
@@ -38,33 +27,19 @@ export interface UiToggleValueChange {
  * ```javascript
  * const toggle = document.querySelector('ui-toggle');
  *
- * // Listen for value changes (preferred)
+ * // To listen value changes
  * toggle.addEventListener('valueMsg', (e) => {
  *   console.log('New value:', e.detail.payload);
  *   console.log('Previous:', e.detail.prev);
  *   console.log('Timestamp:', e.detail.ts);
  * });
  *
- * // Programmatically set value
+ * // To set value
  * await toggle.setValue(true);
  *
- * // Get current value
+ * // To get current value
  * const currentValue = await toggle.getValue();
  * ```
- *
- * <!-- @deprecated The following events are deprecated, use valueMsg instead
- * @example Legacy Events (Deprecated)
- * ```javascript
- * // DON'T USE - Deprecated events
- * toggle.addEventListener('valueChange', (e) => {
- *   console.log('Legacy value change:', e.detail.value);
- * });
- *
- * toggle.addEventListener('toggle', (e) => {
- *   console.log('Legacy toggle:', e.detail.active);
- * });
- * ```
- * -->
  */
 @Component({
   tag: 'ui-toggle',
@@ -238,15 +213,8 @@ export class UiToggle {
 
   /**
    * Primary event emitted when the toggle value changes.
-   * Use this event for all value change handling.
    */
   @Event() valueMsg: EventEmitter<UiMsg<boolean>>;
-
-  // /** @deprecated Use valueMsg instead */
-  // @Event() valueChange: EventEmitter<UiToggleValueChange>;
-
-  // /** @deprecated Use valueMsg instead */
-  // @Event() toggle: EventEmitter<UiToggleToggleEvent>;
 
   /**
    * Set the toggle value programmatically.
@@ -337,7 +305,7 @@ export class UiToggle {
     }
   }
 
-  /** Emit the unified UiMsg event and legacy events for backward compatibility */
+  /** Emit the unified UiMsg event */
   private emitValueMsg(value: boolean, prevValue?: boolean) {
     // Primary unified event
     const msg: UiMsg<boolean> = {
@@ -348,10 +316,6 @@ export class UiToggle {
       ok: true,
     };
     this.valueMsg.emit(msg);
-
-    // Legacy events commented out - use valueMsg instead
-    // this.valueChange.emit({ value, label: this.label });
-    // this.toggle.emit({ active: value });
   }
 
   /** Handle toggle click */
@@ -494,7 +458,6 @@ export class UiToggle {
               onClick={() => canInteract && this.handleToggle()}
               title={hoverTitle}
               part="label"
-              id={`${this.hostElement?.id || 'ui-toggle'}-label`}
             >
               {this.label}
             </label>
@@ -519,15 +482,11 @@ export class UiToggle {
           // Interactive toggle - using enhanced styling from old component
           <span
             class={`${this.getToggleStyle()} ${
-              canInteract ? 'hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary' : ''
+              canInteract ? 'hover:shadow-md' : ''
             } transition-all duration-200`}
-            role="switch"
-            aria-checked={this.isActive ? 'true' : 'false'}
-            aria-disabled={this.disabled ? 'true' : 'false'}
-            aria-label={this.label || `Toggle switch ${this.isActive ? 'on' : 'off'}`}
-            tabIndex={canInteract ? 0 : -1}
             onClick={() => canInteract && this.handleToggle()}
             onKeyDown={this.handleKeyDown}
+            tabIndex={canInteract ? 0 : -1}
             title={hoverTitle}
             part="control"
           >
