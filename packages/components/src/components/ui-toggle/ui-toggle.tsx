@@ -1,5 +1,4 @@
 import { Component, Prop, State, h, Event, EventEmitter, Watch, Element, Method } from '@stencil/core';
-import { applyUiComponentMixin } from '../../utils/component-base';
 import { UiMsg } from '../../utils/types';
 
 /**
@@ -23,22 +22,29 @@ import { UiMsg } from '../../utils/types';
  * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
  * ```
  *
- * @example JavaScript Integration
+ * @example JavaScript Integration with Multiple Toggles
  * ```javascript
- * const toggle = document.querySelector('ui-toggle');
+ * // For single toggle
+ * const toggle = document.querySelector('#my-toggle');
  *
- * // To listen value changes
- * toggle.addEventListener('valueMsg', (e) => {
- *   console.log('New value:', e.detail.payload);
- *   console.log('Previous:', e.detail.prev);
- *   console.log('Timestamp:', e.detail.ts);
+ * // For multiple toggles
+ * const toggles = document.querySelectorAll('ui-toggle');
+ * toggles.forEach(toggle => {
+ *   toggle.addEventListener('valueMsg', (e) => {
+ *     console.log('Toggle ID:', e.detail.source);
+ *     console.log('New value:', e.detail.payload);
+ *   });
  * });
  *
- * // To set value
- * await toggle.setValue(true);
+ * // Set value by ID
+ * const lightToggle = document.getElementById('light-toggle');
+ * await lightToggle.setValue(true);
+ * ```
  *
- * // To get current value
- * const currentValue = await toggle.getValue();
+ * @example HTML with IDs
+ * ```html
+ * <ui-toggle id="light-toggle" label="Light" variant="circle"></ui-toggle>
+ * <ui-toggle id="fan-toggle" label="Fan" variant="apple"></ui-toggle>
  * ```
  */
 @Component({
@@ -47,14 +53,9 @@ import { UiMsg } from '../../utils/types';
   shadow: true,
 })
 export class UiToggle {
-  constructor() {
-    // Attach manual status methods directly to the instance
-    this.manualStartWriteOperation = this.manualStartWriteOperation.bind(this);
-    this.manualFinishWriteOperation = this.manualFinishWriteOperation.bind(this);
-    this.manualMarkReadUpdate = this.manualMarkReadUpdate.bind(this);
-    this.manualRenderStatusBadge = this.manualRenderStatusBadge.bind(this);
-  }
-  @Element() hostElement: HTMLElement;
+  @Element() el: HTMLElement;
+
+  /** Component props */
 
   /**
    * Visual style variant of the toggle.
@@ -75,12 +76,6 @@ export class UiToggle {
    * Whether the toggle is read-only (displays value but cannot be changed).
    */
   @Prop({ mutable: true }) readonly: boolean = false;
-
-  /**
-   * Legacy mode prop for backward compatibility with older demos.
-   * Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
-   */
-  @Prop() mode?: 'read' | 'readwrite';
 
   /**
    * Text label displayed next to the toggle.
@@ -115,65 +110,45 @@ export class UiToggle {
   @State() lastError?: string;
   /** Timestamp of last read pulse (readonly updates) */
   @State() readPulseTs?: number;
-  /** Connection state (readonly) */
-  @Prop() connected: boolean = true;
+  /** Connection state for readonly mode */
+  @Prop({ mutable: true }) connected: boolean = true;
 
-  /** Mixin injected status badge renderer */
-  renderStatusBadge?: () => any;
-  
-  /** Mixin injected status methods (accessed via @Method wrappers on the instance) */
-
-  /** Expose status methods as component methods so they exist on the element instance */
+  /** Simple status methods */
   @Method()
   async startWriteOperation(): Promise<void> {
-    const proto = Object.getPrototypeOf(this);
-    if (typeof proto.startWriteOperation === 'function') {
-      proto.startWriteOperation.call(this);
-      return;
-    }
-    if (typeof this.manualStartWriteOperation === 'function') this.manualStartWriteOperation();
+    this.operationStatus = 'loading';
   }
 
   @Method()
   async finishWriteOperation(success: boolean, errorMsg?: string): Promise<void> {
-    const proto = Object.getPrototypeOf(this);
-    if (typeof proto.finishWriteOperation === 'function') {
-      proto.finishWriteOperation.call(this, success, errorMsg);
-      return;
+    this.operationStatus = success ? 'success' : 'error';
+    this.lastError = success ? undefined : (errorMsg || 'Operation failed');
+    if (success) {
+      // Clear success status after short delay
+      setTimeout(() => { 
+        if (this.operationStatus === 'success') this.operationStatus = 'idle'; 
+      }, 1200);
     }
-    if (typeof this.manualFinishWriteOperation === 'function') this.manualFinishWriteOperation(success, errorMsg);
+    // Keep error state persistent - don't auto-clear
   }
 
   @Method()
   async markReadUpdate(): Promise<void> {
-    const proto = Object.getPrototypeOf(this);
-    if (typeof proto.markReadUpdate === 'function') {
-      proto.markReadUpdate.call(this);
-      return;
-    }
-    if (typeof this.manualMarkReadUpdate === 'function') this.manualMarkReadUpdate();
-  }
-
-  /** Manual implementation of status methods in case mixin fails */
-  manualStartWriteOperation() {
-    this.operationStatus = 'loading';
-  }
-
-  manualFinishWriteOperation(success: boolean, errorMsg?: string) {
-    this.operationStatus = success ? 'success' : 'error';
-    this.lastError = success ? undefined : (errorMsg || 'Operation failed');
-    const clearDelay = success ? 1200 : 2000;
-    setTimeout(() => { 
-      if (this.operationStatus === (success ? 'success' : 'error')) 
-        this.operationStatus = 'idle'; 
-    }, clearDelay);
-  }
-
-  manualMarkReadUpdate() {
     this.readPulseTs = Date.now();
   }
 
-  private manualRenderStatusBadge() {
+  @Method()
+  async clearErrorState(): Promise<void> {
+    // Only clear if currently in error state, don't override success/loading
+    if (this.operationStatus === 'error') {
+      this.operationStatus = 'idle';
+    }
+    this.lastError = undefined;
+    this.connected = true;
+  }
+
+  /** Render status badge for visual feedback */
+  private renderStatusBadge() {
     const isReadonly = this.readonly;
     const connected = this.connected !== false;
     
@@ -223,7 +198,14 @@ export class UiToggle {
    */
   @Method()
   async setValue(value: boolean): Promise<boolean> {
+    // Store previous value for potential revert
     const prevValue = this.isActive;
+    
+    // If in error state, show loading when user tries to interact
+    if (this.operationStatus === 'error' && !this.readonly) {
+      this.startWriteOperation();
+    }
+    
     this.isActive = value;
     this.value = value;
 
@@ -231,6 +213,15 @@ export class UiToggle {
     this.emitValueMsg(value, prevValue);
 
     return true;
+  }
+
+  /**
+   * Revert toggle to previous value (used when write fails)
+   */
+  @Method()
+  async revertValue(prevValue: boolean): Promise<void> {
+    this.isActive = prevValue;
+    this.value = prevValue;
   }
 
   /**
@@ -245,52 +236,7 @@ export class UiToggle {
   /** Initialize component state from props */
   componentWillLoad() {
     this.isActive = Boolean(this.value);
-    // Support legacy `mode="read"` used across the demos/docs
-    if (!this.readonly && this.mode === 'read') {
-      this.readonly = true;
-    }
     this.isInitialized = true;
-
-    // Ensure all mixin/manual methods are present on the instance for demo wiring
-    const proto = Object.getPrototypeOf(this);
-    [
-      'startWriteOperation',
-      'finishWriteOperation',
-      'markReadUpdate',
-      'renderStatusBadge',
-      'manualStartWriteOperation',
-      'manualFinishWriteOperation',
-      'manualMarkReadUpdate',
-      'manualRenderStatusBadge'
-    ].forEach(fn => {
-      if (typeof this[fn] !== 'function' && typeof proto[fn] === 'function') {
-        this[fn] = proto[fn].bind(this);
-      }
-    });
-    // Also attach safe runtime wrappers to the instance to guarantee availability
-    // Use (this as any) to avoid TypeScript duplicate identifier issues
-    const inst: any = this as any;
-    inst.startWriteOperation = inst.startWriteOperation || function() {
-      if (typeof proto.startWriteOperation === 'function') return proto.startWriteOperation.call(this);
-      if (typeof inst.manualStartWriteOperation === 'function') return inst.manualStartWriteOperation();
-    };
-    inst.finishWriteOperation = inst.finishWriteOperation || function(success: boolean, errorMsg?: string) {
-      if (typeof proto.finishWriteOperation === 'function') return proto.finishWriteOperation.call(this, success, errorMsg);
-      if (typeof inst.manualFinishWriteOperation === 'function') return inst.manualFinishWriteOperation(success, errorMsg);
-    };
-    inst.markReadUpdate = inst.markReadUpdate || function() {
-      if (typeof proto.markReadUpdate === 'function') return proto.markReadUpdate.call(this);
-      if (typeof inst.manualMarkReadUpdate === 'function') return inst.manualMarkReadUpdate();
-    };
-    }
-
-  @Watch('mode')
-  watchMode(newMode?: 'read' | 'readwrite') {
-    if (newMode === 'read') {
-      this.readonly = true;
-    } else if (newMode === 'readwrite') {
-      this.readonly = false;
-    }
   }
 
   /** Watch for value prop changes and update internal state */
@@ -312,7 +258,7 @@ export class UiToggle {
       payload: value,
       prev: prevValue,
       ts: Date.now(),
-      source: this.hostElement?.id || 'ui-toggle',
+      source: this.el?.id || 'ui-toggle',
       ok: true,
     };
     this.valueMsg.emit(msg);
@@ -495,11 +441,8 @@ export class UiToggle {
           </span>
         )}
   {/* Status badge placed to the right of the control */}
-  {this.renderStatusBadge?.() || this.manualRenderStatusBadge()}
+  {this.renderStatusBadge()}
       </div>
     );
   }
 }
-
-// Apply shared mixin for status badge utilities
-applyUiComponentMixin<boolean>(UiToggle.prototype, 'ui-toggle');

@@ -19,6 +19,18 @@
   display: inline-block;
 }
 
+/* Essential animations for status indicators */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
 /* Custom color utilities using CSS variables */
 .bg-neutral-light { background-color: var(--color-neutral-light); }
 .bg-neutral { background-color: var(--color-neutral); }
