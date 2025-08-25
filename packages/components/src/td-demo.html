@@ -142,12 +142,7 @@
         
         // Try to connect (will fail)
         try {
-          const response = await fetch('https://invalid.example/td', { 
-            method: 'GET',
-            mode: 'cors',
-            cache: 'no-cache'
-          });
-          if (!response.ok) throw new Error('Network error');
+          await wotService.loadThing('https://invalid.example/td');
           toggle.finishWriteOperation(true);
         } catch (err) {
           toggle.finishWriteOperation(false, 'Connection failed');
@@ -157,18 +152,12 @@
         // Add retry logic when user tries to toggle during error state
         toggle.addEventListener('valueMsg', async e => {
           const previousValue = !e.detail.payload;
-          toggle.clearErrorState(); // Clear error before retry
+          toggle.clearErrorState();
           toggle.startWriteOperation();
           
           // Attempt to reconnect/retry (will still fail)
           try {
-            const response = await fetch('https://invalid.example/td', { 
-              method: 'GET',
-              mode: 'cors',
-              cache: 'no-cache'
-            });
-            if (!response.ok) throw new Error('Network error');
-            // If somehow it succeeds
+            await wotService.loadThing('https://invalid.example/td');
             toggle.finishWriteOperation(true);
           } catch (err) {
             // Still fails - show error and revert
