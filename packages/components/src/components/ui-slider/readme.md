@@ -117,20 +117,6 @@ Type: `Promise<void>`
 
 
 
-## Shadow Parts
-
-| Part                   | Description |
-| ---------------------- | ----------- |
-| `"container"`          |             |
-| `"control"`            |             |
-| `"control-container"`  |             |
-| `"label"`              |             |
-| `"last-updated"`       |             |
-| `"manual-input"`       |             |
-| `"manual-submit"`      |             |
-| `"readonly-indicator"` |             |
-
-
 ----------------------------------------------
 
 *Built with [StencilJS](https://stenciljs.com/)*

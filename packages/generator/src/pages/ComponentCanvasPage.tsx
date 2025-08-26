@@ -17,6 +17,7 @@ export function ComponentCanvasPage() {
   // attributes state for the currently editing component
   const [attributesList, setAttributesList] = useState<string[]>([]);
   const [attributesValues, setAttributesValues] = useState<Record<string, string>>({});
+  const [attributesTypes, setAttributesTypes] = useState<Record<string, 'string' | 'number' | 'boolean'>>({});
 
   // Close the sidebar whenever Edit Mode is turned off
   useEffect(() => {
@@ -60,6 +61,7 @@ export function ComponentCanvasPage() {
     } else {
       setAttributesList([]);
       setAttributesValues({});
+      setAttributesTypes({});
     }
   };
 
@@ -105,26 +107,124 @@ export function ComponentCanvasPage() {
       if (!el) {
         setAttributesList([]);
         setAttributesValues({});
+        setAttributesTypes({});
         return;
       }
 
-      // Only include a small set of useful, non-redundant attributes
-      const allowed = new Set(['value', 'min', 'max', 'color']);
-      const rawAttrs = Array.from(el.attributes).map(a => a.name);
-      const attrs = Array.from(new Set(rawAttrs))
-        .filter(name => allowed.has(name));
+      // Get all standard component attributes with their types
+      const componentAttributes = getComponentAttributes(comp.uiComponent);
+      const attrs = Object.keys(componentAttributes);
       const vals: Record<string, string> = {};
+      const types: Record<string, 'string' | 'number' | 'boolean'> = {};
+
       attrs.forEach(name => {
-        vals[name] = el!.getAttribute(name) || '';
+        const attrType = componentAttributes[name];
+        types[name] = attrType;
+        
+        if (attrType === 'boolean') {
+          // For boolean attributes, check if they exist on the element
+          vals[name] = el!.hasAttribute(name) ? 'true' : 'false';
+        } else {
+          vals[name] = el!.getAttribute(name) || '';
+        }
       });
 
       setAttributesList(attrs);
       setAttributesValues(vals);
+      setAttributesTypes(types);
     } catch (err) {
       console.error('[ComponentCanvas] populateAttributes error for', componentId, err);
       setAttributesList([]);
       setAttributesValues({});
+      setAttributesTypes({});
     }
+  };
+
+  // Helper: Get all available attributes for a component type with their types
+  const getComponentAttributes = (componentType: string): Record<string, 'string' | 'number' | 'boolean'> => {
+    const attributeMap: Record<string, Record<string, 'string' | 'number' | 'boolean'>> = {
+      'ui-button': {
+        'label': 'string',
+        'color': 'string',
+        'disabled': 'boolean',
+        'dark': 'boolean',
+        'readonly': 'boolean',
+        'keyboard': 'boolean',
+        'showLastUpdated': 'boolean'
+      },
+      'ui-toggle': {
+        'value': 'boolean',
+        'label': 'string',
+        'color': 'string',
+        'disabled': 'boolean',
+        'dark': 'boolean',
+        'readonly': 'boolean',
+        'keyboard': 'boolean',
+        'showLastUpdated': 'boolean'
+      },
+      'ui-slider': {
+        'value': 'number',
+        'min': 'number',
+        'max': 'number',
+        'step': 'number',
+        'label': 'string',
+        'color': 'string',
+        'disabled': 'boolean',
+        'dark': 'boolean',
+        'readonly': 'boolean',
+        'keyboard': 'boolean',
+        'showLastUpdated': 'boolean',
+        'orientation': 'string',
+        'thumbShape': 'string',
+        'enableManualControl': 'boolean'
+      },
+      'ui-text': {
+        'value': 'string',
+        'placeholder': 'string',
+        'label': 'string',
+        'color': 'string',
+        'disabled': 'boolean',
+        'dark': 'boolean',
+        'readonly': 'boolean',
+        'keyboard': 'boolean',
+        'showLastUpdated': 'boolean'
+      },
+      'ui-number-picker': {
+        'value': 'number',
+        'min': 'number',
+        'max': 'number',
+        'step': 'number',
+        'label': 'string',
+        'color': 'string',
+        'disabled': 'boolean',
+        'dark': 'boolean',
+        'readonly': 'boolean',
+        'keyboard': 'boolean',
+        'showLastUpdated': 'boolean'
+      },
+      'ui-calendar': {
+        'value': 'string',
+        'label': 'string',
+        'color': 'string',
+        'disabled': 'boolean',
+        'dark': 'boolean',
+        'readonly': 'boolean',
+        'keyboard': 'boolean',
+        'showLastUpdated': 'boolean'
+      },
+      'ui-checkbox': {
+        'value': 'boolean',
+        'label': 'string',
+        'color': 'string',
+        'disabled': 'boolean',
+        'dark': 'boolean',
+        'readonly': 'boolean',
+        'keyboard': 'boolean',
+        'showLastUpdated': 'boolean'
+      }
+    };
+
+    return attributeMap[componentType] || {};
   };
 
   const applyAttributeChange = (componentId: string, name: string, value: string) => {
@@ -143,7 +243,18 @@ export function ComponentCanvasPage() {
       el = document.querySelector(comp.uiComponent) as HTMLElement | null;
     }
     if (!el) return;
-    el.setAttribute(name, value);
+    
+    const attrType = attributesTypes[name];
+    if (attrType === 'boolean') {
+      // For boolean attributes, add/remove the attribute based on value
+      if (value === 'true') {
+        el.setAttribute(name, '');
+      } else {
+        el.removeAttribute(name);
+      }
+    } else {
+      el.setAttribute(name, value);
+    }
   };
 
   const handleBack = () => {
@@ -548,21 +659,90 @@ export function ComponentCanvasPage() {
               {/* Attributes */}
               <div className="pt-4 border-t border-gray-200">
                 <h5 className="text-sm font-heading font-medium text-primary mb-3">Attributes</h5>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {attributesList.length === 0 && (
                     <div className="text-sm text-primary/70">No editable attributes detected.</div>
                   )}
-                  {attributesList.map(name => (
-                    <div key={name} className="space-y-1">
-                      <label className="block text-xs font-heading text-primary/80">{name}</label>
-                      <input
-                        type="text"
-                        value={attributesValues[name] ?? ''}
-                        onChange={e => applyAttributeChange(comp.id, name, e.target.value)}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                      />
-                    </div>
-                  ))}
+                  {attributesList.map(name => {
+                    const attrType = attributesTypes[name];
+                    const currentValue = attributesValues[name] ?? '';
+                    
+                    return (
+                      <div key={name} className="space-y-1">
+                        <label className="block text-xs font-heading text-primary/80 capitalize">
+                          {name.replace(/([A-Z])/g, ' $1').trim()}
+                        </label>
+                        
+                        {attrType === 'boolean' ? (
+                          // Checkbox for boolean attributes
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={currentValue === 'true'}
+                              onChange={e => applyAttributeChange(comp.id, name, e.target.checked ? 'true' : 'false')}
+                              className="w-4 h-4 text-accent border-gray-300 rounded focus:ring-accent focus:ring-2"
+                            />
+                            <span className="text-xs text-gray-600">
+                              {currentValue === 'true' ? 'Enabled' : 'Disabled'}
+                            </span>
+                          </div>
+                        ) : attrType === 'number' ? (
+                          // Number input for numeric attributes
+                          <input
+                            type="number"
+                            value={currentValue}
+                            onChange={e => applyAttributeChange(comp.id, name, e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
+                            step={name === 'step' ? '0.01' : '1'}
+                          />
+                        ) : name === 'color' ? (
+                          // Dropdown for color attribute
+                          <select
+                            value={currentValue}
+                            onChange={e => applyAttributeChange(comp.id, name, e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
+                          >
+                            <option value="primary">Primary</option>
+                            <option value="secondary">Secondary</option>
+                            <option value="neutral">Neutral</option>
+                            <option value="success">Success</option>
+                          </select>
+                        ) : name === 'orientation' ? (
+                          // Dropdown for orientation
+                          <select
+                            value={currentValue}
+                            onChange={e => applyAttributeChange(comp.id, name, e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
+                          >
+                            <option value="horizontal">Horizontal</option>
+                            <option value="vertical">Vertical</option>
+                          </select>
+                        ) : name === 'thumbShape' ? (
+                          // Dropdown for thumb shape
+                          <select
+                            value={currentValue}
+                            onChange={e => applyAttributeChange(comp.id, name, e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
+                          >
+                            <option value="circle">Circle</option>
+                            <option value="square">Square</option>
+                            <option value="arrow">Arrow</option>
+                            <option value="triangle">Triangle</option>
+                            <option value="diamond">Diamond</option>
+                          </select>
+                        ) : (
+                          // Text input for string attributes
+                          <input
+                            type="text"
+                            value={currentValue}
+                            onChange={e => applyAttributeChange(comp.id, name, e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
+                            placeholder={name === 'placeholder' ? 'Enter placeholder text...' : ''}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

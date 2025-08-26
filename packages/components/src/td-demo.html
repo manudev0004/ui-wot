@@ -36,7 +36,7 @@
       <div class="row">
         <div>
           <h3>Controller (readwrite)</h3>
-          <ui-toggle id="readwrite-toggle" td-property="maintenanceNeeded" td-url="http://plugfest.thingweb.io/http-advanced-coffee-machine/" label="Controller" show-last-updated></ui-toggle>
+          <ui-toggle id="readwrite-toggle" td-property="bool" td-url="http://plugfest.thingweb.io/http-data-schema-thing" label="Controller" show-last-updated></ui-toggle>
         </div>
       </div>
 
@@ -110,33 +110,31 @@
           writeToggle.addEventListener('valueMsg', async e => {
             // Prevent the event from triggering setValue again
             e.stopPropagation();
-            
+
             const targetValue = e.detail.payload;
             console.log('User clicked toggle, attempting to write:', targetValue);
-            
+
             try {
               // Show loading state
               await writeToggle.setStatus('loading');
-              
+
               // Perform the write operation
               await thing.writeProperty(tdProp, targetValue);
-              
+
               // Success - show success briefly
               await writeToggle.setStatus('success');
-              
+
               console.log('Write successful:', targetValue);
-              
             } catch (err) {
               console.log('Write failed:', err.message);
-              
+
               // Error - show error and revert
               await writeToggle.setStatus('error', 'Write failed: ' + err.message);
-              
+
               // Revert the toggle back to previous value
               await writeToggle.setValueSilent(!targetValue);
             }
           });
-
         } catch (err) {
           // Show connection error on both toggles
           await writeToggle.setStatus('error', 'Connection failed: ' + err.message);
@@ -153,29 +151,28 @@
         toggle.addEventListener('valueMsg', async e => {
           // Prevent event loop
           e.stopPropagation();
-          
+
           const targetValue = e.detail.payload;
           console.log('User clicked error toggle, attempting retry:', targetValue);
-          
+
           try {
             // Clear error state and show loading
             await toggle.setStatus('loading');
             toggle.connected = true;
-            
+
             // This will still fail but shows the retry attempt
             const response = await fetch('https://invalid.example/td');
             if (!response.ok) throw new Error('Connection failed');
-            
+
             // Success (won't reach here)
             await toggle.setStatus('success');
-            
           } catch (error) {
             console.log('Retry failed:', error.message);
-            
+
             // Still fails - show error and revert
             await toggle.setStatus('error', 'Still unable to connect: ' + error.message);
             toggle.connected = false;
-            
+
             // Revert the value
             await toggle.setValueSilent(!targetValue);
           }
