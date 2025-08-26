@@ -36,7 +36,7 @@
       <div class="row">
         <div>
           <h3>Controller (readwrite)</h3>
-          <ui-toggle id="readwrite-toggle" td-property="bool" td-url="http://plugfest.thingweb.io/http-data-schema-thing" label="Controller" show-last-updated></ui-toggle>
+          <ui-toggle id="readwrite-toggle" td-property="maintenanceNeeded" td-url="http://plugfest.thingweb.io/http-advanced-coffee-machine" label="Controller" show-last-updated></ui-toggle>
         </div>
       </div>
 
@@ -93,35 +93,25 @@
           const initial = Boolean(await (await thing.readProperty(tdProp)).value());
           await writeToggle.setValueSilent(initial);
           await readToggle.setValueSilent(initial);
-
-          // Only poll for readonly toggle - not the write toggle
           setInterval(async () => {
             try {
               const current = Boolean(await (await thing.readProperty(tdProp)).value());
-              // Update readonly toggle display and trigger pulse to show data fetch
               await readToggle.setValueSilent(current);
               await readToggle.triggerReadPulse();
             } catch (e) {
               readToggle.connected = false;
             }
-          }, 2000); // 2 seconds - allows pulse animation to complete before next fetch
+          }, 2000); 
 
-          // Handle writes ONLY on user interaction - no automatic updates
           writeToggle.addEventListener('valueMsg', async e => {
-            // Prevent the event from triggering setValue again
             e.stopPropagation();
 
             const targetValue = e.detail.payload;
             console.log('User clicked toggle, attempting to write:', targetValue);
 
             try {
-              // Show loading state
               await writeToggle.setStatus('loading');
-
-              // Perform the write operation
               await thing.writeProperty(tdProp, targetValue);
-
-              // Success - show success briefly
               await writeToggle.setStatus('success');
 
               console.log('Write successful:', targetValue);
@@ -130,8 +120,6 @@
 
               // Error - show error and revert
               await writeToggle.setStatus('error', 'Write failed: ' + err.message);
-
-              // Revert the toggle back to previous value
               await writeToggle.setValueSilent(!targetValue);
             }
           });
@@ -147,9 +135,7 @@
         await toggle.setStatus('error', 'Connection failed');
         toggle.connected = false;
 
-        // Add retry logic - user can click to attempt retry
         toggle.addEventListener('valueMsg', async e => {
-          // Prevent event loop
           e.stopPropagation();
 
           const targetValue = e.detail.payload;
@@ -159,21 +145,13 @@
             // Clear error state and show loading
             await toggle.setStatus('loading');
             toggle.connected = true;
-
-            // This will still fail but shows the retry attempt
             const response = await fetch('https://invalid.example/td');
             if (!response.ok) throw new Error('Connection failed');
-
-            // Success (won't reach here)
             await toggle.setStatus('success');
           } catch (error) {
             console.log('Retry failed:', error.message);
-
-            // Still fails - show error and revert
             await toggle.setStatus('error', 'Still unable to connect: ' + error.message);
             toggle.connected = false;
-
-            // Revert the value
             await toggle.setValueSilent(!targetValue);
           }
         });
