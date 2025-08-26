@@ -3,7 +3,7 @@ import { UiMsg } from '../../utils/types';
 import { formatLastUpdated } from '../../utils/common-props';
 
 /**
- * Advanced toggle switch component with reactive state management and multiple visual styles.
+ * Toggle switch component with reactive state management and multiple visual styles.
  *
  * @example Basic Usage
  * ```html
@@ -20,7 +20,7 @@ import { formatLastUpdated } from '../../utils/common-props';
  *
  * @example Read-Only Mode
  * ```html
- * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
+ * <ui-toggle readonly="true" label="Sensor Status"></ui-toggle>
  * ```
  *
  * @example JavaScript Integration with Multiple Toggles

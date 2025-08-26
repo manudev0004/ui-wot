@@ -143,7 +143,7 @@ export function TDInputPage() {
               disabled={loading || !urlInput.trim()}
               className="w-full bg-primary hover:bg-primary-light disabled:bg-gray-300 text-white font-heading font-medium py-2 px-4 rounded-lg transition-colors"
             >
-              {loading ? 'Loading...' : 'Load from URL'}
+              {loading ? 'Loading...' : 'Consume'}
             </button>
           </form>
         </div>

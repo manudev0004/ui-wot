@@ -7,7 +7,7 @@
 
 ## Overview
 
-Advanced toggle switch component with reactive state management and multiple visual styles.
+Toggle switch component with reactive state management and multiple visual styles.
 
 ## Properties
 

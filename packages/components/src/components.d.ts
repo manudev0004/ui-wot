@@ -9,10 +9,12 @@ import { UiButtonClick } from "./components/ui-button/ui-button";
 import { UiMsg } from "./utils/types";
 import { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 import { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
+import { UiTextValueChange } from "./components/ui-text/ui-text";
 export { UiButtonClick } from "./components/ui-button/ui-button";
 export { UiMsg } from "./utils/types";
 export { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 export { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
+export { UiTextValueChange } from "./components/ui-text/ui-text";
 export namespace Components {
     /**
      * Button component with various visual styles, matching the ui-number-picker design family.
@@ -108,35 +110,81 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Calendar component for date-time selection with various visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Advanced calendar component with comprehensive styling, variants, and features.
+     * Matches the design family of ui-button, ui-slider, and other components.
      * @example Basic Usage
      * ```html
      * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
      * ```
-     * @example TD Integration
+     * @example Different Variants & Colors
      * ```html
-     * <ui-calendar
-     * td-url="http://device.local/properties/schedule"
-     * variant="filled"
-     * label="Device Schedule"
-     * include-time="true">
-     * </ui-calendar>
+     * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
+     * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
+     * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
+     * ```
+     * @example Sizes & Features
+     * ```html
+     * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
+     * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
+     * ```
+     * @example Dark Theme
+     * ```html
+     * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
      * ```
      */
     interface UiCalendar {
         /**
-          * Color scheme to match thingsweb webpage
+          * Animation style for transitions. - none: No animations - slide: Slide transitions between months - fade: Fade transitions   - bounce: Playful bounce effects
+          * @default 'slide'
+         */
+        "animation": 'none' | 'slide' | 'fade' | 'bounce';
+        /**
+          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive actions - warning: Orange for caution - danger: Red for destructive actions
           * @default 'primary'
          */
-        "color": 'primary' | 'secondary' | 'neutral';
+        "color": 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger';
         /**
-          * Include time picker alongside date picker.
+          * Dark theme variant.
+          * @example ```html <ui-calendar dark="true" variant="filled"></ui-calendar> ```
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the component is disabled (cannot be interacted with).
+          * @example ```html <ui-calendar disabled="true" label="Cannot select"></ui-calendar> ```
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * First day of week (0 = Sunday, 1 = Monday).
+          * @default 0
+         */
+        "firstDayOfWeek": 0 | 1;
+        /**
+          * Get the current calendar value.
+          * @returns Current date value as ISO string or undefined
+          * @example ```typescript const currentDate = await calendar.getValue(); console.log('Selected date:', currentDate); ```
+         */
+        "getValue": () => Promise<string | undefined>;
+        /**
+          * Include time picker alongside date picker. Supports hour:minute selection with AM/PM or 24-hour format.
           * @default false
          */
         "includeTime": boolean;
         /**
-          * Optional text label for the calendar.
+          * Display calendar inline instead of as dropdown popup. Perfect for always-visible date selection.
+          * @default false
+         */
+        "inline": boolean;
+        /**
+          * Enable keyboard navigation and shortcuts.
+          * @example ```html <ui-calendar keyboard="false"></ui-calendar> ```
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Optional text label for the calendar with enhanced styling.
+          * @example ```html <ui-calendar label="Select Date"></ui-calendar> ```
          */
         "label"?: string;
         /**
@@ -148,24 +196,76 @@ export namespace Components {
          */
         "minDate"?: string;
         /**
-          * Current state of the calendar. - disabled: Calendar cannot be interacted with - default: Calendar is interactive (default)
-          * @default 'default'
+          * Whether the component is read-only (displays value but cannot be changed).
+          * @example ```html <ui-calendar readonly="true" value="2023-12-25"></ui-calendar> ```
+          * @default false
          */
-        "state": 'disabled' | 'default';
+        "readonly": boolean;
         /**
-          * Theme for the component.
-          * @default 'light'
+          * Set the visual status of the calendar (success, warning, error).
+          * @param status - Status type or null to clear
+          * @param message - Optional status message
+          * @example ```typescript await calendar.setStatus('error', 'Invalid date selected'); await calendar.setStatus('success', 'Date saved successfully'); await calendar.setStatus(null); // Clear status ```
          */
-        "theme": 'light' | 'dark';
+        "setStatus": (status: "success" | "warning" | "error" | null, message?: string) => Promise<void>;
+        /**
+          * Set the calendar value programmatically and emit events.
+          * @param value - ISO date string to set
+          * @param metadata - Optional metadata to include in the event
+          * @example ```typescript await calendar.setValue('2023-12-25'); await calendar.setValue('2023-12-25T10:30:00', { source: 'api' }); ```
+         */
+        "setValue": (value: string, metadata?: Record<string, any>) => Promise<void>;
+        /**
+          * Set value without emitting events (silent update).
+          * @param value - ISO date string to set
+          * @example ```typescript await calendar.setValueSilent('2023-12-25'); ```
+         */
+        "setValueSilent": (value: string) => Promise<void>;
+        /**
+          * Show clear button to reset selection.
+          * @default true
+         */
+        "showClearButton": boolean;
+        /**
+          * Show last updated timestamp below the component.
+          * @example ```html <ui-calendar showLastUpdated="true"></ui-calendar> ```
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Show today button for quick navigation.
+          * @default true
+         */
+        "showTodayButton": boolean;
+        /**
+          * Show week numbers in calendar grid.
+          * @default false
+         */
+        "showWeekNumbers": boolean;
+        /**
+          * Component size for different use cases. - small: Compact calendar for tight spaces - medium: Standard size (default) - large: Prominent calendar with larger touch targets
+          * @default 'medium'
+         */
+        "size": 'small' | 'medium' | 'large';
+        /**
+          * Time format when includeTime is enabled. - 12: 12-hour format with AM/PM - 24: 24-hour format
+          * @default '12'
+         */
+        "timeFormat": '12' | '24';
+        /**
+          * Trigger a visual pulse effect to indicate the value was read/accessed.
+          * @example ```typescript await calendar.triggerReadPulse(); ```
+         */
+        "triggerReadPulse": () => Promise<void>;
         /**
           * Current selected date-time value (ISO string).
          */
         "value"?: string;
         /**
-          * Visual style variant of the calendar. - minimal: Clean minimal design (default) - outlined: Border with background - filled: Solid background
+          * Visual style variant matching component family design. - minimal: Clean, borderless design with subtle hover effects - outlined: Border with transparent background, colored accents - filled: Solid background with contrasting text - elevated: Shadow and depth for prominent display
           * @default 'minimal'
          */
-        "variant": 'minimal' | 'outlined' | 'filled';
+        "variant": 'minimal' | 'outlined' | 'filled' | 'elevated';
     }
     /**
      * Advanced checkbox component with reactive state management and multiple visual styles.
@@ -634,31 +734,52 @@ export namespace Components {
         "variant": 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
     /**
-     * Versatile text component supporting display, editing, and various structured formats.
+     * Advanced text component with comprehensive styling, variants, and features.
+     * Supports display, editing, structured content, and matches component family design.
      * @example Basic Usage
      * ```html
-     * <ui-text value="Hello World"></ui-text>
+     * <ui-text value="Hello World" variant="display"></ui-text>
      * ```
-     * @example Editable Text
+     * @example Different Variants & Colors
      * ```html
-     * <ui-text variant="edit" value="Edit me" placeholder="Type here..."></ui-text>
+     * <ui-text variant="minimal" color="secondary" value="Minimal text"></ui-text>
+     * <ui-text variant="outlined" color="primary" value="Outlined text"></ui-text>
+     * <ui-text variant="filled" color="success" value="Filled text"></ui-text>
+     * <ui-text variant="elevated" color="warning" value="Elevated text"></ui-text>
      * ```
-     * @example Structured Content
+     * @example Editable Text with Features
      * ```html
-     * <ui-text structure="json" value='{"key": "value"}'></ui-text>
+     * <ui-text variant="edit" textType="multi" rows="5" 
+     * resizable="true" expandable="true" 
+     * placeholder="Type your content..."></ui-text>
      * ```
-     * @example Multi-line Text
+     * @example Structured Content with Syntax Highlighting
      * ```html
-     * <ui-text textType="multi" rows="5" expandable="true"></ui-text>
+     * <ui-text structure="json" value='{"key": "value"}' readonly="true"></ui-text>
+     * <ui-text structure="markdown" value="# Header\n**Bold text**"></ui-text>
+     * ```
+     * @example Sizes and Themes
+     * ```html
+     * <ui-text size="large" theme="dark" variant="filled"></ui-text>
+     * <ui-text size="small" compact="true" variant="minimal"></ui-text>
      * ```
      */
     interface UiText {
         /**
-          * Color scheme for styling
-          * @example ```html <ui-text color="secondary" value="Colored text"></ui-text> ```
+          * Auto-resize textarea to content (for multi-line text)
+          * @default false
+         */
+        "autoResize": boolean;
+        /**
+          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive content - warning: Orange for caution - danger: Red for errors or warnings
           * @default 'primary'
          */
-        "color": 'primary' | 'secondary' | 'neutral';
+        "color": 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger';
+        /**
+          * Compact mode for dense layouts
+          * @default false
+         */
+        "compact": boolean;
         /**
           * Dark theme variant.
           * @example ```html <ui-text dark="true" value="Dark themed text"></ui-text> ```
@@ -672,32 +793,32 @@ export namespace Components {
          */
         "disabled": boolean;
         /**
-          * Allow expanding/collapsing of text area
+          * Allow expanding/collapsing of text area with smooth animations
           * @default false
          */
         "expandable": boolean;
         /**
-          * Enable keyboard navigation.
+          * Enable keyboard navigation and shortcuts.
           * @example ```html <ui-text keyboard="false" value="No keyboard support"></ui-text> ```
           * @default true
          */
         "keyboard": boolean;
         /**
-          * Label for the text component
+          * Label for the text component with enhanced styling
           * @example ```html <ui-text label="Description" value="Text content"></ui-text> ```
          */
         "label"?: string;
         /**
-          * Maximum height when expanded (pixels)
+          * Maximum height when expanded (pixels) with responsive behavior
           * @default 200
          */
         "maxHeight": number;
         /**
-          * Maximum character length
+          * Maximum character length with visual feedback
          */
         "maxLength"?: number;
         /**
-          * Placeholder text for empty fields
+          * Placeholder text for empty fields with enhanced styling
          */
         "placeholder"?: string;
         /**
@@ -707,15 +828,20 @@ export namespace Components {
          */
         "readonly": boolean;
         /**
-          * Allow manual resizing of text area
+          * Allow manual resizing of text area (enhanced with constraints)
           * @default false
          */
         "resizable": boolean;
         /**
-          * Number of rows for multi-line text
+          * Number of rows for multi-line text (enhanced with auto-resize)
           * @default 4
          */
         "rows": number;
+        /**
+          * Show character count for text inputs
+          * @default false
+         */
+        "showCharCount": boolean;
         /**
           * Show last updated timestamp below the component.
           * @example ```html <ui-text showLastUpdated="true" value="With timestamp"></ui-text> ```
@@ -723,11 +849,21 @@ export namespace Components {
          */
         "showLastUpdated": boolean;
         /**
-          * Content structure for syntax highlighting
+          * Component size for different use cases. - small: Compact text for tight spaces - medium: Standard size (default) - large: Prominent text with larger typography
+          * @default 'medium'
+         */
+        "size": 'small' | 'medium' | 'large';
+        /**
+          * Enable spell check for editable text
+          * @default true
+         */
+        "spellCheck": boolean;
+        /**
+          * Content structure for syntax highlighting and formatting
           * @example ```html <ui-text structure="json" value='{"formatted": true}'></ui-text> ```
           * @default 'unstructured'
          */
-        "structure": 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown';
+        "structure": 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown' | 'code';
         /**
           * Text input type - 'single' for single-line, 'multi' for multi-line
           * @example ```html <ui-text textType="multi" rows="5"></ui-text> ```
@@ -741,14 +877,13 @@ export namespace Components {
          */
         "value": string;
         /**
-          * Display variant - 'display' for read-only, 'edit' for editable
-          * @example ```html <ui-text variant="edit" value="Editable text"></ui-text> ```
+          * Visual style variant matching component family design. - display: Read-only text display with subtle styling - edit: Editable input/textarea with interactive styling - minimal: Clean, borderless design with subtle hover effects - outlined: Border with transparent background, colored accents - filled: Solid background with contrasting text - elevated: Shadow and depth for prominent display
           * @default 'display'
          */
-        "variant": 'display' | 'edit';
+        "variant": 'display' | 'edit' | 'minimal' | 'outlined' | 'filled' | 'elevated';
     }
     /**
-     * Advanced toggle switch component with reactive state management and multiple visual styles.
+     * Toggle switch component with reactive state management and multiple visual styles.
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
@@ -762,7 +897,7 @@ export namespace Components {
      * ```
      * @example Read-Only Mode
      * ```html
-     * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
+     * <ui-toggle readonly="true" label="Sensor Status"></ui-toggle>
      * ```
      * @example JavaScript Integration with Multiple Toggles
      * ```javascript
@@ -938,22 +1073,29 @@ declare global {
     interface HTMLUiCalendarElementEventMap {
         "dateChange": UiCalendarDateChange;
         "valueChange": UiCalendarValueChange;
+        "valueMsg": UiMsg<string>;
     }
     /**
-     * Calendar component for date-time selection with various visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Advanced calendar component with comprehensive styling, variants, and features.
+     * Matches the design family of ui-button, ui-slider, and other components.
      * @example Basic Usage
      * ```html
      * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
      * ```
-     * @example TD Integration
+     * @example Different Variants & Colors
      * ```html
-     * <ui-calendar
-     * td-url="http://device.local/properties/schedule"
-     * variant="filled"
-     * label="Device Schedule"
-     * include-time="true">
-     * </ui-calendar>
+     * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
+     * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
+     * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
+     * ```
+     * @example Sizes & Features
+     * ```html
+     * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
+     * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
+     * ```
+     * @example Dark Theme
+     * ```html
+     * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
      * ```
      */
     interface HTMLUiCalendarElement extends Components.UiCalendar, HTMLStencilElement {
@@ -1192,22 +1334,34 @@ declare global {
         "valueChange": UiTextValueChange;
     }
     /**
-     * Versatile text component supporting display, editing, and various structured formats.
+     * Advanced text component with comprehensive styling, variants, and features.
+     * Supports display, editing, structured content, and matches component family design.
      * @example Basic Usage
      * ```html
-     * <ui-text value="Hello World"></ui-text>
+     * <ui-text value="Hello World" variant="display"></ui-text>
      * ```
-     * @example Editable Text
+     * @example Different Variants & Colors
      * ```html
-     * <ui-text variant="edit" value="Edit me" placeholder="Type here..."></ui-text>
+     * <ui-text variant="minimal" color="secondary" value="Minimal text"></ui-text>
+     * <ui-text variant="outlined" color="primary" value="Outlined text"></ui-text>
+     * <ui-text variant="filled" color="success" value="Filled text"></ui-text>
+     * <ui-text variant="elevated" color="warning" value="Elevated text"></ui-text>
      * ```
-     * @example Structured Content
+     * @example Editable Text with Features
      * ```html
-     * <ui-text structure="json" value='{"key": "value"}'></ui-text>
+     * <ui-text variant="edit" textType="multi" rows="5" 
+     * resizable="true" expandable="true" 
+     * placeholder="Type your content..."></ui-text>
      * ```
-     * @example Multi-line Text
+     * @example Structured Content with Syntax Highlighting
      * ```html
-     * <ui-text textType="multi" rows="5" expandable="true"></ui-text>
+     * <ui-text structure="json" value='{"key": "value"}' readonly="true"></ui-text>
+     * <ui-text structure="markdown" value="# Header\n**Bold text**"></ui-text>
+     * ```
+     * @example Sizes and Themes
+     * ```html
+     * <ui-text size="large" theme="dark" variant="filled"></ui-text>
+     * <ui-text size="small" compact="true" variant="minimal"></ui-text>
      * ```
      */
     interface HTMLUiTextElement extends Components.UiText, HTMLStencilElement {
@@ -1228,7 +1382,7 @@ declare global {
         "valueMsg": UiMsg<boolean>;
     }
     /**
-     * Advanced toggle switch component with reactive state management and multiple visual styles.
+     * Toggle switch component with reactive state management and multiple visual styles.
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
@@ -1242,7 +1396,7 @@ declare global {
      * ```
      * @example Read-Only Mode
      * ```html
-     * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
+     * <ui-toggle readonly="true" label="Sensor Status"></ui-toggle>
      * ```
      * @example JavaScript Integration with Multiple Toggles
      * ```javascript
@@ -1375,35 +1529,75 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Calendar component for date-time selection with various visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Advanced calendar component with comprehensive styling, variants, and features.
+     * Matches the design family of ui-button, ui-slider, and other components.
      * @example Basic Usage
      * ```html
      * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
      * ```
-     * @example TD Integration
+     * @example Different Variants & Colors
      * ```html
-     * <ui-calendar
-     * td-url="http://device.local/properties/schedule"
-     * variant="filled"
-     * label="Device Schedule"
-     * include-time="true">
-     * </ui-calendar>
+     * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
+     * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
+     * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
+     * ```
+     * @example Sizes & Features
+     * ```html
+     * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
+     * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
+     * ```
+     * @example Dark Theme
+     * ```html
+     * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
      * ```
      */
     interface UiCalendar {
         /**
-          * Color scheme to match thingsweb webpage
+          * Animation style for transitions. - none: No animations - slide: Slide transitions between months - fade: Fade transitions   - bounce: Playful bounce effects
+          * @default 'slide'
+         */
+        "animation"?: 'none' | 'slide' | 'fade' | 'bounce';
+        /**
+          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive actions - warning: Orange for caution - danger: Red for destructive actions
           * @default 'primary'
          */
-        "color"?: 'primary' | 'secondary' | 'neutral';
+        "color"?: 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger';
         /**
-          * Include time picker alongside date picker.
+          * Dark theme variant.
+          * @example ```html <ui-calendar dark="true" variant="filled"></ui-calendar> ```
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the component is disabled (cannot be interacted with).
+          * @example ```html <ui-calendar disabled="true" label="Cannot select"></ui-calendar> ```
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * First day of week (0 = Sunday, 1 = Monday).
+          * @default 0
+         */
+        "firstDayOfWeek"?: 0 | 1;
+        /**
+          * Include time picker alongside date picker. Supports hour:minute selection with AM/PM or 24-hour format.
           * @default false
          */
         "includeTime"?: boolean;
         /**
-          * Optional text label for the calendar.
+          * Display calendar inline instead of as dropdown popup. Perfect for always-visible date selection.
+          * @default false
+         */
+        "inline"?: boolean;
+        /**
+          * Enable keyboard navigation and shortcuts.
+          * @example ```html <ui-calendar keyboard="false"></ui-calendar> ```
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Optional text label for the calendar with enhanced styling.
+          * @example ```html <ui-calendar label="Select Date"></ui-calendar> ```
          */
         "label"?: string;
         /**
@@ -1423,24 +1617,56 @@ declare namespace LocalJSX {
          */
         "onValueChange"?: (event: UiCalendarCustomEvent<UiCalendarValueChange>) => void;
         /**
-          * Current state of the calendar. - disabled: Calendar cannot be interacted with - default: Calendar is interactive (default)
-          * @default 'default'
+          * Standardized value event emitter - emits UiMsg<string> with enhanced metadata. Provides consistent value change notifications with unified messaging format.
+          * @example ```typescript calendar.addEventListener('valueMsg', (e) => {   console.log('Date changed:', e.detail.value);   console.log('Metadata:', e.detail.metadata); }); ```
          */
-        "state"?: 'disabled' | 'default';
+        "onValueMsg"?: (event: UiCalendarCustomEvent<UiMsg<string>>) => void;
         /**
-          * Theme for the component.
-          * @default 'light'
+          * Whether the component is read-only (displays value but cannot be changed).
+          * @example ```html <ui-calendar readonly="true" value="2023-12-25"></ui-calendar> ```
+          * @default false
          */
-        "theme"?: 'light' | 'dark';
+        "readonly"?: boolean;
+        /**
+          * Show clear button to reset selection.
+          * @default true
+         */
+        "showClearButton"?: boolean;
+        /**
+          * Show last updated timestamp below the component.
+          * @example ```html <ui-calendar showLastUpdated="true"></ui-calendar> ```
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Show today button for quick navigation.
+          * @default true
+         */
+        "showTodayButton"?: boolean;
+        /**
+          * Show week numbers in calendar grid.
+          * @default false
+         */
+        "showWeekNumbers"?: boolean;
+        /**
+          * Component size for different use cases. - small: Compact calendar for tight spaces - medium: Standard size (default) - large: Prominent calendar with larger touch targets
+          * @default 'medium'
+         */
+        "size"?: 'small' | 'medium' | 'large';
+        /**
+          * Time format when includeTime is enabled. - 12: 12-hour format with AM/PM - 24: 24-hour format
+          * @default '12'
+         */
+        "timeFormat"?: '12' | '24';
         /**
           * Current selected date-time value (ISO string).
          */
         "value"?: string;
         /**
-          * Visual style variant of the calendar. - minimal: Clean minimal design (default) - outlined: Border with background - filled: Solid background
+          * Visual style variant matching component family design. - minimal: Clean, borderless design with subtle hover effects - outlined: Border with transparent background, colored accents - filled: Solid background with contrasting text - elevated: Shadow and depth for prominent display
           * @default 'minimal'
          */
-        "variant"?: 'minimal' | 'outlined' | 'filled';
+        "variant"?: 'minimal' | 'outlined' | 'filled' | 'elevated';
     }
     /**
      * Advanced checkbox component with reactive state management and multiple visual styles.
@@ -1856,31 +2082,52 @@ declare namespace LocalJSX {
         "variant"?: 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
     /**
-     * Versatile text component supporting display, editing, and various structured formats.
+     * Advanced text component with comprehensive styling, variants, and features.
+     * Supports display, editing, structured content, and matches component family design.
      * @example Basic Usage
      * ```html
-     * <ui-text value="Hello World"></ui-text>
+     * <ui-text value="Hello World" variant="display"></ui-text>
      * ```
-     * @example Editable Text
+     * @example Different Variants & Colors
      * ```html
-     * <ui-text variant="edit" value="Edit me" placeholder="Type here..."></ui-text>
+     * <ui-text variant="minimal" color="secondary" value="Minimal text"></ui-text>
+     * <ui-text variant="outlined" color="primary" value="Outlined text"></ui-text>
+     * <ui-text variant="filled" color="success" value="Filled text"></ui-text>
+     * <ui-text variant="elevated" color="warning" value="Elevated text"></ui-text>
      * ```
-     * @example Structured Content
+     * @example Editable Text with Features
      * ```html
-     * <ui-text structure="json" value='{"key": "value"}'></ui-text>
+     * <ui-text variant="edit" textType="multi" rows="5" 
+     * resizable="true" expandable="true" 
+     * placeholder="Type your content..."></ui-text>
      * ```
-     * @example Multi-line Text
+     * @example Structured Content with Syntax Highlighting
      * ```html
-     * <ui-text textType="multi" rows="5" expandable="true"></ui-text>
+     * <ui-text structure="json" value='{"key": "value"}' readonly="true"></ui-text>
+     * <ui-text structure="markdown" value="# Header\n**Bold text**"></ui-text>
+     * ```
+     * @example Sizes and Themes
+     * ```html
+     * <ui-text size="large" theme="dark" variant="filled"></ui-text>
+     * <ui-text size="small" compact="true" variant="minimal"></ui-text>
      * ```
      */
     interface UiText {
         /**
-          * Color scheme for styling
-          * @example ```html <ui-text color="secondary" value="Colored text"></ui-text> ```
+          * Auto-resize textarea to content (for multi-line text)
+          * @default false
+         */
+        "autoResize"?: boolean;
+        /**
+          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive content - warning: Orange for caution - danger: Red for errors or warnings
           * @default 'primary'
          */
-        "color"?: 'primary' | 'secondary' | 'neutral';
+        "color"?: 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger';
+        /**
+          * Compact mode for dense layouts
+          * @default false
+         */
+        "compact"?: boolean;
         /**
           * Dark theme variant.
           * @example ```html <ui-text dark="true" value="Dark themed text"></ui-text> ```
@@ -1894,34 +2141,34 @@ declare namespace LocalJSX {
          */
         "disabled"?: boolean;
         /**
-          * Allow expanding/collapsing of text area
+          * Allow expanding/collapsing of text area with smooth animations
           * @default false
          */
         "expandable"?: boolean;
         /**
-          * Enable keyboard navigation.
+          * Enable keyboard navigation and shortcuts.
           * @example ```html <ui-text keyboard="false" value="No keyboard support"></ui-text> ```
           * @default true
          */
         "keyboard"?: boolean;
         /**
-          * Label for the text component
+          * Label for the text component with enhanced styling
           * @example ```html <ui-text label="Description" value="Text content"></ui-text> ```
          */
         "label"?: string;
         /**
-          * Maximum height when expanded (pixels)
+          * Maximum height when expanded (pixels) with responsive behavior
           * @default 200
          */
         "maxHeight"?: number;
         /**
-          * Maximum character length
+          * Maximum character length with visual feedback
          */
         "maxLength"?: number;
         "onTextChange"?: (event: UiTextCustomEvent<UiTextValueChange>) => void;
         "onValueChange"?: (event: UiTextCustomEvent<UiTextValueChange>) => void;
         /**
-          * Placeholder text for empty fields
+          * Placeholder text for empty fields with enhanced styling
          */
         "placeholder"?: string;
         /**
@@ -1931,15 +2178,20 @@ declare namespace LocalJSX {
          */
         "readonly"?: boolean;
         /**
-          * Allow manual resizing of text area
+          * Allow manual resizing of text area (enhanced with constraints)
           * @default false
          */
         "resizable"?: boolean;
         /**
-          * Number of rows for multi-line text
+          * Number of rows for multi-line text (enhanced with auto-resize)
           * @default 4
          */
         "rows"?: number;
+        /**
+          * Show character count for text inputs
+          * @default false
+         */
+        "showCharCount"?: boolean;
         /**
           * Show last updated timestamp below the component.
           * @example ```html <ui-text showLastUpdated="true" value="With timestamp"></ui-text> ```
@@ -1947,11 +2199,21 @@ declare namespace LocalJSX {
          */
         "showLastUpdated"?: boolean;
         /**
-          * Content structure for syntax highlighting
+          * Component size for different use cases. - small: Compact text for tight spaces - medium: Standard size (default) - large: Prominent text with larger typography
+          * @default 'medium'
+         */
+        "size"?: 'small' | 'medium' | 'large';
+        /**
+          * Enable spell check for editable text
+          * @default true
+         */
+        "spellCheck"?: boolean;
+        /**
+          * Content structure for syntax highlighting and formatting
           * @example ```html <ui-text structure="json" value='{"formatted": true}'></ui-text> ```
           * @default 'unstructured'
          */
-        "structure"?: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown';
+        "structure"?: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown' | 'code';
         /**
           * Text input type - 'single' for single-line, 'multi' for multi-line
           * @example ```html <ui-text textType="multi" rows="5"></ui-text> ```
@@ -1965,14 +2227,13 @@ declare namespace LocalJSX {
          */
         "value"?: string;
         /**
-          * Display variant - 'display' for read-only, 'edit' for editable
-          * @example ```html <ui-text variant="edit" value="Editable text"></ui-text> ```
+          * Visual style variant matching component family design. - display: Read-only text display with subtle styling - edit: Editable input/textarea with interactive styling - minimal: Clean, borderless design with subtle hover effects - outlined: Border with transparent background, colored accents - filled: Solid background with contrasting text - elevated: Shadow and depth for prominent display
           * @default 'display'
          */
-        "variant"?: 'display' | 'edit';
+        "variant"?: 'display' | 'edit' | 'minimal' | 'outlined' | 'filled' | 'elevated';
     }
     /**
-     * Advanced toggle switch component with reactive state management and multiple visual styles.
+     * Toggle switch component with reactive state management and multiple visual styles.
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
@@ -1986,7 +2247,7 @@ declare namespace LocalJSX {
      * ```
      * @example Read-Only Mode
      * ```html
-     * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
+     * <ui-toggle readonly="true" label="Sensor Status"></ui-toggle>
      * ```
      * @example JavaScript Integration with Multiple Toggles
      * ```javascript
@@ -2106,20 +2367,26 @@ declare module "@stencil/core" {
              */
             "ui-button": LocalJSX.UiButton & JSXBase.HTMLAttributes<HTMLUiButtonElement>;
             /**
-             * Calendar component for date-time selection with various visual styles and TD integration.
-             * Link a direct property URL for plug-and-play device control.
+             * Advanced calendar component with comprehensive styling, variants, and features.
+             * Matches the design family of ui-button, ui-slider, and other components.
              * @example Basic Usage
              * ```html
              * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
              * ```
-             * @example TD Integration
+             * @example Different Variants & Colors
              * ```html
-             * <ui-calendar
-             * td-url="http://device.local/properties/schedule"
-             * variant="filled"
-             * label="Device Schedule"
-             * include-time="true">
-             * </ui-calendar>
+             * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
+             * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
+             * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
+             * ```
+             * @example Sizes & Features
+             * ```html
+             * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
+             * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
+             * ```
+             * @example Dark Theme
+             * ```html
+             * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
              * ```
              */
             "ui-calendar": LocalJSX.UiCalendar & JSXBase.HTMLAttributes<HTMLUiCalendarElement>;
@@ -2271,27 +2538,39 @@ declare module "@stencil/core" {
              */
             "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
             /**
-             * Versatile text component supporting display, editing, and various structured formats.
+             * Advanced text component with comprehensive styling, variants, and features.
+             * Supports display, editing, structured content, and matches component family design.
              * @example Basic Usage
              * ```html
-             * <ui-text value="Hello World"></ui-text>
+             * <ui-text value="Hello World" variant="display"></ui-text>
              * ```
-             * @example Editable Text
+             * @example Different Variants & Colors
              * ```html
-             * <ui-text variant="edit" value="Edit me" placeholder="Type here..."></ui-text>
+             * <ui-text variant="minimal" color="secondary" value="Minimal text"></ui-text>
+             * <ui-text variant="outlined" color="primary" value="Outlined text"></ui-text>
+             * <ui-text variant="filled" color="success" value="Filled text"></ui-text>
+             * <ui-text variant="elevated" color="warning" value="Elevated text"></ui-text>
              * ```
-             * @example Structured Content
+             * @example Editable Text with Features
              * ```html
-             * <ui-text structure="json" value='{"key": "value"}'></ui-text>
+             * <ui-text variant="edit" textType="multi" rows="5" 
+             * resizable="true" expandable="true" 
+             * placeholder="Type your content..."></ui-text>
              * ```
-             * @example Multi-line Text
+             * @example Structured Content with Syntax Highlighting
              * ```html
-             * <ui-text textType="multi" rows="5" expandable="true"></ui-text>
+             * <ui-text structure="json" value='{"key": "value"}' readonly="true"></ui-text>
+             * <ui-text structure="markdown" value="# Header\n**Bold text**"></ui-text>
+             * ```
+             * @example Sizes and Themes
+             * ```html
+             * <ui-text size="large" theme="dark" variant="filled"></ui-text>
+             * <ui-text size="small" compact="true" variant="minimal"></ui-text>
              * ```
              */
             "ui-text": LocalJSX.UiText & JSXBase.HTMLAttributes<HTMLUiTextElement>;
             /**
-             * Advanced toggle switch component with reactive state management and multiple visual styles.
+             * Toggle switch component with reactive state management and multiple visual styles.
              * @example Basic Usage
              * ```html
              * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
@@ -2305,7 +2584,7 @@ declare module "@stencil/core" {
              * ```
              * @example Read-Only Mode
              * ```html
-             * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
+             * <ui-toggle readonly="true" label="Sensor Status"></ui-toggle>
              * ```
              * @example JavaScript Integration with Multiple Toggles
              * ```javascript

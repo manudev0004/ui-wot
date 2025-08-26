@@ -1,28 +1,41 @@
-import { Component, Prop, State, h, Event, EventEmitter, Watch, Method, Element } from '@stencil/core';
-import { UiMsg } from '../../utils/types';
-import { formatLastUpdated } from '../../utils/common-props';
+import { Component, Prop, State, h, Event, EventEmitter, Watch, Element } from '@stencil/core';
+
+export interface UiTextValueChange { value: string }
 
 /**
- * Versatile text component supporting display, editing, and various structured formats.
- * 
+ * Advanced text component with comprehensive styling, variants, and features.
+ * Supports display, editing, structured content, and matches component family design.
+ *
  * @example Basic Usage
  * ```html
- * <ui-text value="Hello World"></ui-text>
+ * <ui-text value="Hello World" variant="display"></ui-text>
  * ```
- * 
- * @example Editable Text
+ *
+ * @example Different Variants & Colors
  * ```html
- * <ui-text variant="edit" value="Edit me" placeholder="Type here..."></ui-text>
+ * <ui-text variant="minimal" color="secondary" value="Minimal text"></ui-text>
+ * <ui-text variant="outlined" color="primary" value="Outlined text"></ui-text>
+ * <ui-text variant="filled" color="success" value="Filled text"></ui-text>
+ * <ui-text variant="elevated" color="warning" value="Elevated text"></ui-text>
  * ```
- * 
- * @example Structured Content
+ *
+ * @example Editable Text with Features
  * ```html
- * <ui-text structure="json" value='{"key": "value"}'></ui-text>
+ * <ui-text variant="edit" textType="multi" rows="5" 
+ *          resizable="true" expandable="true" 
+ *          placeholder="Type your content..."></ui-text>
  * ```
- * 
- * @example Multi-line Text
+ *
+ * @example Structured Content with Syntax Highlighting
  * ```html
- * <ui-text textType="multi" rows="5" expandable="true"></ui-text>
+ * <ui-text structure="json" value='{"key": "value"}' readonly="true"></ui-text>
+ * <ui-text structure="markdown" value="# Header\n**Bold text**"></ui-text>
+ * ```
+ *
+ * @example Sizes and Themes
+ * ```html
+ * <ui-text size="large" theme="dark" variant="filled"></ui-text>
+ * <ui-text size="small" compact="true" variant="minimal"></ui-text>
  * ```
  */
 @Component({ tag: 'ui-text', shadow: true })
@@ -30,13 +43,23 @@ export class UiText {
   @Element() el!: HTMLElement;
 
   /**
-   * Display variant - 'display' for read-only, 'edit' for editable
-   * @example
-   * ```html
-   * <ui-text variant="edit" value="Editable text"></ui-text>
-   * ```
+   * Visual style variant matching component family design.
+   * - display: Read-only text display with subtle styling
+   * - edit: Editable input/textarea with interactive styling
+   * - minimal: Clean, borderless design with subtle hover effects
+   * - outlined: Border with transparent background, colored accents
+   * - filled: Solid background with contrasting text
+   * - elevated: Shadow and depth for prominent display
    */
-  @Prop() variant: 'display' | 'edit' = 'display';
+  @Prop() variant: 'display' | 'edit' | 'minimal' | 'outlined' | 'filled' | 'elevated' = 'display';
+
+  /**
+   * Component size for different use cases.
+   * - small: Compact text for tight spaces
+   * - medium: Standard size (default)
+   * - large: Prominent text with larger typography
+   */
+  @Prop() size: 'small' | 'medium' | 'large' = 'medium';
 
   /**
    * Text input type - 'single' for single-line, 'multi' for multi-line
@@ -48,13 +71,13 @@ export class UiText {
   @Prop() textType: 'single' | 'multi' = 'single';
 
   /**
-   * Content structure for syntax highlighting
+   * Content structure for syntax highlighting and formatting
    * @example
    * ```html
    * <ui-text structure="json" value='{"formatted": true}'></ui-text>
    * ```
    */
-  @Prop() structure: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown' = 'unstructured';
+  @Prop() structure: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown' | 'code' = 'unstructured';
 
   /**
    * Whether the component is disabled (cannot be interacted with).
@@ -75,16 +98,18 @@ export class UiText {
   @Prop() dark: boolean = false;
 
   /**
-   * Color scheme for styling
-   * @example
-   * ```html
-   * <ui-text color="secondary" value="Colored text"></ui-text>
-   * ```
+   * Color scheme matching the component family palette.
+   * - primary: Main brand color (blue tones)
+   * - secondary: Accent color (green/teal tones)  
+   * - neutral: Grayscale for subtle integration
+   * - success: Green for positive content
+   * - warning: Orange for caution
+   * - danger: Red for errors or warnings
    */
-  @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
+  @Prop() color: 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger' = 'primary';
 
   /**
-   * Label for the text component
+   * Label for the text component with enhanced styling
    * @example
    * ```html
    * <ui-text label="Description" value="Text content"></ui-text>
@@ -102,7 +127,7 @@ export class UiText {
   @Prop() readonly: boolean = false;
 
   /**
-   * Enable keyboard navigation.
+   * Enable keyboard navigation and shortcuts.
    * @example
    * ```html
    * <ui-text keyboard="false" value="No keyboard support"></ui-text>
@@ -129,37 +154,57 @@ export class UiText {
   @Prop({ mutable: true }) value: string = '';
 
   /**
-   * Placeholder text for empty fields
+   * Placeholder text for empty fields with enhanced styling
    */
   @Prop() placeholder?: string;
 
   /**
-   * Maximum character length
+   * Maximum character length with visual feedback
    */
   @Prop() maxLength?: number;
 
   /**
-   * Number of rows for multi-line text
+   * Number of rows for multi-line text (enhanced with auto-resize)
    */
   @Prop() rows: number = 4;
 
   /**
-   * Allow manual resizing of text area
+   * Allow manual resizing of text area (enhanced with constraints)
    */
   @Prop() resizable: boolean = false;
 
   /**
-   * Allow expanding/collapsing of text area
+   * Allow expanding/collapsing of text area with smooth animations
    */
   @Prop() expandable: boolean = false;
 
   /**
-   * Maximum height when expanded (pixels)
+   * Maximum height when expanded (pixels) with responsive behavior
    */
   @Prop() maxHeight: number = 200;
 
+  /**
+   * Compact mode for dense layouts
+   */
+  @Prop() compact: boolean = false;
+
+  /**
+   * Show character count for text inputs
+   */
+  @Prop() showCharCount: boolean = false;
+
+  /**
+   * Auto-resize textarea to content (for multi-line text)
+   */
+  @Prop() autoResize: boolean = false;
+
+  /**
+   * Enable spell check for editable text
+   */
+  @Prop() spellCheck: boolean = true;
+
   @State() currentValue: string = '';
-  @State() operationStatus: OperationStatus = 'idle';
+  @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
   @State() lastError?: string;
   @State() isExpanded = false;
 
@@ -171,7 +216,7 @@ export class UiText {
   componentWillLoad() { this.currentValue = this.value }
 
   private handleInput = (event: Event) => {
-    if (this.state === 'disabled' || this.variant === 'display') return;
+    if (this.disabled || this.variant === 'display') return;
     const t = event.target as HTMLInputElement | HTMLTextAreaElement;
     const v = t.value;
     this.currentValue = v; this.value = v;
@@ -183,41 +228,150 @@ export class UiText {
 
   private escapeHtml(s: string) { return s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
 
+  /** Enhanced syntax highlighting with more formats */
   private highlightSyntax(text: string, structure: string) {
     if (!text) return '';
     if (structure === 'unstructured') return this.escapeHtml(text);
-    if (structure === 'json') {
-      try { return this.escapeHtml(JSON.stringify(JSON.parse(text), null, 2)) } catch (e) { /* fallback */ }
+    
+    try {
+      switch (structure) {
+        case 'json':
+          return this.escapeHtml(JSON.stringify(JSON.parse(text), null, 2));
+        case 'yaml':
+          // Basic YAML formatting (could be enhanced with proper parser)
+          return this.escapeHtml(text);
+        case 'xml':
+          // Basic XML formatting (could be enhanced with proper parser)
+          return this.escapeHtml(text);
+        case 'markdown':
+          // Basic markdown highlighting (could be enhanced with markdown parser)
+          return this.escapeHtml(text);
+        case 'code':
+          return this.escapeHtml(text);
+        default:
+          return this.escapeHtml(text);
+      }
+    } catch (e) {
+      return this.escapeHtml(text);
     }
-    return this.escapeHtml(text);
   }
 
-  private shouldShowExpandButton() { if (!this.expandable || this.textType === 'single') return false; const lines = (this.currentValue || '').split('\n').length; return lines * 20 > this.maxHeight }
-  private toggleExpand = () => { this.isExpanded = !this.isExpanded }
+  /** Check if expand button should be shown */
+  private shouldShowExpandButton() { 
+    if (!this.expandable || this.textType === 'single') return false; 
+    const lines = (this.currentValue || '').split('\n').length; 
+    return lines * 20 > this.maxHeight;
+  }
 
+  /** Toggle expanded state */
+  private toggleExpand = () => { this.isExpanded = !this.isExpanded; }
+
+  /** Get color name for CSS classes */
+  private getColorName(): string {
+    const colorMap = {
+      'primary': 'blue-500',
+      'secondary': 'green-500', 
+      'neutral': 'gray-500',
+      'success': 'green-600',
+      'warning': 'orange-500',
+      'danger': 'red-500'
+    };
+    return colorMap[this.color] || colorMap.primary;
+  }
+
+  /** Get comprehensive input styles matching component family */
   private getInputStyles() {
-    const isDisabled = this.state === 'disabled';
+    const isDisabled = this.disabled;
+    const isReadonly = this.readonly;
     const isEdit = this.variant === 'edit';
-    let base = 'w-full transition-all duration-200 font-sans text-sm';
-    if (isEdit) { base += ' border rounded-md px-3 py-2 focus:outline-none focus:ring-2'; if (isDisabled) base += ' bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'; else base += this.theme === 'dark' ? ' bg-gray-800 border-gray-600 text-white placeholder-gray-400' : ' bg-white border-gray-300 text-gray-900 placeholder-gray-500' }
-    else base += this.theme === 'dark' ? ' p-3 rounded-md border bg-gray-800 border-gray-600 text-gray-100' : ' p-3 rounded-md border bg-gray-50 border-gray-200 text-gray-900';
-    return base
+    const colorName = this.getColorName();
+    
+    // Base styles with size variations
+    let base = `w-full transition-all duration-200 font-sans ${
+      this.size === 'small' ? 'text-xs' : 
+      this.size === 'large' ? 'text-base' : 
+      'text-sm'
+    } ${this.compact ? 'leading-tight' : 'leading-relaxed'}`;
+
+    // State-based styling
+    if (isDisabled || isReadonly) {
+      base += ' opacity-50 cursor-not-allowed';
+    }
+
+    // Variant-specific styling
+    if (this.variant === 'minimal') {
+      base += ` bg-transparent border-0 ${
+        this.dark ? 'text-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
+      } focus:outline-none focus:ring-2 focus:ring-${colorName} focus:ring-opacity-50`;
+    } else if (this.variant === 'outlined') {
+      base += ` bg-transparent border-2 border-${colorName} ${
+        this.dark ? 'text-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
+      } focus:outline-none focus:ring-2 focus:ring-${colorName} focus:ring-opacity-50 ${
+        this.size === 'small' ? 'px-2 py-1' : 
+        this.size === 'large' ? 'px-4 py-3' : 
+        'px-3 py-2'
+      } rounded-md`;
+    } else if (this.variant === 'filled') {
+      base += ` bg-${colorName} text-white placeholder-white placeholder-opacity-70 border-0 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${
+        this.size === 'small' ? 'px-2 py-1' : 
+        this.size === 'large' ? 'px-4 py-3' : 
+        'px-3 py-2'
+      } rounded-md`;
+    } else if (this.variant === 'elevated') {
+      base += ` ${
+        this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+      } border shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-${colorName} focus:ring-opacity-50 ${
+        this.size === 'small' ? 'px-2 py-1' : 
+        this.size === 'large' ? 'px-4 py-3' : 
+        'px-3 py-2'
+      } rounded-md`;
+    } else if (isEdit) {
+      // Default edit styling
+      base += ` border rounded-md focus:outline-none focus:ring-2 focus:ring-${colorName} ${
+        this.size === 'small' ? 'px-2 py-1' : 
+        this.size === 'large' ? 'px-4 py-3' : 
+        'px-3 py-2'
+      }`;
+      
+      if (isDisabled) {
+        base += ' bg-gray-100 border-gray-300 text-gray-500';
+      } else {
+        base += this.dark ? 
+          ' bg-gray-800 border-gray-600 text-white placeholder-gray-400' : 
+          ' bg-white border-gray-300 text-gray-900 placeholder-gray-500';
+      }
+    } else {
+      // Display mode styling
+      base += ` ${
+        this.size === 'small' ? 'p-2' : 
+        this.size === 'large' ? 'p-4' : 
+        'p-3'
+      } rounded-md border ${
+        this.dark ? 'bg-gray-800 border-gray-600 text-gray-100' : 'bg-gray-50 border-gray-200 text-gray-900'
+      }`;
+    }
+
+    // Additional features
+    if (this.resizable && this.textType === 'multi') {
+      base += ' resize';
+    }
+
+    if (this.autoResize && this.textType === 'multi') {
+      base += ' resize-none'; // Disable manual resize if auto-resize is enabled
+    }
+
+    return base;
   }
 
   render() {
     const inputStyles = this.getInputStyles();
-    const isDisabled = this.state === 'disabled';
+    const isDisabled = this.disabled;
     const isEdit = this.variant === 'edit';
 
     return (
       <div class='relative w-full' part="container">
-        {this.label && <label class={`block text-sm font-medium mb-2 ${isDisabled ? 'text-gray-400' : (this.theme === 'dark' ? 'text-white' : 'text-gray-900')}`}>{this.label}{!isEdit && <span class='ml-1 text-xs text-blue-500 dark:text-blue-400'>(Read-only)</span>}</label>}
+        {this.label && <label class={`block text-sm font-medium mb-2 ${isDisabled ? 'text-gray-400' : (this.dark ? 'text-white' : 'text-gray-900')}`}>{this.label}{!isEdit && <span class='ml-1 text-xs text-blue-500 dark:text-blue-400'>(Read-only)</span>}</label>}
         <div class='relative'>
-          {StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError) && (
-            <div class={StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.classes} title={StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.tooltip}>
-              {StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.icon}
-            </div>
-          )}
 
               {isEdit ? (
             this.textType === 'single' ? (
@@ -235,9 +389,9 @@ export class UiText {
             </div>
           )}
 
-          {this.shouldShowExpandButton() && <button type='button' class={`mt-2 text-xs font-medium transition-colors ${this.theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`} onClick={this.toggleExpand}>{this.isExpanded ? '▲ Show Less' : '▼ Show More'}</button>}
+          {this.shouldShowExpandButton() && <button type='button' class={`mt-2 text-xs font-medium transition-colors ${this.dark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`} onClick={this.toggleExpand}>{this.isExpanded ? '▲ Show Less' : '▼ Show More'}</button>}
 
-          {isEdit && this.currentValue && <div class={`mt-1 text-xs ${this.theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{this.textType === 'single' ? <span>{this.currentValue.length}{this.maxLength && ` / ${this.maxLength}`} characters</span> : <span>{this.currentValue.split('\n').length} lines, {this.currentValue.length} characters{this.maxLength && ` / ${this.maxLength}`}</span>}</div>}
+          {isEdit && this.currentValue && <div class={`mt-1 text-xs ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{this.textType === 'single' ? <span>{this.currentValue.length}{this.maxLength && ` / ${this.maxLength}`} characters</span> : <span>{this.currentValue.split('\n').length} lines, {this.currentValue.length} characters{this.maxLength && ` / ${this.maxLength}`}</span>}</div>}
         </div>
 
   {this.lastError && <div class='text-red-500 text-sm mt-1 px-2'>{this.lastError}</div>}
