@@ -505,3 +505,23 @@ textarea:focus-visible {
     padding-bottom: 0.375rem;
   }
 }
+
+/* Read pulse animation for standardized API */
+:host(.read-pulse) {
+  animation: read-pulse 0.3s ease-out;
+}
+
+@keyframes read-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(6, 115, 98, 0.7);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 8px rgba(6, 115, 98, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(6, 115, 98, 0);
+  }
+}

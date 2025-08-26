@@ -798,6 +798,12 @@ export namespace Components {
          */
         "expandable": boolean;
         /**
+          * Get the current text value.
+          * @returns Current text value
+          * @example ```typescript const currentText = await text.getValue(); console.log('Current text:', currentText); ```
+         */
+        "getValue": () => Promise<string>;
+        /**
           * Enable keyboard navigation and shortcuts.
           * @example ```html <ui-text keyboard="false" value="No keyboard support"></ui-text> ```
           * @default true
@@ -838,6 +844,26 @@ export namespace Components {
          */
         "rows": number;
         /**
+          * Set the visual status of the text component (success, warning, error).
+          * @param status - Status type or null to clear
+          * @param message - Optional status message
+          * @example ```typescript await text.setStatus('error', 'Invalid format'); await text.setStatus('success', 'Content saved'); await text.setStatus(null); // Clear status ```
+         */
+        "setStatus": (status: "success" | "warning" | "error" | null, message?: string) => Promise<void>;
+        /**
+          * Set the text value programmatically and emit events.
+          * @param value - Text string to set
+          * @param metadata - Optional metadata to include in the event
+          * @example ```typescript await text.setValue('Updated content'); await text.setValue('Content', { source: 'api' }); ```
+         */
+        "setValue": (value: string, metadata?: Record<string, any>) => Promise<void>;
+        /**
+          * Set value without emitting events (silent update).
+          * @param value - Text string to set
+          * @example ```typescript await text.setValueSilent('Silent update'); ```
+         */
+        "setValueSilent": (value: string) => Promise<void>;
+        /**
           * Show character count for text inputs
           * @default false
          */
@@ -870,6 +896,11 @@ export namespace Components {
           * @default 'single'
          */
         "textType": 'single' | 'multi';
+        /**
+          * Trigger a visual pulse effect to indicate the value was read/accessed.
+          * @example ```typescript await text.triggerReadPulse(); ```
+         */
+        "triggerReadPulse": () => Promise<void>;
         /**
           * Current text value
           * @example ```html <ui-text value="Initial text content"></ui-text> ```
@@ -1332,6 +1363,7 @@ declare global {
     interface HTMLUiTextElementEventMap {
         "textChange": UiTextValueChange;
         "valueChange": UiTextValueChange;
+        "valueMsg": UiMsg<string>;
     }
     /**
      * Advanced text component with comprehensive styling, variants, and features.
@@ -2167,6 +2199,11 @@ declare namespace LocalJSX {
         "maxLength"?: number;
         "onTextChange"?: (event: UiTextCustomEvent<UiTextValueChange>) => void;
         "onValueChange"?: (event: UiTextCustomEvent<UiTextValueChange>) => void;
+        /**
+          * Standardized value event emitter - emits UiMsg<string> with enhanced metadata. Provides consistent value change notifications with unified messaging format.
+          * @example ```typescript text.addEventListener('valueMsg', (e) => {   console.log('Text changed:', e.detail.payload);   console.log('Metadata:', e.detail.meta); }); ```
+         */
+        "onValueMsg"?: (event: UiTextCustomEvent<UiMsg<string>>) => void;
         /**
           * Placeholder text for empty fields with enhanced styling
          */

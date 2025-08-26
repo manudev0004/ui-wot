@@ -1,4 +1,6 @@
-import { Component, Prop, State, h, Event, EventEmitter, Watch, Element } from '@stencil/core';
+import { Component, Prop, State, h, Event, EventEmitter, Watch, Element, Method } from '@stencil/core';
+import { UiMsg } from '../../utils/types';
+import { formatLastUpdated } from '../../utils/common-props';
 
 export interface UiTextValueChange { value: string }
 
@@ -211,6 +213,23 @@ export class UiText {
   @Event() textChange: EventEmitter<UiTextValueChange>;
   @Event() valueChange: EventEmitter<UiTextValueChange>;
 
+  /**
+   * Standardized value event emitter - emits UiMsg<string> with enhanced metadata.
+   * Provides consistent value change notifications with unified messaging format.
+   * @example
+   * ```typescript
+   * text.addEventListener('valueMsg', (e) => {
+   *   console.log('Text changed:', e.detail.payload);
+   *   console.log('Metadata:', e.detail.meta);
+   * });
+   * ```
+   */
+  @Event() valueMsg: EventEmitter<UiMsg<string>>;
+
+  // Status management
+  @State() private _status: 'success' | 'warning' | 'error' | null = null;
+  @State() private _lastUpdated: Date | null = null;
+
   @Watch('value') watchValue() { this.currentValue = this.value }
 
   componentWillLoad() { this.currentValue = this.value }
@@ -219,11 +238,29 @@ export class UiText {
     if (this.disabled || this.variant === 'display') return;
     const t = event.target as HTMLInputElement | HTMLTextAreaElement;
     const v = t.value;
-    this.currentValue = v; this.value = v;
+    const oldValue = this.value;
+    this.currentValue = v; 
+    this.value = v;
+    this._lastUpdated = new Date();
+    
+    // Emit standardized event
+    this.valueMsg.emit({
+      payload: v,
+      prev: oldValue,
+      ts: Date.now(),
+      source: this.el?.id || 'ui-text',
+      ok: true,
+      meta: {
+        component: 'ui-text',
+        type: 'input',
+        source: 'user'
+      }
+    });
+    
     this.textChange.emit({ value: v });
     this.valueChange.emit({ value: v });
-  this.operationStatus = 'success';
-  setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
+    this.operationStatus = 'success';
+    setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
   }
 
   private escapeHtml(s: string) { return s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
@@ -363,6 +400,138 @@ export class UiText {
     return base;
   }
 
+  // ========================================
+  // Standardized Component API Methods
+  // ========================================
+
+  /**
+   * Set the text value programmatically and emit events.
+   * @param value - Text string to set
+   * @param metadata - Optional metadata to include in the event
+   * @example
+   * ```typescript
+   * await text.setValue('Updated content');
+   * await text.setValue('Content', { source: 'api' });
+   * ```
+   */
+  @Method()
+  async setValue(value: string, metadata?: Record<string, any>): Promise<void> {
+    const oldValue = this.value;
+    this.value = value;
+    this.currentValue = value;
+    this._lastUpdated = new Date();
+
+    // Emit standardized event
+    this.valueMsg.emit({
+      payload: value,
+      prev: oldValue,
+      ts: Date.now(),
+      source: this.el?.id || 'ui-text',
+      ok: true,
+      meta: {
+        component: 'ui-text',
+        type: 'setValue',
+        source: 'method',
+        ...metadata
+      }
+    });
+
+    // Emit legacy events for backward compatibility
+    this.textChange.emit({ value });
+    this.valueChange.emit({ value });
+  }
+
+  /**
+   * Get the current text value.
+   * @returns Current text value
+   * @example
+   * ```typescript
+   * const currentText = await text.getValue();
+   * console.log('Current text:', currentText);
+   * ```
+   */
+  @Method()
+  async getValue(): Promise<string> {
+    return this.value;
+  }
+
+  /**
+   * Set value without emitting events (silent update).
+   * @param value - Text string to set
+   * @example
+   * ```typescript
+   * await text.setValueSilent('Silent update');
+   * ```
+   */
+  @Method()
+  async setValueSilent(value: string): Promise<void> {
+    this.value = value;
+    this.currentValue = value;
+    this._lastUpdated = new Date();
+  }
+
+  /**
+   * Set the visual status of the text component (success, warning, error).
+   * @param status - Status type or null to clear
+   * @param message - Optional status message
+   * @example
+   * ```typescript
+   * await text.setStatus('error', 'Invalid format');
+   * await text.setStatus('success', 'Content saved');
+   * await text.setStatus(null); // Clear status
+   * ```
+   */
+  @Method()
+  async setStatus(status: 'success' | 'warning' | 'error' | null, message?: string): Promise<void> {
+    this._status = status;
+    
+    // Emit status change event
+    this.valueMsg.emit({
+      payload: this.value,
+      ts: Date.now(),
+      source: this.el?.id || 'ui-text',
+      ok: status !== 'error',
+      meta: {
+        component: 'ui-text',
+        type: 'statusChange',
+        status,
+        message,
+        source: 'method'
+      }
+    });
+  }
+
+  /**
+   * Trigger a visual pulse effect to indicate the value was read/accessed.
+   * @example
+   * ```typescript
+   * await text.triggerReadPulse();
+   * ```
+   */
+  @Method()
+  async triggerReadPulse(): Promise<void> {
+    // Add pulse class temporarily
+    this.el.classList.add('read-pulse');
+    
+    // Emit read event
+    this.valueMsg.emit({
+      payload: this.value,
+      ts: Date.now(),
+      source: this.el?.id || 'ui-text',
+      ok: true,
+      meta: {
+        component: 'ui-text',
+        type: 'read',
+        source: 'method'
+      }
+    });
+
+    // Remove pulse class after animation
+    setTimeout(() => {
+      this.el.classList.remove('read-pulse');
+    }, 300);
+  }
+
   render() {
     const inputStyles = this.getInputStyles();
     const isDisabled = this.disabled;
@@ -394,7 +563,31 @@ export class UiText {
           {isEdit && this.currentValue && <div class={`mt-1 text-xs ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{this.textType === 'single' ? <span>{this.currentValue.length}{this.maxLength && ` / ${this.maxLength}`} characters</span> : <span>{this.currentValue.split('\n').length} lines, {this.currentValue.length} characters{this.maxLength && ` / ${this.maxLength}`}</span>}</div>}
         </div>
 
-  {this.lastError && <div class='text-red-500 text-sm mt-1 px-2'>{this.lastError}</div>}
+        {/* Status Badge */}
+        {this._status && (
+          <div class={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full mt-2 ${
+            this._status === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+            this._status === 'warning' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+          }`}>
+            <span class={`w-2 h-2 rounded-full mr-1 ${
+              this._status === 'success' ? 'bg-green-600' :
+              this._status === 'warning' ? 'bg-yellow-600' :
+              'bg-red-600'
+            }`}></span>
+            {this._status}
+          </div>
+        )}
+
+        {/* Last Updated */}
+        {this.showLastUpdated && this._lastUpdated && (
+          <div class={`text-xs mt-2 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>
+            {formatLastUpdated(this._lastUpdated.getTime())}
+          </div>
+        )}
+
+        {/* Error Message */}
+        {this.lastError && <div class='text-red-500 text-sm mt-1 px-2'>{this.lastError}</div>}
       </div>
     )
   }

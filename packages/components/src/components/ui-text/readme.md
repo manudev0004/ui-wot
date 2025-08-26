@@ -40,10 +40,84 @@ Supports display, editing, structured content, and matches component family desi
 
 ## Events
 
-| Event         | Description | Type                             |
-| ------------- | ----------- | -------------------------------- |
-| `textChange`  |             | `CustomEvent<UiTextValueChange>` |
-| `valueChange` |             | `CustomEvent<UiTextValueChange>` |
+| Event         | Description                                                                                                                                                  | Type                             |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| `textChange`  |                                                                                                                                                              | `CustomEvent<UiTextValueChange>` |
+| `valueChange` |                                                                                                                                                              | `CustomEvent<UiTextValueChange>` |
+| `valueMsg`    | Standardized value event emitter - emits UiMsg<string> with enhanced metadata. Provides consistent value change notifications with unified messaging format. | `CustomEvent<UiMsg<string>>`     |
+
+
+## Methods
+
+### `getValue() => Promise<string>`
+
+Get the current text value.
+
+#### Returns
+
+Type: `Promise<string>`
+
+Current text value
+
+### `setStatus(status: "success" | "warning" | "error" | null, message?: string) => Promise<void>`
+
+Set the visual status of the text component (success, warning, error).
+
+#### Parameters
+
+| Name      | Type                                | Description                    |
+| --------- | ----------------------------------- | ------------------------------ |
+| `status`  | `"success" \| "error" \| "warning"` | - Status type or null to clear |
+| `message` | `string`                            | - Optional status message      |
+
+#### Returns
+
+Type: `Promise<void>`
+
+
+
+### `setValue(value: string, metadata?: Record<string, any>) => Promise<void>`
+
+Set the text value programmatically and emit events.
+
+#### Parameters
+
+| Name       | Type                    | Description                                 |
+| ---------- | ----------------------- | ------------------------------------------- |
+| `value`    | `string`                | - Text string to set                        |
+| `metadata` | `{ [x: string]: any; }` | - Optional metadata to include in the event |
+
+#### Returns
+
+Type: `Promise<void>`
+
+
+
+### `setValueSilent(value: string) => Promise<void>`
+
+Set value without emitting events (silent update).
+
+#### Parameters
+
+| Name    | Type     | Description          |
+| ------- | -------- | -------------------- |
+| `value` | `string` | - Text string to set |
+
+#### Returns
+
+Type: `Promise<void>`
+
+
+
+### `triggerReadPulse() => Promise<void>`
+
+Trigger a visual pulse effect to indicate the value was read/accessed.
+
+#### Returns
+
+Type: `Promise<void>`
+
+
 
 
 ## Shadow Parts
