@@ -5,53 +5,53 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>ui-toggle</title>
     <style>
-      body {font-family: system-ui,-apple-system,sans-serif;max-width:780px;margin:32px auto;padding:16px;background:#f8fafc;}
-      .card {background:#fff;padding:18px 20px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-      .row {display:flex;gap:14px;align-items:center;margin:12px 0}
-      .meta {color:#6b7280;font-size:12px}
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 780px;
+        margin: 32px auto;
+        padding: 16px;
+        background: #f8fafc;
+      }
+      .card {
+        background: #fff;
+        padding: 18px 20px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      }
+      .row {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        margin: 12px 0;
+      }
+      .meta {
+        color: #6b7280;
+        font-size: 12px;
+      }
     </style>
   </head>
   <body>
     <div class="card">
-      <h1>ui-toggle TD demo (simplified)</h1>
-      <p class="meta">Simple TD integration without legacy mode prop</p>
-
+      <h1>Simple UI-toggle Demo</h1>
       <div class="row">
         <div>
           <h3>Controller (readwrite)</h3>
-          <ui-toggle
-            id="readwrite-toggle"
-            td-property="bool"
-            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
-            sync-interval="3000"
-            label="Controller"
-          ></ui-toggle>
+          <ui-toggle id="readwrite-toggle" td-property="bool" td-url="http://plugfest.thingweb.io/http-data-schema-thing" label="Controller"></ui-toggle>
         </div>
-        <div class="meta">Property: <strong>bool</strong></div>
       </div>
 
       <div class="row">
         <div>
           <h3>Monitor (read-only)</h3>
-          <ui-toggle id="readonly-toggle" readonly="true" sync-interval="3000" variant="square" label="Monitor"></ui-toggle>
+          <ui-toggle id="readonly-toggle" readonly="true" variant="square" label="Monitor"></ui-toggle>
         </div>
-        <div class="meta">Property: <strong>bool</strong></div>
       </div>
-
-      <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
 
       <div class="row">
         <div>
-          <h3>Error Test (fake URL)</h3>
-          <ui-toggle
-            id="error-toggle"
-            td-property="bool"
-            td-url="http://fake-url-that-does-not-exist.com/td"
-            label="Error Demo"
-            variant="neon"
-          ></ui-toggle>
+          <h3>Error Test (false URL)</h3>
+          <ui-toggle id="error-toggle" td-property="bool" td-url="http://fake-url-that-does-not-exist.com/td" label="Error Demo" variant="neon"></ui-toggle>
         </div>
-        <div class="meta">Should show red error badge</div>
       </div>
     </div>
 
@@ -61,23 +61,23 @@
     <script>
       document.addEventListener('DOMContentLoaded', async () => {
         // Get components
-        const workingToggle = document.getElementById('readwrite-toggle');
-        const monitorToggle = document.getElementById('readonly-toggle');
+        const toggle = document.getElementById('readwrite-toggle');
+        const toggleRO = document.getElementById('readonly-toggle');
         const errorToggle = document.getElementById('error-toggle');
 
         await customElements.whenDefined('ui-toggle');
 
         // Setup working toggles
-        setupToggle(workingToggle, monitorToggle);
-        
-        // Setup error toggle 
+        setupToggle(toggle, toggleRO);
+
+        // Setup error toggle
         setupErrorToggle(errorToggle);
       });
 
       async function setupToggle(writeToggle, readToggle) {
         const tdUrl = writeToggle.getAttribute('td-url');
-        const propName = writeToggle.getAttribute('td-property');
-        
+        const tdProp = writeToggle.getAttribute('td-property');
+
         // Show loading
         writeToggle.startWriteOperation();
         readToggle.startWriteOperation();
@@ -98,14 +98,14 @@
           readToggle.finishWriteOperation(true);
 
           // Read initial value
-          const initial = Boolean(await (await thing.readProperty(propName)).value());
+          const initial = Boolean(await (await thing.readProperty(tdProp)).value());
           writeToggle.value = readToggle.value = initial;
           readToggle.markReadUpdate();
 
           // Poll for changes every 3 seconds
           setInterval(async () => {
             try {
-              const current = Boolean(await (await thing.readProperty(propName)).value());
+              const current = Boolean(await (await thing.readProperty(tdProp)).value());
               writeToggle.value = readToggle.value = current;
               readToggle.markReadUpdate();
             } catch (e) {
@@ -119,7 +119,7 @@
             writeToggle.clearErrorState(); // Clear error state before attempting
             writeToggle.startWriteOperation();
             try {
-              await thing.writeProperty(propName, e.detail.payload);
+              await thing.writeProperty(tdProp, e.detail.payload);
               writeToggle.finishWriteOperation(true);
               readToggle.value = e.detail.payload;
               readToggle.markReadUpdate();
@@ -129,7 +129,6 @@
               writeToggle.connected = false; // Maintain error state
             }
           });
-
         } catch (err) {
           writeToggle.finishWriteOperation(false, 'Connection failed');
           readToggle.finishWriteOperation(false, 'Connection failed');
@@ -139,7 +138,7 @@
       async function setupErrorToggle(toggle) {
         // Show initial loading
         toggle.startWriteOperation();
-        
+
         // Try to connect (will fail)
         try {
           await wotService.loadThing('https://invalid.example/td');
@@ -154,7 +153,7 @@
           const previousValue = !e.detail.payload;
           toggle.clearErrorState();
           toggle.startWriteOperation();
-          
+
           // Attempt to reconnect/retry (will still fail)
           try {
             await wotService.loadThing('https://invalid.example/td');

@@ -1,175 +1,85 @@
 /**
  * Common properties and utilities shared across all UI components
- * Based on ui-toggle component structure for consistency
+ * Simplified and optimized for human-readable code
  */
 
-export interface UiComponentBase {
-  /**
-   * Text label displayed with the component.
-   */
+// Debug mode flag - set globally or via environment
+export const DEBUG_MODE = typeof window !== 'undefined' 
+  ? window.localStorage?.getItem('ui-wot-debug') === 'true' || window.location?.search.includes('debug=true')
+  : process.env.NODE_ENV === 'development';
+
+// Simple debug logger
+export function debug(...args: any[]) {
+  if (DEBUG_MODE) {
+    console.log('[UI-WoT]', ...args);
+  }
+}
+
+/**
+ * Common props that all UI components should have
+ */
+export interface CommonProps {
+  /** Text label displayed with the component */
   label?: string;
-
-  /**
-   * Color theme variant.
-   */
-  color: 'primary' | 'secondary' | 'neutral' | 'success';
-
-  /**
-   * Enable dark theme for the component.
-   * When true, uses light text on dark backgrounds.
-   */
-  dark: boolean;
-
-  /**
-   * Whether the component is disabled (cannot be interacted with).
-   */
-  disabled: boolean;
-
-  /**
-   * Whether the component is read-only (displays value but cannot be changed).
-   */
-  readonly: boolean;
-
-  /**
-   * Legacy mode prop for backward compatibility with older demos.
-   * Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
-   */
-  mode?: 'read' | 'readwrite';
-
-  /**
-   * Enable keyboard navigation.
-   * Default: true
-   */
-  keyboard: boolean;
+  
+  /** Color theme: primary (blue), secondary (purple), neutral (gray) */
+  color?: 'primary' | 'secondary' | 'neutral';
+  
+  /** Dark theme mode */
+  dark?: boolean;
+  
+  /** Disabled state - component cannot be interacted with */
+  disabled?: boolean;
+  
+  /** Read-only state - shows value but cannot be changed */
+  readonly?: boolean;
+  
+  /** Enable keyboard navigation (Space/Enter keys) */
+  keyboard?: boolean;
+  
+  /** Connection state for network-connected components */
+  connected?: boolean;
 }
 
 /**
- * Common color mapping used across all components
- * Maintains consistency with ui-toggle implementation
+ * Default values for common props
  */
-export const COLOR_MAP = {
-  primary: 'bg-primary',
-  secondary: 'bg-secondary', 
-  neutral: 'bg-gray-500',
-  // legacy alias used in some demos
-  success: 'bg-green-500'
-} as const;
+export const DEFAULT_PROPS: Required<CommonProps> = {
+  label: undefined,
+  color: 'primary',
+  dark: false,
+  disabled: false,
+  readonly: false,
+  keyboard: true,
+  connected: true
+};
 
 /**
- * Get active color class based on color prop
+ * Simple color utilities
  */
-export function getActiveColor(color: keyof typeof COLOR_MAP): string {
-  return COLOR_MAP[color] || COLOR_MAP.primary;
+export function getActiveColor(color: string = 'primary'): string {
+  switch (color) {
+    case 'secondary': return 'bg-secondary';
+    case 'neutral': return 'bg-neutral';
+    default: return 'bg-primary';
+  }
 }
 
-/**
- * Get neon color class for neon variants
- */
-export function getNeonColor(color: 'primary' | 'secondary'): string {
+export function getNeonColor(color: string = 'primary'): string {
   return color === 'secondary' ? 'neon-secondary' : 'neon-primary';
 }
 
 /**
- * Common component state management interface
+ * Simple keyboard handler
  */
-export interface ComponentState {
-  isInitialized: boolean;
-}
-
-/**
- * Common component methods interface
- */
-export interface ComponentMethods<T> {
-  /**
-   * Set the component value programmatically.
-   * @param value - The new value
-   * @returns Promise that resolves to true if successful
-   */
-  setValue(value: T): Promise<boolean>;
-
-  /**
-   * Get the current component value.
-   * @returns Promise that resolves to the current value
-   */
-  getValue(): Promise<T>;
-}
-
-/**
- * Common accessibility helpers
- */
-export class AccessibilityHelpers {
-  /**
-   * Generate aria-label for components
-   */
-  static generateAriaLabel(
-    componentType: string,
-    value: any,
-    label?: string,
-    isActive?: boolean
-  ): string {
-    if (label) {
-      return `${label} ${componentType}${isActive ? ' active' : ''}`;
-    }
-    return `${componentType} ${isActive ? 'active' : 'inactive'}, current value ${value}`;
+export function handleKeyboardEvent(
+  event: KeyboardEvent, 
+  callback: () => void, 
+  enabled: boolean = true
+): void {
+  if (!enabled) return;
+  if (event.key === ' ' || event.key === 'Enter') {
+    event.preventDefault();
+    callback();
   }
-
-  /**
-   * Generate tooltip text
-   */
-  static generateTooltip(
-    readonly: boolean,
-    disabled: boolean,
-    action: string,
-    label?: string
-  ): string {
-    if (readonly) {
-      return 'Read-only mode - Value reflects external state';
-    } else if (disabled) {
-      return `${label || 'Component'} is disabled`;
-    } else {
-      return `${action}${label ? ` ${label}` : ''}`;
-    }
-  }
-}
-
-/**
- * Common keyboard event handler
- */
-export function createKeyboardHandler(
-  disabled: boolean,
-  readonly: boolean,
-  keyboard: boolean,
-  onActivate: () => void
-) {
-  return (event: KeyboardEvent) => {
-    if (disabled || readonly || !keyboard) return;
-    
-    if (event.key === ' ' || event.key === 'Enter') {
-      event.preventDefault();
-      onActivate();
-    }
-  };
-}
-
-/**
- * Legacy mode support - converts mode prop to readonly
- */
-export function handleLegacyMode(readonly: boolean, mode?: 'read' | 'readwrite'): boolean {
-  if (!readonly && mode === 'read') {
-    return true;
-  }
-  return readonly;
-}
-
-/**
- * Watch handler for legacy mode changes
- */
-export function createModeWatcher(setReadonly: (value: boolean) => void) {
-  return (newMode?: 'read' | 'readwrite') => {
-    if (newMode === 'read') {
-      setReadonly(true);
-    } else if (newMode === 'readwrite') {
-      setReadonly(false);
-    }
-  };
 }

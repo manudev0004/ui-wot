@@ -57,12 +57,6 @@ export type {
   TdCapability
 } from './utils/types';
 
-export type {
-  // Binding Types
-  PropertyBinding,
-  ActiveBinding
-} from './services/wot-binder';
-
 // Utilities
 export { classifyTdProperty } from './utils/types';
 export * from './utils/status-indicator';

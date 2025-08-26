@@ -1,7 +1,5 @@
-import { Component, Prop, State, h, Event, EventEmitter, Watch, Element } from '@stencil/core';
+import { Component, Prop, State, h, Event, EventEmitter, Element, Watch } from '@stencil/core';
 import { StatusIndicator, type OperationStatus } from '../../utils/status-indicator';
-import { handleLegacyMode } from '../../utils/common-props';
-import { applyUiComponentMixin } from '../../utils/component-base';
 
 export interface UiCheckboxCheckboxChange { checked: boolean }
 export interface UiCheckboxValueChange { value: boolean; label?: string }
@@ -116,14 +114,22 @@ export class UiCheckbox {
   }
 
   componentWillLoad() {
-    this.readonly = handleLegacyMode(this.readonly, this.mode);
+    // Simple mode handling
+    if (this.mode === 'read') {
+      this.readonly = true;
+    }
     this.isChecked = this.checked;
     if (this.disabled) this.state = 'disabled';
   }
 
   @Watch('mode')
   protected watchMode(newValue: 'read' | 'readwrite' | undefined) {
-    this.readonly = handleLegacyMode(this.readonly, newValue);
+    // Simple mode handling
+    if (newValue === 'read') {
+      this.readonly = true;
+    } else if (newValue === 'readwrite') {
+      this.readonly = false;
+    }
   }
 
   // Device integration removed; external systems should use events.
@@ -281,9 +287,3 @@ export class UiCheckbox {
     }
   }
 }
-
-// Apply shared mixin
-applyUiComponentMixin<boolean>(UiCheckbox.prototype, 'ui-checkbox');
-
-// Mixin contract interface (for type awareness only)
-export interface UiCheckboxMixin { emitValueMsg?: (value: boolean, prevValue?: boolean) => void }

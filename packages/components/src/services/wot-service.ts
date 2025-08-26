@@ -1,6 +1,5 @@
 // Type-only facade for WoT service types used in the components package.
-// Runtime implementation is provided in `services/wot-service-runtime.ts` and
-// should be imported explicitly by applications that require node-wot.
+// Simple runtime implementation is provided in `simple-wot-service.ts`.
 
 export interface ThingDescription {
   '@context'?: string | string[];

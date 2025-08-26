@@ -1,8 +1,6 @@
 import { Component, Prop, State, h, Event, EventEmitter, Element, Watch, Method } from '@stencil/core';
 import { StatusIndicator, type OperationStatus } from '../../utils/status-indicator';
 import { UiMsg } from '../../utils/types';
-import { handleLegacyMode } from '../../utils/common-props';
-import { applyUiComponentMixin } from '../../utils/component-base';
 
 export interface UiButtonClick { label: string }
 
@@ -141,8 +139,10 @@ export class UiButton {
 
   /** Override disabled prop to sync with state */
   componentWillLoad() {
-    // Support legacy mode compatibility
-    this.readonly = handleLegacyMode(this.readonly, this.mode);
+    // Simple mode handling - if mode is 'read', set readonly to true
+    if (this.mode === 'read') {
+      this.readonly = true;
+    }
     this.isInitialized = true;
     
     // Sync state with disabled prop
@@ -154,7 +154,12 @@ export class UiButton {
   /** Watch for mode prop changes and update readonly state */
   @Watch('mode')
   protected watchMode(newValue: 'read' | 'readwrite' | undefined) {
-    this.readonly = handleLegacyMode(this.readonly, newValue);
+    // Simple mode handling
+    if (newValue === 'read') {
+      this.readonly = true;
+    } else if (newValue === 'readwrite') {
+      this.readonly = false;
+    }
   }
 
   /** Emit the unified UiMsg event */
@@ -293,6 +298,3 @@ export class UiButton {
     );
   }
 }
-
-// Apply shared mixin behaviors (accessibility helpers, legacy mode wrapping, etc.)
-applyUiComponentMixin<string>(UiButton.prototype, 'ui-button');

@@ -37,13 +37,7 @@ export type {
   ThingDescription,
   PropertyElement,
   ActionElement,
-  EventElement,
-  WoTServiceConfig
+  EventElement
 } from './services/wot-service';
-
-export type {
-  PropertyBinding,
-  ActiveBinding
-} from './services/wot-binder';
 
 export { setMode } from '@stencil/core';

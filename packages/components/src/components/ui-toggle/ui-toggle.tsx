@@ -1,4 +1,4 @@
-import { Component, Prop, State, h, Event, EventEmitter, Watch, Element, Method } from '@stencil/core';
+import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
 import { UiMsg } from '../../utils/types';
 
 /**

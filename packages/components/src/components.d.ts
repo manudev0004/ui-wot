@@ -513,7 +513,6 @@ export namespace Components {
     }
     /**
      * Advanced toggle switch component with reactive state management and multiple visual styles.
-     * Provides accessibility features, flexible event handling, and beautiful UI variants.
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
@@ -529,42 +528,37 @@ export namespace Components {
      * ```html
      * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
      * ```
-     * @example JavaScript Integration
+     * @example JavaScript Integration with Multiple Toggles
      * ```javascript
-     * const toggle = document.querySelector('ui-toggle');
-     * // Listen for value changes (preferred)
+     * // For single toggle
+     * const toggle = document.querySelector('#my-toggle');
+     * // For multiple toggles
+     * const toggles = document.querySelectorAll('ui-toggle');
+     * toggles.forEach(toggle => {
      * toggle.addEventListener('valueMsg', (e) => {
+     * console.log('Toggle ID:', e.detail.source);
      * console.log('New value:', e.detail.payload);
-     * console.log('Previous:', e.detail.prev);
-     * console.log('Timestamp:', e.detail.ts);
      * });
-     * // Programmatically set value
-     * await toggle.setValue(true);
-     * // Get current value
-     * const currentValue = await toggle.getValue();
+     * });
+     * // Set value by ID
+     * const lightToggle = document.getElementById('light-toggle');
+     * await lightToggle.setValue(true);
      * ```
-     * <!--
-     * @deprecated The following events are deprecated, use valueMsg instead
-     * @example Legacy Events (Deprecated)
-     * ```javascript
-     * // DON'T USE - Deprecated events
-     * toggle.addEventListener('valueChange', (e) => {
-     * console.log('Legacy value change:', e.detail.value);
-     * });
-     * toggle.addEventListener('toggle', (e) => {
-     * console.log('Legacy toggle:', e.detail.active);
-     * });
+     * @example HTML with IDs
+     * ```html
+     * <ui-toggle id="light-toggle" label="Light" variant="circle"></ui-toggle>
+     * <ui-toggle id="fan-toggle" label="Fan" variant="apple"></ui-toggle>
      * ```
-     * -->
      */
     interface UiToggle {
+        "clearErrorState": () => Promise<void>;
         /**
           * Color theme variant.
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
-          * Connection state (readonly)
+          * Connection state for readonly mode
           * @default true
          */
         "connected": boolean;
@@ -595,14 +589,14 @@ export namespace Components {
         "label"?: string;
         "markReadUpdate": () => Promise<void>;
         /**
-          * Legacy mode prop for backward compatibility with older demos. Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
-         */
-        "mode"?: 'read' | 'readwrite';
-        /**
           * Whether the toggle is read-only (displays value but cannot be changed).
           * @default false
          */
         "readonly": boolean;
+        /**
+          * Revert toggle to previous value (used when write fails)
+         */
+        "revertValue": (prevValue: boolean) => Promise<void>;
         /**
           * Set the toggle value programmatically.
           * @param value - The new boolean value
@@ -610,7 +604,7 @@ export namespace Components {
          */
         "setValue": (value: boolean) => Promise<boolean>;
         /**
-          * Expose status methods as component methods so they exist on the element instance
+          * Simple status methods
          */
         "startWriteOperation": () => Promise<void>;
         /**
@@ -925,7 +919,6 @@ declare global {
     }
     /**
      * Advanced toggle switch component with reactive state management and multiple visual styles.
-     * Provides accessibility features, flexible event handling, and beautiful UI variants.
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
@@ -941,33 +934,27 @@ declare global {
      * ```html
      * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
      * ```
-     * @example JavaScript Integration
+     * @example JavaScript Integration with Multiple Toggles
      * ```javascript
-     * const toggle = document.querySelector('ui-toggle');
-     * // Listen for value changes (preferred)
+     * // For single toggle
+     * const toggle = document.querySelector('#my-toggle');
+     * // For multiple toggles
+     * const toggles = document.querySelectorAll('ui-toggle');
+     * toggles.forEach(toggle => {
      * toggle.addEventListener('valueMsg', (e) => {
+     * console.log('Toggle ID:', e.detail.source);
      * console.log('New value:', e.detail.payload);
-     * console.log('Previous:', e.detail.prev);
-     * console.log('Timestamp:', e.detail.ts);
      * });
-     * // Programmatically set value
-     * await toggle.setValue(true);
-     * // Get current value
-     * const currentValue = await toggle.getValue();
+     * });
+     * // Set value by ID
+     * const lightToggle = document.getElementById('light-toggle');
+     * await lightToggle.setValue(true);
      * ```
-     * <!--
-     * @deprecated The following events are deprecated, use valueMsg instead
-     * @example Legacy Events (Deprecated)
-     * ```javascript
-     * // DON'T USE - Deprecated events
-     * toggle.addEventListener('valueChange', (e) => {
-     * console.log('Legacy value change:', e.detail.value);
-     * });
-     * toggle.addEventListener('toggle', (e) => {
-     * console.log('Legacy toggle:', e.detail.active);
-     * });
+     * @example HTML with IDs
+     * ```html
+     * <ui-toggle id="light-toggle" label="Light" variant="circle"></ui-toggle>
+     * <ui-toggle id="fan-toggle" label="Fan" variant="apple"></ui-toggle>
      * ```
-     * -->
      */
     interface HTMLUiToggleElement extends Components.UiToggle, HTMLStencilElement {
         addEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
@@ -1519,7 +1506,6 @@ declare namespace LocalJSX {
     }
     /**
      * Advanced toggle switch component with reactive state management and multiple visual styles.
-     * Provides accessibility features, flexible event handling, and beautiful UI variants.
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
@@ -1535,33 +1521,27 @@ declare namespace LocalJSX {
      * ```html
      * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
      * ```
-     * @example JavaScript Integration
+     * @example JavaScript Integration with Multiple Toggles
      * ```javascript
-     * const toggle = document.querySelector('ui-toggle');
-     * // Listen for value changes (preferred)
+     * // For single toggle
+     * const toggle = document.querySelector('#my-toggle');
+     * // For multiple toggles
+     * const toggles = document.querySelectorAll('ui-toggle');
+     * toggles.forEach(toggle => {
      * toggle.addEventListener('valueMsg', (e) => {
+     * console.log('Toggle ID:', e.detail.source);
      * console.log('New value:', e.detail.payload);
-     * console.log('Previous:', e.detail.prev);
-     * console.log('Timestamp:', e.detail.ts);
      * });
-     * // Programmatically set value
-     * await toggle.setValue(true);
-     * // Get current value
-     * const currentValue = await toggle.getValue();
+     * });
+     * // Set value by ID
+     * const lightToggle = document.getElementById('light-toggle');
+     * await lightToggle.setValue(true);
      * ```
-     * <!--
-     * @deprecated The following events are deprecated, use valueMsg instead
-     * @example Legacy Events (Deprecated)
-     * ```javascript
-     * // DON'T USE - Deprecated events
-     * toggle.addEventListener('valueChange', (e) => {
-     * console.log('Legacy value change:', e.detail.value);
-     * });
-     * toggle.addEventListener('toggle', (e) => {
-     * console.log('Legacy toggle:', e.detail.active);
-     * });
+     * @example HTML with IDs
+     * ```html
+     * <ui-toggle id="light-toggle" label="Light" variant="circle"></ui-toggle>
+     * <ui-toggle id="fan-toggle" label="Fan" variant="apple"></ui-toggle>
      * ```
-     * -->
      */
     interface UiToggle {
         /**
@@ -1570,7 +1550,7 @@ declare namespace LocalJSX {
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
-          * Connection state (readonly)
+          * Connection state for readonly mode
           * @default true
          */
         "connected"?: boolean;
@@ -1594,11 +1574,7 @@ declare namespace LocalJSX {
          */
         "label"?: string;
         /**
-          * Legacy mode prop for backward compatibility with older demos. Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
-         */
-        "mode"?: 'read' | 'readwrite';
-        /**
-          * Primary event emitted when the toggle value changes. Use this event for all value change handling.
+          * Primary event emitted when the toggle value changes.
          */
         "onValueMsg"?: (event: UiToggleCustomEvent<UiMsg<boolean>>) => void;
         /**
@@ -1770,7 +1746,6 @@ declare module "@stencil/core" {
             "ui-text": LocalJSX.UiText & JSXBase.HTMLAttributes<HTMLUiTextElement>;
             /**
              * Advanced toggle switch component with reactive state management and multiple visual styles.
-             * Provides accessibility features, flexible event handling, and beautiful UI variants.
              * @example Basic Usage
              * ```html
              * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
@@ -1786,33 +1761,27 @@ declare module "@stencil/core" {
              * ```html
              * <ui-toggle readonly="true" value="false" label="Sensor Status"></ui-toggle>
              * ```
-             * @example JavaScript Integration
+             * @example JavaScript Integration with Multiple Toggles
              * ```javascript
-             * const toggle = document.querySelector('ui-toggle');
-             * // Listen for value changes (preferred)
+             * // For single toggle
+             * const toggle = document.querySelector('#my-toggle');
+             * // For multiple toggles
+             * const toggles = document.querySelectorAll('ui-toggle');
+             * toggles.forEach(toggle => {
              * toggle.addEventListener('valueMsg', (e) => {
+             * console.log('Toggle ID:', e.detail.source);
              * console.log('New value:', e.detail.payload);
-             * console.log('Previous:', e.detail.prev);
-             * console.log('Timestamp:', e.detail.ts);
              * });
-             * // Programmatically set value
-             * await toggle.setValue(true);
-             * // Get current value
-             * const currentValue = await toggle.getValue();
+             * });
+             * // Set value by ID
+             * const lightToggle = document.getElementById('light-toggle');
+             * await lightToggle.setValue(true);
              * ```
-             * <!--
-             * @deprecated The following events are deprecated, use valueMsg instead
-             * @example Legacy Events (Deprecated)
-             * ```javascript
-             * // DON'T USE - Deprecated events
-             * toggle.addEventListener('valueChange', (e) => {
-             * console.log('Legacy value change:', e.detail.value);
-             * });
-             * toggle.addEventListener('toggle', (e) => {
-             * console.log('Legacy toggle:', e.detail.active);
-             * });
+             * @example HTML with IDs
+             * ```html
+             * <ui-toggle id="light-toggle" label="Light" variant="circle"></ui-toggle>
+             * <ui-toggle id="fan-toggle" label="Fan" variant="apple"></ui-toggle>
              * ```
-             * -->
              */
             "ui-toggle": LocalJSX.UiToggle & JSXBase.HTMLAttributes<HTMLUiToggleElement>;
         }
