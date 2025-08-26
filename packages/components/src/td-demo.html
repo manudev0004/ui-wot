@@ -36,7 +36,7 @@
       <div class="row">
         <div>
           <h3>Controller (readwrite)</h3>
-          <ui-toggle id="readwrite-toggle" td-property="bool" td-url="http://plugfest.thingweb.io/http-data-schema-thing" label="Controller"></ui-toggle>
+          <ui-toggle id="readwrite-toggle" td-property="maintenanceNeeded" td-url="http://plugfest.thingweb.io/http-advanced-coffee-machine/" label="Controller"></ui-toggle>
         </div>
       </div>
 
@@ -78,10 +78,6 @@
         const tdUrl = writeToggle.getAttribute('td-url');
         const tdProp = writeToggle.getAttribute('td-property');
 
-        // Show loading
-        writeToggle.startWriteOperation();
-        readToggle.startWriteOperation();
-
         try {
           // Wait for WoT and setup servient
           while (!window.WoT) await new Promise(r => setTimeout(r, 100));
@@ -93,76 +89,96 @@
           const td = await (await fetch(tdUrl)).json();
           const thing = await wot.consume(td);
 
-          // Success - clear loading
-          writeToggle.finishWriteOperation(true);
-          readToggle.finishWriteOperation(true);
-
           // Read initial value
           const initial = Boolean(await (await thing.readProperty(tdProp)).value());
-          writeToggle.value = readToggle.value = initial;
-          readToggle.markReadUpdate();
+          await writeToggle.setValueSilent(initial);
+          await readToggle.setValueSilent(initial);
+          await readToggle.setValue(initial, { readonly: true });
 
-          // Poll for changes every 3 seconds
+          // Only poll for readonly toggle - not the write toggle
           setInterval(async () => {
             try {
               const current = Boolean(await (await thing.readProperty(tdProp)).value());
-              writeToggle.value = readToggle.value = current;
-              readToggle.markReadUpdate();
+              // Only update readonly toggle from polling
+              await readToggle.setValueSilent(current);
+              await readToggle.setValue(current, { readonly: true });
             } catch (e) {
-              writeToggle.connected = readToggle.connected = false;
+              readToggle.connected = false;
             }
           }, 3000);
 
-          // Handle writes with proper error state management
+          // Handle writes ONLY on user interaction - no automatic updates
           writeToggle.addEventListener('valueMsg', async e => {
-            const previousValue = !e.detail.payload; // Store for revert
-            writeToggle.clearErrorState(); // Clear error state before attempting
-            writeToggle.startWriteOperation();
+            // Prevent the event from triggering setValue again
+            e.stopPropagation();
+            
+            const targetValue = e.detail.payload;
+            console.log('User clicked toggle, attempting to write:', targetValue);
+            
             try {
-              await thing.writeProperty(tdProp, e.detail.payload);
-              writeToggle.finishWriteOperation(true);
-              readToggle.value = e.detail.payload;
-              readToggle.markReadUpdate();
+              // Show loading state
+              await writeToggle.setStatus('loading');
+              
+              // Perform the write operation
+              await thing.writeProperty(tdProp, targetValue);
+              
+              // Success - show success briefly
+              await writeToggle.setStatus('success');
+              
+              console.log('Write successful:', targetValue);
+              
             } catch (err) {
-              writeToggle.finishWriteOperation(false, 'Write failed');
-              writeToggle.revertValue(previousValue); // Revert to previous state
-              writeToggle.connected = false; // Maintain error state
+              console.log('Write failed:', err.message);
+              
+              // Error - show error and revert
+              await writeToggle.setStatus('error', 'Write failed: ' + err.message);
+              
+              // Revert the toggle back to previous value
+              await writeToggle.setValueSilent(!targetValue);
             }
           });
+
         } catch (err) {
-          writeToggle.finishWriteOperation(false, 'Connection failed');
-          readToggle.finishWriteOperation(false, 'Connection failed');
+          // Show connection error on both toggles
+          await writeToggle.setStatus('error', 'Connection failed: ' + err.message);
+          await readToggle.setStatus('error', 'Connection failed: ' + err.message);
         }
       }
 
       async function setupErrorToggle(toggle) {
-        // Show initial loading
-        toggle.startWriteOperation();
+        // Set initial error state to demonstrate error handling
+        await toggle.setStatus('error', 'Connection failed');
+        toggle.connected = false;
 
-        // Try to connect (will fail)
-        try {
-          await wotService.loadThing('https://invalid.example/td');
-          toggle.finishWriteOperation(true);
-        } catch (err) {
-          toggle.finishWriteOperation(false, 'Connection failed');
-          toggle.connected = false;
-        }
-
-        // Add retry logic when user tries to toggle during error state
+        // Add retry logic - user can click to attempt retry
         toggle.addEventListener('valueMsg', async e => {
-          const previousValue = !e.detail.payload;
-          toggle.clearErrorState();
-          toggle.startWriteOperation();
-
-          // Attempt to reconnect/retry (will still fail)
+          // Prevent event loop
+          e.stopPropagation();
+          
+          const targetValue = e.detail.payload;
+          console.log('User clicked error toggle, attempting retry:', targetValue);
+          
           try {
-            await wotService.loadThing('https://invalid.example/td');
-            toggle.finishWriteOperation(true);
-          } catch (err) {
+            // Clear error state and show loading
+            await toggle.setStatus('loading');
+            toggle.connected = true;
+            
+            // This will still fail but shows the retry attempt
+            const response = await fetch('https://invalid.example/td');
+            if (!response.ok) throw new Error('Connection failed');
+            
+            // Success (won't reach here)
+            await toggle.setStatus('success');
+            
+          } catch (error) {
+            console.log('Retry failed:', error.message);
+            
             // Still fails - show error and revert
-            toggle.finishWriteOperation(false, 'Connection failed');
-            toggle.revertValue(previousValue);
+            await toggle.setStatus('error', 'Still unable to connect: ' + error.message);
             toggle.connected = false;
+            
+            // Revert the value
+            await toggle.setValueSilent(!targetValue);
           }
         });
       }

@@ -39,6 +39,9 @@ export interface CommonProps {
   
   /** Connection state for network-connected components */
   connected?: boolean;
+  
+  /** Show last updated timestamp when true */
+  showLastUpdated?: boolean;
 }
 
 /**
@@ -51,7 +54,8 @@ export const DEFAULT_PROPS: Required<CommonProps> = {
   disabled: false,
   readonly: false,
   keyboard: true,
-  connected: true
+  connected: true,
+  showLastUpdated: false
 };
 
 /**
@@ -82,4 +86,35 @@ export function handleKeyboardEvent(
     event.preventDefault();
     callback();
   }
+}
+
+/**
+ * Format timestamp for last updated display
+ */
+export function formatLastUpdated(timestamp?: number): string {
+  if (!timestamp) return '';
+  
+  const now = Date.now();
+  const diff = now - timestamp;
+  
+  // Less than 1 minute
+  if (diff < 60000) {
+    return 'Just now';
+  }
+  
+  // Less than 1 hour
+  if (diff < 3600000) {
+    const minutes = Math.floor(diff / 60000);
+    return `${minutes}m ago`;
+  }
+  
+  // Less than 24 hours
+  if (diff < 86400000) {
+    const hours = Math.floor(diff / 3600000);
+    return `${hours}h ago`;
+  }
+  
+  // More than 24 hours - show date and time
+  const date = new Date(timestamp);
+  return date.toLocaleString();
 }
