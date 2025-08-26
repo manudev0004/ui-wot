@@ -131,8 +131,6 @@ export class UiToggle {
     writeOperation?: () => Promise<any>;
     /** Automatic read operation with pulse indicator */
     readOperation?: () => Promise<any>;
-    /** Mark as readonly update (shows pulse indicator) */
-    readonly?: boolean;
     /** Apply change optimistically, revert on failure (default: true) */
     optimistic?: boolean;
     /** Auto-retry configuration for failed operations */
@@ -171,16 +169,6 @@ export class UiToggle {
         this.lastError = options.errorMessage || 'Operation failed';
         return false;
       }
-    }
-    
-    // Handle readonly updates with pulse indicator
-    if (options?.readonly) {
-      this.readPulseTs = Date.now();
-      this.isActive = value;
-      this.value = value;
-      this.lastUpdatedTs = Date.now();
-      this.emitValueMsg(value, prevValue);
-      return true;
     }
     
     // Auto-clear error state when user tries again (unless this is a revert)
@@ -319,6 +307,16 @@ export class UiToggle {
     }
   }
 
+  /**
+   * Trigger a read pulse indicator for readonly mode when data is actually fetched
+   */
+  @Method()
+  async triggerReadPulse(): Promise<void> {
+    if (this.readonly) {
+      this.readPulseTs = Date.now();
+    }
+  }
+
   /** Render status badge for visual feedback */
   private renderStatusBadge() {
     const isReadonly = this.readonly;
@@ -330,10 +328,10 @@ export class UiToggle {
           <span style={{width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block'}}></span>
         </span>;
       }
-      const active = this.readPulseTs && (Date.now() - this.readPulseTs < 1200);
+      const active = this.readPulseTs && (Date.now() - this.readPulseTs < 1500);
       if (active) {
         return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}}>
-          <span style={{position: 'absolute', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#60a5fa', opacity: '0.75', animation: 'ping 1s cubic-bezier(0, 0, 0.2, 1) infinite'}}></span>
+          <span style={{position: 'absolute', width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#60a5fa', opacity: '0.6', animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite'}}></span>
           <span style={{width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#3b82f6', display: 'inline-block'}}></span>
         </span>;
       }

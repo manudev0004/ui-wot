@@ -36,21 +36,21 @@
       <div class="row">
         <div>
           <h3>Controller (readwrite)</h3>
-          <ui-toggle id="readwrite-toggle" td-property="maintenanceNeeded" td-url="http://plugfest.thingweb.io/http-advanced-coffee-machine/" label="Controller"></ui-toggle>
+          <ui-toggle id="readwrite-toggle" td-property="maintenanceNeeded" td-url="http://plugfest.thingweb.io/http-advanced-coffee-machine/" label="Controller" show-last-updated></ui-toggle>
         </div>
       </div>
 
       <div class="row">
         <div>
           <h3>Monitor (read-only)</h3>
-          <ui-toggle id="readonly-toggle" readonly="true" variant="square" label="Monitor"></ui-toggle>
+          <ui-toggle id="readonly-toggle" readonly="true" variant="square" label="Monitor" show-last-updated></ui-toggle>
         </div>
       </div>
 
       <div class="row">
         <div>
           <h3>Error Test (false URL)</h3>
-          <ui-toggle id="error-toggle" td-property="bool" td-url="http://fake-url-that-does-not-exist.com/td" label="Error Demo" variant="neon"></ui-toggle>
+          <ui-toggle id="error-toggle" showLastUpdated="true" td-property="bool" td-url="http://fake-url-that-does-not-exist.com/td" label="Error Demo" variant="neon"></ui-toggle>
         </div>
       </div>
     </div>
@@ -93,19 +93,18 @@
           const initial = Boolean(await (await thing.readProperty(tdProp)).value());
           await writeToggle.setValueSilent(initial);
           await readToggle.setValueSilent(initial);
-          await readToggle.setValue(initial, { readonly: true });
 
           // Only poll for readonly toggle - not the write toggle
           setInterval(async () => {
             try {
               const current = Boolean(await (await thing.readProperty(tdProp)).value());
-              // Only update readonly toggle from polling
+              // Update readonly toggle display and trigger pulse to show data fetch
               await readToggle.setValueSilent(current);
-              await readToggle.setValue(current, { readonly: true });
+              await readToggle.triggerReadPulse();
             } catch (e) {
               readToggle.connected = false;
             }
-          }, 3000);
+          }, 2000); // 2 seconds - allows pulse animation to complete before next fetch
 
           // Handle writes ONLY on user interaction - no automatic updates
           writeToggle.addEventListener('valueMsg', async e => {
