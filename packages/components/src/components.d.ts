@@ -5,20 +5,14 @@
  * It contains typing information for all components that exist in this project.
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
-import { UiMsg } from "./utils/types";
 import { UiButtonClick } from "./components/ui-button/ui-button";
+import { UiMsg } from "./utils/types";
 import { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
-import { UiCheckboxCheckboxChange, UiCheckboxValueChange } from "./components/ui-checkbox/ui-checkbox";
 import { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
-import { UiSliderValueChange } from "./components/ui-slider/ui-slider";
-import { UiTextValueChange } from "./components/ui-text/ui-text";
-export { UiMsg } from "./utils/types";
 export { UiButtonClick } from "./components/ui-button/ui-button";
+export { UiMsg } from "./utils/types";
 export { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
-export { UiCheckboxCheckboxChange, UiCheckboxValueChange } from "./components/ui-checkbox/ui-checkbox";
 export { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
-export { UiSliderValueChange } from "./components/ui-slider/ui-slider";
-export { UiTextValueChange } from "./components/ui-text/ui-text";
 export namespace Components {
     /**
      * Button component with various visual styles, matching the ui-number-picker design family.
@@ -47,48 +41,66 @@ export namespace Components {
     interface UiButton {
         /**
           * Color scheme to match thingsweb webpage
+          * @example ```html <ui-button color="secondary" label="Colored Button"></ui-button> ```
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
+          * Dark theme variant.
+          * @example ```html <ui-button dark="true" label="Dark Button"></ui-button> ```
+          * @default false
+         */
+        "dark": boolean;
+        /**
           * Whether the component is disabled (cannot be interacted with).
+          * @example ```html <ui-button disabled="true" label="Cannot Click"></ui-button> ```
           * @default false
          */
         "disabled": boolean;
+        /**
+          * Get current button value (its label)
+         */
         "getValue": () => Promise<string>;
         /**
-          * Enable keyboard navigation. Default: true
+          * Enable keyboard navigation.
+          * @example ```html <ui-button keyboard="false" label="No Keyboard"></ui-button> ```
           * @default true
          */
         "keyboard": boolean;
         /**
           * Button text label.
+          * @example ```html <ui-button label="Click Me"></ui-button> ```
           * @default 'Button'
          */
         "label": string;
         /**
-          * Legacy mode prop for backward compatibility with older demos. Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
-         */
-        "mode"?: 'read' | 'readwrite';
-        /**
           * Whether the component is read-only (displays value but cannot be changed).
+          * @example ```html <ui-button readonly="true" label="Display Only"></ui-button> ```
           * @default false
          */
         "readonly": boolean;
         /**
-          * Implement base class abstract methods
+          * Manually set operation status
          */
-        "setValue": (value: string) => Promise<boolean>;
+        "setStatus": (status: "idle" | "loading" | "success" | "error", message?: string) => Promise<void>;
         /**
-          * Current state of the button. - active: Button is enabled (default) - disabled: Button cannot be interacted with
-          * @default 'active'
+          * Consolidated setValue method with automatic Promise-based status management
          */
-        "state": 'active' | 'disabled';
+        "setValue": (value: string, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>;
         /**
-          * Theme for the component.
-          * @default 'light'
+          * Set value silently without triggering events or status changes
          */
-        "theme": 'light' | 'dark';
+        "setValueSilent": (value: string) => Promise<boolean>;
+        /**
+          * Show last updated timestamp below the component.
+          * @example ```html <ui-button showLastUpdated="true" label="With Timestamp"></ui-button> ```
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Trigger visual read pulse (brief animation)
+         */
+        "triggerReadPulse": () => Promise<void>;
         /**
           * Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button
           * @default 'minimal'
@@ -156,61 +168,115 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Checkbox component with consistent styling to match the design system.
+     * Advanced checkbox component with reactive state management and multiple visual styles.
+     * @example Basic Usage
+     * ```html
+     * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-checkbox variant="minimal" value="false" label="Minimal Style"></ui-checkbox>
+     * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
+     * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
+     * ```
+     * @example Read-Only Mode
+     * ```html
+     * <ui-checkbox readonly="true" value="false" label="Sensor Status"></ui-checkbox>
+     * ```
+     * @example JavaScript Integration with Multiple Checkboxes
+     * ```javascript
+     * // For single checkbox
+     * const checkbox = document.querySelector('#my-checkbox');
+     * // For multiple checkboxes
+     * const checkboxes = document.querySelectorAll('ui-checkbox');
+     * checkboxes.forEach(checkbox => {
+     * checkbox.addEventListener('valueMsg', (e) => {
+     * console.log('Checkbox ID:', e.detail.source);
+     * console.log('New value:', e.detail.payload);
+     * });
+     * });
+     * // Set value by ID
+     * const termsCheckbox = document.getElementById('terms-checkbox');
+     * await termsCheckbox.setValue(true);
+     * ```
+     * @example HTML with IDs
+     * ```html
+     * <ui-checkbox id="terms-checkbox" label="Accept Terms" variant="outlined"></ui-checkbox>
+     * <ui-checkbox id="newsletter-checkbox" label="Subscribe to Newsletter" variant="filled"></ui-checkbox>
+     * ```
      */
     interface UiCheckbox {
         /**
-          * Whether the checkbox is checked.
-          * @default false
-         */
-        "checked": boolean;
-        /**
-          * Color scheme to match design system.
+          * Color theme variant.
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
-          * Disabled state
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected": boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the checkbox is disabled (cannot be interacted with).
           * @default false
          */
         "disabled": boolean;
         /**
-          * Keyboard interaction
+          * Get the current checkbox value with optional metadata
+          * @param includeMetadata - Include last updated timestamp and status
+          * @returns Promise that resolves to the current value or value with metadata
+         */
+        "getValue": (includeMetadata?: boolean) => Promise<boolean | { value: boolean; lastUpdated?: number; status: string; error?: string; }>;
+        /**
+          * Enable keyboard navigation (Space and Enter keys). Default: true
           * @default true
          */
         "keyboard": boolean;
         /**
-          * Label text
-          * @default 'Checkbox'
+          * Text label displayed next to the checkbox.
          */
-        "label": string;
+        "label"?: string;
         /**
-          * Legacy mode mapping
-         */
-        "mode"?: 'read' | 'readwrite';
-        /**
-          * Readonly mode
+          * Whether the checkbox is read-only (displays value but cannot be changed).
           * @default false
          */
         "readonly": boolean;
         /**
-          * Current state of the checkbox.
-          * @default 'default'
+          * Set operation status for external status management
          */
-        "state": 'disabled' | 'active' | 'default';
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
         /**
-          * Theme for the component.
-          * @default 'light'
+          * Consolidated setValue method with automatic Promise-based status management
          */
-        "theme": 'light' | 'dark';
+        "setValue": (value: boolean, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>;
+        /**
+          * Set value programmatically without triggering events (for external updates)
+         */
+        "setValueSilent": (value: boolean) => Promise<void>;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Trigger a read pulse indicator for readonly mode when data is actually fetched
+         */
+        "triggerReadPulse": () => Promise<void>;
+        /**
+          * Current boolean value of the checkbox.
+          * @default false
+         */
+        "value": boolean;
         /**
           * Visual style variant of the checkbox.
           * @default 'outlined'
          */
         "variant": 'minimal' | 'outlined' | 'filled';
-    }
-    interface UiHeading {
-        "text": string;
     }
     /**
      * Number picker component with various visual styles, TD integration and customizable range.
@@ -269,12 +335,38 @@ export namespace Components {
      */
     interface UiNumberPicker {
         /**
-          * Color scheme to match thingsweb webpage
+          * Color theme variant.
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
-          * Optional text label, to display above the number picker.
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected": boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the number picker is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Get the current number picker value with optional metadata
+          * @param includeMetadata - Include last updated timestamp and status
+          * @returns Promise that resolves to the current value or value with metadata
+         */
+        "getValue": (includeMetadata?: boolean) => Promise<number | { value: number; lastUpdated?: number; status: string; error?: string; }>;
+        /**
+          * Enable keyboard navigation (Arrow keys). Default: true
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Text label displayed above the number picker.
          */
         "label"?: string;
         /**
@@ -293,23 +385,38 @@ export namespace Components {
          */
         "mode": 'read' | 'write' | 'readwrite';
         /**
-          * Current state of the number picker. - active: Number picker is enabled (default) - disabled: Number picker cannot be interacted with
-          * @default 'active'
+          * Whether the number picker is read-only (displays value but cannot be changed).
+          * @default false
          */
-        "state": 'active' | 'disabled';
+        "readonly": boolean;
+        /**
+          * Set operation status for external status management
+         */
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
+        /**
+          * Consolidated setValue method with automatic Promise-based status management
+         */
+        "setValue": (value: number, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>;
+        /**
+          * Set value programmatically without triggering events (for external updates)
+         */
+        "setValueSilent": (value: number) => Promise<void>;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated": boolean;
         /**
           * Step increment/decrement amount.
           * @default 1
          */
         "step": number;
         /**
-          * Theme for the component.
-          * @default 'light'
+          * Trigger a read pulse indicator for readonly mode when data is actually fetched
          */
-        "theme": 'light' | 'dark';
+        "triggerReadPulse": () => Promise<void>;
         /**
-          * Current value of the number picker (for local control mode). When no td-url is provided and value is set, this controls the picker state.
-          * @example 5, 10, 25
+          * Current numeric value of the number picker.
           * @default 0
          */
         "value": number;
@@ -384,36 +491,84 @@ export namespace Components {
         "variant": 'default' | 'compact' | 'minimal';
     }
     /**
-     * Slider component with various features, multiple visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Advanced slider component with reactive state management and multiple visual styles.
      * @example Basic Usage
      * ```html
      * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
      * ```
-     * @example TD Integration
+     * @example Different Variants
      * ```html
-     * <ui-slider
-     * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
-     * min="0"
-     * max="100"
-     * label="Device Brightness"
-     * enable-manual-control="true">
-     * </ui-slider>
+     * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
+     * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
+     * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
+     * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
+     * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
+     * ```
+     * @example Read-Only Mode
+     * ```html
+     * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
+     * ```
+     * @example JavaScript Integration with Multiple Sliders
+     * ```javascript
+     * // For single slider
+     * const slider = document.querySelector('#my-slider');
+     * // For multiple sliders
+     * const sliders = document.querySelectorAll('ui-slider');
+     * sliders.forEach(slider => {
+     * slider.addEventListener('valueMsg', (e) => {
+     * console.log('Slider ID:', e.detail.source);
+     * console.log('New value:', e.detail.payload);
+     * });
+     * });
+     * // Set value by ID
+     * const brightnessSlider = document.getElementById('brightness-slider');
+     * await brightnessSlider.setValue(75);
+     * ```
+     * @example HTML with IDs
+     * ```html
+     * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
+     * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
      * ```
      */
     interface UiSlider {
         /**
-          * Color scheme to match thingsweb webpage
+          * Color theme variant.
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected": boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the slider is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled": boolean;
         /**
           * Enable manual control interface.
           * @default false
          */
         "enableManualControl": boolean;
         /**
-          * Optional text label, to display text above the slider.
+          * Get the current slider value with optional metadata
+          * @param includeMetadata - Include last updated timestamp and status
+          * @returns Promise that resolves to the current value or value with metadata
+         */
+        "getValue": (includeMetadata?: boolean) => Promise<number | { value: number; lastUpdated?: number; status: string; error?: string; }>;
+        /**
+          * Enable keyboard navigation (Arrow keys, Home, End, PageUp, PageDown). Default: true
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Text label displayed above the slider.
          */
         "label"?: string;
         /**
@@ -427,86 +582,167 @@ export namespace Components {
          */
         "min": number;
         /**
-          * Orientation of the slider. - horizontal: Left to right slider (default) - vertical: Bottom to top slider
+          * Orientation of the slider.
           * @default 'horizontal'
          */
         "orientation": 'horizontal' | 'vertical';
         /**
-          * Current state of the slider. - disabled: Slider cannot be clicked or interacted with - default: Slider is interactive (default)
-          * @default 'default'
+          * Whether the slider is read-only (displays value but cannot be changed).
+          * @default false
          */
-        "state": 'disabled' | 'default';
+        "readonly": boolean;
+        /**
+          * Set operation status for external status management
+         */
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
+        /**
+          * Consolidated setValue method with automatic Promise-based status management
+         */
+        "setValue": (value: number, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>;
+        /**
+          * Set value programmatically without triggering events (for external updates)
+         */
+        "setValueSilent": (value: number) => Promise<void>;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated": boolean;
         /**
           * Step increment for the slider.
           * @default 1
          */
         "step": number;
         /**
-          * Theme for the component.
-          * @default 'light'
-         */
-        "theme": 'light' | 'dark';
-        /**
-          * Shape of the slider thumb. - circle: Round thumb (default) - square: Square thumb - arrow: Arrow-shaped thumb pointing right - triangle: Triangle-shaped thumb - diamond: Diamond-shaped thumb (<> style)
+          * Shape of the slider thumb.
           * @default 'circle'
          */
         "thumbShape": 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond';
         /**
-          * Current value of the slider.
+          * Trigger a read pulse indicator for readonly mode when data is actually fetched
+         */
+        "triggerReadPulse": () => Promise<void>;
+        /**
+          * Current numeric value of the slider.
           * @default 0
          */
         "value": number;
         /**
-          * Visual style variant of the slider. - narrow: Thin slider track (default) - wide: Thick slider track - rainbow: Gradient color track - neon: Glowing effect - stepped: Shows step marks
+          * Visual style variant of the slider.
           * @default 'narrow'
          */
         "variant": 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
+    /**
+     * Versatile text component supporting display, editing, and various structured formats.
+     * @example Basic Usage
+     * ```html
+     * <ui-text value="Hello World"></ui-text>
+     * ```
+     * @example Editable Text
+     * ```html
+     * <ui-text variant="edit" value="Edit me" placeholder="Type here..."></ui-text>
+     * ```
+     * @example Structured Content
+     * ```html
+     * <ui-text structure="json" value='{"key": "value"}'></ui-text>
+     * ```
+     * @example Multi-line Text
+     * ```html
+     * <ui-text textType="multi" rows="5" expandable="true"></ui-text>
+     * ```
+     */
     interface UiText {
         /**
+          * Color scheme for styling
+          * @example ```html <ui-text color="secondary" value="Colored text"></ui-text> ```
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
+          * Dark theme variant.
+          * @example ```html <ui-text dark="true" value="Dark themed text"></ui-text> ```
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the component is disabled (cannot be interacted with).
+          * @example ```html <ui-text disabled="true" value="Cannot edit"></ui-text> ```
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Allow expanding/collapsing of text area
           * @default false
          */
         "expandable": boolean;
+        /**
+          * Enable keyboard navigation.
+          * @example ```html <ui-text keyboard="false" value="No keyboard support"></ui-text> ```
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Label for the text component
+          * @example ```html <ui-text label="Description" value="Text content"></ui-text> ```
+         */
         "label"?: string;
         /**
+          * Maximum height when expanded (pixels)
           * @default 200
          */
         "maxHeight": number;
+        /**
+          * Maximum character length
+         */
         "maxLength"?: number;
+        /**
+          * Placeholder text for empty fields
+         */
         "placeholder"?: string;
         /**
+          * Whether the component is read-only (displays value but cannot be changed).
+          * @example ```html <ui-text readonly="true" value="Read-only text"></ui-text> ```
+          * @default false
+         */
+        "readonly": boolean;
+        /**
+          * Allow manual resizing of text area
           * @default false
          */
         "resizable": boolean;
         /**
+          * Number of rows for multi-line text
           * @default 4
          */
         "rows": number;
         /**
-          * @default 'default'
+          * Show last updated timestamp below the component.
+          * @example ```html <ui-text showLastUpdated="true" value="With timestamp"></ui-text> ```
+          * @default false
          */
-        "state": 'disabled' | 'active' | 'default';
+        "showLastUpdated": boolean;
         /**
+          * Content structure for syntax highlighting
+          * @example ```html <ui-text structure="json" value='{"formatted": true}'></ui-text> ```
           * @default 'unstructured'
          */
         "structure": 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown';
         /**
+          * Text input type - 'single' for single-line, 'multi' for multi-line
+          * @example ```html <ui-text textType="multi" rows="5"></ui-text> ```
           * @default 'single'
          */
         "textType": 'single' | 'multi';
         /**
-          * @default 'light'
-         */
-        "theme": 'light' | 'dark';
-        /**
+          * Current text value
+          * @example ```html <ui-text value="Initial text content"></ui-text> ```
           * @default ''
          */
         "value": string;
         /**
+          * Display variant - 'display' for read-only, 'edit' for editable
+          * @example ```html <ui-text variant="edit" value="Editable text"></ui-text> ```
           * @default 'display'
          */
         "variant": 'display' | 'edit';
@@ -551,7 +787,6 @@ export namespace Components {
      * ```
      */
     interface UiToggle {
-        "clearErrorState": () => Promise<void>;
         /**
           * Color theme variant.
           * @default 'primary'
@@ -572,12 +807,12 @@ export namespace Components {
           * @default false
          */
         "disabled": boolean;
-        "finishWriteOperation": (success: boolean, errorMsg?: string) => Promise<void>;
         /**
-          * Get the current toggle value.
-          * @returns Promise that resolves to the current boolean value
+          * Get the current toggle value with optional metadata
+          * @param includeMetadata - Include last updated timestamp and status
+          * @returns Promise that resolves to the current value or value with metadata
          */
-        "getValue": () => Promise<boolean>;
+        "getValue": (includeMetadata?: boolean) => Promise<boolean | { value: boolean; lastUpdated?: number; status: string; error?: string; }>;
         /**
           * Enable keyboard navigation (Space and Enter keys). Default: true
           * @default true
@@ -587,26 +822,32 @@ export namespace Components {
           * Text label displayed next to the toggle.
          */
         "label"?: string;
-        "markReadUpdate": () => Promise<void>;
         /**
           * Whether the toggle is read-only (displays value but cannot be changed).
           * @default false
          */
         "readonly": boolean;
         /**
-          * Revert toggle to previous value (used when write fails)
+          * Set operation status for external status management
          */
-        "revertValue": (prevValue: boolean) => Promise<void>;
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
         /**
-          * Set the toggle value programmatically.
-          * @param value - The new boolean value
-          * @returns Promise that resolves to true if successful
+          * Consolidated setValue method with automatic Promise-based status management
          */
-        "setValue": (value: boolean) => Promise<boolean>;
+        "setValue": (value: boolean, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>;
         /**
-          * Simple status methods
+          * Set value programmatically without triggering events (for external updates)
          */
-        "startWriteOperation": () => Promise<void>;
+        "setValueSilent": (value: boolean) => Promise<void>;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Trigger a read pulse indicator for readonly mode when data is actually fetched
+         */
+        "triggerReadPulse": () => Promise<void>;
         /**
           * Current boolean value of the toggle.
           * @default false
@@ -653,8 +894,8 @@ export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
 }
 declare global {
     interface HTMLUiButtonElementEventMap {
-        "valueMsg": UiMsg<string>;
         "buttonClick": UiButtonClick;
+        "valueMsg": UiMsg<string>;
     }
     /**
      * Button component with various visual styles, matching the ui-number-picker design family.
@@ -730,12 +971,45 @@ declare global {
         new (): HTMLUiCalendarElement;
     };
     interface HTMLUiCheckboxElementEventMap {
-        "checkboxChange": UiCheckboxCheckboxChange;
-        "valueChange": UiCheckboxValueChange;
-        "valueMsg": import('../../utils/types').UiMsg<boolean>;
+        "valueMsg": UiMsg<boolean>;
     }
     /**
-     * Checkbox component with consistent styling to match the design system.
+     * Advanced checkbox component with reactive state management and multiple visual styles.
+     * @example Basic Usage
+     * ```html
+     * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-checkbox variant="minimal" value="false" label="Minimal Style"></ui-checkbox>
+     * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
+     * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
+     * ```
+     * @example Read-Only Mode
+     * ```html
+     * <ui-checkbox readonly="true" value="false" label="Sensor Status"></ui-checkbox>
+     * ```
+     * @example JavaScript Integration with Multiple Checkboxes
+     * ```javascript
+     * // For single checkbox
+     * const checkbox = document.querySelector('#my-checkbox');
+     * // For multiple checkboxes
+     * const checkboxes = document.querySelectorAll('ui-checkbox');
+     * checkboxes.forEach(checkbox => {
+     * checkbox.addEventListener('valueMsg', (e) => {
+     * console.log('Checkbox ID:', e.detail.source);
+     * console.log('New value:', e.detail.payload);
+     * });
+     * });
+     * // Set value by ID
+     * const termsCheckbox = document.getElementById('terms-checkbox');
+     * await termsCheckbox.setValue(true);
+     * ```
+     * @example HTML with IDs
+     * ```html
+     * <ui-checkbox id="terms-checkbox" label="Accept Terms" variant="outlined"></ui-checkbox>
+     * <ui-checkbox id="newsletter-checkbox" label="Subscribe to Newsletter" variant="filled"></ui-checkbox>
+     * ```
      */
     interface HTMLUiCheckboxElement extends Components.UiCheckbox, HTMLStencilElement {
         addEventListener<K extends keyof HTMLUiCheckboxElementEventMap>(type: K, listener: (this: HTMLUiCheckboxElement, ev: UiCheckboxCustomEvent<HTMLUiCheckboxElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
@@ -751,13 +1025,8 @@ declare global {
         prototype: HTMLUiCheckboxElement;
         new (): HTMLUiCheckboxElement;
     };
-    interface HTMLUiHeadingElement extends Components.UiHeading, HTMLStencilElement {
-    }
-    var HTMLUiHeadingElement: {
-        prototype: HTMLUiHeadingElement;
-        new (): HTMLUiHeadingElement;
-    };
     interface HTMLUiNumberPickerElementEventMap {
+        "valueMsg": UiMsg<number>;
         "valueChange": UiNumberPickerValueChange;
     }
     /**
@@ -862,24 +1131,46 @@ declare global {
         new (): HTMLUiPropertyCardElement;
     };
     interface HTMLUiSliderElementEventMap {
-        "valueChange": UiSliderValueChange;
+        "valueMsg": UiMsg<number>;
     }
     /**
-     * Slider component with various features, multiple visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Advanced slider component with reactive state management and multiple visual styles.
      * @example Basic Usage
      * ```html
      * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
      * ```
-     * @example TD Integration
+     * @example Different Variants
      * ```html
-     * <ui-slider
-     * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
-     * min="0"
-     * max="100"
-     * label="Device Brightness"
-     * enable-manual-control="true">
-     * </ui-slider>
+     * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
+     * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
+     * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
+     * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
+     * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
+     * ```
+     * @example Read-Only Mode
+     * ```html
+     * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
+     * ```
+     * @example JavaScript Integration with Multiple Sliders
+     * ```javascript
+     * // For single slider
+     * const slider = document.querySelector('#my-slider');
+     * // For multiple sliders
+     * const sliders = document.querySelectorAll('ui-slider');
+     * sliders.forEach(slider => {
+     * slider.addEventListener('valueMsg', (e) => {
+     * console.log('Slider ID:', e.detail.source);
+     * console.log('New value:', e.detail.payload);
+     * });
+     * });
+     * // Set value by ID
+     * const brightnessSlider = document.getElementById('brightness-slider');
+     * await brightnessSlider.setValue(75);
+     * ```
+     * @example HTML with IDs
+     * ```html
+     * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
+     * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
      * ```
      */
     interface HTMLUiSliderElement extends Components.UiSlider, HTMLStencilElement {
@@ -900,6 +1191,25 @@ declare global {
         "textChange": UiTextValueChange;
         "valueChange": UiTextValueChange;
     }
+    /**
+     * Versatile text component supporting display, editing, and various structured formats.
+     * @example Basic Usage
+     * ```html
+     * <ui-text value="Hello World"></ui-text>
+     * ```
+     * @example Editable Text
+     * ```html
+     * <ui-text variant="edit" value="Edit me" placeholder="Type here..."></ui-text>
+     * ```
+     * @example Structured Content
+     * ```html
+     * <ui-text structure="json" value='{"key": "value"}'></ui-text>
+     * ```
+     * @example Multi-line Text
+     * ```html
+     * <ui-text textType="multi" rows="5" expandable="true"></ui-text>
+     * ```
+     */
     interface HTMLUiTextElement extends Components.UiText, HTMLStencilElement {
         addEventListener<K extends keyof HTMLUiTextElementEventMap>(type: K, listener: (this: HTMLUiTextElement, ev: UiTextCustomEvent<HTMLUiTextElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
         addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
@@ -974,7 +1284,6 @@ declare global {
         "ui-button": HTMLUiButtonElement;
         "ui-calendar": HTMLUiCalendarElement;
         "ui-checkbox": HTMLUiCheckboxElement;
-        "ui-heading": HTMLUiHeadingElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
         "ui-property-card": HTMLUiPropertyCardElement;
         "ui-slider": HTMLUiSliderElement;
@@ -1010,51 +1319,55 @@ declare namespace LocalJSX {
     interface UiButton {
         /**
           * Color scheme to match thingsweb webpage
+          * @example ```html <ui-button color="secondary" label="Colored Button"></ui-button> ```
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
+          * Dark theme variant.
+          * @example ```html <ui-button dark="true" label="Dark Button"></ui-button> ```
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
           * Whether the component is disabled (cannot be interacted with).
+          * @example ```html <ui-button disabled="true" label="Cannot Click"></ui-button> ```
           * @default false
          */
         "disabled"?: boolean;
         /**
-          * Enable keyboard navigation. Default: true
+          * Enable keyboard navigation.
+          * @example ```html <ui-button keyboard="false" label="No Keyboard"></ui-button> ```
           * @default true
          */
         "keyboard"?: boolean;
         /**
           * Button text label.
+          * @example ```html <ui-button label="Click Me"></ui-button> ```
           * @default 'Button'
          */
         "label"?: string;
-        /**
-          * Legacy mode prop for backward compatibility with older demos. Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
-         */
-        "mode"?: 'read' | 'readwrite';
         /**
           * Event emitted when button is clicked
          */
         "onButtonClick"?: (event: UiButtonCustomEvent<UiButtonClick>) => void;
         /**
           * Primary event emitted when the component value changes. Use this event for all value change handling.
+          * @example ```javascript document.querySelector('ui-button').addEventListener('valueMsg', (event) => {   console.log('Button clicked:', event.detail); }); ```
          */
         "onValueMsg"?: (event: UiButtonCustomEvent<UiMsg<string>>) => void;
         /**
           * Whether the component is read-only (displays value but cannot be changed).
+          * @example ```html <ui-button readonly="true" label="Display Only"></ui-button> ```
           * @default false
          */
         "readonly"?: boolean;
         /**
-          * Current state of the button. - active: Button is enabled (default) - disabled: Button cannot be interacted with
-          * @default 'active'
+          * Show last updated timestamp below the component.
+          * @example ```html <ui-button showLastUpdated="true" label="With Timestamp"></ui-button> ```
+          * @default false
          */
-        "state"?: 'active' | 'disabled';
-        /**
-          * Theme for the component.
-          * @default 'light'
-         */
-        "theme"?: 'light' | 'dark';
+        "showLastUpdated"?: boolean;
         /**
           * Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button
           * @default 'minimal'
@@ -1130,73 +1443,97 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Checkbox component with consistent styling to match the design system.
+     * Advanced checkbox component with reactive state management and multiple visual styles.
+     * @example Basic Usage
+     * ```html
+     * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-checkbox variant="minimal" value="false" label="Minimal Style"></ui-checkbox>
+     * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
+     * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
+     * ```
+     * @example Read-Only Mode
+     * ```html
+     * <ui-checkbox readonly="true" value="false" label="Sensor Status"></ui-checkbox>
+     * ```
+     * @example JavaScript Integration with Multiple Checkboxes
+     * ```javascript
+     * // For single checkbox
+     * const checkbox = document.querySelector('#my-checkbox');
+     * // For multiple checkboxes
+     * const checkboxes = document.querySelectorAll('ui-checkbox');
+     * checkboxes.forEach(checkbox => {
+     * checkbox.addEventListener('valueMsg', (e) => {
+     * console.log('Checkbox ID:', e.detail.source);
+     * console.log('New value:', e.detail.payload);
+     * });
+     * });
+     * // Set value by ID
+     * const termsCheckbox = document.getElementById('terms-checkbox');
+     * await termsCheckbox.setValue(true);
+     * ```
+     * @example HTML with IDs
+     * ```html
+     * <ui-checkbox id="terms-checkbox" label="Accept Terms" variant="outlined"></ui-checkbox>
+     * <ui-checkbox id="newsletter-checkbox" label="Subscribe to Newsletter" variant="filled"></ui-checkbox>
+     * ```
      */
     interface UiCheckbox {
         /**
-          * Whether the checkbox is checked.
-          * @default false
-         */
-        "checked"?: boolean;
-        /**
-          * Color scheme to match design system.
+          * Color theme variant.
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
-          * Disabled state
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected"?: boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the checkbox is disabled (cannot be interacted with).
           * @default false
          */
         "disabled"?: boolean;
         /**
-          * Keyboard interaction
+          * Enable keyboard navigation (Space and Enter keys). Default: true
           * @default true
          */
         "keyboard"?: boolean;
         /**
-          * Label text
-          * @default 'Checkbox'
+          * Text label displayed next to the checkbox.
          */
         "label"?: string;
         /**
-          * Legacy mode mapping
+          * Primary event emitted when the checkbox value changes.
          */
-        "mode"?: 'read' | 'readwrite';
+        "onValueMsg"?: (event: UiCheckboxCustomEvent<UiMsg<boolean>>) => void;
         /**
-          * Event emitted when checkbox state changes.
-         */
-        "onCheckboxChange"?: (event: UiCheckboxCustomEvent<UiCheckboxCheckboxChange>) => void;
-        /**
-          * Standardized valueChange event (boolean value)
-         */
-        "onValueChange"?: (event: UiCheckboxCustomEvent<UiCheckboxValueChange>) => void;
-        /**
-          * Unified UiMsg event
-         */
-        "onValueMsg"?: (event: UiCheckboxCustomEvent<import('../../utils/types').UiMsg<boolean>>) => void;
-        /**
-          * Readonly mode
+          * Whether the checkbox is read-only (displays value but cannot be changed).
           * @default false
          */
         "readonly"?: boolean;
         /**
-          * Current state of the checkbox.
-          * @default 'default'
+          * Show last updated timestamp when true
+          * @default false
          */
-        "state"?: 'disabled' | 'active' | 'default';
+        "showLastUpdated"?: boolean;
         /**
-          * Theme for the component.
-          * @default 'light'
+          * Current boolean value of the checkbox.
+          * @default false
          */
-        "theme"?: 'light' | 'dark';
+        "value"?: boolean;
         /**
           * Visual style variant of the checkbox.
           * @default 'outlined'
          */
         "variant"?: 'minimal' | 'outlined' | 'filled';
-    }
-    interface UiHeading {
-        "text"?: string;
     }
     /**
      * Number picker component with various visual styles, TD integration and customizable range.
@@ -1255,12 +1592,32 @@ declare namespace LocalJSX {
      */
     interface UiNumberPicker {
         /**
-          * Color scheme to match thingsweb webpage
+          * Color theme variant.
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
-          * Optional text label, to display above the number picker.
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected"?: boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the number picker is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Enable keyboard navigation (Arrow keys). Default: true
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Text label displayed above the number picker.
          */
         "label"?: string;
         /**
@@ -1283,23 +1640,26 @@ declare namespace LocalJSX {
          */
         "onValueChange"?: (event: UiNumberPickerCustomEvent<UiNumberPickerValueChange>) => void;
         /**
-          * Current state of the number picker. - active: Number picker is enabled (default) - disabled: Number picker cannot be interacted with
-          * @default 'active'
+          * Primary event emitted when the number picker value changes.
          */
-        "state"?: 'active' | 'disabled';
+        "onValueMsg"?: (event: UiNumberPickerCustomEvent<UiMsg<number>>) => void;
+        /**
+          * Whether the number picker is read-only (displays value but cannot be changed).
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
         /**
           * Step increment/decrement amount.
           * @default 1
          */
         "step"?: number;
         /**
-          * Theme for the component.
-          * @default 'light'
-         */
-        "theme"?: 'light' | 'dark';
-        /**
-          * Current value of the number picker (for local control mode). When no td-url is provided and value is set, this controls the picker state.
-          * @example 5, 10, 25
+          * Current numeric value of the number picker.
           * @default 0
          */
         "value"?: number;
@@ -1371,36 +1731,78 @@ declare namespace LocalJSX {
         "variant"?: 'default' | 'compact' | 'minimal';
     }
     /**
-     * Slider component with various features, multiple visual styles and TD integration.
-     * Link a direct property URL for plug-and-play device control.
+     * Advanced slider component with reactive state management and multiple visual styles.
      * @example Basic Usage
      * ```html
      * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
      * ```
-     * @example TD Integration
+     * @example Different Variants
      * ```html
-     * <ui-slider
-     * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
-     * min="0"
-     * max="100"
-     * label="Device Brightness"
-     * enable-manual-control="true">
-     * </ui-slider>
+     * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
+     * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
+     * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
+     * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
+     * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
+     * ```
+     * @example Read-Only Mode
+     * ```html
+     * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
+     * ```
+     * @example JavaScript Integration with Multiple Sliders
+     * ```javascript
+     * // For single slider
+     * const slider = document.querySelector('#my-slider');
+     * // For multiple sliders
+     * const sliders = document.querySelectorAll('ui-slider');
+     * sliders.forEach(slider => {
+     * slider.addEventListener('valueMsg', (e) => {
+     * console.log('Slider ID:', e.detail.source);
+     * console.log('New value:', e.detail.payload);
+     * });
+     * });
+     * // Set value by ID
+     * const brightnessSlider = document.getElementById('brightness-slider');
+     * await brightnessSlider.setValue(75);
+     * ```
+     * @example HTML with IDs
+     * ```html
+     * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
+     * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
      * ```
      */
     interface UiSlider {
         /**
-          * Color scheme to match thingsweb webpage
+          * Color theme variant.
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected"?: boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the slider is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled"?: boolean;
         /**
           * Enable manual control interface.
           * @default false
          */
         "enableManualControl"?: boolean;
         /**
-          * Optional text label, to display text above the slider.
+          * Enable keyboard navigation (Arrow keys, Home, End, PageUp, PageDown). Default: true
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Text label displayed above the slider.
          */
         "label"?: string;
         /**
@@ -1414,92 +1816,157 @@ declare namespace LocalJSX {
          */
         "min"?: number;
         /**
-          * Event emitted when value changes
+          * Primary event emitted when the slider value changes.
          */
-        "onValueChange"?: (event: UiSliderCustomEvent<UiSliderValueChange>) => void;
+        "onValueMsg"?: (event: UiSliderCustomEvent<UiMsg<number>>) => void;
         /**
-          * Orientation of the slider. - horizontal: Left to right slider (default) - vertical: Bottom to top slider
+          * Orientation of the slider.
           * @default 'horizontal'
          */
         "orientation"?: 'horizontal' | 'vertical';
         /**
-          * Current state of the slider. - disabled: Slider cannot be clicked or interacted with - default: Slider is interactive (default)
-          * @default 'default'
+          * Whether the slider is read-only (displays value but cannot be changed).
+          * @default false
          */
-        "state"?: 'disabled' | 'default';
+        "readonly"?: boolean;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
         /**
           * Step increment for the slider.
           * @default 1
          */
         "step"?: number;
         /**
-          * Theme for the component.
-          * @default 'light'
-         */
-        "theme"?: 'light' | 'dark';
-        /**
-          * Shape of the slider thumb. - circle: Round thumb (default) - square: Square thumb - arrow: Arrow-shaped thumb pointing right - triangle: Triangle-shaped thumb - diamond: Diamond-shaped thumb (<> style)
+          * Shape of the slider thumb.
           * @default 'circle'
          */
         "thumbShape"?: 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond';
         /**
-          * Current value of the slider.
+          * Current numeric value of the slider.
           * @default 0
          */
         "value"?: number;
         /**
-          * Visual style variant of the slider. - narrow: Thin slider track (default) - wide: Thick slider track - rainbow: Gradient color track - neon: Glowing effect - stepped: Shows step marks
+          * Visual style variant of the slider.
           * @default 'narrow'
          */
         "variant"?: 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
+    /**
+     * Versatile text component supporting display, editing, and various structured formats.
+     * @example Basic Usage
+     * ```html
+     * <ui-text value="Hello World"></ui-text>
+     * ```
+     * @example Editable Text
+     * ```html
+     * <ui-text variant="edit" value="Edit me" placeholder="Type here..."></ui-text>
+     * ```
+     * @example Structured Content
+     * ```html
+     * <ui-text structure="json" value='{"key": "value"}'></ui-text>
+     * ```
+     * @example Multi-line Text
+     * ```html
+     * <ui-text textType="multi" rows="5" expandable="true"></ui-text>
+     * ```
+     */
     interface UiText {
         /**
+          * Color scheme for styling
+          * @example ```html <ui-text color="secondary" value="Colored text"></ui-text> ```
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
+          * Dark theme variant.
+          * @example ```html <ui-text dark="true" value="Dark themed text"></ui-text> ```
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the component is disabled (cannot be interacted with).
+          * @example ```html <ui-text disabled="true" value="Cannot edit"></ui-text> ```
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Allow expanding/collapsing of text area
           * @default false
          */
         "expandable"?: boolean;
+        /**
+          * Enable keyboard navigation.
+          * @example ```html <ui-text keyboard="false" value="No keyboard support"></ui-text> ```
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Label for the text component
+          * @example ```html <ui-text label="Description" value="Text content"></ui-text> ```
+         */
         "label"?: string;
         /**
+          * Maximum height when expanded (pixels)
           * @default 200
          */
         "maxHeight"?: number;
+        /**
+          * Maximum character length
+         */
         "maxLength"?: number;
         "onTextChange"?: (event: UiTextCustomEvent<UiTextValueChange>) => void;
         "onValueChange"?: (event: UiTextCustomEvent<UiTextValueChange>) => void;
+        /**
+          * Placeholder text for empty fields
+         */
         "placeholder"?: string;
         /**
+          * Whether the component is read-only (displays value but cannot be changed).
+          * @example ```html <ui-text readonly="true" value="Read-only text"></ui-text> ```
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * Allow manual resizing of text area
           * @default false
          */
         "resizable"?: boolean;
         /**
+          * Number of rows for multi-line text
           * @default 4
          */
         "rows"?: number;
         /**
-          * @default 'default'
+          * Show last updated timestamp below the component.
+          * @example ```html <ui-text showLastUpdated="true" value="With timestamp"></ui-text> ```
+          * @default false
          */
-        "state"?: 'disabled' | 'active' | 'default';
+        "showLastUpdated"?: boolean;
         /**
+          * Content structure for syntax highlighting
+          * @example ```html <ui-text structure="json" value='{"formatted": true}'></ui-text> ```
           * @default 'unstructured'
          */
         "structure"?: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown';
         /**
+          * Text input type - 'single' for single-line, 'multi' for multi-line
+          * @example ```html <ui-text textType="multi" rows="5"></ui-text> ```
           * @default 'single'
          */
         "textType"?: 'single' | 'multi';
         /**
-          * @default 'light'
-         */
-        "theme"?: 'light' | 'dark';
-        /**
+          * Current text value
+          * @example ```html <ui-text value="Initial text content"></ui-text> ```
           * @default ''
          */
         "value"?: string;
         /**
+          * Display variant - 'display' for read-only, 'edit' for editable
+          * @example ```html <ui-text variant="edit" value="Editable text"></ui-text> ```
           * @default 'display'
          */
         "variant"?: 'display' | 'edit';
@@ -1583,6 +2050,11 @@ declare namespace LocalJSX {
          */
         "readonly"?: boolean;
         /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
           * Current boolean value of the toggle.
           * @default false
          */
@@ -1597,7 +2069,6 @@ declare namespace LocalJSX {
         "ui-button": UiButton;
         "ui-calendar": UiCalendar;
         "ui-checkbox": UiCheckbox;
-        "ui-heading": UiHeading;
         "ui-number-picker": UiNumberPicker;
         "ui-property-card": UiPropertyCard;
         "ui-slider": UiSlider;
@@ -1653,10 +2124,44 @@ declare module "@stencil/core" {
              */
             "ui-calendar": LocalJSX.UiCalendar & JSXBase.HTMLAttributes<HTMLUiCalendarElement>;
             /**
-             * Checkbox component with consistent styling to match the design system.
+             * Advanced checkbox component with reactive state management and multiple visual styles.
+             * @example Basic Usage
+             * ```html
+             * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+             * ```
+             * @example Different Variants
+             * ```html
+             * <ui-checkbox variant="minimal" value="false" label="Minimal Style"></ui-checkbox>
+             * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
+             * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
+             * ```
+             * @example Read-Only Mode
+             * ```html
+             * <ui-checkbox readonly="true" value="false" label="Sensor Status"></ui-checkbox>
+             * ```
+             * @example JavaScript Integration with Multiple Checkboxes
+             * ```javascript
+             * // For single checkbox
+             * const checkbox = document.querySelector('#my-checkbox');
+             * // For multiple checkboxes
+             * const checkboxes = document.querySelectorAll('ui-checkbox');
+             * checkboxes.forEach(checkbox => {
+             * checkbox.addEventListener('valueMsg', (e) => {
+             * console.log('Checkbox ID:', e.detail.source);
+             * console.log('New value:', e.detail.payload);
+             * });
+             * });
+             * // Set value by ID
+             * const termsCheckbox = document.getElementById('terms-checkbox');
+             * await termsCheckbox.setValue(true);
+             * ```
+             * @example HTML with IDs
+             * ```html
+             * <ui-checkbox id="terms-checkbox" label="Accept Terms" variant="outlined"></ui-checkbox>
+             * <ui-checkbox id="newsletter-checkbox" label="Subscribe to Newsletter" variant="filled"></ui-checkbox>
+             * ```
              */
             "ui-checkbox": LocalJSX.UiCheckbox & JSXBase.HTMLAttributes<HTMLUiCheckboxElement>;
-            "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
             /**
              * Number picker component with various visual styles, TD integration and customizable range.
              * Supports increment/decrement buttons with Thing Description integration for IoT devices.
@@ -1725,24 +2230,65 @@ declare module "@stencil/core" {
              */
             "ui-property-card": LocalJSX.UiPropertyCard & JSXBase.HTMLAttributes<HTMLUiPropertyCardElement>;
             /**
-             * Slider component with various features, multiple visual styles and TD integration.
-             * Link a direct property URL for plug-and-play device control.
+             * Advanced slider component with reactive state management and multiple visual styles.
              * @example Basic Usage
              * ```html
              * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
              * ```
-             * @example TD Integration
+             * @example Different Variants
              * ```html
-             * <ui-slider
-             * td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
-             * min="0"
-             * max="100"
-             * label="Device Brightness"
-             * enable-manual-control="true">
-             * </ui-slider>
+             * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
+             * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
+             * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
+             * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
+             * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
+             * ```
+             * @example Read-Only Mode
+             * ```html
+             * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
+             * ```
+             * @example JavaScript Integration with Multiple Sliders
+             * ```javascript
+             * // For single slider
+             * const slider = document.querySelector('#my-slider');
+             * // For multiple sliders
+             * const sliders = document.querySelectorAll('ui-slider');
+             * sliders.forEach(slider => {
+             * slider.addEventListener('valueMsg', (e) => {
+             * console.log('Slider ID:', e.detail.source);
+             * console.log('New value:', e.detail.payload);
+             * });
+             * });
+             * // Set value by ID
+             * const brightnessSlider = document.getElementById('brightness-slider');
+             * await brightnessSlider.setValue(75);
+             * ```
+             * @example HTML with IDs
+             * ```html
+             * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
+             * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
              * ```
              */
             "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
+            /**
+             * Versatile text component supporting display, editing, and various structured formats.
+             * @example Basic Usage
+             * ```html
+             * <ui-text value="Hello World"></ui-text>
+             * ```
+             * @example Editable Text
+             * ```html
+             * <ui-text variant="edit" value="Edit me" placeholder="Type here..."></ui-text>
+             * ```
+             * @example Structured Content
+             * ```html
+             * <ui-text structure="json" value='{"key": "value"}'></ui-text>
+             * ```
+             * @example Multi-line Text
+             * ```html
+             * <ui-text textType="multi" rows="5" expandable="true"></ui-text>
+             * ```
+             */
             "ui-text": LocalJSX.UiText & JSXBase.HTMLAttributes<HTMLUiTextElement>;
             /**
              * Advanced toggle switch component with reactive state management and multiple visual styles.

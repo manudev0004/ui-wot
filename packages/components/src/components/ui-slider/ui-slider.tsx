@@ -1,26 +1,52 @@
-import { Component, Prop, State, h, Watch, Event, EventEmitter } from '@stencil/core';
-import { StatusIndicator, type OperationStatus } from '../../utils/status-indicator';
-
-export interface UiSliderValueChange { value: number }
+import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
+import { UiMsg } from '../../utils/types';
+import { formatLastUpdated } from '../../utils/common-props';
 
 /**
- * Slider component with various features, multiple visual styles and TD integration.
- * Link a direct property URL for plug-and-play device control.
+ * Advanced slider component with reactive state management and multiple visual styles.
  *
  * @example Basic Usage
  * ```html
  * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
  * ```
  *
- * @example TD Integration
+ * @example Different Variants
  * ```html
- * <ui-slider
- *   td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/brightness"
- *   min="0"
- *   max="100"
- *   label="Device Brightness"
- *   enable-manual-control="true">
- * </ui-slider>
+ * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
+ * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
+ * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
+ * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
+ * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
+ * ```
+ *
+ * @example Read-Only Mode
+ * ```html
+ * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
+ * ```
+ *
+ * @example JavaScript Integration with Multiple Sliders
+ * ```javascript
+ * // For single slider
+ * const slider = document.querySelector('#my-slider');
+ *
+ * // For multiple sliders
+ * const sliders = document.querySelectorAll('ui-slider');
+ * sliders.forEach(slider => {
+ *   slider.addEventListener('valueMsg', (e) => {
+ *     console.log('Slider ID:', e.detail.source);
+ *     console.log('New value:', e.detail.payload);
+ *   });
+ * });
+ *
+ * // Set value by ID
+ * const brightnessSlider = document.getElementById('brightness-slider');
+ * await brightnessSlider.setValue(75);
+ * ```
+ *
+ * @example HTML with IDs
+ * ```html
+ * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
+ * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
  * ```
  */
 @Component({
@@ -29,44 +55,61 @@ export interface UiSliderValueChange { value: number }
   shadow: true,
 })
 export class UiSlider {
+  @Element() el: HTMLElement;
+
+  /** Component props */
+
   /**
    * Visual style variant of the slider.
-   * - narrow: Thin slider track (default)
-   * - wide: Thick slider track
-   * - rainbow: Gradient color track
-   * - neon: Glowing effect
-   * - stepped: Shows step marks
    */
   @Prop() variant: 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped' = 'narrow';
 
   /**
    * Orientation of the slider.
-   * - horizontal: Left to right slider (default)
-   * - vertical: Bottom to top slider
    */
   @Prop() orientation: 'horizontal' | 'vertical' = 'horizontal';
 
   /**
-   * Current state of the slider.
-   * - disabled: Slider cannot be clicked or interacted with
-   * - default: Slider is interactive (default)
+   * Current numeric value of the slider.
    */
-  @Prop({ mutable: true }) state: 'disabled' | 'default' = 'default';
+  @Prop({ mutable: true }) value: number = 0;
 
   /**
-   * Theme for the component.
+   * Whether the slider is disabled (cannot be interacted with).
    */
-  @Prop() theme: 'light' | 'dark' = 'light';
+  @Prop() disabled: boolean = false;
 
   /**
-   * Color scheme to match thingsweb webpage
+   * Whether the slider is read-only (displays value but cannot be changed).
+   */
+  @Prop({ mutable: true }) readonly: boolean = false;
+
+  /**
+   * Text label displayed above the slider.
+   */
+  @Prop() label?: string;
+
+  /**
+   * Color theme variant.
    */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
   /**
-   * Optional text label, to display text above the slider.
+   * Enable dark theme for the component.
+   * When true, uses light text on dark backgrounds.
    */
-  @Prop() label?: string;
+  @Prop() dark: boolean = false;
+
+  /**
+   * Enable keyboard navigation (Arrow keys, Home, End, PageUp, PageDown).
+   * Default: true
+   */
+  @Prop() keyboard: boolean = true;
+
+  /**
+   * Show last updated timestamp when true
+   */
+  @Prop() showLastUpdated: boolean = false;
 
   /**
    * Minimum value of the slider.
@@ -84,78 +127,337 @@ export class UiSlider {
   @Prop() step: number = 1;
 
   /**
-   * Current value of the slider.
-   */
-  @Prop({ mutable: true }) value: number = 0;
-
-  /**
    * Shape of the slider thumb.
-   * - circle: Round thumb (default)
-   * - square: Square thumb
-   * - arrow: Arrow-shaped thumb pointing right
-   * - triangle: Triangle-shaped thumb
-   * - diamond: Diamond-shaped thumb (<> style)
    */
   @Prop() thumbShape: 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond' = 'circle';
-
-  /**
-   * Thing Description URL for device control.
-   */
-  // TD integration removed: external integrations should use events
 
   /**
    * Enable manual control interface.
    */
   @Prop() enableManualControl: boolean = false;
 
-  /** Current value */
-  @State() currentValue: number = 0;
+  /** Internal state tracking current visual state */
+  @State() private isActive: number = 0;
 
-  /** Manual input value */
+  /** Internal state for tracking if component is initialized */
+  @State() private isInitialized: boolean = false;
+
+  /** Flag to prevent event loops when setting values programmatically */
+  @State() private suppressEvents: boolean = false;
+
+  /** Manual input value for text control */
   @State() manualInputValue: string = '';
 
-  /** Unified status indicator state */
-  @State() operationStatus: OperationStatus = 'idle';
+  /** Operation status for write mode indicators */
+  @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
   @State() lastError?: string;
+  /** Timestamp of last read pulse (readonly updates) */
+  @State() readPulseTs?: number;
+  /** Connection state for readonly mode */
+  @Prop({ mutable: true }) connected: boolean = true;
+  /** Timestamp of last value update for showLastUpdated feature */
+  @State() lastUpdatedTs?: number;
 
-  /** Event emitted when value changes */
-  @Event() valueChange: EventEmitter<UiSliderValueChange>;
+  /** Consolidated setValue method with automatic Promise-based status management */
+  @Method()
+  async setValue(value: number, options?: {
+    /** Automatic write operation - component handles all status transitions */
+    writeOperation?: () => Promise<any>;
+    /** Automatic read operation with pulse indicator */
+    readOperation?: () => Promise<any>;
+    /** Apply change optimistically, revert on failure (default: true) */
+    optimistic?: boolean;
+    /** Auto-retry configuration for failed operations */
+    autoRetry?: {
+      attempts: number;
+      delay: number;
+    };
+    /** Manual status override (for advanced users) */
+    customStatus?: 'loading' | 'success' | 'error';
+    /** Error message for manual error status */
+    errorMessage?: string;
+    /** Internal flag to indicate this is a revert operation */
+    _isRevert?: boolean;
+  }): Promise<boolean> {
+    const prevValue = this.isActive;
+    
+    // Clamp value to min/max bounds
+    const clampedValue = Math.max(this.min, Math.min(this.max, value));
+    
+    // Handle manual status override (backward compatibility)
+    if (options?.customStatus) {
+      if (options.customStatus === 'loading') {
+        this.operationStatus = 'loading';
+        return true;
+      }
+      if (options.customStatus === 'success') {
+        this.operationStatus = 'success';
+        setTimeout(() => { 
+          if (this.operationStatus === 'success') this.operationStatus = 'idle'; 
+        }, 1200);
+        this.isActive = clampedValue;
+        this.value = clampedValue;
+        this.manualInputValue = String(clampedValue);
+        this.lastUpdatedTs = Date.now();
+        this.emitValueMsg(clampedValue, prevValue);
+        return true;
+      }
+      if (options.customStatus === 'error') {
+        this.operationStatus = 'error';
+        this.lastError = options.errorMessage || 'Operation failed';
+        return false;
+      }
+    }
+    
+    // Auto-clear error state when user tries again (unless this is a revert)
+    if (this.operationStatus === 'error' && !options?._isRevert) {
+      this.operationStatus = 'idle';
+      this.lastError = undefined;
+      this.connected = true;
+    }
+    
+    // Optimistic update (default: true)
+    const optimistic = options?.optimistic !== false;
+    if (optimistic && !options?._isRevert) {
+      this.isActive = clampedValue;
+      this.value = clampedValue;
+      this.manualInputValue = String(clampedValue);
+      this.lastUpdatedTs = Date.now();
+      this.emitValueMsg(clampedValue, prevValue);
+    }
+    
+    // Handle Promise-based operations
+    if (options?.writeOperation || options?.readOperation) {
+      const operation = options.writeOperation || options.readOperation;
+      
+      // Show loading state
+      this.operationStatus = 'loading';
+      
+      try {
+        // Execute the operation
+        await operation();
+        
+        // Success - show success state briefly
+        this.operationStatus = 'success';
+        setTimeout(() => { 
+          if (this.operationStatus === 'success') this.operationStatus = 'idle'; 
+        }, 1200);
+        
+        // If not optimistic, apply value now
+        if (!optimistic) {
+          this.isActive = clampedValue;
+          this.value = clampedValue;
+          this.manualInputValue = String(clampedValue);
+          this.lastUpdatedTs = Date.now();
+          this.emitValueMsg(clampedValue, prevValue);
+        }
+        
+        return true;
+        
+      } catch (error) {
+        // Error - show error state and revert if optimistic
+        this.operationStatus = 'error';
+        this.lastError = error.message || 'Operation failed';
+        
+        if (optimistic && !options?._isRevert) {
+          // Revert to previous value
+          this.isActive = prevValue;
+          this.value = prevValue;
+          this.manualInputValue = String(prevValue);
+          // Don't emit event for revert to avoid loops
+        }
+        
+        // Auto-retry logic
+        if (options?.autoRetry && options.autoRetry.attempts > 0) {
+          setTimeout(async () => {
+            const retryOptions = {
+              ...options,
+              autoRetry: {
+                attempts: options.autoRetry.attempts - 1,
+                delay: options.autoRetry.delay
+              }
+            };
+            await this.setValue(clampedValue, retryOptions);
+          }, options.autoRetry.delay);
+        }
+        
+        return false;
+      }
+    }
+    
+    // Simple value setting (no operation)
+    if (!options?.writeOperation && !options?.readOperation && !options?._isRevert) {
+      this.isActive = clampedValue;
+      this.value = clampedValue;
+      this.manualInputValue = String(clampedValue);
+      this.lastUpdatedTs = Date.now();
+      this.emitValueMsg(clampedValue, prevValue);
+    }
 
-  /** Watch for TD URL changes */
-  // TD watcher removed
+    return true;
+  }
 
-  /** Watch for value prop changes */
+  /**
+   * Get the current slider value with optional metadata
+   * @param includeMetadata - Include last updated timestamp and status
+   * @returns Promise that resolves to the current value or value with metadata
+   */
+  @Method()
+  async getValue(includeMetadata: boolean = false): Promise<number | { value: number; lastUpdated?: number; status: string; error?: string }> {
+    if (includeMetadata) {
+      return {
+        value: this.isActive,
+        lastUpdated: this.lastUpdatedTs,
+        status: this.operationStatus,
+        error: this.lastError
+      };
+    }
+    return this.isActive;
+  }
+
+  /**
+   * Set value programmatically without triggering events (for external updates)
+   */
+  @Method()
+  async setValueSilent(value: number): Promise<void> {
+    const clampedValue = Math.max(this.min, Math.min(this.max, value));
+    this.suppressEvents = true;
+    this.isActive = clampedValue;
+    this.value = clampedValue;
+    this.manualInputValue = String(clampedValue);
+    this.lastUpdatedTs = Date.now();
+    this.suppressEvents = false;
+  }
+
+  /**
+   * Set operation status for external status management
+   */
+  @Method()
+  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
+    this.operationStatus = status;
+    if (status === 'error' && errorMessage) {
+      this.lastError = errorMessage;
+    } else if (status !== 'error') {
+      this.lastError = undefined;
+    }
+    
+    // Auto-clear success status
+    if (status === 'success') {
+      setTimeout(() => { 
+        if (this.operationStatus === 'success') {
+          this.operationStatus = 'idle'; 
+        }
+      }, 1200);
+    }
+  }
+
+  /**
+   * Trigger a read pulse indicator for readonly mode when data is actually fetched
+   */
+  @Method()
+  async triggerReadPulse(): Promise<void> {
+    if (this.readonly) {
+      this.readPulseTs = Date.now();
+    }
+  }
+
+  /** Render status badge for visual feedback */
+  private renderStatusBadge() {
+    const isReadonly = this.readonly;
+    const connected = this.connected !== false;
+    
+    if (isReadonly) {
+      if (!connected) {
+        return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}}>
+          <span style={{width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block'}}></span>
+        </span>;
+      }
+      const active = this.readPulseTs && (Date.now() - this.readPulseTs < 1500);
+      if (active) {
+        return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}}>
+          <span style={{position: 'absolute', width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#60a5fa', opacity: '0.6', animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite'}}></span>
+          <span style={{width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#3b82f6', display: 'inline-block'}}></span>
+        </span>;
+      }
+      return null;
+    }
+
+    switch (this.operationStatus) {
+      case 'loading':
+        return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}} title="Sending...">
+          <span style={{width: '12px', height: '12px', borderRadius: '50%', border: '2px solid currentColor', borderTopColor: 'transparent', animation: 'spin 1s linear infinite'}}></span>
+        </span>;
+      case 'success':
+          return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: '8px'}} title="Sent">
+            <span style={{width: '16px', height: '16px', borderRadius: '9999px', backgroundColor: '#22c55e', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '12px', fontWeight: '800', lineHeight: '16px'}}>✓</span>
+          </span>;
+      case 'error':
+          return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: '8px'}} title={this.lastError || 'Error'}>
+            <span style={{width: '16px', height: '16px', borderRadius: '9999px', backgroundColor: '#ef4444', color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800', lineHeight: '16px'}}>×</span>
+          </span>;
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Primary event emitted when the slider value changes.
+   */
+  @Event() valueMsg: EventEmitter<UiMsg<number>>;
+
+  /** Initialize component state from props */
+  componentWillLoad() {
+    const clampedValue = Math.max(this.min, Math.min(this.max, this.value));
+    this.isActive = clampedValue;
+    this.manualInputValue = String(clampedValue);
+    this.isInitialized = true;
+  }
+
+  /** Watch for value prop changes and update internal state */
   @Watch('value')
-  watchValue() {
-    this.currentValue = this.value;
-    this.manualInputValue = String(this.value);
+  watchValue(newVal: number) {
+    if (!this.isInitialized) return;
+
+    const clampedValue = Math.max(this.min, Math.min(this.max, newVal));
+    if (this.isActive !== clampedValue) {
+      const prevValue = this.isActive;
+      this.isActive = clampedValue;
+      this.manualInputValue = String(clampedValue);
+      this.emitValueMsg(clampedValue, prevValue);
+    }
   }
 
-  /** Initialize component */
-  async componentWillLoad() {
-    this.currentValue = this.value;
-    this.manualInputValue = String(this.value);
-  // Initialize from value prop
+  /** Emit the unified UiMsg event */
+  private emitValueMsg(value: number, prevValue?: number) {
+    // Don't emit events if suppressed (to prevent loops)
+    if (this.suppressEvents) return;
+    
+    // Primary unified event
+    const msg: UiMsg<number> = {
+      payload: value,
+      prev: prevValue,
+      ts: Date.now(),
+      source: this.el?.id || 'ui-slider',
+      ok: true,
+    };
+    this.valueMsg.emit(msg);
   }
-
-  // Device read logic removed
-
-  // Device write logic removed
 
   /** Handle slider value change */
-  private async handleChange(event: Event) {
-    if (this.state === 'disabled') return;
+  private handleChange = (event: Event) => {
+    if (this.disabled || this.readonly) return;
 
     const target = event.target as HTMLInputElement;
     const newValue = Number(target.value);
-
-  this.currentValue = newValue;
-    this.manualInputValue = String(newValue);
-    this.valueChange.emit({ value: newValue });
-    this.operationStatus = 'success';
-    setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
-  // Local-only change: external device writes should be handled by listeners to `valueChange`.
-  }
+    const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
+    
+    // Simple value change without any operation - for basic slider functionality
+    this.isActive = clampedValue;
+    this.value = clampedValue;
+    this.manualInputValue = String(clampedValue);
+    this.lastUpdatedTs = Date.now();
+    this.emitValueMsg(clampedValue, this.isActive);
+  };
 
   /** Handle manual input */
   private handleManualInput = (event: Event) => {
@@ -164,42 +466,40 @@ export class UiSlider {
   };
 
   /** Handle manual submit */
-  private handleManualSubmit = async (event: Event) => {
+  private handleManualSubmit = (event: Event) => {
     event.preventDefault();
-    if (this.state === 'disabled') return;
+    if (this.disabled || this.readonly) return;
 
     const newValue = Number(this.manualInputValue);
     if (isNaN(newValue)) {
-      this.manualInputValue = String(this.currentValue);
+      this.manualInputValue = String(this.isActive);
       return;
     }
 
-  const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
-
-  this.currentValue = clampedValue;
-  this.manualInputValue = String(clampedValue);
-  this.valueChange.emit({ value: clampedValue });
-  this.operationStatus = 'success';
-  setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
-  // Local-only change: external device writes should be handled by listeners to `valueChange`.
+    const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
+    this.isActive = clampedValue;
+    this.value = clampedValue;
+    this.manualInputValue = String(clampedValue);
+    this.lastUpdatedTs = Date.now();
+    this.emitValueMsg(clampedValue, this.isActive);
   };
 
   /** Handle keyboard navigation */
-  private handleKeyDown = async (event: KeyboardEvent) => {
-    if (this.state === 'disabled') return;
+  private handleKeyDown = (event: KeyboardEvent) => {
+    if (this.disabled || this.readonly || !this.keyboard) return;
 
-    let newValue = this.currentValue;
+    let newValue = this.isActive;
 
     switch (event.key) {
       case 'ArrowRight':
       case 'ArrowUp':
         event.preventDefault();
-        newValue = Math.min(this.max, this.currentValue + this.step);
+        newValue = Math.min(this.max, this.isActive + this.step);
         break;
       case 'ArrowLeft':
       case 'ArrowDown':
         event.preventDefault();
-        newValue = Math.max(this.min, this.currentValue - this.step);
+        newValue = Math.max(this.min, this.isActive - this.step);
         break;
       case 'Home':
         event.preventDefault();
@@ -211,316 +511,183 @@ export class UiSlider {
         break;
       case 'PageUp':
         event.preventDefault();
-        newValue = Math.min(this.max, this.currentValue + this.step * 10);
+        newValue = Math.min(this.max, this.isActive + this.step * 10);
         break;
       case 'PageDown':
         event.preventDefault();
-        newValue = Math.max(this.min, this.currentValue - this.step * 10);
+        newValue = Math.max(this.min, this.isActive - this.step * 10);
         break;
       default:
         return;
     }
 
-    if (newValue !== this.currentValue) {
-      this.currentValue = newValue;
-      this.manualInputValue = String(newValue);
-      this.valueChange.emit({ value: newValue });
-      // Local-only change: external device writes should be handled by listeners to `valueChange`.
-    }
+    this.isActive = newValue;
+    this.value = newValue;
+    this.manualInputValue = String(newValue);
+    this.lastUpdatedTs = Date.now();
+    this.emitValueMsg(newValue, this.isActive);
   };
 
   /** Get track styles */
-  getTrackStyle() {
-    const isDisabled = this.state === 'disabled';
-    const percentage = ((this.currentValue - this.min) / (this.max - this.min)) * 100;
-
-    let trackSize = 'h-2 w-full';
-    let progressSize = 'h-2';
-
-    if (this.orientation === 'vertical') {
-      trackSize = 'w-2 h-48'; // Shorter height for vertical
-      if (this.variant === 'wide') trackSize = 'w-3 h-48';
-      if (this.variant === 'narrow') trackSize = 'w-1 h-48';
-      progressSize = 'w-2';
-      if (this.variant === 'wide') progressSize = 'w-3';
-      if (this.variant === 'narrow') progressSize = 'w-1';
+  private getTrackStyle() {
+    const isDisabled = this.disabled;
+    
+    let baseClasses = 'relative rounded-full transition-all duration-200';
+    
+    // Size based on variant
+    if (this.variant === 'wide') {
+      baseClasses += this.orientation === 'vertical' ? ' w-6' : ' h-6';
     } else {
-      if (this.variant === 'wide') trackSize = 'h-4 w-full';
-      if (this.variant === 'narrow') trackSize = 'h-1 w-full';
-      if (this.variant === 'wide') progressSize = 'h-4';
-      if (this.variant === 'narrow') progressSize = 'h-1';
+      baseClasses += this.orientation === 'vertical' ? ' w-2' : ' h-2';
     }
-
-    let bgColor = 'bg-gray-300';
-    let progressColor = this.getActiveColor();
-
-    if (this.variant === 'rainbow') {
-      if (this.orientation === 'vertical') {
-        bgColor = 'bg-gradient-to-t from-red-500 via-yellow-500 via-green-500 to-blue-500';
-      } else {
-        bgColor = 'bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 to-blue-500';
-      }
-      progressColor = '';
-    } else if (this.variant === 'neon') {
-      bgColor = 'bg-gray-700';
-      progressColor = this.getNeonColor();
+    
+    // Orientation
+    if (this.orientation === 'vertical') {
+      baseClasses += ' flex-col-reverse';
     }
-
-    const disabled = isDisabled ? 'opacity-50 cursor-not-allowed' : '';
-
-    return {
-      track: `relative ${trackSize} ${bgColor} rounded-full ${disabled}`,
-      progress: `absolute ${progressColor} rounded-full transition-all duration-200`,
-      progressSize,
-      percentage,
-    };
-  }
-
-  /** Get thumb styles */
-  getThumbStyle() {
-    let size = 'w-5 h-5';
-    let shape = 'rounded-full';
-
-    if (this.thumbShape === 'square') {
-      shape = 'rounded-sm';
-    } else if (this.thumbShape === 'arrow') {
-      size = 'w-8 h-6';
-      shape = '';
-    } else if (this.thumbShape === 'triangle' || this.thumbShape === 'diamond') {
-      size = 'w-6 h-6';
-      shape = '';
+    
+    // Background and effects
+    if (this.variant === 'neon') {
+      baseClasses += ' shadow-lg';
     }
-
-    let bgColor = 'bg-white';
-    const border = 'border border-gray-300';
-
-    // For custom shapes, don't add background and border as they're handled by SVG
-    if (this.thumbShape === 'arrow' || this.thumbShape === 'triangle' || this.thumbShape === 'diamond') {
-      return `${size} cursor-pointer flex items-center justify-center`;
+    
+    if (isDisabled) {
+      baseClasses += ' opacity-50';
     }
-
-    return `${size} ${shape} ${bgColor} ${border} cursor-pointer`;
-  }
-
-  /** Fetch current active color */
-  getActiveColor() {
-    if (this.color === 'secondary') return 'bg-secondary';
-    if (this.color === 'neutral') return 'bg-gray-500';
-    return 'bg-primary';
-  }
-
-  /** Fetch current neon color */
-  getNeonColor() {
-    return this.color === 'secondary' ? 'neon-secondary-track' : 'neon-primary-track';
+    
+    return baseClasses;
   }
 
   /** Render step marks for stepped variant */
-  renderStepMarks() {
+  private renderStepMarks() {
     if (this.variant !== 'stepped') return null;
 
     const steps = [];
-    const stepCount = (this.max - this.min) / this.step;
-
-    for (let i = 0; i <= stepCount; i++) {
-      const percentage = (i / stepCount) * 100;
-
-      if (this.orientation === 'vertical') {
-        steps.push(
-          <div
-            key={i}
-            class="absolute h-0.5 w-3 bg-gray-400"
-            style={{
-              bottom: `${percentage}%`,
-              left: '50%',
-              transform: 'translateX(-50%) translateY(1px)',
-            }}
-          ></div>,
-        );
-      } else {
-        steps.push(
-          <div
-            key={i}
-            class="absolute w-0.5 h-3 bg-gray-400"
-            style={{
-              left: `${percentage}%`,
-              top: '50%',
-              transform: 'translateX(-50%) translateY(-50%)',
-            }}
-          ></div>,
-        );
-      }
+    for (let i = this.min; i <= this.max; i += this.step) {
+      const percentage = ((i - this.min) / (this.max - this.min)) * 100;
+      steps.push(
+        <div
+          key={i}
+          class={`absolute w-1 h-1 bg-gray-400 rounded-full ${
+            this.orientation === 'vertical' 
+              ? `bottom-[${percentage}%] left-1/2 -translate-x-1/2` 
+              : `left-[${percentage}%] top-1/2 -translate-y-1/2`
+          }`}
+        />
+      );
     }
-
-    return <div class="absolute inset-0 pointer-events-none">{steps}</div>;
+    
+    return steps;
   }
 
-  /** Render custom thumb shapes */
-  renderCustomThumb() {
-    if (!['arrow', 'triangle', 'diamond'].includes(this.thumbShape)) return null;
+  /** Render last updated timestamp if enabled */
+  private renderLastUpdated() {
+    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
 
-    const thumbColor = this.variant === 'neon' ? '#ffffff' : '#ffffff';
-    const strokeColor = '#374151';
-
-    if (this.thumbShape === 'arrow') {
-      return (
-        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-          {/* Left pointing triangle */}
-          <svg width="12" height="16" viewBox="0 0 12 16" class="absolute -translate-x-1.5">
-            <path d="M8 3 L3 8 L8 13 Z" fill={thumbColor} stroke={strokeColor} stroke-width="1" />
-          </svg>
-          {/* Right pointing triangle */}
-          <svg width="12" height="16" viewBox="0 0 12 16" class="absolute translate-x-1.5">
-            <path d="M4 3 L9 8 L4 13 Z" fill={thumbColor} stroke={strokeColor} stroke-width="1" />
-          </svg>
-        </div>
-      );
-    }
-
-    if (this.thumbShape === 'triangle') {
-      return (
-        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <svg width="20" height="20" viewBox="0 0 20 20" class="absolute">
-            <path d="M10 3 L17 15 L3 15 Z" fill={thumbColor} stroke={strokeColor} stroke-width="1" />
-          </svg>
-        </div>
-      );
-    }
-
-    if (this.thumbShape === 'diamond') {
-      return (
-        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <svg width="20" height="20" viewBox="0 0 20 20" class="absolute">
-            <path d="M2 10 L10 2 L18 10 L10 18 Z" fill={thumbColor} stroke={strokeColor} stroke-width="1" />
-          </svg>
-        </div>
-      );
-    }
-
-    return null;
+    const timeText = formatLastUpdated(this.lastUpdatedTs);
+    return (
+      <span 
+        class={`text-xs ${this.dark ? 'text-gray-300' : 'text-gray-500'} ml-2`}
+        title={`Last updated: ${new Date(this.lastUpdatedTs).toLocaleString()}`}
+        part="last-updated"
+      >
+        {timeText}
+      </span>
+    );
   }
 
-  /** Render final component */
+  /** Render the component */
   render() {
-    const trackStyles = this.getTrackStyle();
-    const thumbStyle = this.getThumbStyle();
-    const isDisabled = this.state === 'disabled';
-    const isVertical = this.orientation === 'vertical';
-    const percent = ((this.currentValue - this.min) / (this.max - this.min)) * 100;
+    const canInteract = !this.disabled && !this.readonly;
+    const percentage = ((this.isActive - this.min) / (this.max - this.min)) * 100;
+
+    // Tooltip text
+    let hoverTitle = '';
+    if (this.readonly) {
+      hoverTitle = 'Read-only mode - Value reflects external state';
+    } else if (this.disabled) {
+      hoverTitle = 'Slider is disabled';
+    } else {
+      hoverTitle = `Drag to adjust${this.label ? ` ${this.label}` : ''} (${this.isActive})`;
+    }
 
     return (
-      <div class={isVertical ? 'flex flex-col items-center w-20 mx-4 mb-4' : 'w-full'}>
-        {' '}
-        {/* Reduced mb-4 for vertical to avoid excess space */}
-        {/* Label only for horizontal sliders */}
-        {this.label && !isVertical && (
-          <label class={`block text-sm font-medium mb-4 ${isDisabled ? 'text-gray-400' : ''} ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{this.label}</label>
-        )}
-        {/* Value labels for vertical - max at top */}
-        {isVertical && (
-          <div class={`text-xs mb-4 text-center ${this.theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-            <span>{this.max}</span>
+      <div class="space-y-3" part="container">
+        {/* Label and status indicators */}
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            {/* Label slot or prop */}
+            <slot name="label">
+              {this.label && (
+                <label
+                  class={`text-sm font-medium ${this.dark ? 'text-white' : 'text-gray-900'}`}
+                  part="label"
+                >
+                  {this.label}
+                </label>
+              )}
+            </slot>
+            
+            {/* Status badge */}
+            {this.renderStatusBadge()}
+            
+            {/* Last updated timestamp */}
+            {this.renderLastUpdated()}
           </div>
-        )}
-        {/* Slider Interface */}
-        <div
-          class={isVertical ? 'relative flex flex-col items-center justify-center' : 'relative'}
-          style={isVertical ? { height: '12rem', width: '1.5rem' } : {}}
-          tabIndex={isDisabled ? -1 : 0}
-          onKeyDown={this.handleKeyDown}
-          role="slider"
-          aria-valuemin={this.min}
-          aria-valuemax={this.max}
-          aria-valuenow={this.currentValue}
-          aria-disabled={isDisabled ? 'true' : 'false'}
-        >
-          {/* Success Indicator */}
-          {StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError) && (
-            <div class={StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.classes} title={StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.tooltip}>
-              {StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError)!.icon}
-            </div>
-          )}
+          
+          {/* Current value display */}
+          <span class={`text-sm font-medium ${this.dark ? 'text-gray-300' : 'text-gray-600'}`}>
+            {this.isActive}
+          </span>
+        </div>
 
-      <div class={trackStyles.track} role="presentation" part="track">
-            {this.variant !== 'rainbow' && (
-              <div
-        class={`${trackStyles.progress} ${trackStyles.progressSize}`}
-        style={isVertical ? { height: `${percent}%`, bottom: '0', left: '0', position: 'absolute', width: '100%' } : { width: `${percent}%`, height: '100%' }}
-        role="presentation"
-        part="progress"
-              ></div>
-            )}
+        {/* Slider control */}
+        {this.readonly ? (
+          // Read-only indicator
+          <div
+            class={`relative rounded-full transition-all duration-300 ${
+              this.orientation === 'vertical' ? 'w-2 h-32' : 'h-2 w-full'
+            } bg-gray-300`}
+            title={`${hoverTitle} - Current value: ${this.isActive}`}
+            part="readonly-indicator"
+          >
+            <div
+              class={`absolute bg-green-500 animate-pulse shadow-lg shadow-green-500/50 rounded-full ${
+                this.orientation === 'vertical' 
+                  ? `w-full bottom-0 h-[${percentage}%]` 
+                  : `h-full left-0 w-[${percentage}%]`
+              }`}
+            />
+          </div>
+        ) : (
+          // Interactive slider
+          <div
+            class={`relative ${this.orientation === 'vertical' ? 'h-32 flex justify-center' : 'w-full'}`}
+            part="control-container"
+          >
+            <input
+              type="range"
+              min={this.min}
+              max={this.max}
+              step={this.step}
+              value={this.isActive}
+              disabled={!canInteract}
+              class={`slider-input ${this.getTrackStyle()}`}
+              onInput={this.handleChange}
+              onKeyDown={this.handleKeyDown}
+              title={hoverTitle}
+              part="control"
+            />
+            
+            {/* Step marks */}
             {this.renderStepMarks()}
           </div>
-          <input
-            type="range"
-            min={this.min}
-            max={this.max}
-            step={this.step}
-            value={this.currentValue}
-            disabled={isDisabled}
-            class={`absolute inset-0 ${isVertical ? 'slider-vertical' : 'w-full h-full'} opacity-0 cursor-pointer z-10 ${isDisabled ? 'cursor-not-allowed' : ''}`}
-            style={isVertical ? { writingMode: 'bt-lr', height: '100%', width: '100%' } : {}}
-            onInput={e => this.handleChange(e)}
-            onKeyDown={this.handleKeyDown}
-            tabIndex={isDisabled ? -1 : 0}
-          />
-          <div
-            class={`absolute ${isVertical ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2 -translate-x-1/2'} ${thumbStyle} ${
-              isDisabled ? 'opacity-50' : ''
-            } z-0`}
-            style={isVertical ? { bottom: `calc(${percent}% - 0.5rem)` } : { left: `${percent}%` }}
-            role="slider"
-            aria-valuemin={this.min}
-            aria-valuemax={this.max}
-            aria-valuenow={this.currentValue}
-            aria-orientation={this.orientation}
-            tabindex={isDisabled ? -1 : 0}
-            part="thumb"
-          >
-            {this.renderCustomThumb()}
-          </div>
-        </div>
-        {/* Value labels for vertical - min, current value box, and label at bottom */}
-        {isVertical && (
-          <div class={`flex flex-col items-center mt-4 space-y-2 text-xs ${this.theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`} style={{ marginBottom: '1.5rem' }}>
-            {' '}
-            {/* Increased margin below label/value group to prevent overlap */}
-            <span>{this.min}</span>
-            <div
-              class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${
-                this.theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'
-              } shadow-sm`}
-            >
-              {this.currentValue}
-            </div>
-            {this.label && <span class="text-xs font-medium text-center mt-1 mb-2">{this.label}</span>}
-          </div>
         )}
-  {/* Horizontal value labels: min/max on top, value box below, centered with extra gap */}
-          {!isVertical && (
-            <div>
-              <div class={`flex justify-between items-center text-xs mt-3 ${this.theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-                <span>{this.min}</span>
-                <span>{this.max}</span>
-              </div>
-              <div class="flex justify-center mt-0">
-                {' '}
-                {/* Increased gap (mt-4) */}
-                <div
-                  class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${
-                    this.theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'
-                  } shadow-sm`}
-                  style={{ display: 'inline-block' }}
-                >
-                  {this.currentValue}
-                </div>
-              </div>
-            </div>
-          )}
-        {/* Manual Control Interface */}
-        {this.enableManualControl && (
-          <div class={`mt-4 p-3 border rounded-lg ${isVertical ? 'w-full max-w-xs' : ''} ${this.theme === 'dark' ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-50'}`}>
-            <h4 class={`text-sm font-medium mb-2 ${this.theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Manual Control</h4>
+
+        {/* Manual control interface */}
+        {this.enableManualControl && canInteract && (
+          <div class={`p-3 rounded-lg border ${this.dark ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
+            <h4 class={`text-sm font-medium mb-2 ${this.dark ? 'text-white' : 'text-gray-900'}`}>Manual Control</h4>
             <form onSubmit={this.handleManualSubmit} class="flex gap-2 items-center">
               <input
                 type="number"
@@ -528,27 +695,26 @@ export class UiSlider {
                 max={this.max}
                 step={this.step}
                 value={this.manualInputValue}
-                disabled={isDisabled}
-                class={`flex-1 px-2 py-1 text-sm border rounded ${this.theme === 'dark' ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-gray-900'} ${
-                  isDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                disabled={!canInteract}
+                class={`flex-1 px-2 py-1 text-sm border rounded ${
+                  this.dark ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-gray-900'
                 }`}
                 onInput={this.handleManualInput}
-                placeholder="Enter value"
+                part="manual-input"
               />
               <button
                 type="submit"
-                disabled={isDisabled}
-                class={`px-3 py-1 text-sm font-medium rounded transition-colors ${
-                  isDisabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-primary text-white hover:bg-primary-dark'
+                disabled={!canInteract}
+                class={`px-3 py-1 text-sm rounded transition-colors ${
+                  this.dark ? 'bg-primary text-white hover:bg-primary/80' : 'bg-primary text-white hover:bg-primary/80'
                 }`}
+                part="manual-submit"
               >
                 Set
               </button>
             </form>
           </div>
         )}
-        {/* Error Message */}
-  {this.lastError && <div class="text-red-500 text-sm mt-2 px-2">{this.lastError}</div>}
       </div>
     );
   }

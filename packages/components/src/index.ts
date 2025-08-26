@@ -16,7 +16,6 @@ export { UiNumberPicker } from './components/ui-number-picker/ui-number-picker';
 export { UiCalendar } from './components/ui-calendar/ui-calendar';
 export { UiCheckbox } from './components/ui-checkbox/ui-checkbox';
 export { UiText } from './components/ui-text/ui-text';
-export { UiHeading } from './components/ui-heading/ui-heading';
 
 // Smart wrapper
 export { UiPropertyCard } from './components/ui-property-card/ui-property-card';

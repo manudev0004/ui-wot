@@ -30,7 +30,6 @@
 
 // Component classes for framework integration
 export { UiButton } from './components/ui-button/ui-button';
-export { UiHeading } from './components/ui-heading/ui-heading';
 export { UiText } from './components/ui-text/ui-text';
 export { UiToggle } from './components/ui-toggle/ui-toggle';
 export { UiSlider } from './components/ui-slider/ui-slider';

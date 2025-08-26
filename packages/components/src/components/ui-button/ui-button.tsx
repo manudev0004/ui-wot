@@ -1,6 +1,6 @@
 import { Component, Prop, State, h, Event, EventEmitter, Element, Watch, Method } from '@stencil/core';
-import { StatusIndicator, type OperationStatus } from '../../utils/status-indicator';
 import { UiMsg } from '../../utils/types';
+import { formatLastUpdated } from '../../utils/common-props';
 
 export interface UiButtonClick { label: string }
 
@@ -40,7 +40,7 @@ export interface UiButtonClick { label: string }
   shadow: true,
 })
 export class UiButton {
-  @Element() hostElement!: HTMLElement;
+  @Element() el!: HTMLElement;
 
   /**
    * Visual style variant of the button.
@@ -51,57 +51,85 @@ export class UiButton {
   @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'minimal';
 
   /**
-   * Current state of the button.
-   * - active: Button is enabled (default)
-   * - disabled: Button cannot be interacted with
+   * Whether the component is disabled (cannot be interacted with).
+   * @example
+   * ```html
+   * <ui-button disabled="true" label="Cannot Click"></ui-button>
+   * ```
    */
-  @Prop({ mutable: true }) state: 'active' | 'disabled' = 'active';
+  @Prop() disabled: boolean = false;
 
   /**
-   * Theme for the component.
+   * Dark theme variant.
+   * @example
+   * ```html
+   * <ui-button dark="true" label="Dark Button"></ui-button>
+   * ```
    */
-  @Prop() theme: 'light' | 'dark' = 'light';
+  @Prop() dark: boolean = false;
 
   /**
    * Color scheme to match thingsweb webpage
+   * @example
+   * ```html
+   * <ui-button color="secondary" label="Colored Button"></ui-button>
+   * ```
    */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
   /**
    * Button text label.
+   * @example
+   * ```html
+   * <ui-button label="Click Me"></ui-button>
+   * ```
    */
   @Prop() label: string = 'Button';
 
   /**
-   * Whether the component is disabled (cannot be interacted with).
-   */
-  @Prop() disabled: boolean = false;
-
-  /**
    * Whether the component is read-only (displays value but cannot be changed).
+   * @example
+   * ```html
+   * <ui-button readonly="true" label="Display Only"></ui-button>
+   * ```
    */
   @Prop() readonly: boolean = false;
 
   /**
-   * Legacy mode prop for backward compatibility with older demos.
-   * Accepts 'read' to indicate read-only mode, 'readwrite' for interactive.
-   */
-  @Prop() mode?: 'read' | 'readwrite';
-
-  /**
    * Enable keyboard navigation.
-   * Default: true
+   * @example
+   * ```html
+   * <ui-button keyboard="false" label="No Keyboard"></ui-button>
+   * ```
    */
   @Prop() keyboard: boolean = true;
+
+  /**
+   * Show last updated timestamp below the component.
+   * @example
+   * ```html
+   * <ui-button showLastUpdated="true" label="With Timestamp"></ui-button>
+   * ```
+   */
+  @Prop() showLastUpdated: boolean = false;
 
   /** Internal state for tracking if component is initialized */
   @State() isInitialized: boolean = false;
 
-  /**
-   * Primary event emitted when the component value changes.
-   * Use this event for all value change handling.
-   */
-  @Event() valueMsg!: EventEmitter<UiMsg<string>>;
+  /** Current button value - corresponds to its label */
+  @State() isActive: string = '';
+
+  /** Prevents infinite event loops during external updates */
+  @State() suppressEvents: boolean = false;
+
+  /** Current operation status for visual feedback */
+  @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
+
+  /** Error message for failed operations */
+  @State() lastError?: string;
+
+  /** Timestamp of last successful update */
+  @State() lastUpdatedTs?: number;
 
   /**
    * Deprecated: string-based handler names are removed.
@@ -116,62 +144,169 @@ export class UiButton {
    */
   // TD integration removed: use normal clickHandler or events for external integration
 
-  /** Unified status indicator state */
-  @State() operationStatus: OperationStatus = 'idle';
-  @State() lastError?: string;
-
   /** Event emitted when button is clicked */
   @Event() buttonClick: EventEmitter<UiButtonClick>;
 
-  /** Implement base class abstract methods */
+  /**
+   * Primary event emitted when the component value changes.
+   * Use this event for all value change handling.
+   * @example
+   * ```javascript
+   * document.querySelector('ui-button').addEventListener('valueMsg', (event) => {
+   *   console.log('Button clicked:', event.detail);
+   * });
+   * ```
+   */
+  @Event() valueMsg!: EventEmitter<UiMsg<string>>;
+
+  /** Consolidated setValue method with automatic Promise-based status management */
   @Method()
-  async setValue(value: string): Promise<boolean> {
-    if (this.state === 'disabled') return false;
+  async setValue(value: string, options?: {
+    /** Automatic write operation - component handles all status transitions */
+    writeOperation?: () => Promise<any>;
+    /** Automatic read operation with pulse indicator */
+    readOperation?: () => Promise<any>;
+    /** Apply change optimistically, revert on failure (default: true) */
+    optimistic?: boolean;
+    /** Auto-retry configuration for failed operations */
+    autoRetry?: {
+      attempts: number;
+      delay: number;
+    };
+    /** Manual status override (for advanced users) */
+    customStatus?: 'loading' | 'success' | 'error';
+    /** Error message for manual error status */
+    errorMessage?: string;
+    /** Internal flag to indicate this is a revert operation */
+    _isRevert?: boolean;
+  }): Promise<boolean> {
+    const prevValue = this.isActive;
+    
+    // Handle manual status override (backward compatibility)
+    if (options?.customStatus) {
+      if (options.customStatus === 'loading') {
+        this.operationStatus = 'loading';
+        this.lastError = undefined;
+      } else if (options.customStatus === 'success') {
+        this.operationStatus = 'success';
+        this.lastError = undefined;
+        this.lastUpdatedTs = Date.now();
+        setTimeout(() => { this.operationStatus = 'idle'; }, 1200);
+      } else if (options.customStatus === 'error') {
+        this.operationStatus = 'error';
+        this.lastError = options.errorMessage || 'Operation failed';
+        setTimeout(() => { this.operationStatus = 'idle'; this.lastError = undefined; }, 3000);
+      }
+      return true;
+    }
+
+    // Update the button label
+    this.isActive = value;
     this.label = value;
-    this.emitValueMsg(value);
+
+    // Emit value change event
+    if (!this.suppressEvents) {
+      this.emitValueMsg(value);
+    }
+
+    // Handle automatic Promise-based operations
+    if (options?.writeOperation || options?.readOperation) {
+      this.operationStatus = 'loading';
+      this.lastError = undefined;
+
+      try {
+        // Perform write operation if provided
+        if (options.writeOperation) {
+          await options.writeOperation();
+        }
+
+        // Perform read operation if provided  
+        if (options.readOperation) {
+          await options.readOperation();
+        }
+
+        // Success state
+        this.operationStatus = 'success';
+        this.lastUpdatedTs = Date.now();
+        setTimeout(() => { this.operationStatus = 'idle'; }, 1200);
+        return true;
+
+      } catch (error) {
+        // Handle failure
+        this.operationStatus = 'error';
+        this.lastError = error instanceof Error ? error.message : 'Operation failed';
+        
+        // Revert optimistic update if enabled
+        if (options?.optimistic !== false && !options?._isRevert) {
+          this.isActive = prevValue;
+          this.label = prevValue;
+        }
+
+        setTimeout(() => { this.operationStatus = 'idle'; this.lastError = undefined; }, 3000);
+        return false;
+      }
+    }
+
     return true;
   }
 
+  /** Get current button value (its label) */
   @Method()
   async getValue(): Promise<string> {
-    return this.label;
+    return this.isActive || this.label;
   }
 
-  /** Override disabled prop to sync with state */
-  componentWillLoad() {
-    // Simple mode handling - if mode is 'read', set readonly to true
-    if (this.mode === 'read') {
-      this.readonly = true;
+  /** Set value silently without triggering events or status changes */
+  @Method()
+  async setValueSilent(value: string): Promise<boolean> {
+    this.suppressEvents = true;
+    this.isActive = value;
+    this.label = value;
+    this.suppressEvents = false;
+    return true;
+  }
+
+  /** Manually set operation status */
+  @Method()
+  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', message?: string): Promise<void> {
+    this.operationStatus = status;
+    if (status === 'error' && message) {
+      this.lastError = message;
+      setTimeout(() => { this.operationStatus = 'idle'; this.lastError = undefined; }, 3000);
+    } else if (status === 'success') {
+      this.lastUpdatedTs = Date.now();
+      setTimeout(() => { this.operationStatus = 'idle'; }, 1200);
+    } else if (status === 'idle') {
+      this.lastError = undefined;
     }
-    this.isInitialized = true;
+  }
+
+  /** Trigger visual read pulse (brief animation) */
+  @Method()
+  async triggerReadPulse(): Promise<void> {
+    // For buttons, read pulse could highlight the button briefly
+    this.operationStatus = 'loading';
+    setTimeout(() => {
+      this.operationStatus = 'success';
+      this.lastUpdatedTs = Date.now();
+      setTimeout(() => { this.operationStatus = 'idle'; }, 800);
+    }, 200);
+  }
+
+  /** Emit standardized value change event */
+  private emitValueMsg(value: string): void {
+    if (this.suppressEvents) return;
     
-    // Sync state with disabled prop
-    if (this.disabled) {
-      this.state = 'disabled';
-    }
-  }
-
-  /** Watch for mode prop changes and update readonly state */
-  @Watch('mode')
-  protected watchMode(newValue: 'read' | 'readwrite' | undefined) {
-    // Simple mode handling
-    if (newValue === 'read') {
-      this.readonly = true;
-    } else if (newValue === 'readwrite') {
-      this.readonly = false;
-    }
-  }
-
-  /** Emit the unified UiMsg event */
-  private emitValueMsg(value: string, prevValue?: string) {
-    const msg: UiMsg<string> = {
+    this.valueMsg.emit({
       payload: value,
-      prev: prevValue,
       ts: Date.now(),
-      source: this.hostElement?.id || 'ui-button',
-      ok: true
-    };
-    this.valueMsg.emit(msg);
+      source: this.el?.id || 'ui-button',
+      meta: {
+        label: this.label,
+        variant: this.variant,
+        color: this.color
+      }
+    });
   }
 
   /** Check if component can be interacted with */
@@ -179,9 +314,35 @@ export class UiButton {
     return !this.disabled && !this.readonly;
   }
 
+  /** Watch for label changes and update internal state */
+  @Watch('label')
+  watchLabel(newValue: string): void {
+    if (this.isInitialized) {
+      this.isActive = newValue;
+    }
+  }
+
+  /** Initialize component */
+  componentWillLoad() {
+    // Initialize state
+    this.isActive = this.label;
+    this.isInitialized = true;
+  }
+
+  /** Watch for mode prop changes and update readonly state */
+  @Watch('disabled')
+  protected watchDisabled(newValue: boolean) {
+    // Update interaction state when disabled prop changes
+    if (newValue && this.operationStatus === 'idle') {
+      this.operationStatus = 'error';
+      this.lastError = 'Component is disabled';
+      setTimeout(() => { this.operationStatus = 'idle'; this.lastError = undefined; }, 1000);
+    }
+  }
+
   /** Handle button click */
   private handleClick = async () => {
-    if (this.state === 'disabled' || !this.canInteract) return;
+    if (this.disabled || !this.canInteract) return;
 
     // Show quick feedback
     this.operationStatus = 'loading';
@@ -210,7 +371,7 @@ export class UiButton {
 
   /** Handle keyboard input */
   private handleKeyDown = (event: KeyboardEvent) => {
-    if (this.state === 'disabled' || !this.canInteract || !this.keyboard) return;
+    if (this.disabled || !this.canInteract || !this.keyboard) return;
 
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -220,7 +381,7 @@ export class UiButton {
 
   /** Get button style classes */
   private getButtonStyle(): string {
-    const isDisabled = this.state === 'disabled';
+    const isDisabled = this.disabled;
 
     let baseClasses = 'px-6 h-12 flex items-center justify-center text-base font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg';
 
@@ -237,7 +398,7 @@ export class UiButton {
         baseClasses += ' text-gray-400';
       } else {
         // Clear color specification based on theme
-        if (this.theme === 'dark') {
+        if (this.dark) {
           baseClasses += ' bg-transparent text-white-dark hover:bg-gray-800';
         } else {
           baseClasses += ' bg-transparent text-black-force hover:bg-gray-100';
@@ -251,7 +412,7 @@ export class UiButton {
         const borderColor = `border-${this.getColorName()}`;
         const hoverBg = `hover:bg-${this.getColorName()}`;
 
-        if (this.theme === 'dark') {
+        if (this.dark) {
           baseClasses += ` border-2 ${borderColor} bg-transparent text-white-dark ${hoverBg} hover:text-white-force`;
         } else {
           baseClasses += ` border-2 ${borderColor} bg-transparent text-black-force ${hoverBg} hover:text-white-force`;
@@ -263,7 +424,7 @@ export class UiButton {
         baseClasses += ' bg-gray-400 text-white-force';
       } else {
         // Filled buttons: black text in light theme, white text in dark theme
-        if (this.theme === 'dark') {
+        if (this.dark) {
           baseClasses += ` bg-${this.getColorName()} text-white-force hover:bg-${this.getColorName()}-dark`;
         } else {
           baseClasses += ` bg-${this.getColorName()} text-black-force hover:bg-${this.getColorName()}-dark`;
@@ -282,18 +443,63 @@ export class UiButton {
     return this.color === 'primary' ? 'primary' : this.color === 'secondary' ? 'secondary' : 'neutral';
   }
 
+  /** Render status badge */
+  private renderStatusBadge(): any {
+    if (this.operationStatus === 'idle') return null;
+    
+    const badgeClasses = `inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 ${
+      this.operationStatus === 'loading' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
+      this.operationStatus === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+      'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+    }`;
+    
+    const icon = this.operationStatus === 'loading' ? '⟳' : 
+                 this.operationStatus === 'success' ? '✓' : '✗';
+    
+    return (
+      <span class={badgeClasses} part="status-badge">
+        {icon} {this.operationStatus === 'error' && this.lastError ? this.lastError : this.operationStatus}
+      </span>
+    );
+  }
+
+  /** Render last updated timestamp */
+  private renderLastUpdated(): any {
+    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
+    
+    const timeText = formatLastUpdated(this.lastUpdatedTs);
+    return (
+      <div class={`text-xs mt-1 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`} part="last-updated">
+        {timeText}
+      </div>
+    );
+  }
+
   /** Render component */
   render() {
-    const isDisabled = this.state === 'disabled';
-    const indicator = StatusIndicator.getIndicatorConfig(this.operationStatus, { theme: this.theme === 'dark' ? 'dark' : 'light', size: 'small', position: 'top-right' }, this.lastError);
+    const isDisabled = this.disabled;
 
     return (
       <div class="relative" part="container" role="group" aria-label={this.label || 'Button'}>
-        {indicator && <div class={indicator.classes} title={indicator.tooltip} part="status-indicator">{indicator.icon}</div>}
-
-  <button class={this.getButtonStyle()} onClick={this.handleClick} onKeyDown={this.handleKeyDown} disabled={isDisabled} aria-label={this.label} part="button" aria-pressed={isDisabled ? 'false' : undefined}>
-          {this.label}
-        </button>
+        <div class="flex items-center">
+          <button 
+            class={this.getButtonStyle()} 
+            onClick={this.handleClick} 
+            onKeyDown={this.handleKeyDown} 
+            disabled={isDisabled} 
+            aria-label={this.label} 
+            part="button" 
+            aria-pressed={isDisabled ? 'false' : undefined}
+          >
+            {this.label}
+          </button>
+          
+          {/* Status badge */}
+          {this.renderStatusBadge()}
+        </div>
+        
+        {/* Last updated timestamp */}
+        {this.renderLastUpdated()}
       </div>
     );
   }

@@ -1,24 +1,162 @@
-import { Component, Prop, State, h, Event, EventEmitter, Watch } from '@stencil/core';
-import { StatusIndicator, type OperationStatus } from '../../utils/status-indicator';
+import { Component, Prop, State, h, Event, EventEmitter, Watch, Method, Element } from '@stencil/core';
+import { UiMsg } from '../../utils/types';
+import { formatLastUpdated } from '../../utils/common-props';
 
-export interface UiTextValueChange { value: string }
-
+/**
+ * Versatile text component supporting display, editing, and various structured formats.
+ * 
+ * @example Basic Usage
+ * ```html
+ * <ui-text value="Hello World"></ui-text>
+ * ```
+ * 
+ * @example Editable Text
+ * ```html
+ * <ui-text variant="edit" value="Edit me" placeholder="Type here..."></ui-text>
+ * ```
+ * 
+ * @example Structured Content
+ * ```html
+ * <ui-text structure="json" value='{"key": "value"}'></ui-text>
+ * ```
+ * 
+ * @example Multi-line Text
+ * ```html
+ * <ui-text textType="multi" rows="5" expandable="true"></ui-text>
+ * ```
+ */
 @Component({ tag: 'ui-text', shadow: true })
 export class UiText {
+  @Element() el!: HTMLElement;
+
+  /**
+   * Display variant - 'display' for read-only, 'edit' for editable
+   * @example
+   * ```html
+   * <ui-text variant="edit" value="Editable text"></ui-text>
+   * ```
+   */
   @Prop() variant: 'display' | 'edit' = 'display';
+
+  /**
+   * Text input type - 'single' for single-line, 'multi' for multi-line
+   * @example
+   * ```html
+   * <ui-text textType="multi" rows="5"></ui-text>
+   * ```
+   */
   @Prop() textType: 'single' | 'multi' = 'single';
+
+  /**
+   * Content structure for syntax highlighting
+   * @example
+   * ```html
+   * <ui-text structure="json" value='{"formatted": true}'></ui-text>
+   * ```
+   */
   @Prop() structure: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown' = 'unstructured';
-  @Prop() resizable: boolean = false;
-  @Prop() expandable: boolean = false;
-  @Prop() maxHeight: number = 200;
-  @Prop({ mutable: true }) state: 'disabled' | 'active' | 'default' = 'default';
-  @Prop() theme: 'light' | 'dark' = 'light';
+
+  /**
+   * Whether the component is disabled (cannot be interacted with).
+   * @example
+   * ```html
+   * <ui-text disabled="true" value="Cannot edit"></ui-text>
+   * ```
+   */
+  @Prop() disabled: boolean = false;
+
+  /**
+   * Dark theme variant.
+   * @example
+   * ```html
+   * <ui-text dark="true" value="Dark themed text"></ui-text>
+   * ```
+   */
+  @Prop() dark: boolean = false;
+
+  /**
+   * Color scheme for styling
+   * @example
+   * ```html
+   * <ui-text color="secondary" value="Colored text"></ui-text>
+   * ```
+   */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
+
+  /**
+   * Label for the text component
+   * @example
+   * ```html
+   * <ui-text label="Description" value="Text content"></ui-text>
+   * ```
+   */
   @Prop() label?: string;
+
+  /**
+   * Whether the component is read-only (displays value but cannot be changed).
+   * @example
+   * ```html
+   * <ui-text readonly="true" value="Read-only text"></ui-text>
+   * ```
+   */
+  @Prop() readonly: boolean = false;
+
+  /**
+   * Enable keyboard navigation.
+   * @example
+   * ```html
+   * <ui-text keyboard="false" value="No keyboard support"></ui-text>
+   * ```
+   */
+  @Prop() keyboard: boolean = true;
+
+  /**
+   * Show last updated timestamp below the component.
+   * @example
+   * ```html
+   * <ui-text showLastUpdated="true" value="With timestamp"></ui-text>
+   * ```
+   */
+  @Prop() showLastUpdated: boolean = false;
+
+  /**
+   * Current text value
+   * @example
+   * ```html
+   * <ui-text value="Initial text content"></ui-text>
+   * ```
+   */
   @Prop({ mutable: true }) value: string = '';
+
+  /**
+   * Placeholder text for empty fields
+   */
   @Prop() placeholder?: string;
+
+  /**
+   * Maximum character length
+   */
   @Prop() maxLength?: number;
+
+  /**
+   * Number of rows for multi-line text
+   */
   @Prop() rows: number = 4;
+
+  /**
+   * Allow manual resizing of text area
+   */
+  @Prop() resizable: boolean = false;
+
+  /**
+   * Allow expanding/collapsing of text area
+   */
+  @Prop() expandable: boolean = false;
+
+  /**
+   * Maximum height when expanded (pixels)
+   */
+  @Prop() maxHeight: number = 200;
 
   @State() currentValue: string = '';
   @State() operationStatus: OperationStatus = 'idle';

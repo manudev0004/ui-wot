@@ -11,17 +11,18 @@ Advanced toggle switch component with reactive state management and multiple vis
 
 ## Properties
 
-| Property    | Attribute   | Description                                                                          | Type                                                   | Default     |
-| ----------- | ----------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------ | ----------- |
-| `color`     | `color`     | Color theme variant.                                                                 | `"neutral" \| "primary" \| "secondary"`                | `'primary'` |
-| `connected` | `connected` | Connection state for readonly mode                                                   | `boolean`                                              | `true`      |
-| `dark`      | `dark`      | Enable dark theme for the component. When true, uses light text on dark backgrounds. | `boolean`                                              | `false`     |
-| `disabled`  | `disabled`  | Whether the toggle is disabled (cannot be interacted with).                          | `boolean`                                              | `false`     |
-| `keyboard`  | `keyboard`  | Enable keyboard navigation (Space and Enter keys). Default: true                     | `boolean`                                              | `true`      |
-| `label`     | `label`     | Text label displayed next to the toggle.                                             | `string`                                               | `undefined` |
-| `readonly`  | `readonly`  | Whether the toggle is read-only (displays value but cannot be changed).              | `boolean`                                              | `false`     |
-| `value`     | `value`     | Current boolean value of the toggle.                                                 | `boolean`                                              | `false`     |
-| `variant`   | `variant`   | Visual style variant of the toggle.                                                  | `"apple" \| "circle" \| "cross" \| "neon" \| "square"` | `'circle'`  |
+| Property          | Attribute           | Description                                                                          | Type                                                   | Default     |
+| ----------------- | ------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------ | ----------- |
+| `color`           | `color`             | Color theme variant.                                                                 | `"neutral" \| "primary" \| "secondary"`                | `'primary'` |
+| `connected`       | `connected`         | Connection state for readonly mode                                                   | `boolean`                                              | `true`      |
+| `dark`            | `dark`              | Enable dark theme for the component. When true, uses light text on dark backgrounds. | `boolean`                                              | `false`     |
+| `disabled`        | `disabled`          | Whether the toggle is disabled (cannot be interacted with).                          | `boolean`                                              | `false`     |
+| `keyboard`        | `keyboard`          | Enable keyboard navigation (Space and Enter keys). Default: true                     | `boolean`                                              | `true`      |
+| `label`           | `label`             | Text label displayed next to the toggle.                                             | `string`                                               | `undefined` |
+| `readonly`        | `readonly`          | Whether the toggle is read-only (displays value but cannot be changed).              | `boolean`                                              | `false`     |
+| `showLastUpdated` | `show-last-updated` | Show last updated timestamp when true                                                | `boolean`                                              | `false`     |
+| `value`           | `value`             | Current boolean value of the toggle.                                                 | `boolean`                                              | `false`     |
+| `variant`         | `variant`           | Visual style variant of the toggle.                                                  | `"apple" \| "circle" \| "cross" \| "neon" \| "square"` | `'circle'`  |
 
 
 ## Events
@@ -33,26 +34,32 @@ Advanced toggle switch component with reactive state management and multiple vis
 
 ## Methods
 
-### `clearErrorState() => Promise<void>`
+### `getValue(includeMetadata?: boolean) => Promise<boolean | { value: boolean; lastUpdated?: number; status: string; error?: string; }>`
 
-
-
-#### Returns
-
-Type: `Promise<void>`
-
-
-
-### `finishWriteOperation(success: boolean, errorMsg?: string) => Promise<void>`
-
-
+Get the current toggle value with optional metadata
 
 #### Parameters
 
-| Name       | Type      | Description |
-| ---------- | --------- | ----------- |
-| `success`  | `boolean` |             |
-| `errorMsg` | `string`  |             |
+| Name              | Type      | Description                                 |
+| ----------------- | --------- | ------------------------------------------- |
+| `includeMetadata` | `boolean` | - Include last updated timestamp and status |
+
+#### Returns
+
+Type: `Promise<boolean | { value: boolean; lastUpdated?: number; status: string; error?: string; }>`
+
+Promise that resolves to the current value or value with metadata
+
+### `setStatus(status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>`
+
+Set operation status for external status management
+
+#### Parameters
+
+| Name           | Type                                          | Description |
+| -------------- | --------------------------------------------- | ----------- |
+| `status`       | `"idle" \| "loading" \| "success" \| "error"` |             |
+| `errorMessage` | `string`                                      |             |
 
 #### Returns
 
@@ -60,19 +67,32 @@ Type: `Promise<void>`
 
 
 
-### `getValue() => Promise<boolean>`
+### `setValue(value: boolean, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>`
 
-Get the current toggle value.
+Consolidated setValue method with automatic Promise-based status management
+
+#### Parameters
+
+| Name      | Type                                                                                                                                                                                                                                                 | Description |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `value`   | `boolean`                                                                                                                                                                                                                                            |             |
+| `options` | `{ writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" \| "success" \| "error"; errorMessage?: string; _isRevert?: boolean; }` |             |
 
 #### Returns
 
 Type: `Promise<boolean>`
 
-Promise that resolves to the current boolean value
-
-### `markReadUpdate() => Promise<void>`
 
 
+### `setValueSilent(value: boolean) => Promise<void>`
+
+Set value programmatically without triggering events (for external updates)
+
+#### Parameters
+
+| Name    | Type      | Description |
+| ------- | --------- | ----------- |
+| `value` | `boolean` |             |
 
 #### Returns
 
@@ -80,41 +100,9 @@ Type: `Promise<void>`
 
 
 
-### `revertValue(prevValue: boolean) => Promise<void>`
+### `triggerReadPulse() => Promise<void>`
 
-Revert toggle to previous value (used when write fails)
-
-#### Parameters
-
-| Name        | Type      | Description |
-| ----------- | --------- | ----------- |
-| `prevValue` | `boolean` |             |
-
-#### Returns
-
-Type: `Promise<void>`
-
-
-
-### `setValue(value: boolean) => Promise<boolean>`
-
-Set the toggle value programmatically.
-
-#### Parameters
-
-| Name    | Type      | Description             |
-| ------- | --------- | ----------------------- |
-| `value` | `boolean` | - The new boolean value |
-
-#### Returns
-
-Type: `Promise<boolean>`
-
-Promise that resolves to true if successful
-
-### `startWriteOperation() => Promise<void>`
-
-Simple status methods
+Trigger a read pulse indicator for readonly mode when data is actually fetched
 
 #### Returns
 
@@ -130,6 +118,7 @@ Type: `Promise<void>`
 | `"container"`          |             |
 | `"control"`            |             |
 | `"label"`              |             |
+| `"last-updated"`       |             |
 | `"readonly-indicator"` |             |
 | `"thumb"`              |             |
 
