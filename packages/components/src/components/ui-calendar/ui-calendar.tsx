@@ -1,6 +1,6 @@
 import { Component, Prop, State, h, Watch, Event, EventEmitter, Method, Element } from '@stencil/core';
 import { UiMsg } from '../../utils/types';
-import { formatLastUpdated } from '../../utils/common-props';
+import { StatusIndicator } from '../../utils/status-indicator';
 
 export interface UiCalendarDateChange { 
   value: string;
@@ -296,9 +296,12 @@ export class UiCalendar {
    */
   @Event() valueMsg: EventEmitter<UiMsg<string>>;
 
-  // Status management
-  @State() private _status: 'success' | 'warning' | 'error' | null = null;
-  @State() private _lastUpdated: Date | null = null;
+  // Unified status indicator states
+  @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
+  @State() lastError?: string;
+  @State() lastUpdatedTs?: number;
+  @State() timestampUpdateTimer?: number;
+  @State() private timestampCounter = 0;
 
   /** Watch for TD URL changes */
   // TD watcher removed
@@ -319,6 +322,21 @@ export class UiCalendar {
       this.selectedDate = new Date(this.value);
       this.currentMonth = this.selectedDate.getMonth();
       this.currentYear = this.selectedDate.getFullYear();
+    }
+    
+    // Initialize timestamp auto-update timer if showLastUpdated is enabled
+    if (this.showLastUpdated && this.lastUpdatedTs) {
+      this.timestampUpdateTimer = window.setInterval(() => {
+        // Force re-render to update relative timestamp
+        this.timestampCounter++;
+      }, 30000); // Update every 30 seconds
+    }
+  }
+
+  /** Cleanup component */
+  disconnectedCallback() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
     }
   }
 
@@ -424,7 +442,7 @@ export class UiCalendar {
   private getCalendarStyles() {
     const isDisabled = this.disabled;
     const isReadonly = this.readonly;
-    const colorName = this.getColorName();
+    const colors = this.getColorClasses();
     
     // Base container styles
     let containerClass = `relative ${this.inline ? 'block' : 'inline-block'}`;
@@ -449,17 +467,17 @@ export class UiCalendar {
     if (this.variant === 'minimal') {
       inputClass += ` bg-transparent border-0 ${
         this.dark ? 'text-white hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-100'
-      } focus:ring-${colorName}`;
+      } ${colors.focus}`;
     } else if (this.variant === 'outlined') {
-      inputClass += ` border-2 bg-transparent border-${colorName} ${
+      inputClass += ` border-2 bg-transparent ${colors.border} ${
         this.dark ? 'text-white hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-50'
-      } focus:ring-${colorName}`;
+      } ${colors.focus}`;
     } else if (this.variant === 'filled') {
-      inputClass += ` bg-${colorName} text-white border-0 hover:bg-${colorName}-dark focus:ring-${colorName}`;
+      inputClass += ` ${colors.bg} text-white border-0 ${colors.hover} focus:ring-white`;
     } else if (this.variant === 'elevated') {
       inputClass += ` bg-white border border-gray-300 shadow-md hover:shadow-lg ${
         this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'text-gray-900'
-      } focus:ring-${colorName}`;
+      } ${colors.focus}`;
     }
 
     // Animation classes
@@ -474,23 +492,64 @@ export class UiCalendar {
     return { containerClass, inputClass, calendarClass };
   }
 
-  /** Get color name for CSS classes */
-  private getColorName(): string {
-    const colorMap = {
-      'primary': 'blue-500',
-      'secondary': 'green-500', 
-      'neutral': 'gray-500',
-      'success': 'green-600',
-      'warning': 'orange-500',
-      'danger': 'red-500'
-    };
-    return colorMap[this.color] || colorMap.primary;
+  /** Get concrete color classes for variants */
+  private getColorClasses() {
+    switch (this.color) {
+      case 'secondary':
+        return {
+          border: 'border-green-500',
+          bg: 'bg-green-500',
+          focus: 'focus:ring-green-500',
+          text: 'text-green-500',
+          hover: 'hover:bg-green-600'
+        };
+      case 'neutral':
+        return {
+          border: 'border-gray-500',
+          bg: 'bg-gray-500',
+          focus: 'focus:ring-gray-500',
+          text: 'text-gray-500',
+          hover: 'hover:bg-gray-600'
+        };
+      case 'success':
+        return {
+          border: 'border-green-600',
+          bg: 'bg-green-600',
+          focus: 'focus:ring-green-600',
+          text: 'text-green-600',
+          hover: 'hover:bg-green-700'
+        };
+      case 'warning':
+        return {
+          border: 'border-orange-500',
+          bg: 'bg-orange-500',
+          focus: 'focus:ring-orange-500',
+          text: 'text-orange-500',
+          hover: 'hover:bg-orange-600'
+        };
+      case 'danger':
+        return {
+          border: 'border-red-500',
+          bg: 'bg-red-500',
+          focus: 'focus:ring-red-500',
+          text: 'text-red-500',
+          hover: 'hover:bg-red-600'
+        };
+      default: // primary
+        return {
+          border: 'border-primary',
+          bg: 'bg-primary',
+          focus: 'focus:ring-primary',
+          text: 'text-primary',
+          hover: 'hover:bg-primary'
+        };
+    }
   }
 
   /** Get enhanced active color styling */
   private getActiveColor() {
-    const colorName = this.getColorName();
-    return `bg-${colorName} text-white hover:bg-${colorName.replace('500', '600')} transition-colors`;
+    const colors = this.getColorClasses();
+    return `${colors.bg} text-white ${colors.hover} transition-colors`;
   }
 
   /** Get days in month */
@@ -556,7 +615,7 @@ export class UiCalendar {
       this.currentYear = this.selectedDate.getFullYear();
     }
 
-    this._lastUpdated = new Date();
+    this.lastUpdatedTs = Date.now();
 
     // Emit standardized event
     this.valueMsg.emit({
@@ -619,7 +678,7 @@ export class UiCalendar {
       this.currentYear = this.selectedDate.getFullYear();
     }
 
-    this._lastUpdated = new Date();
+    this.lastUpdatedTs = Date.now();
   }
 
   /**
@@ -634,8 +693,23 @@ export class UiCalendar {
    * ```
    */
   @Method()
-  async setStatus(status: 'success' | 'warning' | 'error' | null, message?: string): Promise<void> {
-    this._status = status;
+  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', message?: string): Promise<void> {
+    this.operationStatus = status;
+    if (status === 'error' && message) {
+      this.lastError = message;
+    } else if (status !== 'error') {
+      this.lastError = undefined;
+    }
+    
+    if (status === 'success') {
+      this.lastUpdatedTs = Date.now();
+      // Auto-clear success status after short delay
+      setTimeout(() => {
+        if (this.operationStatus === 'success') {
+          this.operationStatus = 'idle';
+        }
+      }, 1200);
+    }
     
     // Emit status change event
     this.valueMsg.emit({
@@ -796,28 +870,14 @@ export class UiCalendar {
           </div>
         )}
 
-        {/* Status Badge */}
-        {this._status && (
-          <div class={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full mt-2 ${
-            this._status === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-            this._status === 'warning' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-          }`}>
-            <span class={`w-2 h-2 rounded-full mr-1 ${
-              this._status === 'success' ? 'bg-green-600' :
-              this._status === 'warning' ? 'bg-yellow-600' :
-              'bg-red-600'
-            }`}></span>
-            {this._status}
+        {/* Unified Status Indicators - Right aligned */}
+        <div class="flex justify-between items-start mt-2">
+          <div class="flex-1"></div>
+          <div class="flex flex-col items-end gap-1">
+            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
+            {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
           </div>
-        )}
-
-        {/* Last Updated */}
-        {this.showLastUpdated && this._lastUpdated && (
-          <div class={`text-xs mt-2 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>
-            {formatLastUpdated(this._lastUpdated.getTime())}
-          </div>
-        )}
+        </div>
 
         {/* Error Message */}
         {this.errorMessage && <div class="text-red-500 text-sm mt-2">{this.errorMessage}</div>}

@@ -1,5 +1,6 @@
 import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
 import { UiMsg } from '../../utils/types';
+import { StatusIndicator } from '../../utils/status-indicator';
 
 /**
  * Advanced checkbox component with reactive state management and multiple visual styles.
@@ -121,6 +122,10 @@ export class UiCheckbox {
   @Prop({ mutable: true }) connected: boolean = true;
   /** Timestamp of last value update for showLastUpdated feature */
   @State() lastUpdatedTs?: number;
+  
+  /** Timer for auto-updating timestamps */
+  @State() timestampUpdateTimer?: number;
+  @State() private timestampCounter = 0;
 
   /** Consolidated setValue method with automatic Promise-based status management */
   @Method()
@@ -288,21 +293,7 @@ export class UiCheckbox {
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
-    this.operationStatus = status;
-    if (status === 'error' && errorMessage) {
-      this.lastError = errorMessage;
-    } else if (status !== 'error') {
-      this.lastError = undefined;
-    }
-    
-    // Auto-clear success status
-    if (status === 'success') {
-      setTimeout(() => { 
-        if (this.operationStatus === 'success') {
-          this.operationStatus = 'idle'; 
-        }
-      }, 1200);
-    }
+    StatusIndicator.applyStatus(this, status, { errorMessage });
   }
 
   /**
@@ -324,6 +315,21 @@ export class UiCheckbox {
   componentWillLoad() {
     this.isActive = Boolean(this.value);
     this.isInitialized = true;
+    
+    // Initialize timestamp auto-update timer if showLastUpdated is enabled
+    if (this.showLastUpdated && this.lastUpdatedTs) {
+      this.timestampUpdateTimer = window.setInterval(() => {
+        // Force re-render to update relative timestamp
+        this.timestampCounter++;
+      }, 30000); // Update every 30 seconds
+    }
+  }
+
+  /** Cleanup component */
+  disconnectedCallback() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+    }
   }
 
   /** Watch for value prop changes and update internal state */
@@ -517,12 +523,14 @@ export class UiCheckbox {
           )}
         </div>
         
-        {/* Error Message */}
-        {this.lastError && (
-          <div class="text-red-500 text-sm mt-1 px-2">
-            {this.lastError}
+        {/* Unified Status Indicators - Right aligned */}
+        <div class="flex justify-between items-start mt-2">
+          <div class="flex-1"></div>
+          <div class="flex flex-col items-end gap-1">
+            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
+            {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
           </div>
-        )}
+        </div>
       </div>
     );
   }

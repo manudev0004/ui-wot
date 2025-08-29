@@ -1,5 +1,6 @@
 import { Component, Prop, State, h, Event, EventEmitter, Element, Listen, Method } from '@stencil/core';
 import { UiMsg, TdCapability, classifyTdProperty } from '../../utils/types';
+import { StatusIndicator } from '../../utils/status-indicator';
 
 /**
  * Smart wrapper for TD properties that provides visual feedback, status indicators,
@@ -71,14 +72,18 @@ export class UiPropertyCard {
    */
   @Prop() variant: 'default' | 'compact' | 'minimal' = 'default';
 
-  /** Current operation status */
-  @State() status: 'idle' | 'pending' | 'success' | 'error' = 'idle';
+  /** Current operation status using unified system */
+  @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
 
-  /** Status message */
-  @State() statusMessage?: string;
+  /** Error message for unified system */
+  @State() lastError?: string;
 
-  /** Last updated timestamp */
-  @State() lastUpdated?: number;
+  /** Last updated timestamp using unified system */
+  @State() lastUpdatedTs?: number;
+  
+  /** Timer for auto-updating timestamps */
+  @State() timestampUpdateTimer?: number;
+  @State() private timestampCounter = 0;
 
   /** Computed capability information */
   @State() capability?: TdCapability;
@@ -109,18 +114,31 @@ export class UiPropertyCard {
       value: event.detail.payload
     });
 
-    // Show pending status
-    this.setStatus('pending', 'Writing value...');
+    // Show loading status
+    this.setStatus('loading', 'Writing value...');
   }
 
   /**
-   * Set the current status with optional auto-clear
+   * Set the current status with unified system
    */
   @Method()
-  async setStatus(status: 'idle' | 'pending' | 'success' | 'error', message?: string, autoClearMs?: number) {
-    this.status = status;
-    this.statusMessage = message;
-    this.lastUpdated = Date.now();
+  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', message?: string, autoClearMs?: number) {
+    // Map 'pending' to 'loading' for backward compatibility
+    if (status === 'loading') {
+      this.operationStatus = 'loading';
+    } else {
+      this.operationStatus = status;
+    }
+    
+    if (status === 'error' && message) {
+      this.lastError = message;
+    } else if (status !== 'error') {
+      this.lastError = undefined;
+    }
+    
+    if (status === 'success' || status === 'loading') {
+      this.lastUpdatedTs = Date.now();
+    }
 
     // Clear any existing timer
     if (this.statusTimer) {
@@ -130,9 +148,14 @@ export class UiPropertyCard {
     // Auto-clear success/error status
     if (autoClearMs && (status === 'success' || status === 'error')) {
       this.statusTimer = window.setTimeout(() => {
-        this.status = 'idle';
-        this.statusMessage = undefined;
+        this.operationStatus = 'idle';
+        this.lastError = undefined;
       }, autoClearMs);
+    } else if (status === 'success') {
+      // Default auto-clear for success
+      this.statusTimer = window.setTimeout(() => {
+        this.operationStatus = 'idle';
+      }, 1200);
     }
   }
 
@@ -157,11 +180,22 @@ export class UiPropertyCard {
     if (this.schema) {
       this.capability = classifyTdProperty(this.schema);
     }
+    
+    // Initialize timestamp auto-update timer if showTimestamp is enabled
+    if (this.showTimestamp && this.lastUpdatedTs) {
+      this.timestampUpdateTimer = window.setInterval(() => {
+        // Force re-render to update relative timestamp
+        this.timestampCounter++;
+      }, 30000); // Update every 30 seconds
+    }
   }
 
   disconnectedCallback() {
     if (this.statusTimer) {
       clearTimeout(this.statusTimer);
+    }
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
     }
   }
 
@@ -193,54 +227,16 @@ export class UiPropertyCard {
     );
   }
 
-  /** Render status indicator */
+  /** Render status indicator using unified system */
   private renderStatusIndicator() {
     if (!this.showStatus) return null;
-
-    const statusClasses = {
-      idle: 'bg-gray-300',
-      pending: 'bg-blue-500 animate-pulse',
-      success: 'bg-green-500',
-      error: 'bg-red-500'
-    };
-
-    const statusIcons = {
-      idle: '○',
-      pending: '◐',
-      success: '✓',
-      error: '✗'
-    };
-
-    return (
-      <div class="flex items-center space-x-2" part="status">
-        <span 
-          class={`inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold ${statusClasses[this.status]}`}
-          title={this.statusMessage || this.status}
-        >
-          {statusIcons[this.status]}
-        </span>
-        
-        {this.statusMessage && (
-          <span class={`text-sm ${this.status === 'error' ? 'text-red-600' : 'text-gray-600'}`}>
-            {this.statusMessage}
-          </span>
-        )}
-      </div>
-    );
+    return StatusIndicator.renderStatusBadge(this.operationStatus, 'light', this.lastError, h);
   }
 
-  /** Render timestamp */
+  /** Render timestamp using unified system */
   private renderTimestamp() {
-    if (!this.showTimestamp || !this.lastUpdated) return null;
-
-    const timeAgo = Math.floor((Date.now() - this.lastUpdated) / 1000);
-    const timeText = timeAgo < 60 ? `${timeAgo}s ago` : `${Math.floor(timeAgo / 60)}m ago`;
-
-    return (
-      <span class="text-xs text-gray-500" title={new Date(this.lastUpdated).toLocaleString()}>
-        {timeText}
-      </span>
-    );
+    if (!this.showTimestamp || !this.lastUpdatedTs) return null;
+    return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), 'light', h);
   }
 
   /** Render action buttons */

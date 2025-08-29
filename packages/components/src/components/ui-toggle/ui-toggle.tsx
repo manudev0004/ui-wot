@@ -1,6 +1,6 @@
 import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
 import { UiMsg } from '../../utils/types';
-import { formatLastUpdated } from '../../utils/common-props';
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 
 /**
  * Toggle switch component with reactive state management and multiple visual styles.
@@ -114,8 +114,8 @@ export class UiToggle {
   /** Flag to prevent event loops when setting values programmatically */
   @State() private suppressEvents: boolean = false;
 
-  /** Operation status for write mode indicators */
-  @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
+  /** Operation status for unified status indicators */
+  @State() operationStatus: OperationStatus = 'idle';
   @State() lastError?: string;
   /** Timestamp of last read pulse (readonly updates) */
   @State() readPulseTs?: number;
@@ -123,6 +123,10 @@ export class UiToggle {
   @Prop({ mutable: true }) connected: boolean = true;
   /** Timestamp of last value update for showLastUpdated feature */
   @State() lastUpdatedTs?: number;
+  /** Auto-updating timer for relative timestamps */
+  @State() private timestampUpdateTimer?: number;
+  /** Counter to trigger re-renders for timestamp updates - using state change to force re-render */
+  @State() private timestampCounter: number = 0;
 
   /** Consolidated setValue method with automatic Promise-based status management */
   @Method()
@@ -289,23 +293,9 @@ export class UiToggle {
    * Set operation status for external status management
    */
   @Method()
-  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
-    this.operationStatus = status;
-    if (status === 'error' && errorMessage) {
-      this.lastError = errorMessage;
-    } else if (status !== 'error') {
-      this.lastError = undefined;
+    async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
+      StatusIndicator.applyStatus(this, status, { errorMessage });
     }
-    
-    // Auto-clear success status
-    if (status === 'success') {
-      setTimeout(() => { 
-        if (this.operationStatus === 'success') {
-          this.operationStatus = 'idle'; 
-        }
-      }, 1200);
-    }
-  }
 
   /**
    * Trigger a read pulse indicator for readonly mode when data is actually fetched
@@ -322,38 +312,21 @@ export class UiToggle {
     const isReadonly = this.readonly;
     const connected = this.connected !== false;
     
+    // Special handling for readonly mode
     if (isReadonly) {
       if (!connected) {
-        return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}}>
-          <span style={{width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block'}}></span>
-        </span>;
+        return StatusIndicator.renderStatusBadge('error', 'light', 'Disconnected', h);
       }
+      
       const active = this.readPulseTs && (Date.now() - this.readPulseTs < 1500);
       if (active) {
-        return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}}>
-          <span style={{position: 'absolute', width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#60a5fa', opacity: '0.6', animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite'}}></span>
-          <span style={{width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#3b82f6', display: 'inline-block'}}></span>
-        </span>;
+        return StatusIndicator.renderStatusBadge('success', 'light', 'Data received', h);
       }
       return null;
     }
 
-    switch (this.operationStatus) {
-      case 'loading':
-        return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}} title="Sending...">
-          <span style={{width: '12px', height: '12px', borderRadius: '50%', border: '2px solid currentColor', borderTopColor: 'transparent', animation: 'spin 1s linear infinite'}}></span>
-        </span>;
-      case 'success':
-          return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: '8px'}} title="Sent">
-            <span style={{width: '16px', height: '16px', borderRadius: '9999px', backgroundColor: '#22c55e', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '12px', fontWeight: '800', lineHeight: '16px'}}>✓</span>
-          </span>;
-      case 'error':
-          return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: '8px'}} title={this.lastError || 'Error'}>
-            <span style={{width: '16px', height: '16px', borderRadius: '9999px', backgroundColor: '#ef4444', color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800', lineHeight: '16px'}}>×</span>
-          </span>;
-      default:
-        return null;
-    }
+    // Simple status indicators for write mode
+    return StatusIndicator.renderStatusBadge(this.operationStatus, 'light', this.lastError || '', h);
   }
 
   /**
@@ -365,6 +338,37 @@ export class UiToggle {
   componentWillLoad() {
     this.isActive = Boolean(this.value);
     this.isInitialized = true;
+    
+    // Start auto-updating timestamp timer here to avoid re-render warning
+    if (this.showLastUpdated) {
+      this.startTimestampUpdater();
+    }
+  }
+
+  componentDidLoad() {
+    // Component is ready - no state changes here to avoid re-render warnings
+  }
+
+  disconnectedCallback() {
+    // Clean up timer
+    this.stopTimestampUpdater();
+  }
+
+  /** Start auto-updating relative timestamps */
+  private startTimestampUpdater() {
+    this.stopTimestampUpdater(); // Ensure no duplicate timers
+    this.timestampUpdateTimer = window.setInterval(() => {
+      // Force re-render to update relative time by incrementing counter
+      this.timestampCounter++;
+    }, 30000); // Update every 30 seconds
+  }
+
+  /** Stop auto-updating timestamps */
+  private stopTimestampUpdater() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+      this.timestampUpdateTimer = undefined;
+    }
   }
 
   /** Watch for value prop changes and update internal state */
@@ -516,17 +520,7 @@ export class UiToggle {
   /** Render last updated timestamp if enabled */
   private renderLastUpdated() {
     if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
-
-    const timeText = formatLastUpdated(this.lastUpdatedTs);
-    return (
-      <span 
-        class={`text-xs ${this.dark ? 'text-gray-300' : 'text-gray-500'} ml-2`}
-        title={`Last updated: ${new Date(this.lastUpdatedTs).toLocaleString()}`}
-        part="last-updated"
-      >
-        {timeText}
-      </span>
-    );
+    return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), this.dark ? 'dark' : 'light', h);
   }
 
   /** Render the component */
@@ -544,56 +538,61 @@ export class UiToggle {
     }
 
     return (
-      <div class="inline-flex items-center space-x-2" part="container">
-        {/* Label slot or prop */}
-        <slot name="label">
-          {this.label && (
-            <label
-              class={`select-none mr-2 transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer hover:text-opacity-80'} ${
-                this.dark ? 'text-white' : 'text-gray-900'
-              }`}
-              onClick={() => canInteract && this.handleToggle()}
-              title={hoverTitle}
-              part="label"
-            >
-              {this.label}
-            </label>
-          )}
-        </slot>
+      <div class="inline-block" part="container">
+        <div class="inline-flex items-center space-x-2 relative">
+          {/* Label slot or prop */}
+          <slot name="label">
+            {this.label && (
+              <label
+                class={`select-none mr-2 transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer hover:text-opacity-80'} ${
+                  this.dark ? 'text-white' : 'text-gray-900'
+                }`}
+                onClick={() => canInteract && this.handleToggle()}
+                title={hoverTitle}
+                part="label"
+              >
+                {this.label}
+              </label>
+            )}
+          </slot>
 
-        {/* Toggle control */}
-        {this.readonly ? (
-          // Read-only indicator respecting variant styling
-          <span
-            class={`inline-flex items-center justify-center transition-all duration-300 ${
-              this.variant === 'square' ? 'w-6 h-6 rounded-md' : this.variant === 'apple' ? 'w-7 h-7 rounded-full' : 'w-6 h-6 rounded-full'
-            } ${this.isActive ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`}
-            title={`${hoverTitle} - Current state: ${this.isActive ? 'ON' : 'OFF'}`}
-            part="readonly-indicator"
-          >
-            <span class={`text-white text-xs font-bold ${this.variant === 'square' ? 'text-[10px]' : ''}`}>
-              {this.variant === 'square' ? (this.isActive ? '■' : '□') : this.isActive ? '●' : '○'}
+          {/* Toggle control */}
+          {this.readonly ? (
+            // Read-only indicator respecting variant styling
+            <span
+              class={`inline-flex items-center justify-center transition-all duration-300 ${
+                this.variant === 'square' ? 'w-6 h-6 rounded-md' : this.variant === 'apple' ? 'w-7 h-7 rounded-full' : 'w-6 h-6 rounded-full'
+              } ${this.isActive ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`}
+              title={`${hoverTitle} - Current state: ${this.isActive ? 'ON' : 'OFF'}`}
+              part="readonly-indicator"
+            >
+              <span class={`text-white text-xs font-bold ${this.variant === 'square' ? 'text-[10px]' : ''}`}>
+                {this.variant === 'square' ? (this.isActive ? '■' : '□') : this.isActive ? '●' : '○'}
+              </span>
             </span>
-          </span>
-        ) : (
-          // Interactive toggle - using enhanced styling from old component
-          <span
-            class={`${this.getToggleStyle()} ${
-              canInteract ? 'hover:shadow-md' : ''
-            } transition-all duration-200`}
-            onClick={() => canInteract && this.handleToggle()}
-            onKeyDown={this.handleKeyDown}
-            tabIndex={canInteract ? 0 : -1}
-            title={hoverTitle}
-            part="control"
-          >
-            <span class={this.getThumbStyle()} part="thumb"></span>
-            {this.renderCrossIcons()}
-          </span>
-        )}
-        {/* Status badge placed to the right of the control */}
-        {this.renderStatusBadge()}
-        {/* Last updated timestamp */}
+          ) : (
+            // Interactive toggle - using enhanced styling from old component
+            <span
+              class={`${this.getToggleStyle()} ${
+                canInteract ? 'hover:shadow-md' : ''
+              } transition-all duration-200`}
+              onClick={() => canInteract && this.handleToggle()}
+              onKeyDown={this.handleKeyDown}
+              tabIndex={canInteract ? 0 : -1}
+              title={hoverTitle}
+              part="control"
+            >
+              <span class={this.getThumbStyle()} part="thumb"></span>
+              {this.renderCrossIcons()}
+            </span>
+          )}
+          
+          {/* Status badge positioned to the right with consistent spacing */}
+          {this.renderStatusBadge()}
+          {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
+        </div>
+        
+        {/* Last updated timestamp positioned below the control */}
         {this.renderLastUpdated()}
       </div>
     );

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
+  <title>Component Test - Responsiveness Check</title>
+  <script type="module" src="./build/ui-wot-components.esm.js"></script>
+  <script nomodule src="./build/ui-wot-components.js"></script>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 20px; 
+      background-color: #f0f0f0;
+    }
+    .test-section { 
+      margin: 20px 0; 
+      padding: 15px; 
+      background: white; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h3 { 
+      margin-top: 0; 
+      color: #333; 
+    }
+    .click-log {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin: 10px 0;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .status.good { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .status.bad { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+  </style>
+</head>
+
+<body>
+  <h1>🔧 Component Responsiveness Test</h1>
+  <p>This page tests if components respond to clicks after the timestamp timer fix.</p>
+  
+  <div id="status" class="status">
+    ⏳ Testing component responsiveness...
+  </div>
+  
+  <div id="clickLog" class="click-log">
+    <strong>Click Event Log:</strong><br>
+    Ready to test - click any component below...<br>
+  </div>
+
+  <div class="test-section">
+    <h3>🔘 Button Component</h3>
+    <ui-button 
+      id="test-button"
+      label="Click Me!" 
+      show-last-updated="true"
+      value="test-button"
+    ></ui-button>
+  </div>
+
+  <div class="test-section">
+    <h3>🎚️ Slider Component</h3>
+    <ui-slider 
+      id="test-slider"
+      label="Test Slider" 
+      min="0" 
+      max="100" 
+      value="50"
+      show-last-updated="true"
+    ></ui-slider>
+  </div>
+
+  <div class="test-section">
+    <h3>🔢 Number Picker Component</h3>
+    <ui-number-picker 
+      id="test-number"
+      label="Test Number" 
+      min="0" 
+      max="10" 
+      value="5"
+      show-last-updated="true"
+    ></ui-number-picker>
+  </div>
+
+  <div class="test-section">
+    <h3>☑️ Checkbox Component</h3>
+    <ui-checkbox 
+      id="test-checkbox"
+      label="Test Checkbox" 
+      value="true"
+      show-last-updated="true"
+    ></ui-checkbox>
+  </div>
+
+  <div class="test-section">
+    <h3>🔄 Toggle Component</h3>
+    <ui-toggle 
+      id="test-toggle"
+      label="Test Toggle" 
+      value="false"
+      show-last-updated="true"
+    ></ui-toggle>
+  </div>
+
+  <div class="test-section">
+    <h3>📝 Text Component</h3>
+    <ui-text 
+      id="test-text"
+      label="Test Text" 
+      value="Hello World"
+      show-last-updated="true"
+    ></ui-text>
+  </div>
+
+  <script>
+    const log = document.getElementById('clickLog');
+    const status = document.getElementById('status');
+    let clickCount = 0;
+    let componentResponses = new Set();
+
+    function logEvent(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      log.innerHTML += `[${timestamp}] ${message}<br>`;
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function updateStatus() {
+      if (componentResponses.size === 0) {
+        status.className = 'status';
+        status.innerHTML = '⏳ Testing component responsiveness...';
+      } else if (componentResponses.size < 6) {
+        status.className = 'status';
+        status.innerHTML = `✅ ${componentResponses.size}/6 components responding to clicks`;
+      } else {
+        status.className = 'status good';
+        status.innerHTML = '✅ ALL COMPONENTS RESPONSIVE! Timer fix successful.';
+      }
+    }
+
+    // Add click listeners to all components
+    document.addEventListener('DOMContentLoaded', () => {
+      const components = ['test-button', 'test-slider', 'test-number', 'test-checkbox', 'test-toggle', 'test-text'];
+      
+      components.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          // Listen for both click and valueMsg events
+          element.addEventListener('click', (e) => {
+            clickCount++;
+            componentResponses.add(id);
+            logEvent(`${id}: Click event detected! (Total clicks: ${clickCount})`);
+            updateStatus();
+          });
+          
+          element.addEventListener('valueMsg', (e) => {
+            componentResponses.add(id);
+            logEvent(`${id}: Value changed to: ${JSON.stringify(e.detail?.value)} (Event working!)`);
+            updateStatus();
+          });
+        }
+      });
+
+      logEvent('✅ Event listeners attached to all components');
+      
+      // Test for hangs after 5 seconds
+      setTimeout(() => {
+        if (componentResponses.size === 0) {
+          status.className = 'status bad';
+          status.innerHTML = '❌ NO RESPONSES - Components may still be hanging';
+          logEvent('❌ Warning: No component responses detected after 5 seconds');
+        }
+      }, 5000);
+
+      // Test for timer issues after 35 seconds (just after first timer should fire)
+      setTimeout(() => {
+        logEvent('🕐 35 seconds elapsed - checking for timer-related issues...');
+        if (document.body.style.cursor !== 'wait') {
+          logEvent('✅ No hang detected after timestamp timers should have fired');
+        }
+      }, 35000);
+    });
+
+    // Detect page freezes
+    let lastTime = Date.now();
+    setInterval(() => {
+      const currentTime = Date.now();
+      const timeDiff = currentTime - lastTime;
+      if (timeDiff > 2000) { // More than 2 seconds gap indicates freeze
+        logEvent(`⚠️ Possible freeze detected: ${timeDiff}ms gap`);
+      }
+      lastTime = currentTime;
+    }, 1000);
+  </script>
+</body>
+</html>

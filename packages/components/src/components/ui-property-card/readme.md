@@ -66,15 +66,15 @@ Type: `Promise<void>`
 
 
 
-### `setStatus(status: "idle" | "pending" | "success" | "error", message?: string, autoClearMs?: number) => Promise<void>`
+### `setStatus(status: "idle" | "loading" | "success" | "error", message?: string, autoClearMs?: number) => Promise<void>`
 
-Set the current status with optional auto-clear
+Set the current status with unified system
 
 #### Parameters
 
 | Name          | Type                                          | Description |
 | ------------- | --------------------------------------------- | ----------- |
-| `status`      | `"idle" \| "success" \| "error" \| "pending"` |             |
+| `status`      | `"idle" \| "loading" \| "success" \| "error"` |             |
 | `message`     | `string`                                      |             |
 | `autoClearMs` | `number`                                      |             |
 
@@ -106,7 +106,6 @@ Type: `Promise<void>`
 | `"description"`      |             |
 | `"header"`           |             |
 | `"label"`            |             |
-| `"status"`           |             |
 
 
 ----------------------------------------------

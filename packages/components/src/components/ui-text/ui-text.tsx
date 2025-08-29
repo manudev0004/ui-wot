@@ -1,6 +1,6 @@
 import { Component, Prop, State, h, Event, EventEmitter, Watch, Element, Method } from '@stencil/core';
 import { UiMsg } from '../../utils/types';
-import { formatLastUpdated } from '../../utils/common-props';
+import { StatusIndicator } from '../../utils/status-indicator';
 
 export interface UiTextValueChange { value: string }
 
@@ -98,6 +98,51 @@ export class UiText {
    * ```
    */
   @Prop() dark: boolean = false;
+
+  /**
+   * Show line numbers for multi-line text (code editor style)
+   * @example
+   * ```html
+   * <ui-text textType="multi" showLineNumbers="true"></ui-text>
+   * ```
+   */
+  @Prop() showLineNumbers: boolean = false;
+
+  /**
+   * Enable syntax highlighting for code
+   * @example
+   * ```html
+   * <ui-text variant="code" syntaxHighlight="true" language="javascript"></ui-text>
+   * ```
+   */
+  @Prop() syntaxHighlight: boolean = false;
+
+  /**
+   * Programming language for syntax highlighting
+   * @example
+   * ```html
+   * <ui-text syntaxHighlight="true" language="python"></ui-text>
+   * ```
+   */
+  @Prop() language: 'javascript' | 'typescript' | 'python' | 'json' | 'html' | 'css' | 'yaml' | 'markdown' = 'javascript';
+
+  /**
+   * Enable word wrap for long lines
+   * @example
+   * ```html
+   * <ui-text textType="multi" wordWrap="true"></ui-text>
+   * ```
+   */
+  @Prop() wordWrap: boolean = true;
+
+  /**
+   * Enable copy to clipboard button
+   * @example
+   * ```html
+   * <ui-text copyable="true" value="Copy this text"></ui-text>
+   * ```
+   */
+  @Prop() copyable: boolean = false;
 
   /**
    * Color scheme matching the component family palette.
@@ -201,14 +246,117 @@ export class UiText {
   @Prop() autoResize: boolean = false;
 
   /**
-   * Enable spell check for editable text
+   * Border style options for enhanced visual design
+   * @example
+   * ```html
+   * <ui-text borderStyle="dashed" borderWidth="2" borderColor="#ff6b6b"></ui-text>
+   * ```
    */
+  @Prop() borderStyle: 'solid' | 'dashed' | 'dotted' | 'double' | 'groove' | 'ridge' | 'inset' | 'outset' = 'solid';
+
+  /**
+   * Border width in pixels (1-8)
+   * @example
+   * ```html
+   * <ui-text borderWidth="3" variant="outlined"></ui-text>
+   * ```
+   */
+  @Prop() borderWidth: number = 2;
+
+  /**
+   * Custom border color (hex, rgb, or color name)
+   * @example
+   * ```html
+   * <ui-text borderColor="#ff6b6b" variant="outlined"></ui-text>
+   * ```
+   */
+  @Prop() borderColor?: string;
+
+  /**
+   * Custom background color (hex, rgb, or color name)
+   * @example
+   * ```html
+   * <ui-text backgroundColor="linear-gradient(45deg, #ff6b6b, #4ecdc4)" variant="filled"></ui-text>
+   * ```
+   */
+  @Prop() backgroundColor?: string;
+
+  /**
+   * Custom text color (hex, rgb, or color name)
+   * @example
+   * ```html
+   * <ui-text textColor="#ffffff" backgroundColor="#333333"></ui-text>
+   * ```
+   */
+  @Prop() textColor?: string;
+
+  /**
+   * Border radius preset or custom value
+   * @example
+   * ```html
+   * <ui-text borderRadius="round" variant="outlined"></ui-text>
+   * <ui-text borderRadius="12px" variant="filled"></ui-text>
+   * ```
+   */
+  @Prop() borderRadius: 'none' | 'small' | 'medium' | 'large' | 'round' | 'full' | string = 'medium';
+
+  /**
+   * Shadow intensity for depth effects
+   * @example
+   * ```html
+   * <ui-text shadow="heavy" variant="elevated"></ui-text>
+   * ```
+   */
+  @Prop() shadow: 'none' | 'light' | 'medium' | 'heavy' | 'glow' = 'medium';
+
+  /**
+   * Enable smooth animations and transitions
+   * @example
+   * ```html
+   * <ui-text animated="true" variant="filled"></ui-text>
+   * ```
+   */
+  @Prop() animated: boolean = true;
+
+  /**
+   * Resize handle style for textareas
+   * @example
+   * ```html
+   * <ui-text resizeHandle="modern" resizable="true"></ui-text>
+   * ```
+   */
+  @Prop() resizeHandle: 'classic' | 'modern' | 'minimal' = 'modern';
+
+  /**
+   * Minimum height for auto-resize (pixels)
+   * @example
+   * ```html
+   * <ui-text autoResize="true" minHeight="100"></ui-text>
+   * ```
+   */
+  @Prop() minHeight: number = 40;
+
+  /**
+   * Maximum height for auto-resize (pixels)
+   * @example
+   * ```html
+   * <ui-text autoResize="true" maxAutoHeight="300"></ui-text>
+   * ```
+   */
+  @Prop() maxAutoHeight: number = 200;
   @Prop() spellCheck: boolean = true;
 
   @State() currentValue: string = '';
   @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
   @State() lastError?: string;
+  @State() lastUpdatedTs?: number;
+  @State() timestampUpdateTimer?: number;
+  @State() private timestampCounter = 0;
   @State() isExpanded = false;
+  @State() private lineCount: number = 1;
+  @State() private currentLine: number = 1;
+  @State() private currentColumn: number = 1;
+  @State() private isFocused: boolean = false;
 
   @Event() textChange: EventEmitter<UiTextValueChange>;
   @Event() valueChange: EventEmitter<UiTextValueChange>;
@@ -226,24 +374,83 @@ export class UiText {
    */
   @Event() valueMsg: EventEmitter<UiMsg<string>>;
 
-  // Status management
-  @State() private _status: 'success' | 'warning' | 'error' | null = null;
-  @State() private _lastUpdated: Date | null = null;
+  // Element reference for cursor position tracking
+  private inputRef?: HTMLInputElement | HTMLTextAreaElement;
 
   @Watch('value') watchValue() { this.currentValue = this.value }
 
-  componentWillLoad() { this.currentValue = this.value }
+  componentWillLoad() { 
+    this.currentValue = this.value;
+    this.updateLineCount();
+    
+    // Initialize timestamp auto-update timer if showLastUpdated is enabled
+    if (this.showLastUpdated && this.lastUpdatedTs) {
+      this.timestampUpdateTimer = window.setInterval(() => {
+        // Force re-render to update relative timestamp
+        this.timestampCounter++;
+      }, 30000); // Update every 30 seconds
+    }
+  }
+
+  disconnectedCallback() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+    }
+  }
+
+  /** Update line count for line numbers display */
+  private updateLineCount() {
+    this.lineCount = (this.currentValue || '').split('\n').length;
+  }
+
+  /** Handle cursor position tracking */
+  private updateCursorPosition = (event?: Event) => {
+    const target = this.inputRef || (event?.target as HTMLTextAreaElement);
+    if (target && 'selectionStart' in target) {
+      const lines = target.value.substr(0, target.selectionStart).split('\n');
+      this.currentLine = lines.length;
+      this.currentColumn = lines[lines.length - 1].length + 1;
+    }
+  }
+
+  /** Handle focus events */
+  private handleFocus = () => {
+    this.isFocused = true;
+  }
+
+  /** Handle blur events */
+  private handleBlur = () => {
+    this.isFocused = false;
+  }
+
+  /** Copy text to clipboard */
+  private copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(this.currentValue);
+      // Unified success handling
+      StatusIndicator.applyStatus(this, 'success');
+    } catch (err) {
+      // Unified error handling
+      StatusIndicator.applyStatus(this, 'error', { errorMessage: 'Failed to copy to clipboard' });
+    }
+  }
 
   private handleInput = (event: Event) => {
     if (this.disabled || this.variant === 'display') return;
-    const t = event.target as HTMLInputElement | HTMLTextAreaElement;
-    const v = t.value;
-    const oldValue = this.value;
-    this.currentValue = v; 
+
+    const target = event.target as HTMLInputElement | HTMLTextAreaElement;
+    if (!target) return;
+
+    const oldValue = this.currentValue;
+    const v = target.value;
+
+    this.currentValue = v;
     this.value = v;
-    this._lastUpdated = new Date();
-    
-    // Emit standardized event
+    this.lastUpdatedTs = Date.now();
+    this.updateLineCount();
+    this.updateCursorPosition(event);
+
+    // Emit unified value message
     this.valueMsg.emit({
       payload: v,
       prev: oldValue,
@@ -253,14 +460,18 @@ export class UiText {
       meta: {
         component: 'ui-text',
         type: 'input',
-        source: 'user'
+        source: 'user',
+        lineCount: this.lineCount,
+        characterCount: v.length
       }
     });
-    
+
+    // Legacy events
     this.textChange.emit({ value: v });
     this.valueChange.emit({ value: v });
-    this.operationStatus = 'success';
-    setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
+
+    // Unified success status feedback
+    StatusIndicator.applyStatus(this, 'success');
   }
 
   private escapeHtml(s: string) { return s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
@@ -293,6 +504,134 @@ export class UiText {
     }
   }
 
+  /** Apply syntax highlighting based on language */
+  private applySyntaxHighlighting(text: string, language: string = 'javascript'): string {
+    if (!this.syntaxHighlight || !text) return this.escapeHtml(text);
+
+    switch (language.toLowerCase()) {
+      case 'javascript':
+      case 'js':
+        return this.highlightJavaScript(text);
+      case 'typescript':
+      case 'ts':
+        return this.highlightTypeScript(text);
+      case 'python':
+      case 'py':
+        return this.highlightPython(text);
+      case 'json':
+        return this.highlightJSON(text);
+      case 'css':
+        return this.highlightCSS(text);
+      case 'html':
+        return this.highlightHTML(text);
+      default:
+        return this.escapeHtml(text);
+    }
+  }
+
+  private highlightJavaScript(text: string): string {
+    let highlighted = this.escapeHtml(text);
+    
+    // Keywords
+    highlighted = highlighted.replace(/\b(const|let|var|function|class|if|else|for|while|do|switch|case|break|continue|return|try|catch|finally|throw|new|this|super|extends|import|export|from|default|async|await)\b/g, 
+      '<span class="text-blue-600 dark:text-blue-400 font-semibold">$1</span>');
+    
+    // Strings
+    highlighted = highlighted.replace(/(['"`])(?:(?!\1)[^\\]|\\.)*\1/g, 
+      '<span class="text-green-600 dark:text-green-400">$&</span>');
+    
+    // Numbers
+    highlighted = highlighted.replace(/\b\d+\.?\d*\b/g, 
+      '<span class="text-orange-600 dark:text-orange-400">$&</span>');
+    
+    // Comments
+    highlighted = highlighted.replace(/\/\/.*$/gm, 
+      '<span class="text-gray-500 dark:text-gray-400 italic">$&</span>');
+    highlighted = highlighted.replace(/\/\*[\s\S]*?\*\//g, 
+      '<span class="text-gray-500 dark:text-gray-400 italic">$&</span>');
+    
+    return highlighted;
+  }
+
+  private highlightTypeScript(text: string): string {
+    let highlighted = this.highlightJavaScript(text);
+    
+    // TypeScript specific keywords
+    highlighted = highlighted.replace(/\b(interface|type|enum|public|private|protected|readonly|static|abstract|implements|namespace)\b/g, 
+      '<span class="text-purple-600 dark:text-purple-400 font-semibold">$1</span>');
+    
+    return highlighted;
+  }
+
+  private highlightPython(text: string): string {
+    let highlighted = this.escapeHtml(text);
+    
+    // Keywords
+    highlighted = highlighted.replace(/\b(def|class|if|elif|else|for|while|try|except|finally|with|as|import|from|return|yield|lambda|and|or|not|in|is|True|False|None)\b/g, 
+      '<span class="text-blue-600 dark:text-blue-400 font-semibold">$1</span>');
+    
+    // Strings
+    highlighted = highlighted.replace(/(['"])(?:(?!\1)[^\\]|\\.)*\1/g, 
+      '<span class="text-green-600 dark:text-green-400">$&</span>');
+    
+    // Comments
+    highlighted = highlighted.replace(/#.*$/gm, 
+      '<span class="text-gray-500 dark:text-gray-400 italic">$&</span>');
+    
+    return highlighted;
+  }
+
+  private highlightJSON(text: string): string {
+    try {
+      const parsed = JSON.parse(text);
+      let formatted = JSON.stringify(parsed, null, 2);
+      
+      // Highlight strings
+      formatted = formatted.replace(/"([^"\\]|\\.)*"/g, 
+        '<span class="text-green-600 dark:text-green-400">$&</span>');
+      
+      // Highlight numbers
+      formatted = formatted.replace(/:\s*(-?\d+\.?\d*)/g, 
+        ': <span class="text-orange-600 dark:text-orange-400">$1</span>');
+      
+      // Highlight booleans and null
+      formatted = formatted.replace(/:\s*(true|false|null)/g, 
+        ': <span class="text-blue-600 dark:text-blue-400">$1</span>');
+      
+      return formatted;
+    } catch (e) {
+      return this.escapeHtml(text);
+    }
+  }
+
+  private highlightCSS(text: string): string {
+    let highlighted = this.escapeHtml(text);
+    
+    // Selectors
+    highlighted = highlighted.replace(/^([.#]?[\w-]+)(?=\s*{)/gm, 
+      '<span class="text-blue-600 dark:text-blue-400 font-semibold">$1</span>');
+    
+    // Properties
+    highlighted = highlighted.replace(/(\w+)(\s*:)/g, 
+      '<span class="text-purple-600 dark:text-purple-400">$1</span>$2');
+    
+    // Values
+    highlighted = highlighted.replace(/(:\s*)([^;]+)/g, 
+      '$1<span class="text-green-600 dark:text-green-400">$2</span>');
+    
+    return highlighted;
+  }
+
+  private highlightHTML(text: string): string {
+    let highlighted = this.escapeHtml(text);
+    
+    // Tags
+    highlighted = highlighted.replace(/&lt;(\/?[\w-]+)([^&]*?)&gt;/g, 
+      '<span class="text-blue-600 dark:text-blue-400">&lt;$1</span><span class="text-green-600 dark:text-green-400">$2</span><span class="text-blue-600 dark:text-blue-400">&gt;</span>');
+    
+    return highlighted;
+  }
+
   /** Check if expand button should be shown */
   private shouldShowExpandButton() { 
     if (!this.expandable || this.textType === 'single') return false; 
@@ -303,17 +642,84 @@ export class UiText {
   /** Toggle expanded state */
   private toggleExpand = () => { this.isExpanded = !this.isExpanded; }
 
-  /** Get color name for CSS classes */
-  private getColorName(): string {
-    const colorMap = {
-      'primary': 'blue-500',
-      'secondary': 'green-500', 
-      'neutral': 'gray-500',
-      'success': 'green-600',
-      'warning': 'orange-500',
-      'danger': 'red-500'
-    };
-    return colorMap[this.color] || colorMap.primary;
+  /** Get enhanced color classes with custom color support */
+  private getColorClasses() {
+    // Custom colors take precedence
+    if (this.borderColor || this.backgroundColor || this.textColor) {
+      return {
+        border: this.borderColor ? `border-[${this.borderColor}]` : 'border-gray-300',
+        bg: this.backgroundColor ? '' : 'bg-gray-100',
+        focus: 'focus:ring-blue-500',
+        text: this.textColor ? `text-[${this.textColor}]` : 'text-gray-900',
+        customBg: this.backgroundColor || '',
+        customBorder: this.borderColor || '',
+        customText: this.textColor || ''
+      };
+    }
+
+    // Standard color schemes
+    switch (this.color) {
+      case 'secondary':
+        return {
+          border: 'border-green-500',
+          bg: 'bg-green-500',
+          focus: 'focus:ring-green-500',
+          text: 'text-green-500',
+          customBg: '',
+          customBorder: '',
+          customText: ''
+        };
+      case 'neutral':
+        return {
+          border: 'border-gray-500',
+          bg: 'bg-gray-500',
+          focus: 'focus:ring-gray-500',
+          text: 'text-gray-500',
+          customBg: '',
+          customBorder: '',
+          customText: ''
+        };
+      case 'success':
+        return {
+          border: 'border-green-600',
+          bg: 'bg-green-600',
+          focus: 'focus:ring-green-600',
+          text: 'text-green-600',
+          customBg: '',
+          customBorder: '',
+          customText: ''
+        };
+      case 'warning':
+        return {
+          border: 'border-orange-500',
+          bg: 'bg-orange-500',
+          focus: 'focus:ring-orange-500',
+          text: 'text-orange-500',
+          customBg: '',
+          customBorder: '',
+          customText: ''
+        };
+      case 'danger':
+        return {
+          border: 'border-red-500',
+          bg: 'bg-red-500',
+          focus: 'focus:ring-red-500',
+          text: 'text-red-500',
+          customBg: '',
+          customBorder: '',
+          customText: ''
+        };
+      default: // primary
+        return {
+          border: 'border-blue-500',
+          bg: 'bg-blue-500',
+          focus: 'focus:ring-blue-500',
+          text: 'text-blue-500',
+          customBg: '',
+          customBorder: '',
+          customText: ''
+        };
+    }
   }
 
   /** Get comprehensive input styles matching component family */
@@ -321,83 +727,159 @@ export class UiText {
     const isDisabled = this.disabled;
     const isReadonly = this.readonly;
     const isEdit = this.variant === 'edit';
-    const colorName = this.getColorName();
+    const colors = this.getColorClasses();
     
     // Base styles with size variations
-    let base = `w-full transition-all duration-200 font-sans ${
+    let base = `w-full transition-all duration-300 font-sans ${
       this.size === 'small' ? 'text-xs' : 
-      this.size === 'large' ? 'text-base' : 
+      this.size === 'large' ? 'text-lg' : 
       'text-sm'
     } ${this.compact ? 'leading-tight' : 'leading-relaxed'}`;
 
+    // Enhanced resizing styles
+    if (this.resizable && this.textType === 'multi') {
+      switch (this.resizeHandle) {
+        case 'classic':
+          base += ' resize resize-vertical';
+          break;
+        case 'modern':
+          base += ' resize resize-both rounded-br-lg';
+          break;
+        case 'minimal':
+          base += ' resize resize-vertical';
+          break;
+        default:
+          base += ' resize resize-vertical';
+      }
+    } else if (this.textType === 'multi') {
+      base += ' resize-none';
+    }
+
     // State-based styling
     if (isDisabled || isReadonly) {
-      base += ' opacity-50 cursor-not-allowed';
+      base += ' opacity-60 cursor-not-allowed';
     }
 
-    // Variant-specific styling
+    // Variant-specific styling with enhanced visual differences and borders
     if (this.variant === 'minimal') {
-      base += ` bg-transparent border-0 ${
-        this.dark ? 'text-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
-      } focus:outline-none focus:ring-2 focus:ring-${colorName} focus:ring-opacity-50`;
+      // Minimal: Clean, borderless with subtle underline and hover effects
+      base += ` bg-transparent border-0 border-b-2 border-gray-300 ${
+        this.dark ? 'text-gray-100 placeholder-gray-500 border-gray-600' : 'text-gray-800 placeholder-gray-400'
+      } focus:outline-none focus:border-b-3 ${colors.border.replace('border-', 'focus:border-b-')} ${
+        this.size === 'small' ? 'px-2 py-2' : 
+        this.size === 'large' ? 'px-3 py-4' : 
+        'px-2 py-3'
+      } hover:${this.dark ? 'bg-gray-800/30' : 'bg-gray-50/80'} rounded-t-lg transition-all duration-200 hover:border-b-3`;
     } else if (this.variant === 'outlined') {
-      base += ` bg-transparent border-2 border-${colorName} ${
-        this.dark ? 'text-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
-      } focus:outline-none focus:ring-2 focus:ring-${colorName} focus:ring-opacity-50 ${
-        this.size === 'small' ? 'px-2 py-1' : 
-        this.size === 'large' ? 'px-4 py-3' : 
-        'px-3 py-2'
-      } rounded-md`;
+      // Outlined: Bold, colorful borders with enhanced focus states
+      const borderWidth = Math.max(1, Math.min(4, this.borderWidth));
+      base += ` bg-transparent border-${borderWidth} ${colors.border} ${
+        this.borderStyle === 'dashed' ? 'border-dashed' : 
+        this.borderStyle === 'dotted' ? 'border-dotted' : 'border-solid'
+      } ${
+        this.dark ? 'text-gray-100 placeholder-gray-400 hover:bg-gray-800/50' : 'text-gray-900 placeholder-gray-500 hover:bg-gray-50/80'
+      } focus:outline-none focus:ring-4 ${colors.focus} focus:ring-opacity-30 focus:border-opacity-100 ${
+        this.size === 'small' ? 'px-3 py-2' : 
+        this.size === 'large' ? 'px-5 py-4' : 
+        'px-4 py-3'
+      } rounded-xl shadow-sm hover:shadow-lg transform hover:scale-[1.01] transition-all duration-200`;
     } else if (this.variant === 'filled') {
-      base += ` bg-${colorName} text-white placeholder-white placeholder-opacity-70 border-0 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${
-        this.size === 'small' ? 'px-2 py-1' : 
-        this.size === 'large' ? 'px-4 py-3' : 
-        'px-3 py-2'
-      } rounded-md`;
+      // Filled: Solid background with contrasting text and subtle borders
+      base += ` ${colors.bg} border-2 border-transparent ${
+        this.dark ? 'text-white' : 'text-white'
+      } placeholder-white/80 focus:outline-none focus:ring-4 focus:ring-white/40 focus:shadow-xl ${
+        this.size === 'small' ? 'px-3 py-2' : 
+        this.size === 'large' ? 'px-5 py-4' : 
+        'px-4 py-3'
+      } rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] hover:-translate-y-1 font-medium transition-all duration-300`;
     } else if (this.variant === 'elevated') {
+      // Elevated: Prominent shadow, depth, and premium borders
       base += ` ${
-        this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-      } border shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-${colorName} focus:ring-opacity-50 ${
-        this.size === 'small' ? 'px-2 py-1' : 
-        this.size === 'large' ? 'px-4 py-3' : 
-        'px-3 py-2'
-      } rounded-md`;
+        this.dark ? 'bg-gray-700 border-gray-500 text-gray-100 placeholder-gray-400' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+      } border-2 ${this.getShadowClasses()} focus:outline-none focus:ring-4 ${colors.focus} focus:ring-opacity-25 focus:shadow-2xl ${
+        this.size === 'small' ? 'px-4 py-3' : 
+        this.size === 'large' ? 'px-6 py-5' : 
+        'px-5 py-4'
+      } rounded-2xl transform hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm`;
     } else if (isEdit) {
-      // Default edit styling
-      base += ` border rounded-md focus:outline-none focus:ring-2 focus:ring-${colorName} ${
-        this.size === 'small' ? 'px-2 py-1' : 
+      // Default edit styling - enhanced standard input with border customization
+      const borderWidth = Math.max(1, Math.min(3, this.borderWidth));
+      base += ` border-${borderWidth} ${
+        this.borderStyle === 'dashed' ? 'border-dashed' : 
+        this.borderStyle === 'dotted' ? 'border-dotted' : 'border-solid'
+      } rounded-lg focus:outline-none focus:ring-3 ${colors.focus} focus:ring-opacity-30 ${
+        this.size === 'small' ? 'px-3 py-2' : 
         this.size === 'large' ? 'px-4 py-3' : 
         'px-3 py-2'
-      }`;
+      } transition-all duration-200 shadow-sm hover:shadow-md`;
       
       if (isDisabled) {
-        base += ' bg-gray-100 border-gray-300 text-gray-500';
+        base += ` bg-gray-100 border-gray-300 text-gray-500 ${this.dark ? 'dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400' : ''}`;
       } else {
         base += this.dark ? 
-          ' bg-gray-800 border-gray-600 text-white placeholder-gray-400' : 
-          ' bg-white border-gray-300 text-gray-900 placeholder-gray-500';
+          ' bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-400 hover:bg-gray-750 hover:border-gray-500' : 
+          ' bg-white border-gray-300 text-gray-900 placeholder-gray-500 hover:bg-gray-50 hover:border-gray-400';
       }
     } else {
-      // Display mode styling
+      // Display mode styling - enhanced read-only appearance with beautiful borders
       base += ` ${
-        this.size === 'small' ? 'p-2' : 
-        this.size === 'large' ? 'p-4' : 
-        'p-3'
-      } rounded-md border ${
-        this.dark ? 'bg-gray-800 border-gray-600 text-gray-100' : 'bg-gray-50 border-gray-200 text-gray-900'
-      }`;
-    }
-
-    // Additional features
-    if (this.resizable && this.textType === 'multi') {
-      base += ' resize';
-    }
-
-    if (this.autoResize && this.textType === 'multi') {
-      base += ' resize-none'; // Disable manual resize if auto-resize is enabled
+        this.size === 'small' ? 'p-3' : 
+        this.size === 'large' ? 'p-5' : 
+        'p-4'
+      } rounded-xl border-2 font-medium ${
+        this.dark ? 'bg-gray-800/90 border-gray-600 text-gray-100' : 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-300 text-gray-900'
+      } shadow-inner backdrop-blur-sm ${this.getShadowClasses()} hover:shadow-lg transition-all duration-200`;
     }
 
     return base;
+  }
+
+  /** Get shadow classes */
+  private getShadowClasses() {
+    switch (this.shadow) {
+      case 'none': return '';
+      case 'light': return 'shadow-sm';
+      case 'medium': return 'shadow-md';
+      case 'heavy': return 'shadow-xl';
+      case 'glow': return 'shadow-2xl shadow-blue-500/25';
+      default: return 'shadow-md';
+    }
+  }
+
+  /** Get enhanced label styles for each variant */
+  private getLabelStyles() {
+    const isDisabled = this.disabled;
+    const colors = this.getColorClasses();
+    
+    let labelClass = `block font-medium mb-3 transition-all duration-300 ${
+      this.size === 'small' ? 'text-xs' : 
+      this.size === 'large' ? 'text-base' : 
+      'text-sm'
+    }`;
+
+    if (isDisabled) {
+      labelClass += ' opacity-60 cursor-not-allowed';
+    }
+
+    // Variant-specific label styling
+    switch (this.variant) {
+      case 'minimal':
+        labelClass += ` ${this.dark ? 'text-gray-300' : 'text-gray-700'} font-normal`;
+        break;
+      case 'outlined':
+        labelClass += ` ${colors.text} font-semibold`;
+        break;
+      case 'filled':
+        labelClass += ` ${colors.text} font-bold`;
+        break;
+      case 'elevated':
+        labelClass += ` ${this.dark ? 'text-gray-200' : 'text-gray-800'} font-semibold tracking-wide`;
+        break;
+      default:
+        labelClass += ` ${this.dark ? 'text-gray-200' : 'text-gray-900'}`;
+    }
+
+    return labelClass;
   }
 
   // ========================================
@@ -419,7 +901,7 @@ export class UiText {
     const oldValue = this.value;
     this.value = value;
     this.currentValue = value;
-    this._lastUpdated = new Date();
+    this.lastUpdatedTs = Date.now();
 
     // Emit standardized event
     this.valueMsg.emit({
@@ -467,7 +949,7 @@ export class UiText {
   async setValueSilent(value: string): Promise<void> {
     this.value = value;
     this.currentValue = value;
-    this._lastUpdated = new Date();
+    this.lastUpdatedTs = Date.now();
   }
 
   /**
@@ -482,23 +964,8 @@ export class UiText {
    * ```
    */
   @Method()
-  async setStatus(status: 'success' | 'warning' | 'error' | null, message?: string): Promise<void> {
-    this._status = status;
-    
-    // Emit status change event
-    this.valueMsg.emit({
-      payload: this.value,
-      ts: Date.now(),
-      source: this.el?.id || 'ui-text',
-      ok: status !== 'error',
-      meta: {
-        component: 'ui-text',
-        type: 'statusChange',
-        status,
-        message,
-        source: 'method'
-      }
-    });
+  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', message?: string): Promise<void> {
+  StatusIndicator.applyStatus(this, status, { errorMessage: message });
   }
 
   /**
@@ -534,60 +1001,209 @@ export class UiText {
 
   render() {
     const inputStyles = this.getInputStyles();
+    const labelStyles = this.getLabelStyles();
     const isDisabled = this.disabled;
     const isEdit = this.variant === 'edit';
 
     return (
-      <div class='relative w-full' part="container">
-        {this.label && <label class={`block text-sm font-medium mb-2 ${isDisabled ? 'text-gray-400' : (this.dark ? 'text-white' : 'text-gray-900')}`}>{this.label}{!isEdit && <span class='ml-1 text-xs text-blue-500 dark:text-blue-400'>(Read-only)</span>}</label>}
+      <div class='relative w-full max-w-lg mx-auto' part="container">
+        {this.label && (
+          <label class={labelStyles}>
+            {this.label}
+            {!isEdit && (
+              <span class={`ml-2 text-xs px-2 py-1 rounded-full ${
+                this.dark ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-600'
+              } font-normal`}>
+                Read-only
+              </span>
+            )}
+          </label>
+        )}
         <div class='relative'>
 
-              {isEdit ? (
-            this.textType === 'single' ? (
-              <input part="input" type='text' class={inputStyles} value={this.currentValue} placeholder={this.placeholder} maxLength={this.maxLength} disabled={isDisabled} onInput={this.handleInput} aria-label={this.label || 'Text input'} />
-            ) : (
-              <textarea part="input" class={`${inputStyles} ${this.resizable ? 'resize-vertical' : 'resize-none'}`} value={this.currentValue} placeholder={this.placeholder} maxLength={this.maxLength} rows={this.rows} disabled={isDisabled} onInput={this.handleInput} aria-label={this.label || 'Text area'} />
-            )
+          {/* Main input/display area */}
+          {isEdit ? (
+            <div class="relative flex">
+              {/* Line numbers for multiline with showLineNumbers */}
+              {this.textType === 'multi' && this.showLineNumbers && (
+                <div class={`flex-shrink-0 px-2 py-2 border-r text-xs font-mono leading-relaxed ${
+                  this.dark ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-gray-100 border-gray-300 text-gray-500'
+                }`}>
+                  {Array.from({ length: Math.max(this.lineCount, 1) }, (_, i) => (
+                    <div key={i + 1} class={`${i + 1 === this.currentLine ? 'font-bold text-blue-500' : ''}`}>
+                      {i + 1}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Input area */}
+              <div class="flex-1 relative">
+                {this.textType === 'single' ? (
+                  <input 
+                    ref={el => this.inputRef = el}
+                    part="input" 
+                    type='text' 
+                    class={inputStyles} 
+                    value={this.currentValue} 
+                    placeholder={this.placeholder} 
+                    maxLength={this.maxLength} 
+                    disabled={isDisabled} 
+                    onInput={this.handleInput}
+                    onFocus={this.handleFocus}
+                    onBlur={this.handleBlur}
+                    onClick={this.updateCursorPosition}
+                    onKeyUp={this.updateCursorPosition}
+                    aria-label={this.label || 'Text input'} 
+                  />
+                ) : (
+                  <textarea 
+                    ref={el => this.inputRef = el}
+                    part="input" 
+                    class={`${inputStyles} ${this.resizable ? 'resize-vertical' : 'resize-none'} ${this.showLineNumbers ? 'pl-2' : ''}`} 
+                    value={this.currentValue} 
+                    placeholder={this.placeholder} 
+                    maxLength={this.maxLength} 
+                    rows={this.rows} 
+                    disabled={isDisabled} 
+                    onInput={this.handleInput}
+                    onFocus={this.handleFocus}
+                    onBlur={this.handleBlur}
+                    onClick={this.updateCursorPosition}
+                    onKeyUp={this.updateCursorPosition}
+                    style={this.wordWrap ? { whiteSpace: 'pre-wrap', wordWrap: 'break-word' } : {}}
+                    aria-label={this.label || 'Text area'} 
+                  />
+                )}
+                
+                {/* Copy button for copyable content */}
+                {this.copyable && this.currentValue && (
+                  <button
+                    type="button"
+                    class={`absolute top-2 right-2 p-1 rounded text-xs transition-colors ${
+                      this.dark 
+                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white' 
+                        : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800'
+                    }`}
+                    onClick={this.copyToClipboard}
+                    title="Copy to clipboard"
+                  >
+                    📋
+                  </button>
+                )}
+              </div>
+            </div>
           ) : (
             <div class={inputStyles}>
-              {this.textType === 'single' ? <span class='block truncate'>{this.currentValue || '\u00A0'}</span> : (
-                <div class={`overflow-auto ${this.expandable && !this.isExpanded ? 'max-h-48' : ''}`} style={this.expandable && !this.isExpanded ? { maxHeight: `${this.maxHeight}px` } : {}} part="preview">
-                  {this.structure === 'unstructured' ? <pre class='whitespace-pre-wrap m-0 font-sans text-sm'>{this.currentValue || '\u00A0'}</pre> : <pre class='whitespace-pre-wrap m-0 font-mono text-sm'>{this.highlightSyntax(this.currentValue || '\u00A0', this.structure)}</pre>}
+              {this.textType === 'single' ? (
+                <span class='block truncate'>{this.currentValue || '\u00A0'}</span>
+              ) : (
+                <div class="relative">
+                  {/* Line numbers for display mode */}
+                  {this.showLineNumbers && (
+                    <div class="flex">
+                      <div class={`flex-shrink-0 px-2 py-2 border-r text-xs font-mono leading-relaxed ${
+                        this.dark ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-gray-100 border-gray-300 text-gray-500'
+                      }`}>
+                        {Array.from({ length: Math.max((this.currentValue || '').split('\n').length, 1) }, (_, i) => (
+                          <div key={i + 1}>{i + 1}</div>
+                        ))}
+                      </div>
+                      <div class="flex-1 px-2">
+                        <div class={`overflow-auto ${this.expandable && !this.isExpanded ? 'max-h-48' : ''}`} 
+                             style={this.expandable && !this.isExpanded ? { maxHeight: `${this.maxHeight}px` } : {}} 
+                             part="preview">
+                          {this.syntaxHighlight ? (
+                            <pre 
+                              class='whitespace-pre-wrap m-0 font-mono text-sm leading-relaxed'
+                              innerHTML={this.applySyntaxHighlighting(this.currentValue || '\u00A0', this.language)}
+                            ></pre>
+                          ) : this.structure === 'unstructured' ? (
+                            <pre class='whitespace-pre-wrap m-0 font-sans text-sm leading-relaxed'>{this.currentValue || '\u00A0'}</pre>
+                          ) : (
+                            <pre class='whitespace-pre-wrap m-0 font-mono text-sm leading-relaxed'>{this.highlightSyntax(this.currentValue || '\u00A0', this.structure)}</pre>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!this.showLineNumbers && (
+                    <div class={`overflow-auto ${this.expandable && !this.isExpanded ? 'max-h-48' : ''}`} 
+                         style={this.expandable && !this.isExpanded ? { maxHeight: `${this.maxHeight}px` } : {}} 
+                         part="preview">
+                      {this.syntaxHighlight ? (
+                        <pre 
+                          class='whitespace-pre-wrap m-0 font-mono text-sm'
+                          innerHTML={this.applySyntaxHighlighting(this.currentValue || '\u00A0', this.language)}
+                        ></pre>
+                      ) : this.structure === 'unstructured' ? (
+                        <pre class='whitespace-pre-wrap m-0 font-sans text-sm'>{this.currentValue || '\u00A0'}</pre>
+                      ) : (
+                        <pre class='whitespace-pre-wrap m-0 font-mono text-sm'>{this.highlightSyntax(this.currentValue || '\u00A0', this.structure)}</pre>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Copy button for display mode */}
+                  {this.copyable && this.currentValue && (
+                    <button
+                      type="button"
+                      class={`absolute top-2 right-2 p-1 rounded text-xs transition-colors ${
+                        this.dark 
+                          ? 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white' 
+                          : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800'
+                      }`}
+                      onClick={this.copyToClipboard}
+                      title="Copy to clipboard"
+                    >
+                      📋
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           )}
 
-          {this.shouldShowExpandButton() && <button type='button' class={`mt-2 text-xs font-medium transition-colors ${this.dark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`} onClick={this.toggleExpand}>{this.isExpanded ? '▲ Show Less' : '▼ Show More'}</button>}
+          {this.shouldShowExpandButton() && (
+            <button 
+              type='button' 
+              class={`mt-2 text-xs font-medium transition-colors ${
+                this.dark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'
+              }`} 
+              onClick={this.toggleExpand}
+            >
+              {this.isExpanded ? '▲ Show Less' : '▼ Show More'}
+            </button>
+          )}
 
-          {isEdit && this.currentValue && <div class={`mt-1 text-xs ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{this.textType === 'single' ? <span>{this.currentValue.length}{this.maxLength && ` / ${this.maxLength}`} characters</span> : <span>{this.currentValue.split('\n').length} lines, {this.currentValue.length} characters{this.maxLength && ` / ${this.maxLength}`}</span>}</div>}
+          {/* Enhanced character/line info with cursor position */}
+          {isEdit && this.currentValue && (
+            <div class={`mt-1 text-xs flex justify-between items-center ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>
+              <div>
+                {this.textType === 'single' ? (
+                  <span>{this.currentValue.length}{this.maxLength && ` / ${this.maxLength}`} characters</span>
+                ) : (
+                  <span>{this.lineCount} lines, {this.currentValue.length} characters{this.maxLength && ` / ${this.maxLength}`}</span>
+                )}
+              </div>
+              {this.textType === 'multi' && this.isFocused && (
+                <div class="text-xs">
+                  Ln {this.currentLine}, Col {this.currentColumn}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Status Badge */}
-        {this._status && (
-          <div class={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full mt-2 ${
-            this._status === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-            this._status === 'warning' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-          }`}>
-            <span class={`w-2 h-2 rounded-full mr-1 ${
-              this._status === 'success' ? 'bg-green-600' :
-              this._status === 'warning' ? 'bg-yellow-600' :
-              'bg-red-600'
-            }`}></span>
-            {this._status}
+        {/* Unified Status Indicators - Right aligned */}
+        <div class="flex justify-between items-start mt-2">
+          <div class="flex-1"></div>
+          <div class="flex flex-col items-end gap-1">
+            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
+            {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
           </div>
-        )}
-
-        {/* Last Updated */}
-        {this.showLastUpdated && this._lastUpdated && (
-          <div class={`text-xs mt-2 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>
-            {formatLastUpdated(this._lastUpdated.getTime())}
-          </div>
-        )}
-
-        {/* Error Message */}
-        {this.lastError && <div class='text-red-500 text-sm mt-1 px-2'>{this.lastError}</div>}
+        </div>
       </div>
     )
   }

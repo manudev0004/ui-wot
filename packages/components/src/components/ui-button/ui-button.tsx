@@ -1,6 +1,6 @@
 import { Component, Prop, State, h, Event, EventEmitter, Element, Watch, Method } from '@stencil/core';
 import { UiMsg } from '../../utils/types';
-import { formatLastUpdated } from '../../utils/common-props';
+import { StatusIndicator } from '../../utils/status-indicator';
 
 export interface UiButtonClick { label: string }
 
@@ -130,6 +130,10 @@ export class UiButton {
 
   /** Timestamp of last successful update */
   @State() lastUpdatedTs?: number;
+  
+  /** Timer for auto-updating timestamps */
+  @State() timestampUpdateTimer?: number;
+  @State() private timestampCounter = 0;
 
   /**
    * Deprecated: string-based handler names are removed.
@@ -269,16 +273,7 @@ export class UiButton {
   /** Manually set operation status */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', message?: string): Promise<void> {
-    this.operationStatus = status;
-    if (status === 'error' && message) {
-      this.lastError = message;
-      setTimeout(() => { this.operationStatus = 'idle'; this.lastError = undefined; }, 3000);
-    } else if (status === 'success') {
-      this.lastUpdatedTs = Date.now();
-      setTimeout(() => { this.operationStatus = 'idle'; }, 1200);
-    } else if (status === 'idle') {
-      this.lastError = undefined;
-    }
+    StatusIndicator.applyStatus(this, status, { errorMessage: message });
   }
 
   /** Trigger visual read pulse (brief animation) */
@@ -327,6 +322,21 @@ export class UiButton {
     // Initialize state
     this.isActive = this.label;
     this.isInitialized = true;
+    
+    // Initialize timestamp auto-update timer if showLastUpdated is enabled
+    if (this.showLastUpdated && this.lastUpdatedTs) {
+      this.timestampUpdateTimer = window.setInterval(() => {
+        // Force re-render to update relative timestamp
+        this.timestampCounter++;
+      }, 30000); // Update every 30 seconds
+    }
+  }
+
+  /** Cleanup component */
+  disconnectedCallback() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+    }
   }
 
   /** Watch for mode prop changes and update readonly state */
@@ -443,44 +453,12 @@ export class UiButton {
     return this.color === 'primary' ? 'primary' : this.color === 'secondary' ? 'secondary' : 'neutral';
   }
 
-  /** Render status badge */
-  private renderStatusBadge(): any {
-    if (this.operationStatus === 'idle') return null;
-    
-    const badgeClasses = `inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 ${
-      this.operationStatus === 'loading' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
-      this.operationStatus === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-      'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-    }`;
-    
-    const icon = this.operationStatus === 'loading' ? '⟳' : 
-                 this.operationStatus === 'success' ? '✓' : '✗';
-    
-    return (
-      <span class={badgeClasses} part="status-badge">
-        {icon} {this.operationStatus === 'error' && this.lastError ? this.lastError : this.operationStatus}
-      </span>
-    );
-  }
-
-  /** Render last updated timestamp */
-  private renderLastUpdated(): any {
-    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
-    
-    const timeText = formatLastUpdated(this.lastUpdatedTs);
-    return (
-      <div class={`text-xs mt-1 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`} part="last-updated">
-        {timeText}
-      </div>
-    );
-  }
-
   /** Render component */
   render() {
     const isDisabled = this.disabled;
 
     return (
-      <div class="relative" part="container" role="group" aria-label={this.label || 'Button'}>
+  <div class="relative" part="container" role="group" aria-label={this.label || 'Button'}>
         <div class="flex items-center">
           <button 
             class={this.getButtonStyle()} 
@@ -493,13 +471,16 @@ export class UiButton {
           >
             {this.label}
           </button>
-          
-          {/* Status badge */}
-          {this.renderStatusBadge()}
         </div>
         
-        {/* Last updated timestamp */}
-        {this.renderLastUpdated()}
+        {/* Unified Status Indicators - Right aligned */}
+        <div class="flex justify-between items-start mt-2">
+          <div class="flex-1"></div>
+          <div class="flex flex-col items-end gap-1">
+            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
+            {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
+          </div>
+        </div>
       </div>
     );
   }

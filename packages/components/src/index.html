@@ -906,12 +906,29 @@
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Text Variants</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            <!-- Outlined Variant -->
+            <!-- Display Variant -->
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Outlined</h3>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Display</h3>
               <div class="flex justify-center mb-3">
                 <ui-text
-                  variant="outlined"
+                  variant="display"
+                  color="primary"
+                  label="Display Text"
+                  value="Read-only display text"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  variant="display"
+  value="Read-only display text"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Edit Variant -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Edit</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="edit"
                   color="primary"
                   text-type="single"
                   label="User Name"
@@ -920,12 +937,481 @@
                 ></ui-text>
               </div>
               <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
-  variant="outlined"
+  variant="edit"
   text-type="single"
   label="User Name"&gt;
 &lt;/ui-text&gt;</pre>
             </div>
+
+            <!-- Minimal Variant -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Minimal</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="minimal"
+                  color="secondary"
+                  text-type="single"
+                  label="Minimal Input"
+                  placeholder="Clean borderless style"
+                  value="Subtle underline focus"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  variant="minimal"
+  color="secondary"
+  text-type="single"
+  placeholder="Borderless input"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Outlined Variant -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Outlined</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="outlined"
+                  color="primary"
+                  text-type="single"
+                  label="Outlined Input"
+                  placeholder="Bold border style"
+                  value="Colored border focus"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  variant="outlined"
+  color="primary"
+  text-type="single"
+  label="User Name"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Filled Variant -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Filled</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="filled"
+                  color="success"
+                  text-type="single"
+                  label="Filled Input"
+                  placeholder="Solid background"
+                  value="White text on colored bg"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  variant="filled"
+  color="success"
+  text-type="single"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Elevated Variant -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Elevated</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="elevated"
+                  color="warning"
+                  text-type="single"
+                  label="Elevated Input"
+                  placeholder="Floating with shadows"
+                  value="Premium elevated style"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  variant="elevated"
+  color="warning"
+  text-type="single"
+  placeholder="With shadow"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Multi-line Examples -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Multi-line</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="outlined"
+                  color="danger"
+                  text-type="multi"
+                  label="Description"
+                  placeholder="Enter multi-line text..."
+                  value="This is a multi-line text area with enhanced styling.&#10;Try different variants to see the visual differences!"
+                  rows="4"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  variant="outlined"
+  color="danger"
+  text-type="multi"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
          </div>
+        </div>
+
+        <!-- Advanced Text Features -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Advanced Text Features</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Line Numbers -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Line Numbers</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="outlined"
+                  color="primary"
+                  text-type="multi"
+                  label="Code Editor Style"
+                  show-line-numbers="true"
+                  value="function hello() {&#10;  console.log('Hello, World!');&#10;  return 'success';&#10;}"
+                  rows="4"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  show-line-numbers="true"
+  text-type="multi"
+  variant="outlined"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Syntax Highlighting -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Syntax Highlighting</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="display"
+                  color="secondary"
+                  text-type="multi"
+                  label="JavaScript Code"
+                  syntax-highlight="true"
+                  language="javascript"
+                  value="const greet = (name) => {&#10;  // Welcome message&#10;  return `Hello, ${name}!`;&#10;};"
+                  rows="4"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  syntax-highlight="true"
+  language="javascript"
+  variant="display"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Copyable Content -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Copy to Clipboard</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="filled"
+                  color="success"
+                  text-type="multi"
+                  label="API Key"
+                  copyable="true"
+                  value="sk-1234567890abcdef&#10;Copy this key for your application.&#10;Keep it secure!"
+                  rows="3"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  copyable="true"
+  variant="filled"
+  color="success"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Advanced Editor -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Full Editor</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="elevated"
+                  color="primary"
+                  text-type="multi"
+                  label="Advanced Code Editor"
+                  show-line-numbers="true"
+                  syntax-highlight="true"
+                  language="typescript"
+                  copyable="true"
+                  resizable="true"
+                  word-wrap="true"
+                  value="interface User {&#10;  id: number;&#10;  name: string;&#10;  email: string;&#10;}&#10;&#10;const createUser = (data: User): Promise&lt;User&gt; => {&#10;  return fetch('/api/users', {&#10;    method: 'POST',&#10;    body: JSON.stringify(data)&#10;  });&#10;};"
+                  rows="8"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  show-line-numbers="true"
+  syntax-highlight="true"
+  language="typescript"
+  copyable="true"
+  resizable="true"
+  word-wrap="true"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- JSON Formatting -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">JSON Highlighting</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="outlined"
+                  color="neutral"
+                  text-type="multi"
+                  label="Configuration"
+                  syntax-highlight="true"
+                  language="json"
+                  show-line-numbers="true"
+                  copyable="true"
+                  value="{&#10;  &quot;name&quot;: &quot;ui-wot-components&quot;,&#10;  &quot;version&quot;: &quot;1.0.0&quot;,&#10;  &quot;enabled&quot;: true,&#10;  &quot;features&quot;: [&quot;syntax&quot;, &quot;copy&quot;, &quot;lines&quot;]&#10;}"
+                  rows="6"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  syntax-highlight="true"
+  language="json"
+  show-line-numbers="true"
+  copyable="true"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Python Code -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Python Syntax</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="minimal"
+                  color="warning"
+                  text-type="multi"
+                  label="Python Script"
+                  syntax-highlight="true"
+                  language="python"
+                  show-line-numbers="true"
+                  value="def calculate_fibonacci(n):&#10;    # Base cases&#10;    if n <= 1:&#10;        return n&#10;    &#10;    # Recursive case&#10;    return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)&#10;&#10;# Calculate first 10 numbers&#10;for i in range(10):&#10;    print(f'F({i}) = {calculate_fibonacci(i)}')"
+                  rows="8"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  syntax-highlight="true"
+  language="python"
+  show-line-numbers="true"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Border & Styling Options -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Border & Styling Options</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- Border Styles -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Border Styles</h3>
+              <div class="space-y-3">
+                <ui-text
+                  variant="outlined"
+                  color="primary"
+                  text-type="single"
+                  label="Solid Border (Default)"
+                  border-style="solid"
+                  border-width="2"
+                  value="Solid border style"
+                ></ui-text>
+                <ui-text
+                  variant="outlined"
+                  color="secondary"
+                  text-type="single"
+                  label="Dashed Border"
+                  border-style="dashed"
+                  border-width="3"
+                  value="Dashed border style"
+                ></ui-text>
+                <ui-text
+                  variant="outlined"
+                  color="success"
+                  text-type="single"
+                  label="Dotted Border"
+                  border-style="dotted"
+                  border-width="2"
+                  value="Dotted border style"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 mt-3">&lt;ui-text
+  border-style="dashed"
+  border-width="3"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Shadow Variations -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Shadow Effects</h3>
+              <div class="space-y-3">
+                <ui-text
+                  variant="elevated"
+                  color="primary"
+                  text-type="single"
+                  label="Light Shadow"
+                  shadow="light"
+                  value="Subtle shadow effect"
+                ></ui-text>
+                <ui-text
+                  variant="elevated"
+                  color="secondary"
+                  text-type="single"
+                  label="Medium Shadow"
+                  shadow="medium"
+                  value="Medium shadow effect"
+                ></ui-text>
+                <ui-text
+                  variant="elevated"
+                  color="warning"
+                  text-type="single"
+                  label="Heavy Shadow"
+                  shadow="heavy"
+                  value="Bold shadow effect"
+                ></ui-text>
+                <ui-text
+                  variant="elevated"
+                  color="danger"
+                  text-type="single"
+                  label="Glow Effect"
+                  shadow="glow"
+                  value="Glowing shadow effect"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 mt-3">&lt;ui-text
+  shadow="glow"
+  variant="elevated"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Resizing Options -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Resizing Options</h3>
+              <div class="space-y-3">
+                <ui-text
+                  variant="outlined"
+                  color="primary"
+                  text-type="multi"
+                  label="Classic Resize"
+                  resizable="true"
+                  resize-handle="classic"
+                  value="Drag the bottom-right corner&#10;to resize this text area&#10;(Classic resize handle)"
+                  rows="3"
+                ></ui-text>
+                <ui-text
+                  variant="filled"
+                  color="secondary"
+                  text-type="multi"
+                  label="Modern Resize"
+                  resizable="true"
+                  resize-handle="modern"
+                  value="Modern resizing with&#10;both vertical and horizontal&#10;resize capabilities"
+                  rows="3"
+                ></ui-text>
+                <ui-text
+                  variant="elevated"
+                  color="success"
+                  text-type="multi"
+                  label="Minimal Resize"
+                  resizable="true"
+                  resize-handle="minimal"
+                  value="Minimal resize handle&#10;for clean appearance&#10;(Vertical only)"
+                  rows="3"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 mt-3">&lt;ui-text
+  resizable="true"
+  resize-handle="modern"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Size Variations -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Size Options</h3>
+              <div class="space-y-3">
+                <ui-text
+                  variant="outlined"
+                  color="primary"
+                  text-type="single"
+                  label="Small Size"
+                  size="small"
+                  value="Small text input"
+                ></ui-text>
+                <ui-text
+                  variant="outlined"
+                  color="primary"
+                  text-type="single"
+                  label="Medium Size (Default)"
+                  size="medium"
+                  value="Medium text input"
+                ></ui-text>
+                <ui-text
+                  variant="outlined"
+                  color="primary"
+                  text-type="single"
+                  label="Large Size"
+                  size="large"
+                  value="Large text input"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 mt-3">&lt;ui-text
+  size="large"
+  variant="outlined"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Color Combinations -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Color Themes</h3>
+              <div class="space-y-2">
+                <ui-text variant="filled" color="primary" text-type="single" value="Primary Color Theme" size="small"></ui-text>
+                <ui-text variant="filled" color="secondary" text-type="single" value="Secondary Color Theme" size="small"></ui-text>
+                <ui-text variant="filled" color="success" text-type="single" value="Success Color Theme" size="small"></ui-text>
+                <ui-text variant="filled" color="warning" text-type="single" value="Warning Color Theme" size="small"></ui-text>
+                <ui-text variant="filled" color="danger" text-type="single" value="Danger Color Theme" size="small"></ui-text>
+                <ui-text variant="filled" color="neutral" text-type="single" value="Neutral Color Theme" size="small"></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 mt-3">&lt;ui-text
+  variant="filled"
+  color="primary"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Advanced Styling -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Combined Features</h3>
+              <div class="flex justify-center mb-3">
+                <ui-text
+                  variant="elevated"
+                  color="primary"
+                  text-type="multi"
+                  label="Premium Text Editor"
+                  show-line-numbers="true"
+                  syntax-highlight="true"
+                  language="typescript"
+                  copyable="true"
+                  resizable="true"
+                  resize-handle="modern"
+                  border-style="solid"
+                  border-width="2"
+                  shadow="heavy"
+                  size="medium"
+                  word-wrap="true"
+                  value="// Premium text editor with all features&#10;interface TextEditor {&#10;  lineNumbers: boolean;&#10;  syntaxHighlight: boolean;&#10;  copyable: boolean;&#10;  resizable: boolean;&#10;}&#10;&#10;const editor: TextEditor = {&#10;  lineNumbers: true,&#10;  syntaxHighlight: true,&#10;  copyable: true,&#10;  resizable: true&#10;};"
+                  rows="10"
+                ></ui-text>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  show-line-numbers="true"
+  syntax-highlight="true"
+  copyable="true"
+  resizable="true"
+  border-style="solid"
+  shadow="heavy"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+          </div>
         </div>
       </div>  
 
@@ -936,8 +1422,24 @@
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Calendar Variants</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          
 
+            <!-- Minimal Variant -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Minimal</h3>
+              <div class="flex justify-center mb-3">
+                <ui-calendar
+                  variant="minimal"
+                  color="primary"
+                  label="Start Date"
+                  value="2024-08-26T00:00:00.000Z"
+                ></ui-calendar>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-calendar
+  variant="minimal"
+  label="Start Date"&gt;
+&lt;/ui-calendar&gt;</pre>
+            </div>
+          
             <!-- Outlined Variant -->
             <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Outlined</h3>
@@ -972,21 +1474,81 @@
 &lt;/ui-calendar&gt;</pre>
             </div>
 
-        
+            <!-- Elevated Variant -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Elevated</h3>
+              <div class="flex justify-center mb-3">
+                <ui-calendar
+                  variant="elevated"
+                  color="secondary"
+                  label="Event Date"
+                  value="2024-08-26T00:00:00.000Z"
+                ></ui-calendar>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-calendar
+  variant="elevated"
+  color="secondary"
+  label="Event Date"&gt;
+&lt;/ui-calendar&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar Features -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Calendar Features</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
             <!-- Disabled State -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Disabled State</h3>
-              <ui-calendar
-                variant="outlined"
-                color="primary"
-                label="Unavailable Date"
-                disabled="true"
-              ></ui-calendar>
-              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-calendar
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Disabled</h3>
+              <div class="flex justify-center mb-3">
+                <ui-calendar
+                  variant="outlined"
+                  color="primary"
+                  label="Unavailable Date"
+                  disabled="true"
+                ></ui-calendar>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-calendar
   variant="outlined"
-  label="Unavailable Date"
   disabled="true"&gt;
+&lt;/ui-calendar&gt;</pre>
+            </div>
+
+            <!-- Inline Calendar -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Inline</h3>
+              <div class="flex justify-center mb-3">
+                <ui-calendar
+                  variant="minimal"
+                  color="secondary"
+                  label="Always Visible"
+                  inline="true"
+                  size="small"
+                ></ui-calendar>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-calendar
+  variant="minimal"
+  inline="true"
+  size="small"&gt;
+&lt;/ui-calendar&gt;</pre>
+            </div>
+
+            <!-- Different Colors -->
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Colors</h3>
+              <div class="flex justify-center mb-3">
+                <ui-calendar
+                  variant="filled"
+                  color="success"
+                  label="Success Color"
+                  value="2024-08-26T00:00:00.000Z"
+                ></ui-calendar>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-calendar
+  variant="filled"
+  color="success"&gt;
 &lt;/ui-calendar&gt;</pre>
             </div>
           </div>

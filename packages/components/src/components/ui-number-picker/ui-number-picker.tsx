@@ -1,6 +1,6 @@
 import { Component, Element, Prop, State, h, Watch, Event, EventEmitter, Method } from '@stencil/core';
 import { UiMsg } from '../../utils/types';
-import { formatLastUpdated } from '../../utils/common-props';
+import { StatusIndicator } from '../../utils/status-indicator';
 
 export interface UiNumberPickerValueChange { value: number; label?: string }
 
@@ -166,6 +166,10 @@ export class UiNumberPicker {
   @Prop({ mutable: true }) connected: boolean = true;
   /** Timestamp of last value update for showLastUpdated feature */
   @State() lastUpdatedTs?: number;
+  
+  /** Timer for auto-updating timestamps */
+  @State() timestampUpdateTimer?: number;
+  @State() private timestampCounter = 0;
 
   /** Consolidated setValue method with automatic Promise-based status management */
   @Method()
@@ -341,21 +345,7 @@ export class UiNumberPicker {
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
-    this.operationStatus = status;
-    if (status === 'error' && errorMessage) {
-      this.lastError = errorMessage;
-    } else if (status !== 'error') {
-      this.lastError = undefined;
-    }
-    
-    // Auto-clear success status
-    if (status === 'success') {
-      setTimeout(() => { 
-        if (this.operationStatus === 'success') {
-          this.operationStatus = 'idle'; 
-        }
-      }, 1200);
-    }
+    StatusIndicator.applyStatus(this, status, { errorMessage });
   }
 
   /**
@@ -380,6 +370,21 @@ export class UiNumberPicker {
   componentWillLoad() {
     this.isActive = this.value || 0;
     this.isInitialized = true;
+    
+    // Initialize timestamp auto-update timer if showLastUpdated is enabled
+    if (this.showLastUpdated && this.lastUpdatedTs) {
+      this.timestampUpdateTimer = window.setInterval(() => {
+        // Force re-render to update relative timestamp
+        this.timestampCounter++;
+      }, 30000); // Update every 30 seconds
+    }
+  }
+
+  /** Cleanup component */
+  disconnectedCallback() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+    }
   }
 
   /** Watch for value prop changes and update internal state */
@@ -568,67 +573,13 @@ export class UiNumberPicker {
     return this.color === 'primary' ? 'primary' : this.color === 'secondary' ? 'secondary' : 'neutral';
   }
 
-  /** Render status badge for visual feedback */
-  private renderStatusBadge() {
-    const isReadonly = this.readonly;
-    const connected = this.connected !== false;
-    
-    if (isReadonly) {
-      if (!connected) {
-        return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}}>
-          <span style={{width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block'}}></span>
-        </span>;
-      }
-      const active = this.readPulseTs && (Date.now() - this.readPulseTs < 1500);
-      if (active) {
-        return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}}>
-          <span style={{position: 'absolute', width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#60a5fa', opacity: '0.6', animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite'}}></span>
-          <span style={{width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#3b82f6', display: 'inline-block'}}></span>
-        </span>;
-      }
-      return null;
-    }
-
-    switch (this.operationStatus) {
-      case 'loading':
-        return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px'}} title="Sending...">
-          <span style={{width: '12px', height: '12px', borderRadius: '50%', border: '2px solid currentColor', borderTopColor: 'transparent', animation: 'spin 1s linear infinite'}}></span>
-        </span>;
-      case 'success':
-          return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: '8px'}} title="Sent">
-            <span style={{width: '16px', height: '16px', borderRadius: '9999px', backgroundColor: '#22c55e', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '12px', fontWeight: '800', lineHeight: '16px'}}>✓</span>
-          </span>;
-      case 'error':
-          return <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: '8px'}} title={this.lastError || 'Error'}>
-            <span style={{width: '16px', height: '16px', borderRadius: '9999px', backgroundColor: '#ef4444', color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800', lineHeight: '16px'}}>×</span>
-          </span>;
-      default:
-        return null;
-    }
-  }
-
-  /** Render last updated timestamp if enabled */
-  private renderLastUpdated() {
-    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
-
-    const timeText = formatLastUpdated(this.lastUpdatedTs);
-    return (
-      <span 
-        class={`text-xs ${this.dark ? 'text-gray-300' : 'text-gray-500'} ml-2`}
-        title={`Last updated: ${new Date(this.lastUpdatedTs).toLocaleString()}`}
-        part="last-updated"
-      >
-        {timeText}
-      </span>
-    );
-  }
-
   /** Render component */
   render() {
     const isDisabled = this.disabled;
     const isReadOnly = this.readonly || this.mode === 'read';
     const hoverTitle = isReadOnly ? 'Value cannot be changed (Read-only mode)' : '';
-    const containerClasses = `flex flex-col items-center gap-3 ${isDisabled ? 'opacity-75' : ''}`;
+  // IMPORTANT: add 'relative' so absolutely positioned status/timestamp badges render correctly
+  const containerClasses = `relative flex flex-col items-center gap-3 ${isDisabled ? 'opacity-75' : ''}`;
 
     return (
       <div class={containerClasses} part="container" role="group" aria-label={this.label || 'Number picker'}>
@@ -642,12 +593,15 @@ export class UiNumberPicker {
               </label>
             )}
           </slot>
-          
-          {/* Status badge */}
-          {this.renderStatusBadge()}
-          
-          {/* Last updated timestamp */}
-          {this.renderLastUpdated()}
+        </div>
+
+        {/* Unified Status Indicators - consistent wrapper with other components */}
+        <div class="flex justify-between items-start mt-2">
+          <div class="flex-1"></div>
+          <div class="flex flex-col items-end gap-1">
+            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
+            {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
+          </div>
         </div>
 
         {isReadOnly ? (

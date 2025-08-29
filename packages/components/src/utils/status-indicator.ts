@@ -1,42 +1,87 @@
 /**
  * Visual feedback utility for showing operation status in UI components
+ * Unified system for consistent status indicators across all components
  */
 
 export interface StatusIndicatorOptions {
   theme: 'light' | 'dark';
   size?: 'small' | 'medium' | 'large';
-  position?: 'top-right' | 'bottom-right' | 'center';
+  position?: 'right' | 'top-right' | 'bottom-right' | 'center';
 }
 
 export type OperationStatus = 'idle' | 'loading' | 'success' | 'error' | 'warning';
 
 export class StatusIndicator {
   /**
-   * Get CSS classes for status indicator
+   * Get inline styles for loading spinner animation
+   */
+  static getLoadingSpinnerStyle(): { [key: string]: string } {
+    return {
+      animation: 'spin 1s linear infinite'
+    };
+  }
+
+  /**
+   * Get SVG content for loading spinner
+   */
+  static getLoadingSpinnerSVG(theme: 'light' | 'dark'): string {
+    const color = theme === 'dark' ? '#60a5fa' : '#3b82f6'; // blue-400 : blue-500
+    const bgColor = theme === 'dark' ? '#374151' : '#e5e7eb'; // gray-700 : gray-200
+    
+    return `<svg class="w-4 h-4" viewBox="0 0 24 24" style="animation: spin 1s linear infinite;">
+      <circle cx="12" cy="12" r="10" stroke="${bgColor}" stroke-width="4" fill="none" />
+      <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="${color}" />
+    </svg>`;
+  }
+
+  /**
+   * Get CSS keyframes for spinner animation (to be added to component styles)
+   */
+  static getSpinnerKeyframes(): string {
+    return `
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    `;
+  }
+
+  /**
+   * Get standard positioning classes for consistent right-aligned indicators
+   */
+  static getStandardClasses(): string {
+    return 'absolute -right-6 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center transition-all duration-300';
+  }
+
+  /**
+   * Get CSS classes for status indicator with unified positioning
    */
   static getStatusClasses(
     status: OperationStatus, 
     options: StatusIndicatorOptions
   ): string {
-    const { theme, size = 'small', position = 'top-right' } = options;
+    const { theme, size = 'small', position = 'right' } = options;
     
     let baseClasses = 'absolute transition-all duration-300 flex items-center justify-center';
     
     // Size classes
     switch (size) {
       case 'small':
-        baseClasses += ' w-3 h-3 text-xs';
+        baseClasses += ' w-4 h-4 text-xs';
         break;
       case 'medium':
-        baseClasses += ' w-4 h-4 text-sm';
+        baseClasses += ' w-5 h-5 text-sm';
         break;
       case 'large':
-        baseClasses += ' w-5 h-5 text-base';
+        baseClasses += ' w-6 h-6 text-base';
         break;
     }
     
-    // Position classes
+    // Position classes - standardized to right side with proper margin
     switch (position) {
+      case 'right':
+        baseClasses += ' -right-6 top-1/2 -translate-y-1/2';
+        break;
       case 'top-right':
         baseClasses += ' -top-1 -right-1';
         break;
@@ -48,31 +93,38 @@ export class StatusIndicator {
         break;
     }
     
-    // Status-specific classes
+    // Status-specific classes with unified colors
     switch (status) {
       case 'idle':
         return baseClasses + ' opacity-0';
       
       case 'loading':
-        baseClasses += ' rounded-full animate-spin border-2 border-transparent';
-        if (theme === 'dark') {
-          baseClasses += ' border-t-gray-300';
-        } else {
-          baseClasses += ' border-t-gray-600';
-        }
-        return baseClasses;
+        // Return empty content - we'll render SVG separately
+        return baseClasses + ' opacity-100';
       
       case 'success':
-        baseClasses += ' rounded-full bg-green-500 text-white opacity-100';
-        return baseClasses;
+        if (theme === 'dark') {
+          baseClasses += ' rounded-full bg-green-400 text-gray-900';
+        } else {
+          baseClasses += ' rounded-full bg-green-500 text-white';
+        }
+        return baseClasses + ' opacity-100';
       
       case 'error':
-        baseClasses += ' rounded-full bg-red-500 text-white opacity-100';
-        return baseClasses;
+        if (theme === 'dark') {
+          baseClasses += ' rounded-full bg-red-400 text-gray-900';
+        } else {
+          baseClasses += ' rounded-full bg-red-500 text-white';
+        }
+        return baseClasses + ' opacity-100';
       
       case 'warning':
-        baseClasses += ' rounded-full bg-yellow-500 text-gray-900 opacity-100';
-        return baseClasses;
+        if (theme === 'dark') {
+          baseClasses += ' rounded-full bg-yellow-400 text-gray-900';
+        } else {
+          baseClasses += ' rounded-full bg-yellow-500 text-gray-900';
+        }
+        return baseClasses + ' opacity-100';
       
       default:
         return baseClasses + ' opacity-0';
@@ -85,16 +137,86 @@ export class StatusIndicator {
   static getStatusIcon(status: OperationStatus): string {
     switch (status) {
       case 'success':
-        return '✓';
+        return 'success'; // symbolic key - rendered as SVG in renderStatusBadge
       case 'error':
-        return '✕';
+        return 'error'; // symbolic key
       case 'warning':
-        return '!';
+        return 'warning';
       case 'loading':
         return ''; // Spinner handled by CSS
       default:
         return '';
     }
+  }
+
+  /** Unified state transition utility (applies consistent auto clear semantics) */
+  static applyStatus(target: any, status: OperationStatus, opts?: { errorMessage?: string; successClearMs?: number; errorClearMs?: number; idleClear?: boolean }) {
+    if (!target) return;
+    const { errorMessage, successClearMs = 1200, errorClearMs = 3000 } = opts || {};
+    target.operationStatus = status;
+    if (status === 'error') {
+      target.lastError = errorMessage;
+      if (errorClearMs > 0) setTimeout(() => { if (target.operationStatus === 'error') { target.operationStatus = 'idle'; target.lastError = undefined; } }, errorClearMs);
+    } else if (status === 'success') {
+      target.lastError = undefined;
+      target.lastUpdatedTs = Date.now();
+      if (successClearMs > 0) setTimeout(() => { if (target.operationStatus === 'success') target.operationStatus = 'idle'; }, successClearMs);
+    } else if (status === 'idle') {
+      target.lastError = undefined;
+    }
+  }
+
+  /**
+   * Format timestamp with detailed date/time and relative time
+   */
+  static formatTimestamp(date: Date): { full: string; relative: string } {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    // Full timestamp format
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    };
+    const full = `Last updated: ${date.toLocaleDateString('en-US', options)}`;
+
+    // Relative time
+    let relative: string;
+    if (diffMinutes < 1) {
+      relative = '(just now)';
+    } else if (diffMinutes < 60) {
+      relative = `(${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago)`;
+    } else if (diffHours < 24) {
+      relative = `(${diffHours} hour${diffHours !== 1 ? 's' : ''} ago)`;
+    } else if (diffDays < 7) {
+      relative = `(${diffDays} day${diffDays !== 1 ? 's' : ''} ago)`;
+    } else {
+      relative = '(more than a week ago)';
+    }
+
+    return { full, relative };
+  }
+
+  /**
+   * Get unified timestamp classes
+   */
+  static getTimestampClasses(theme: 'light' | 'dark'): { container: string; full: string; relative: string } {
+    const baseText = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
+    const relativeText = theme === 'dark' ? 'text-gray-500' : 'text-gray-400';
+    
+    return {
+      container: 'mt-2 text-xs space-y-1',
+      full: `${baseText}`,
+      relative: `${relativeText} italic`
+    };
   }
 
   /**
@@ -116,20 +238,91 @@ export class StatusIndicator {
   }
 
   /**
-   * Get status indicator configuration object
+   * Render complete status badge with consistent styling and positioning
    */
-  static getIndicatorConfig(
+  static renderStatusBadge(
     status: OperationStatus, 
-    options: StatusIndicatorOptions,
-    error?: string
-  ): { classes: string; icon: string; tooltip: string } | null {
-    if (status === 'idle') return null;
+    theme: 'light' | 'dark', 
+    error?: string,
+    h?: any // Stencil's h function
+  ): any {
+    if (status === 'idle' || !h) return null;
 
-    const classes = this.getStatusClasses(status, options);
-    const icon = this.getStatusIcon(status);
+    const classes = this.getStatusClasses(status, { theme, position: 'right' });
     const tooltip = this.getStatusTooltip(status, error);
 
-    return { classes, icon, tooltip };
+    if (status === 'loading') {
+      return h('span', {
+        class: classes,
+        title: tooltip,
+        innerHTML: this.getLoadingSpinnerSVG(theme)
+      });
+    }
+
+    // Use SVG icons for consistent appearance (avoids font differences)
+    let content: any = null;
+    const symbolic = this.getStatusIcon(status);
+    if (symbolic === 'success') {
+      content = h('svg', {
+        viewBox: '0 0 16 16',
+        class: 'w-3 h-3',
+        fill: 'none',
+        stroke: 'currentColor',
+        'stroke-width': '3',
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round'
+      }, [
+        h('path', { d: 'M3 8.5l3.5 3.5L13 5' })
+      ]);
+    } else if (symbolic === 'error') {
+      content = h('svg', {
+        viewBox: '0 0 16 16',
+        class: 'w-3 h-3',
+        fill: 'none',
+        stroke: 'currentColor',
+        'stroke-width': '3',
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round'
+      }, [
+        h('path', { d: 'M4 4l8 8' }),
+        h('path', { d: 'M12 4l-8 8' })
+      ]);
+    } else if (symbolic === 'warning') {
+      content = h('svg', {
+        viewBox: '0 0 16 16',
+        class: 'w-3 h-3',
+        fill: 'none',
+        stroke: 'currentColor',
+        'stroke-width': '2',
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round'
+      }, [
+        h('path', { d: 'M8 3l6 10H2L8 3z' }),
+        h('path', { d: 'M8 6v3' }),
+        h('circle', { cx: '8', cy: '11.5', r: '0.75', fill: 'currentColor', stroke: 'none' })
+      ]);
+    }
+
+    return h('span', { class: classes, title: tooltip }, content);
+  }
+
+  /**
+   * Render timestamp with auto-updating relative time
+   */
+  static renderTimestamp(
+    lastUpdated: Date | null,
+    theme: 'light' | 'dark',
+    h?: any // Stencil's h function
+  ): any {
+    if (!lastUpdated || !h) return null;
+
+    const { full, relative } = this.formatTimestamp(lastUpdated);
+    const timestampClasses = this.getTimestampClasses(theme);
+
+    return h('div', { class: timestampClasses.container }, [
+      h('div', { class: timestampClasses.full }, full),
+      h('div', { class: timestampClasses.relative }, relative)
+    ]);
   }
 }
 

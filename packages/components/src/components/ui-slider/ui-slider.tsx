@@ -1,5 +1,6 @@
 import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
 import { UiMsg } from '../../utils/types';
+import { StatusIndicator } from '../../utils/status-indicator';
 
 /**
  * Advanced slider component with reactive state management and multiple visual styles.
@@ -156,6 +157,10 @@ export class UiSlider {
   @Prop({ mutable: true }) connected: boolean = true;
   /** Timestamp of last value update for showLastUpdated feature */
   @State() lastUpdatedTs?: number;
+  
+  /** Timer for auto-updating timestamps */
+  @State() timestampUpdateTimer?: number;
+  @State() private timestampCounter = 0;
 
   /** Consolidated setValue method with automatic Promise-based status management */
   @Method()
@@ -333,21 +338,7 @@ export class UiSlider {
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
-    this.operationStatus = status;
-    if (status === 'error' && errorMessage) {
-      this.lastError = errorMessage;
-    } else if (status !== 'error') {
-      this.lastError = undefined;
-    }
-    
-    // Auto-clear success status
-    if (status === 'success') {
-      setTimeout(() => { 
-        if (this.operationStatus === 'success') {
-          this.operationStatus = 'idle'; 
-        }
-      }, 1200);
-    }
+    StatusIndicator.applyStatus(this, status, { errorMessage });
   }
 
   /**
@@ -371,6 +362,21 @@ export class UiSlider {
     this.isActive = clampedValue;
     this.manualInputValue = String(clampedValue);
     this.isInitialized = true;
+    
+    // Initialize timestamp auto-update timer if showLastUpdated is enabled
+    if (this.showLastUpdated && this.lastUpdatedTs) {
+      this.timestampUpdateTimer = window.setInterval(() => {
+        // Force re-render to update relative timestamp
+        this.timestampCounter++;
+      }, 30000); // Update every 30 seconds
+    }
+  }
+
+  /** Cleanup component */
+  disconnectedCallback() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+    }
   }
 
   /** Watch for value prop changes and update internal state */
@@ -412,11 +418,12 @@ export class UiSlider {
     const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
     
     // Simple value change without any operation - for basic slider functionality
-    this.isActive = clampedValue;
-    this.value = clampedValue;
-    this.manualInputValue = String(clampedValue);
-    this.lastUpdatedTs = Date.now();
-    this.emitValueMsg(clampedValue, this.isActive);
+  const prev = this.isActive;
+  this.isActive = clampedValue;
+  this.value = clampedValue;
+  this.manualInputValue = String(clampedValue);
+  this.lastUpdatedTs = Date.now();
+  this.emitValueMsg(clampedValue, prev);
   };
 
   /** Handle manual input */
@@ -436,12 +443,13 @@ export class UiSlider {
       return;
     }
 
-    const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
-    this.isActive = clampedValue;
-    this.value = clampedValue;
-    this.manualInputValue = String(clampedValue);
-    this.lastUpdatedTs = Date.now();
-    this.emitValueMsg(clampedValue, this.isActive);
+  const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
+  const prev = this.isActive;
+  this.isActive = clampedValue;
+  this.value = clampedValue;
+  this.manualInputValue = String(clampedValue);
+  this.lastUpdatedTs = Date.now();
+  this.emitValueMsg(clampedValue, prev);
   };
 
   /** Handle keyboard navigation */
@@ -481,17 +489,19 @@ export class UiSlider {
         return;
     }
 
-    this.isActive = newValue;
-    this.value = newValue;
-    this.manualInputValue = String(newValue);
-    this.lastUpdatedTs = Date.now();
-    this.emitValueMsg(newValue, this.isActive);
+  const prev = this.isActive;
+  this.isActive = newValue;
+  this.value = newValue;
+  this.manualInputValue = String(newValue);
+  this.lastUpdatedTs = Date.now();
+  this.emitValueMsg(newValue, prev);
   };
 
   /** Get track styles */
   private getTrackStyle() {
     const isDisabled = this.disabled;
-    const percentage = ((this.isActive - this.min) / (this.max - this.min)) * 100;
+  const range = (this.max - this.min) || 1;
+  const percentage = ((this.isActive - this.min) / range) * 100;
 
     let trackSize = 'h-2 w-full';
     let progressSize = 'h-2';
@@ -578,7 +588,8 @@ export class UiSlider {
     if (this.variant !== 'stepped') return null;
 
     const steps = [];
-    const stepCount = (this.max - this.min) / this.step;
+  const safeStep = this.step || 1;
+  const stepCount = Math.max(1, Math.floor((this.max - this.min) / safeStep));
     
     for (let i = 0; i <= stepCount; i++) {
       const percentage = (i / stepCount) * 100;
@@ -704,7 +715,8 @@ export class UiSlider {
     const thumbStyle = this.getThumbStyle();
     const isDisabled = this.disabled;
     const isVertical = this.orientation === 'vertical';
-    const percent = ((this.isActive - this.min) / (this.max - this.min)) * 100;
+  const safeRange = (this.max - this.min) || 1;
+  const percent = ((this.isActive - this.min) / safeRange) * 100;
 
     return (
       <div class={isVertical ? 'flex flex-col items-center w-20 mx-4 mb-4' : 'w-full'}> {/* Reduced mb-4 for vertical to avoid excess space */}
@@ -832,12 +844,14 @@ export class UiSlider {
           </div>
         )}
         
-        {/* Error Message */}
-        {this.lastError && (
-          <div class="text-red-500 text-sm mt-2 px-2">
-            {this.lastError}
+        {/* Unified Status Indicators - Right aligned */}
+        <div class="flex justify-between items-start mt-2">
+          <div class="flex-1"></div>
+          <div class="flex flex-col items-end gap-1">
+            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
+            {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
           </div>
-        )}
+        </div>
       </div>
     );
   }

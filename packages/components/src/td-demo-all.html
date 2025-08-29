@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Minimal All-Components TD Demo</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 900px;
+        margin: 28px auto;
+        padding: 18px;
+        background: #f8fafc;
+      }
+      .card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      }
+      .row {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        margin: 14px 0;
+      }
+      h1 {
+        margin: 0 0 12px;
+      }
+      .meta {
+        color: #6b7280;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Minimal All-Components TD Demo</h1>
+      <p class="meta">Wiring each control to the Thing Description at <code>http://plugfest.thingweb.io/http-data-schema-thing</code></p>
+
+      <div class="row">
+        <div>
+          <h3>Toggle (bool)</h3>
+          <ui-toggle
+            id="td-toggle"
+            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+            td-property="bool"
+            label="TD Toggle"
+            show-last-updated="true "
+            show-status="true"
+          ></ui-toggle>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Slider (num)</h3>
+          <ui-slider
+            id="td-slider"
+            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+            td-property="num"
+            min="0"
+            max="100"
+            label="TD Slider"
+            show-last-updated="true"
+            show-status="true"
+          ></ui-slider>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Number Picker (int)</h3>
+          <ui-number-picker
+            id="td-number"
+            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+            td-property="int"
+            min="0"
+            max="100"
+            label="TD Number"
+            show-last-updated="true"
+            show-status="true"
+          ></ui-number-picker>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Button</h3>
+          <ui-button id="td-button" label="TD Button" show-last-updated="true" show-status="true"></ui-button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Checkbox (bool)</h3>
+          <ui-checkbox
+            id="td-checkbox"
+            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+            td-property="bool"
+            label="TD Checkbox"
+            show-last-updated="true"
+            show-status="true"
+          ></ui-checkbox>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Text (string)</h3>
+          <ui-text
+            id="td-text"
+            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+            td-property="string"
+            label="TD Text"
+            show-last-updated="true"
+            show-status="true"
+          ></ui-text>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Calendar (date)</h3>
+          <ui-calendar
+            id="td-calendar"
+            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
+            td-property="date"
+            label="TD Calendar"
+            show-last-updated="true"
+            show-status="true"
+          ></ui-calendar>
+        </div>
+      </div>
+
+      <div class="meta">Open the browser console to see events and status messages.</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
+    <script type="module" src="./build/ui-wot-components.esm.js"></script>
+
+    <script>
+      // Optimised TD wiring with: single TD fetch, shared Thing, unified polling, debounced writes, timeouts & safe teardown.
+      (async function () {
+        const COMPONENT_TAGS = ['ui-toggle', 'ui-slider', 'ui-number-picker', 'ui-button', 'ui-checkbox', 'ui-text', 'ui-calendar'];
+        await Promise.all(COMPONENT_TAGS.map(t => customElements.whenDefined(t)));
+
+        // ---- Load WoT bundle with timeout (avoid infinite wait hang) ----
+        const wotReady = async (timeoutMs = 10000) => {
+          const start = performance.now();
+          while (!window.WoT && performance.now() - start < timeoutMs) {
+            await new Promise(r => setTimeout(r, 100));
+          }
+          if (!window.WoT) throw new Error('WoT library failed to load within timeout');
+        };
+        try {
+          await wotReady();
+        } catch (e) {
+          console.error(e.message);
+          document.querySelectorAll('ui-*').forEach(el => el.setStatus?.('error', 'WoT lib load timeout'));
+          return;
+        }
+
+        // ---- Single Servient / Thing reuse ----
+        const servient = new window.WoT.Core.Servient();
+        servient.addClientFactory(new window.WoT.Http.HttpClientFactory());
+        let wot;
+        try {
+          wot = await servient.start();
+        } catch (e) {
+          console.error('Servient start failed', e);
+          document.querySelectorAll('ui-*').forEach(el => el.setStatus?.('error', 'Servient start failed'));
+          return;
+        }
+
+        const tdUrl = 'http://plugfest.thingweb.io/http-data-schema-thing';
+        let thing;
+        try {
+          const tdJson = await (await fetch(tdUrl, { cache: 'no-store' })).json();
+          thing = await wot.consume(tdJson);
+        } catch (e) {
+          console.error('TD fetch/consume failed', e);
+          document.querySelectorAll('ui-*').forEach(el => el.setStatus?.('error', 'TD fetch failed'));
+          return;
+        }
+
+        // ---- Element ↔ property mapping ----
+        const bindings = [
+          { el: document.getElementById('td-toggle'), prop: 'bool', type: 'boolean' },
+          { el: document.getElementById('td-slider'), prop: 'num', type: 'number' },
+          { el: document.getElementById('td-number'), prop: 'int', type: 'number' },
+          { el: document.getElementById('td-checkbox'), prop: 'bool', type: 'boolean' },
+          { el: document.getElementById('td-text'), prop: 'string', type: 'string' },
+          { el: document.getElementById('td-calendar'), prop: 'date', type: 'string' },
+        ].filter(b => b.el);
+
+        // Track last good values + inflight writes per property
+        const lastGood = new Map();
+        const writeQueues = new Map(); // prop -> {pending: any, inflight: Promise|null}
+
+        const setComponentValue = (b, val) => {
+          // only push if changed to reduce re-renders
+          if (lastGood.get(b.prop) !== val) {
+            b.el.setValueSilent?.(val);
+            lastGood.set(b.prop, val);
+          }
+        };
+
+        // ---- Initial snapshot (parallel with timeout) ----
+        await Promise.all(
+          bindings.map(async b => {
+            try {
+              const val = await Promise.race([thing.readProperty(b.prop).then(p => p.value()), new Promise((_, rej) => setTimeout(() => rej(new Error('read timeout')), 4000))]);
+              setComponentValue(b, val);
+              b.el.setStatus?.('success');
+            } catch (e) {
+              b.el.setStatus?.('error', 'Init read failed');
+            }
+          }),
+        );
+
+        // ---- Debounced write handler ----
+        function queueWrite(prop, value, el) {
+          if (!writeQueues.has(prop)) writeQueues.set(prop, { pending: undefined, inflight: null });
+          const slot = writeQueues.get(prop);
+          slot.pending = value; // always keep the latest
+          if (slot.inflight) return; // will flush after current
+
+          const flush = async () => {
+            while (slot.pending !== undefined) {
+              const next = slot.pending;
+              slot.pending = undefined;
+              el.setStatus?.('loading');
+              try {
+                await Promise.race([thing.writeProperty(prop, next), new Promise((_, rej) => setTimeout(() => rej(new Error('write timeout')), 5000))]);
+                el.setStatus?.('success');
+                lastGood.set(prop, next);
+              } catch (e) {
+                console.warn('Write failed', prop, e.message);
+                el.setStatus?.('error', 'Write failed');
+                // revert only if we have a last good
+                if (lastGood.has(prop)) el.setValueSilent?.(lastGood.get(prop));
+              }
+            }
+            slot.inflight = null;
+          };
+          slot.inflight = flush();
+        }
+
+        // ---- Attach event listeners ----
+        bindings.forEach(b => {
+          b.el.addEventListener('valueMsg', e => {
+            e.stopPropagation();
+            const payload = e.detail.payload;
+            queueWrite(b.prop, payload, b.el);
+          });
+        });
+
+        // Button simple log
+        document.getElementById('td-button')?.addEventListener('valueMsg', e => {
+          e.stopPropagation();
+          console.log('Button clicked', e.detail);
+        });
+
+        // ---- Unified polling loop ----
+        let alive = true;
+        window.addEventListener('beforeunload', () => {
+          alive = false;
+        });
+        const poll = async () => {
+          let consecutiveErrorCycles = 0;
+          while (alive) {
+            const cycleStart = performance.now();
+            try {
+              for (const b of bindings) {
+                try {
+                  const val = await Promise.race([
+                    thing.readProperty(b.prop).then(p => p.value()),
+                    new Promise((_, rej) => setTimeout(() => rej(new Error('read timeout')), 4000)),
+                  ]);
+                  setComponentValue(b, val);
+                  if (b.el.getStatus?.() === 'error') b.el.setStatus('success');
+                } catch (e) {
+                  // Only change status if it was previously success to avoid spam
+                  b.el.setStatus?.('error', 'Read failed');
+                }
+                if (!alive) break;
+              }
+              consecutiveErrorCycles = 0;
+            } catch (_e) {
+              consecutiveErrorCycles++;
+              if (consecutiveErrorCycles > 5) {
+                console.error('Stopping polling after repeated failures');
+                break;
+              }
+            }
+            // dynamic delay: maintain approx 3s cadence from cycle start
+            const elapsed = performance.now() - cycleStart;
+            const wait = Math.max(3000 - elapsed, 500);
+            for (let t = 0; t < wait && alive; t += 100) await new Promise(r => setTimeout(r, 100));
+          }
+          console.log('Polling loop terminated');
+        };
+        poll();
+      })();
+    </script>
+  </body>
+</html>

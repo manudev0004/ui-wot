@@ -36,7 +36,7 @@
       <div class="row">
         <div>
           <h3>Controller (readwrite)</h3>
-          <ui-toggle id="readwrite-toggle" td-property="maintenanceNeeded" td-url="http://plugfest.thingweb.io/http-advanced-coffee-machine" label="Controller" show-last-updated></ui-toggle>
+          <ui-toggle id="readwrite-toggle" td-property="bool" td-url="http://plugfest.thingweb.io/http-data-schema-thing" label="Controller" show-></ui-toggle>
         </div>
       </div>
 
@@ -93,15 +93,19 @@
           const initial = Boolean(await (await thing.readProperty(tdProp)).value());
           await writeToggle.setValueSilent(initial);
           await readToggle.setValueSilent(initial);
-          setInterval(async () => {
-            try {
-              const current = Boolean(await (await thing.readProperty(tdProp)).value());
-              await readToggle.setValueSilent(current);
-              await readToggle.triggerReadPulse();
-            } catch (e) {
-              readToggle.connected = false;
+          // safe polling loop to avoid overlapping reads
+          (async function pollLoop() {
+            while (true) {
+              try {
+                const current = Boolean(await (await thing.readProperty(tdProp)).value());
+                if (typeof readToggle.setValueSilent === 'function') await readToggle.setValueSilent(current);
+                if (typeof readToggle.triggerReadPulse === 'function') await readToggle.triggerReadPulse();
+              } catch (e) {
+                readToggle.connected = false;
+              }
+              await new Promise(r => setTimeout(r, 2000));
             }
-          }, 2000); 
+          })();
 
           writeToggle.addEventListener('valueMsg', async e => {
             e.stopPropagation();

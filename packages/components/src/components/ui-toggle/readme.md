@@ -118,7 +118,6 @@ Type: `Promise<void>`
 | `"container"`          |             |
 | `"control"`            |             |
 | `"label"`              |             |
-| `"last-updated"`       |             |
 | `"readonly-indicator"` |             |
 | `"thumb"`              |             |
 

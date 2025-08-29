@@ -107,12 +107,10 @@ Type: `Promise<void>`
 
 ## Shadow Parts
 
-| Part             | Description |
-| ---------------- | ----------- |
-| `"button"`       |             |
-| `"container"`    |             |
-| `"last-updated"` |             |
-| `"status-badge"` |             |
+| Part          | Description |
+| ------------- | ----------- |
+| `"button"`    |             |
+| `"container"` |             |
 
 
 ----------------------------------------------

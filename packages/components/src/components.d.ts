@@ -207,7 +207,7 @@ export namespace Components {
           * @param message - Optional status message
           * @example ```typescript await calendar.setStatus('error', 'Invalid date selected'); await calendar.setStatus('success', 'Date saved successfully'); await calendar.setStatus(null); // Clear status ```
          */
-        "setStatus": (status: "success" | "warning" | "error" | null, message?: string) => Promise<void>;
+        "setStatus": (status: "idle" | "loading" | "success" | "error", message?: string) => Promise<void>;
         /**
           * Set the calendar value programmatically and emit events.
           * @param value - ISO date string to set
@@ -562,9 +562,9 @@ export namespace Components {
          */
         "schema"?: any;
         /**
-          * Set the current status with optional auto-clear
+          * Set the current status with unified system
          */
-        "setStatus": (status: "idle" | "pending" | "success" | "error", message?: string, autoClearMs?: number) => Promise<void>;
+        "setStatus": (status: "idle" | "loading" | "success" | "error", message?: string, autoClearMs?: number) => Promise<void>;
         /**
           * Show capability badge (read-only, write-only, etc.)
           * @default true
@@ -766,10 +766,44 @@ export namespace Components {
      */
     interface UiText {
         /**
+          * Enable smooth animations and transitions
+          * @example ```html <ui-text animated="true" variant="filled"></ui-text> ```
+          * @default true
+         */
+        "animated": boolean;
+        /**
           * Auto-resize textarea to content (for multi-line text)
           * @default false
          */
         "autoResize": boolean;
+        /**
+          * Custom background color (hex, rgb, or color name)
+          * @example ```html <ui-text backgroundColor="linear-gradient(45deg, #ff6b6b, #4ecdc4)" variant="filled"></ui-text> ```
+         */
+        "backgroundColor"?: string;
+        /**
+          * Custom border color (hex, rgb, or color name)
+          * @example ```html <ui-text borderColor="#ff6b6b" variant="outlined"></ui-text> ```
+         */
+        "borderColor"?: string;
+        /**
+          * Border radius preset or custom value
+          * @example ```html <ui-text borderRadius="round" variant="outlined"></ui-text> <ui-text borderRadius="12px" variant="filled"></ui-text> ```
+          * @default 'medium'
+         */
+        "borderRadius": 'none' | 'small' | 'medium' | 'large' | 'round' | 'full' | string;
+        /**
+          * Border style options for enhanced visual design
+          * @example ```html <ui-text borderStyle="dashed" borderWidth="2" borderColor="#ff6b6b"></ui-text> ```
+          * @default 'solid'
+         */
+        "borderStyle": 'solid' | 'dashed' | 'dotted' | 'double' | 'groove' | 'ridge' | 'inset' | 'outset';
+        /**
+          * Border width in pixels (1-8)
+          * @example ```html <ui-text borderWidth="3" variant="outlined"></ui-text> ```
+          * @default 2
+         */
+        "borderWidth": number;
         /**
           * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive content - warning: Orange for caution - danger: Red for errors or warnings
           * @default 'primary'
@@ -780,6 +814,12 @@ export namespace Components {
           * @default false
          */
         "compact": boolean;
+        /**
+          * Enable copy to clipboard button
+          * @example ```html <ui-text copyable="true" value="Copy this text"></ui-text> ```
+          * @default false
+         */
+        "copyable": boolean;
         /**
           * Dark theme variant.
           * @example ```html <ui-text dark="true" value="Dark themed text"></ui-text> ```
@@ -815,6 +855,18 @@ export namespace Components {
          */
         "label"?: string;
         /**
+          * Programming language for syntax highlighting
+          * @example ```html <ui-text syntaxHighlight="true" language="python"></ui-text> ```
+          * @default 'javascript'
+         */
+        "language": 'javascript' | 'typescript' | 'python' | 'json' | 'html' | 'css' | 'yaml' | 'markdown';
+        /**
+          * Maximum height for auto-resize (pixels)
+          * @example ```html <ui-text autoResize="true" maxAutoHeight="300"></ui-text> ```
+          * @default 200
+         */
+        "maxAutoHeight": number;
+        /**
           * Maximum height when expanded (pixels) with responsive behavior
           * @default 200
          */
@@ -823,6 +875,12 @@ export namespace Components {
           * Maximum character length with visual feedback
          */
         "maxLength"?: number;
+        /**
+          * Minimum height for auto-resize (pixels)
+          * @example ```html <ui-text autoResize="true" minHeight="100"></ui-text> ```
+          * @default 40
+         */
+        "minHeight": number;
         /**
           * Placeholder text for empty fields with enhanced styling
          */
@@ -839,6 +897,12 @@ export namespace Components {
          */
         "resizable": boolean;
         /**
+          * Resize handle style for textareas
+          * @example ```html <ui-text resizeHandle="modern" resizable="true"></ui-text> ```
+          * @default 'modern'
+         */
+        "resizeHandle": 'classic' | 'modern' | 'minimal';
+        /**
           * Number of rows for multi-line text (enhanced with auto-resize)
           * @default 4
          */
@@ -849,7 +913,7 @@ export namespace Components {
           * @param message - Optional status message
           * @example ```typescript await text.setStatus('error', 'Invalid format'); await text.setStatus('success', 'Content saved'); await text.setStatus(null); // Clear status ```
          */
-        "setStatus": (status: "success" | "warning" | "error" | null, message?: string) => Promise<void>;
+        "setStatus": (status: "idle" | "loading" | "success" | "error", message?: string) => Promise<void>;
         /**
           * Set the text value programmatically and emit events.
           * @param value - Text string to set
@@ -864,6 +928,12 @@ export namespace Components {
          */
         "setValueSilent": (value: string) => Promise<void>;
         /**
+          * Shadow intensity for depth effects
+          * @example ```html <ui-text shadow="heavy" variant="elevated"></ui-text> ```
+          * @default 'medium'
+         */
+        "shadow": 'none' | 'light' | 'medium' | 'heavy' | 'glow';
+        /**
           * Show character count for text inputs
           * @default false
          */
@@ -875,12 +945,17 @@ export namespace Components {
          */
         "showLastUpdated": boolean;
         /**
+          * Show line numbers for multi-line text (code editor style)
+          * @example ```html <ui-text textType="multi" showLineNumbers="true"></ui-text> ```
+          * @default false
+         */
+        "showLineNumbers": boolean;
+        /**
           * Component size for different use cases. - small: Compact text for tight spaces - medium: Standard size (default) - large: Prominent text with larger typography
           * @default 'medium'
          */
         "size": 'small' | 'medium' | 'large';
         /**
-          * Enable spell check for editable text
           * @default true
          */
         "spellCheck": boolean;
@@ -890,6 +965,17 @@ export namespace Components {
           * @default 'unstructured'
          */
         "structure": 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown' | 'code';
+        /**
+          * Enable syntax highlighting for code
+          * @example ```html <ui-text variant="code" syntaxHighlight="true" language="javascript"></ui-text> ```
+          * @default false
+         */
+        "syntaxHighlight": boolean;
+        /**
+          * Custom text color (hex, rgb, or color name)
+          * @example ```html <ui-text textColor="#ffffff" backgroundColor="#333333"></ui-text> ```
+         */
+        "textColor"?: string;
         /**
           * Text input type - 'single' for single-line, 'multi' for multi-line
           * @example ```html <ui-text textType="multi" rows="5"></ui-text> ```
@@ -912,6 +998,12 @@ export namespace Components {
           * @default 'display'
          */
         "variant": 'display' | 'edit' | 'minimal' | 'outlined' | 'filled' | 'elevated';
+        /**
+          * Enable word wrap for long lines
+          * @example ```html <ui-text textType="multi" wordWrap="true"></ui-text> ```
+          * @default true
+         */
+        "wordWrap": boolean;
     }
     /**
      * Toggle switch component with reactive state management and multiple visual styles.
@@ -2146,10 +2238,44 @@ declare namespace LocalJSX {
      */
     interface UiText {
         /**
+          * Enable smooth animations and transitions
+          * @example ```html <ui-text animated="true" variant="filled"></ui-text> ```
+          * @default true
+         */
+        "animated"?: boolean;
+        /**
           * Auto-resize textarea to content (for multi-line text)
           * @default false
          */
         "autoResize"?: boolean;
+        /**
+          * Custom background color (hex, rgb, or color name)
+          * @example ```html <ui-text backgroundColor="linear-gradient(45deg, #ff6b6b, #4ecdc4)" variant="filled"></ui-text> ```
+         */
+        "backgroundColor"?: string;
+        /**
+          * Custom border color (hex, rgb, or color name)
+          * @example ```html <ui-text borderColor="#ff6b6b" variant="outlined"></ui-text> ```
+         */
+        "borderColor"?: string;
+        /**
+          * Border radius preset or custom value
+          * @example ```html <ui-text borderRadius="round" variant="outlined"></ui-text> <ui-text borderRadius="12px" variant="filled"></ui-text> ```
+          * @default 'medium'
+         */
+        "borderRadius"?: 'none' | 'small' | 'medium' | 'large' | 'round' | 'full' | string;
+        /**
+          * Border style options for enhanced visual design
+          * @example ```html <ui-text borderStyle="dashed" borderWidth="2" borderColor="#ff6b6b"></ui-text> ```
+          * @default 'solid'
+         */
+        "borderStyle"?: 'solid' | 'dashed' | 'dotted' | 'double' | 'groove' | 'ridge' | 'inset' | 'outset';
+        /**
+          * Border width in pixels (1-8)
+          * @example ```html <ui-text borderWidth="3" variant="outlined"></ui-text> ```
+          * @default 2
+         */
+        "borderWidth"?: number;
         /**
           * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive content - warning: Orange for caution - danger: Red for errors or warnings
           * @default 'primary'
@@ -2160,6 +2286,12 @@ declare namespace LocalJSX {
           * @default false
          */
         "compact"?: boolean;
+        /**
+          * Enable copy to clipboard button
+          * @example ```html <ui-text copyable="true" value="Copy this text"></ui-text> ```
+          * @default false
+         */
+        "copyable"?: boolean;
         /**
           * Dark theme variant.
           * @example ```html <ui-text dark="true" value="Dark themed text"></ui-text> ```
@@ -2189,6 +2321,18 @@ declare namespace LocalJSX {
          */
         "label"?: string;
         /**
+          * Programming language for syntax highlighting
+          * @example ```html <ui-text syntaxHighlight="true" language="python"></ui-text> ```
+          * @default 'javascript'
+         */
+        "language"?: 'javascript' | 'typescript' | 'python' | 'json' | 'html' | 'css' | 'yaml' | 'markdown';
+        /**
+          * Maximum height for auto-resize (pixels)
+          * @example ```html <ui-text autoResize="true" maxAutoHeight="300"></ui-text> ```
+          * @default 200
+         */
+        "maxAutoHeight"?: number;
+        /**
           * Maximum height when expanded (pixels) with responsive behavior
           * @default 200
          */
@@ -2197,6 +2341,12 @@ declare namespace LocalJSX {
           * Maximum character length with visual feedback
          */
         "maxLength"?: number;
+        /**
+          * Minimum height for auto-resize (pixels)
+          * @example ```html <ui-text autoResize="true" minHeight="100"></ui-text> ```
+          * @default 40
+         */
+        "minHeight"?: number;
         "onTextChange"?: (event: UiTextCustomEvent<UiTextValueChange>) => void;
         "onValueChange"?: (event: UiTextCustomEvent<UiTextValueChange>) => void;
         /**
@@ -2220,10 +2370,22 @@ declare namespace LocalJSX {
          */
         "resizable"?: boolean;
         /**
+          * Resize handle style for textareas
+          * @example ```html <ui-text resizeHandle="modern" resizable="true"></ui-text> ```
+          * @default 'modern'
+         */
+        "resizeHandle"?: 'classic' | 'modern' | 'minimal';
+        /**
           * Number of rows for multi-line text (enhanced with auto-resize)
           * @default 4
          */
         "rows"?: number;
+        /**
+          * Shadow intensity for depth effects
+          * @example ```html <ui-text shadow="heavy" variant="elevated"></ui-text> ```
+          * @default 'medium'
+         */
+        "shadow"?: 'none' | 'light' | 'medium' | 'heavy' | 'glow';
         /**
           * Show character count for text inputs
           * @default false
@@ -2236,12 +2398,17 @@ declare namespace LocalJSX {
          */
         "showLastUpdated"?: boolean;
         /**
+          * Show line numbers for multi-line text (code editor style)
+          * @example ```html <ui-text textType="multi" showLineNumbers="true"></ui-text> ```
+          * @default false
+         */
+        "showLineNumbers"?: boolean;
+        /**
           * Component size for different use cases. - small: Compact text for tight spaces - medium: Standard size (default) - large: Prominent text with larger typography
           * @default 'medium'
          */
         "size"?: 'small' | 'medium' | 'large';
         /**
-          * Enable spell check for editable text
           * @default true
          */
         "spellCheck"?: boolean;
@@ -2251,6 +2418,17 @@ declare namespace LocalJSX {
           * @default 'unstructured'
          */
         "structure"?: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown' | 'code';
+        /**
+          * Enable syntax highlighting for code
+          * @example ```html <ui-text variant="code" syntaxHighlight="true" language="javascript"></ui-text> ```
+          * @default false
+         */
+        "syntaxHighlight"?: boolean;
+        /**
+          * Custom text color (hex, rgb, or color name)
+          * @example ```html <ui-text textColor="#ffffff" backgroundColor="#333333"></ui-text> ```
+         */
+        "textColor"?: string;
         /**
           * Text input type - 'single' for single-line, 'multi' for multi-line
           * @example ```html <ui-text textType="multi" rows="5"></ui-text> ```
@@ -2268,6 +2446,12 @@ declare namespace LocalJSX {
           * @default 'display'
          */
         "variant"?: 'display' | 'edit' | 'minimal' | 'outlined' | 'filled' | 'elevated';
+        /**
+          * Enable word wrap for long lines
+          * @example ```html <ui-text textType="multi" wordWrap="true"></ui-text> ```
+          * @default true
+         */
+        "wordWrap"?: boolean;
     }
     /**
      * Toggle switch component with reactive state management and multiple visual styles.

@@ -57,16 +57,16 @@ Type: `Promise<string>`
 
 Current date value as ISO string or undefined
 
-### `setStatus(status: "success" | "warning" | "error" | null, message?: string) => Promise<void>`
+### `setStatus(status: "idle" | "loading" | "success" | "error", message?: string) => Promise<void>`
 
 Set the visual status of the calendar (success, warning, error).
 
 #### Parameters
 
-| Name      | Type                                | Description                    |
-| --------- | ----------------------------------- | ------------------------------ |
-| `status`  | `"success" \| "error" \| "warning"` | - Status type or null to clear |
-| `message` | `string`                            | - Optional status message      |
+| Name      | Type                                          | Description                    |
+| --------- | --------------------------------------------- | ------------------------------ |
+| `status`  | `"idle" \| "loading" \| "success" \| "error"` | - Status type or null to clear |
+| `message` | `string`                                      | - Optional status message      |
 
 #### Returns
 

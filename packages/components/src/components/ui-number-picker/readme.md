@@ -125,7 +125,6 @@ Type: `Promise<void>`
 | `"decrement-button"`   |             |
 | `"increment-button"`   |             |
 | `"label"`              |             |
-| `"last-updated"`       |             |
 | `"readonly-indicator"` |             |
 | `"value-display"`      |             |
 
