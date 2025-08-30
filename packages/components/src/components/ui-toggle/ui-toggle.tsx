@@ -562,7 +562,7 @@ export class UiToggle {
             <span
               class={`inline-flex items-center justify-center transition-all duration-300 ${
                 this.variant === 'square' ? 'w-6 h-6 rounded-md' : this.variant === 'apple' ? 'w-7 h-7 rounded-full' : 'w-6 h-6 rounded-full'
-              } ${this.isActive ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`}
+              } ${this.isActive ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`}
               title={`${hoverTitle} - Current state: ${this.isActive ? 'ON' : 'OFF'}`}
               part="readonly-indicator"
             >

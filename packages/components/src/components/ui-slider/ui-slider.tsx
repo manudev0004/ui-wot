@@ -595,6 +595,27 @@ export class UiSlider {
     return this.color === 'secondary' ? 'neon-secondary-track' : 'neon-primary-track';
   }
 
+  /** Readonly background classes derived from color and theme */
+  private getReadonlyBg(): string {
+    if (this.dark) {
+      if (this.color === 'primary') return 'bg-gray-800 border-primary text-white';
+      if (this.color === 'secondary') return 'bg-gray-800 border-secondary text-white';
+      return 'bg-gray-800 border-gray-600 text-white';
+    }
+
+    if (this.color === 'primary') return 'bg-white border-primary text-primary';
+    if (this.color === 'secondary') return 'bg-white border-secondary text-secondary';
+    return 'bg-white border-gray-300 text-gray-900';
+  }
+
+  /** Readonly text color classes derived from color */
+  private getReadonlyText(): string {
+    if (this.dark) return 'text-white';
+    if (this.color === 'primary') return 'text-primary';
+    if (this.color === 'secondary') return 'text-secondary';
+    return 'text-gray-900';
+  }
+
   /** Render step marks for stepped variant */
   private renderStepMarks() {
     if (this.variant !== 'stepped') return null;
@@ -727,6 +748,7 @@ export class UiSlider {
     const thumbStyle = this.getThumbStyle();
     const isDisabled = this.disabled;
     const isVertical = this.orientation === 'vertical';
+    const isReadOnly = this.readonly; // mirror number-picker behavior
   const safeRange = (this.max - this.min) || 1;
   const percent = ((this.isActive - this.min) / safeRange) * 100;
 
@@ -741,100 +763,120 @@ export class UiSlider {
           </label>
         )}
 
-        {/* Value labels for vertical - max at top */}
-        {isVertical && (
+        {/* Value labels for vertical - max at top (show in readonly and interactive) */}
+  {isVertical && (
           <div class={`text-xs mb-4 text-center ${this.dark ? 'text-gray-300' : 'text-gray-500'}`}>
             <span>{this.max}</span>
           </div>
         )}
 
-        {/* Slider Interface */}
-        <div
-          class={isVertical ? 'relative flex flex-col items-center justify-center' : 'relative'}
-          style={isVertical ? {height: '12rem', width: '1.5rem'} : {}}
-          tabIndex={isDisabled ? -1 : 0}
-          onKeyDown={this.handleKeyDown}
-          role="slider"
-          aria-valuemin={this.min}
-          aria-valuemax={this.max}
-          aria-valuenow={this.isActive}
-          aria-disabled={isDisabled ? 'true' : 'false'}
-        >
-          {/* Success Indicator moved next to value display */}
-          
-          <div class={trackStyles.track}>
-            {this.variant !== 'rainbow' && (
-              <div
-                class={`${trackStyles.progress} ${trackStyles.progressSize}`}
-                style={isVertical
-                  ? {height: `${percent}%`, bottom: '0', left: '0', position: 'absolute', width: '100%'}
-                  : {width: `${percent}%`, height: '100%'}}
-              ></div>
-            )}
-            {this.renderStepMarks()}
-          </div>
-          <input
-            type="range"
-            min={this.min}
-            max={this.max}
-            step={this.step}
-            value={this.isActive}
-            disabled={isDisabled}
-            class={`absolute inset-0 ${isVertical ? 'slider-vertical' : 'w-full h-full'} opacity-0 cursor-pointer z-10 ${isDisabled ? 'cursor-not-allowed' : ''}`}
-            style={isVertical ? {writingMode: 'bt-lr', height: '100%', width: '100%'} : {}}
-            onInput={(e) => this.handleChange(e)}
-            onKeyDown={this.handleKeyDown}
-            tabIndex={isDisabled ? -1 : 0}
-          />
+        {/* Slider Interface or Read-only indicator */}
+        {isReadOnly ? (
+          // Read-only indicator (static; no pulse/glow)
           <div
-            class={`absolute ${isVertical ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2 -translate-x-1/2'} ${thumbStyle} ${isDisabled ? 'opacity-50' : ''} pointer-events-none z-0`}
-            style={isVertical
-              ? {bottom: `calc(${percent}% - 0.5rem)`}
-              : {left: `${percent}%`}}
+            class={`flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg border transition-all duration-300 ${
+              this.getReadonlyBg() }
+            `}
+            title={`Read-only value: ${this.isActive}`}
+            part="readonly-indicator"
           >
-            {this.renderCustomThumb()}
+            <span class={`text-lg font-medium ${this.getReadonlyText()}`}>{this.isActive}</span>
           </div>
-        </div>
-
-        {/* Value labels for vertical - min, current value box, and label at bottom */}
-        {isVertical && (
-          <div class={`flex flex-col items-center mt-4 space-y-2 text-xs ${this.dark ? 'text-gray-300' : 'text-gray-500'}`} style={{marginBottom: '1.5rem'}}> {/* Increased margin below label/value group to prevent overlap */}
-            <span>{this.min}</span>
-            <div class="flex items-center">
-              <div class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${this.dark ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`}>
-                {this.isActive}
-              </div>
-              {/* Status indicator directly next to value for vertical slider */}
-              {this.operationStatus !== 'idle' && (
-                <div class="ml-2">
-                  {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
-                </div>
+        ) : (
+          <div
+            class={isVertical ? 'relative flex flex-col items-center justify-center' : 'relative'}
+            style={isVertical ? {height: '12rem', width: '1.5rem'} : {}}
+            tabIndex={isDisabled ? -1 : 0}
+            onKeyDown={this.handleKeyDown}
+            role="slider"
+            aria-valuemin={this.min}
+            aria-valuemax={this.max}
+            aria-valuenow={this.isActive}
+            aria-disabled={isDisabled ? 'true' : 'false'}
+          >
+            {/* Success Indicator moved next to value display */}
+            
+            <div class={trackStyles.track}>
+              {this.variant !== 'rainbow' && (
+                <div
+                  class={`${trackStyles.progress} ${trackStyles.progressSize}`}
+                  style={isVertical
+                    ? {height: `${percent}%`, bottom: '0', left: '0', position: 'absolute', width: '100%'}
+                    : {width: `${percent}%`, height: '100%'}}
+                ></div>
               )}
+              {this.renderStepMarks()}
             </div>
+            <input
+              type="range"
+              min={this.min}
+              max={this.max}
+              step={this.step}
+              value={this.isActive}
+              disabled={isDisabled}
+              class={`absolute inset-0 ${isVertical ? 'slider-vertical' : 'w-full h-full'} opacity-0 cursor-pointer z-10 ${isDisabled ? 'cursor-not-allowed' : ''}`}
+              style={isVertical ? {writingMode: 'bt-lr', height: '100%', width: '100%'} : {}}
+              onInput={(e) => this.handleChange(e)}
+              onKeyDown={this.handleKeyDown}
+              tabIndex={isDisabled ? -1 : 0}
+            />
+            <div
+              class={`absolute ${isVertical ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2 -translate-x-1/2'} ${thumbStyle} ${isDisabled ? 'opacity-50' : ''} pointer-events-none z-0`}
+              style={isVertical
+                ? {bottom: `calc(${percent}% - 0.5rem)`}
+                : {left: `${percent}%`}}
+            >
+              {this.renderCustomThumb()}
+            </div>
+          </div>
+        )}
+
+        {/* Value labels for vertical - min at bottom; in interactive mode include current small box */}
+  {isVertical && (
+          <div class={`flex flex-col items-center mt-4 space-y-2 text-xs ${this.dark ? 'text-gray-300' : 'text-gray-500'}`} style={{marginBottom: '1.5rem'}}>
+            <span>{this.min}</span>
+            {!isReadOnly ? (
+              <div class="flex items-center">
+                <div class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${this.dark ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`}>
+                  {this.isActive}
+                </div>
+                {/* Status indicator directly next to value for vertical slider */}
+                {this.operationStatus !== 'idle' && (
+                  <div class="ml-2">
+                    {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              // readonly: don't show the small current value box (main indicator shows value)
+              null
+            )}
             {this.label && (
               <span class="text-xs font-medium text-center mt-1 mb-2">{this.label}</span>
             )}
           </div>
         )}
 
-        {/* Horizontal value labels: min/max on top, value box below, centered with extra gap */}
-        {!isVertical && (
+        {/* Horizontal value labels: min/max on top (show even when readonly); current small box only in interactive mode */}
+  {!isVertical && (
           <>
             <div class={`flex justify-between items-center text-xs mt-3 ${this.dark ? 'text-gray-300' : 'text-gray-500'}`}>
               <span>{this.min}</span>
               <span>{this.max}</span>
             </div>
-            <div class="flex justify-center mt-0 items-center"> {/* Increased gap (mt-4) and added items-center */}
-              <div class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${this.dark ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`} style={{display: 'inline-block'}}>
-                {this.isActive}
-              </div>
-              {/* Status indicator directly next to value */}
-              {this.operationStatus !== 'idle' && (
-                <div class="ml-2">
-                  {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+            {!isReadOnly && (
+              <div class="flex justify-center mt-0 items-center"> {/* Increased gap (mt-4) and added items-center */}
+                <div class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${this.dark ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`} style={{display: 'inline-block'}}>
+                  {this.isActive}
                 </div>
-              )}
-            </div>
+                {/* Status indicator directly next to value */}
+                {this.operationStatus !== 'idle' && (
+                  <div class="ml-2">
+                    {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
 

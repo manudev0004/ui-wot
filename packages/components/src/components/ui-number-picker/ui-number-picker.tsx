@@ -585,6 +585,29 @@ export class UiNumberPicker {
     return this.color === 'primary' ? 'primary' : this.color === 'secondary' ? 'secondary' : 'neutral';
   }
 
+  /** Readonly background classes derived from color and theme */
+  private getReadonlyBg(): string {
+    if (this.dark) {
+      // darker backgrounds for dark mode but keep colored borders/text
+      if (this.color === 'primary') return 'bg-gray-800 border-primary text-white';
+      if (this.color === 'secondary') return 'bg-gray-800 border-secondary text-white';
+      return 'bg-gray-800 border-gray-600 text-white';
+    }
+
+    // Light mode: use colored borders and light backgrounds
+    if (this.color === 'primary') return 'bg-white border-primary text-primary';
+    if (this.color === 'secondary') return 'bg-white border-secondary text-secondary';
+    return 'bg-white border-gray-300 text-gray-900';
+  }
+
+  /** Readonly text color classes derived from color */
+  private getReadonlyText(): string {
+    if (this.dark) return 'text-white';
+    if (this.color === 'primary') return 'text-primary';
+    if (this.color === 'secondary') return 'text-secondary';
+    return 'text-gray-900';
+  }
+
   /** Render component */
   render() {
     const isDisabled = this.disabled;
@@ -613,15 +636,15 @@ export class UiNumberPicker {
         </div>
 
         {isReadOnly ? (
-          // Read-only indicator
+          // Read-only indicator (no glow/shadow in readonly mode)
           <div
             class={`flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg border transition-all duration-300 ${
-              this.dark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
-            } ${this.isActive ? 'animate-pulse shadow-lg shadow-green-500/50' : 'shadow-lg shadow-red-500/50'}`}
+              this.getReadonlyBg() }
+            `}
             title={`${hoverTitle} - Current value: ${this.isActive}`}
             part="readonly-indicator"
           >
-            <span class={`text-lg font-medium ${this.dark ? 'text-white' : 'text-gray-900'}`}>{this.isActive}</span>
+            <span class={`text-lg font-medium ${this.getReadonlyText()}`}>{this.isActive}</span>
           </div>
         ) : (
           // Show interactive number picker (wrapped with fragment to allow bottom timestamp)
