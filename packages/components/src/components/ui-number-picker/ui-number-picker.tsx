@@ -613,7 +613,7 @@ export class UiNumberPicker {
           </div>
         ) : (
           // Show interactive number picker (wrapped with fragment to allow bottom timestamp)
-          <div class="flex flex-col items-end w-full" part="interactive-wrapper">
+          <div class="flex flex-col items-center w-full" part="interactive-wrapper">
           <div class="relative flex items-center gap-3" tabindex={isDisabled ? -1 : 0} onKeyDown={this.handleKeyDown}>
             {/* Decrement Button */}
             <button

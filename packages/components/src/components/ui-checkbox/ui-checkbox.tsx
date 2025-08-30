@@ -102,7 +102,7 @@ export class UiCheckbox {
   /**
    * Show last updated timestamp when true
    */
-  @Prop() showLastUpdated: boolean = false;
+  @Prop() showLastUpdated: boolean = true;
 
   /** Internal state tracking current visual state */
   @State() private isActive: boolean = false;
@@ -317,7 +317,9 @@ export class UiCheckbox {
     this.isInitialized = true;
     
     // Initialize timestamp auto-update timer if showLastUpdated is enabled
-    if (this.showLastUpdated && this.lastUpdatedTs) {
+    if (this.showLastUpdated) {
+  // Seed initial timestamp so the timestamp area is present when enabled
+  if (!this.lastUpdatedTs) this.lastUpdatedTs = Date.now();
       this.timestampUpdateTimer = window.setInterval(() => {
         // Force re-render to update relative timestamp
         this.timestampCounter++;
@@ -488,17 +490,8 @@ export class UiCheckbox {
 
     return (
       <div class="inline-block">
-        <div class="flex items-center">
+        <div class="flex items-center gap-2">
           <div class="relative">
-            {/* Success Indicator */}
-            {this.operationStatus === 'success' && (
-              <div class="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5 z-10">
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-            )}
-            
             <div
               class={checkboxStyles}
               onClick={this.handleClick}
@@ -521,16 +514,19 @@ export class UiCheckbox {
               {this.label}
             </label>
           )}
-        </div>
-        
-        {/* Unified Status Indicators - Right aligned */}
-        <div class="flex justify-between items-start mt-2">
-          <div class="flex-1"></div>
-          <div class="flex flex-col items-end gap-1">
-            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
-            {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
+
+          {/* Render status as a sibling (outside the control) so it's right of the checkbox and vertically centered */}
+          <div class="ml-2 flex items-center self-center" role="status">
+            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
           </div>
         </div>
+
+        {/* Optional timestamp shown below the control when enabled (must remain at bottom) */}
+        {this.showLastUpdated && (
+          <div class="mt-1 text-xs text-gray-500">
+            {StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
+          </div>
+        )}
       </div>
     );
   }

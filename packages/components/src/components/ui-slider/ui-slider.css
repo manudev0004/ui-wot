@@ -1,4 +1,3 @@
-@import url('../../global/theme.css');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,12 +6,20 @@
  * UI Slider Component Styles
  */
 
-:host { display: block; width:100%; font-family: var(--font-sans-ui, 'Josefin Sans', sans-serif); }
+:host { 
+  display: block; 
+  width: 100%; 
+  font-family: var(--font-sans-ui, 'Josefin Sans', sans-serif);
+  /* CSS variable mappings for legacy compatibility */
+  --color-primary: var(--ui-color-primary, #067362);
+  --color-primary-dark: var(--ui-color-primary-hover, #055a4e);
+  --color-secondary: var(--ui-color-secondary, #B84A91);
+  --color-neutral: var(--ui-color-neutral, #6b7280);
+  --color-neutral-light: var(--ui-color-neutral-light, #9ca3af);
+  --color-neutral-dark: var(--ui-color-neutral-hover, #4b5563);
+}
 
 /* Custom color utilities using CSS variables */
-/* background utilities now global */
-
-/* text utilities now global */
 
 /* Neon effects for track */
 .neon-primary-track {

@@ -46,9 +46,8 @@
 }
 
 /* Custom color utilities using CSS variables */
-/* background utilities now global */
 
-/* text utilities now global */
+/* Light theme utilities */
 
 /* Focus ring for primary color */
 .focus\:ring-primary {

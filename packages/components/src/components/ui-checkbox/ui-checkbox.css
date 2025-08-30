@@ -1,4 +1,3 @@
-@import url('../../global/theme.css');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,12 +6,23 @@
  * UI Checkbox Component Styles
  */
 
-:host { display: inline-block; font-family: var(--font-sans-ui, 'Josefin Sans', sans-serif); }
+:host { 
+  display: inline-block; 
+  font-family: var(--font-sans-ui, 'Josefin Sans', sans-serif);
+  /* CSS variable mappings for legacy compatibility */
+  --color-primary: var(--ui-color-primary, #067362);
+  --color-primary-dark: var(--ui-color-primary-hover, #055a4e);
+  --color-secondary: var(--ui-color-secondary, #B84A91);
+  --color-neutral: var(--ui-color-neutral, #6b7280);
+  --color-neutral-light: var(--ui-color-neutral-light, #9ca3af);
+  --color-neutral-dark: var(--ui-color-neutral-hover, #4b5563);
+  /* Add right padding to avoid clipped right-aligned indicators */
+  padding-right: 1.5rem; /* corresponds to approx -right-6 space */
+}
 
 /* Custom color utilities using CSS variables */
-/* background utilities now global */
 
-/* text utilities now global */
+/* Dark mode text and border colors */
 
 .border-primary { border-color: var(--color-primary); }
 .border-secondary { border-color: var(--color-secondary); }
@@ -62,6 +72,20 @@
 /* Animation for smooth state transitions */
 :host {
   transition: all 0.2s ease-in-out;
+}
+
+/* Spinner keyframes used by StatusIndicator */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Utility to ensure absolute positioned indicator can sit to the right */
+.indicator-right-offset {
+  position: absolute;
+  right: -1.5rem; /* matches padding-right on host */
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* Custom checkbox appearance reset */

@@ -100,7 +100,7 @@ export namespace Components {
         /**
           * Show last updated timestamp below the component.
           * @example ```html <ui-button showLastUpdated="true" label="With Timestamp"></ui-button> ```
-          * @default false
+          * @default true
          */
         "showLastUpdated": boolean;
         /**
@@ -109,7 +109,7 @@ export namespace Components {
         "triggerReadPulse": () => Promise<void>;
         /**
           * Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button
-          * @default 'minimal'
+          * @default 'outlined'
          */
         "variant": 'minimal' | 'outlined' | 'filled';
     }
@@ -438,7 +438,7 @@ export namespace Components {
         "setValueSilent": (value: boolean) => Promise<void>;
         /**
           * Show last updated timestamp when true
-          * @default false
+          * @default true
          */
         "showLastUpdated": boolean;
         /**
@@ -1756,12 +1756,12 @@ declare namespace LocalJSX {
         /**
           * Show last updated timestamp below the component.
           * @example ```html <ui-button showLastUpdated="true" label="With Timestamp"></ui-button> ```
-          * @default false
+          * @default true
          */
         "showLastUpdated"?: boolean;
         /**
           * Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button
-          * @default 'minimal'
+          * @default 'outlined'
          */
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
@@ -2054,7 +2054,7 @@ declare namespace LocalJSX {
         "readonly"?: boolean;
         /**
           * Show last updated timestamp when true
-          * @default false
+          * @default true
          */
         "showLastUpdated"?: boolean;
         /**

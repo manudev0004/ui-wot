@@ -6,7 +6,7 @@
 export interface StatusIndicatorOptions {
   theme: 'light' | 'dark';
   size?: 'small' | 'medium' | 'large';
-  position?: 'right' | 'top-right' | 'bottom-right' | 'center';
+  position?: 'right' | 'inline-right' | 'top-right' | 'bottom-right' | 'center' | 'sibling-right';
 }
 
 export type OperationStatus = 'idle' | 'loading' | 'success' | 'error' | 'warning';
@@ -50,7 +50,7 @@ export class StatusIndicator {
    * Get standard positioning classes for consistent right-aligned indicators
    */
   static getStandardClasses(): string {
-    return 'absolute -right-6 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center transition-all duration-300';
+  return 'absolute -right-6 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center transition-all duration-300';
   }
 
   /**
@@ -62,7 +62,7 @@ export class StatusIndicator {
   ): string {
     const { theme, size = 'small', position = 'right' } = options;
     
-    let baseClasses = 'absolute transition-all duration-300 flex items-center justify-center';
+  let baseClasses = 'absolute transition-all duration-300 flex items-center justify-center';
     
     // Size classes
     switch (size) {
@@ -82,6 +82,14 @@ export class StatusIndicator {
       case 'right':
         baseClasses += ' -right-6 top-1/2 -translate-y-1/2';
         break;
+      case 'inline-right':
+        // Slightly closer to the host edge for inline usage (e.g., inside buttons)
+        baseClasses += ' -right-4 top-1/2 -translate-y-1/2';
+        break;
+      case 'sibling-right':
+        // Render as a normal inline sibling (no absolute positioning). Caller should place this next to the control inside a flex container.
+  baseClasses = 'ml-2 flex items-center justify-center self-center transition-all duration-300';
+        break;
       case 'top-right':
         baseClasses += ' -top-1 -right-1';
         break;
@@ -96,14 +104,16 @@ export class StatusIndicator {
     // Status-specific classes with unified colors
     switch (status) {
       case 'idle':
-        return baseClasses + ' opacity-0';
+  return baseClasses + ' opacity-0';
       
       case 'loading':
-        // Return empty content - we'll render SVG separately
-        return baseClasses + ' opacity-100';
+  // Return empty content - we'll render SVG separately
+  return baseClasses + ' opacity-100';
       
       case 'success':
-        if (theme === 'dark') {
+        if (position === 'sibling-right') {
+          baseClasses += ' rounded-full bg-green-500 text-white p-1';
+        } else if (theme === 'dark') {
           baseClasses += ' rounded-full bg-green-400 text-gray-900';
         } else {
           baseClasses += ' rounded-full bg-green-500 text-white';
@@ -111,7 +121,9 @@ export class StatusIndicator {
         return baseClasses + ' opacity-100';
       
       case 'error':
-        if (theme === 'dark') {
+        if (position === 'sibling-right') {
+          baseClasses += ' rounded-full bg-red-500 text-white p-1';
+        } else if (theme === 'dark') {
           baseClasses += ' rounded-full bg-red-400 text-gray-900';
         } else {
           baseClasses += ' rounded-full bg-red-500 text-white';
@@ -119,7 +131,9 @@ export class StatusIndicator {
         return baseClasses + ' opacity-100';
       
       case 'warning':
-        if (theme === 'dark') {
+        if (position === 'sibling-right') {
+          baseClasses += ' rounded-full bg-yellow-500 text-gray-900 p-1';
+        } else if (theme === 'dark') {
           baseClasses += ' rounded-full bg-yellow-400 text-gray-900';
         } else {
           baseClasses += ' rounded-full bg-yellow-500 text-gray-900';
@@ -244,11 +258,13 @@ export class StatusIndicator {
     status: OperationStatus, 
     theme: 'light' | 'dark', 
     error?: string,
-    h?: any // Stencil's h function
+    h?: any, // Stencil's h function
+    options?: Partial<StatusIndicatorOptions>
   ): any {
     if (status === 'idle' || !h) return null;
 
-    const classes = this.getStatusClasses(status, { theme, position: 'right' });
+    const mergedOptions: StatusIndicatorOptions = { theme, position: 'right', size: 'small', ...options } as StatusIndicatorOptions;
+    const classes = this.getStatusClasses(status, mergedOptions);
     const tooltip = this.getStatusTooltip(status, error);
 
     if (status === 'loading') {

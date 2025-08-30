@@ -48,7 +48,7 @@ export class UiButton {
    * - outlined: Button with border outline
    * - filled: Solid filled button
    */
-  @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'minimal';
+  @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'outlined';
 
   /**
    * Whether the component is disabled (cannot be interacted with).
@@ -111,7 +111,7 @@ export class UiButton {
    * <ui-button showLastUpdated="true" label="With Timestamp"></ui-button>
    * ```
    */
-  @Prop() showLastUpdated: boolean = false;
+  @Prop() showLastUpdated: boolean = true;
 
   /** Internal state for tracking if component is initialized */
   @State() isInitialized: boolean = false;
@@ -324,7 +324,9 @@ export class UiButton {
     this.isInitialized = true;
     
     // Initialize timestamp auto-update timer if showLastUpdated is enabled
-    if (this.showLastUpdated && this.lastUpdatedTs) {
+    if (this.showLastUpdated) {
+  // Ensure we show an initial "last updated" when enabled so the UI always reserves space
+  if (!this.lastUpdatedTs) this.lastUpdatedTs = Date.now();
       this.timestampUpdateTimer = window.setInterval(() => {
         // Force re-render to update relative timestamp
         this.timestampCounter++;
@@ -458,8 +460,8 @@ export class UiButton {
     const isDisabled = this.disabled;
 
     return (
-  <div class="relative" part="container" role="group" aria-label={this.label || 'Button'}>
-        <div class="flex items-center">
+  <div class="relative inline-block" part="container" role="group" aria-label={this.label || 'Button'}>
+        <div class="inline-flex items-center">
           <button 
             class={this.getButtonStyle()} 
             onClick={this.handleClick} 
@@ -471,12 +473,13 @@ export class UiButton {
           >
             {this.label}
           </button>
+
+          {/* Render status as an external sibling to the button so it's outside and vertically centered */}
+          <div class="ml-3 flex items-center self-center" role="status">
+            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+          </div>
         </div>
-        
-        {/* Unified Status Badge (timestamp moved below) */}
-        <div class="flex justify-end items-start mt-2">
-          {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
-        </div>
+
         {this.showLastUpdated && (
           <div class="flex justify-end mt-2">
             {StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
