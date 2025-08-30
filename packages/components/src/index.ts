@@ -10,7 +10,6 @@
 
 // Core components
 export { UiButton } from './components/ui-button/ui-button';
-export { UiButtonNormalized } from './components/ui-button/ui-button-normalized';
 export { UiToggle } from './components/ui-toggle/ui-toggle';
 export { UiSlider } from './components/ui-slider/ui-slider';
 export { UiNumberPicker } from './components/ui-number-picker/ui-number-picker';

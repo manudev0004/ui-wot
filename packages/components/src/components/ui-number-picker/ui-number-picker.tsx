@@ -371,20 +371,32 @@ export class UiNumberPicker {
     this.isActive = this.value || 0;
     this.isInitialized = true;
     
-    // Initialize timestamp auto-update timer if showLastUpdated is enabled
-    if (this.showLastUpdated && this.lastUpdatedTs) {
-      this.timestampUpdateTimer = window.setInterval(() => {
-        // Force re-render to update relative timestamp
-        this.timestampCounter++;
-      }, 30000); // Update every 30 seconds
+    // Start auto-updating timestamp timer if showLastUpdated is enabled
+    if (this.showLastUpdated) {
+      this.startTimestampUpdater();
+    }
+  }
+
+  /** Start auto-updating relative timestamps */
+  private startTimestampUpdater() {
+    this.stopTimestampUpdater(); // Ensure no duplicate timers
+    this.timestampUpdateTimer = window.setInterval(() => {
+      // Force re-render to update relative time by incrementing counter
+      this.timestampCounter++;
+    }, 30000); // Update every 30 seconds
+  }
+
+  /** Stop auto-updating timestamps */
+  private stopTimestampUpdater() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+      this.timestampUpdateTimer = undefined;
     }
   }
 
   /** Cleanup component */
   disconnectedCallback() {
-    if (this.timestampUpdateTimer) {
-      clearInterval(this.timestampUpdateTimer);
-    }
+    this.stopTimestampUpdater();
   }
 
   /** Watch for value prop changes and update internal state */

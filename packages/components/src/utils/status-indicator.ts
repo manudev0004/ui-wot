@@ -184,11 +184,15 @@ export class StatusIndicator {
    * Format timestamp with detailed date/time and relative time
    */
   static formatTimestamp(date: Date): { full: string; relative: string } {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const now = new Date();
+  // Compute difference in ms (now - date). If date is in the future due to
+  // minor clock skew or serialization issues, clamp to 0 so we don't show
+  // misleading negative values that lead to "(Just Now)" for older items.
+  let diffMs = now.getTime() - date.getTime();
+  if (diffMs < 0) diffMs = 0;
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
     // Full timestamp format
     const options: Intl.DateTimeFormatOptions = {
@@ -200,7 +204,8 @@ export class StatusIndicator {
       second: '2-digit',
       hour12: true
     };
-    const full = `Last updated: ${date.toLocaleDateString('en-US', options)}`;
+  // Use toLocaleString for a full date+time representation in user's locale
+  const full = `Last updated: ${date.toLocaleString('en-US', options)}`;
 
     // Relative time
     let relative: string;

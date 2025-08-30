@@ -363,20 +363,32 @@ export class UiSlider {
     this.manualInputValue = String(clampedValue);
     this.isInitialized = true;
     
-    // Initialize timestamp auto-update timer if showLastUpdated is enabled
-    if (this.showLastUpdated && this.lastUpdatedTs) {
-      this.timestampUpdateTimer = window.setInterval(() => {
-        // Force re-render to update relative timestamp
-        this.timestampCounter++;
-      }, 30000); // Update every 30 seconds
+    // Start auto-updating timestamp timer if showLastUpdated is enabled
+    if (this.showLastUpdated) {
+      this.startTimestampUpdater();
+    }
+  }
+
+  /** Start auto-updating relative timestamps */
+  private startTimestampUpdater() {
+    this.stopTimestampUpdater(); // Ensure no duplicate timers
+    this.timestampUpdateTimer = window.setInterval(() => {
+      // Force re-render to update relative time by incrementing counter
+      this.timestampCounter++;
+    }, 30000); // Update every 30 seconds
+  }
+
+  /** Stop auto-updating timestamps */
+  private stopTimestampUpdater() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+      this.timestampUpdateTimer = undefined;
     }
   }
 
   /** Cleanup component */
   disconnectedCallback() {
-    if (this.timestampUpdateTimer) {
-      clearInterval(this.timestampUpdateTimer);
-    }
+    this.stopTimestampUpdater();
   }
 
   /** Watch for value prop changes and update internal state */
@@ -748,14 +760,7 @@ export class UiSlider {
           aria-valuenow={this.isActive}
           aria-disabled={isDisabled ? 'true' : 'false'}
         >
-          {/* Success Indicator */}
-          {this.operationStatus === 'success' && (
-            <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          )}
+          {/* Success Indicator moved next to value display */}
           
           <div class={trackStyles.track}>
             {this.variant !== 'rainbow' && (
@@ -795,8 +800,16 @@ export class UiSlider {
         {isVertical && (
           <div class={`flex flex-col items-center mt-4 space-y-2 text-xs ${this.dark ? 'text-gray-300' : 'text-gray-500'}`} style={{marginBottom: '1.5rem'}}> {/* Increased margin below label/value group to prevent overlap */}
             <span>{this.min}</span>
-            <div class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${this.dark ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`}>
-              {this.isActive}
+            <div class="flex items-center">
+              <div class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${this.dark ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`}>
+                {this.isActive}
+              </div>
+              {/* Status indicator directly next to value for vertical slider */}
+              {this.operationStatus !== 'idle' && (
+                <div class="ml-2">
+                  {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+                </div>
+              )}
             </div>
             {this.label && (
               <span class="text-xs font-medium text-center mt-1 mb-2">{this.label}</span>
@@ -811,10 +824,16 @@ export class UiSlider {
               <span>{this.min}</span>
               <span>{this.max}</span>
             </div>
-            <div class="flex justify-center mt-0"> {/* Increased gap (mt-4) */}
+            <div class="flex justify-center mt-0 items-center"> {/* Increased gap (mt-4) and added items-center */}
               <div class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${this.dark ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`} style={{display: 'inline-block'}}>
                 {this.isActive}
               </div>
+              {/* Status indicator directly next to value */}
+              {this.operationStatus !== 'idle' && (
+                <div class="ml-2">
+                  {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+                </div>
+              )}
             </div>
           </>
         )}
@@ -844,14 +863,12 @@ export class UiSlider {
           </div>
         )}
         
-        {/* Unified Status Indicators - Right aligned */}
-        <div class="flex justify-between items-start mt-2">
-          <div class="flex-1"></div>
-          <div class="flex flex-col items-end gap-1">
-            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
-            {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
+        {/* Timestamp only (Status indicator moved to value display) */}
+        {this.showLastUpdated && (
+          <div class="flex justify-end mt-2">
+            {StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
           </div>
-        </div>
+        )}
       </div>
     );
   }

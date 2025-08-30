@@ -36,8 +36,28 @@ export interface UiTextValueChange { value: string }
  *
  * @example Sizes and Themes
  * ```html
- * <ui-text size="large" theme="dark" variant="filled"></ui-text>
+ * <ui-text size="large" dark="true" variant="filled"></ui-text>
  * <ui-text size="small" compact="true" variant="minimal"></ui-text>
+ * ```
+ * 
+ * @example Theme Variations
+ * ```html
+ * <ui-text themeVariant="modern" dark="true"></ui-text>
+ * <ui-text themeVariant="elegant" dark="false"></ui-text>
+ * <ui-text themeVariant="soft" dark="true"></ui-text>
+ * <ui-text themeVariant="vibrant" dark="false"></ui-text>
+ * ```
+ * 
+ * @example Line Numbers & Resizable Fields
+ * ```html
+ * <ui-text textType="multi" showLineNumbers="true" lineNumberStyle="highlighted"></ui-text>
+ * <ui-text textType="multi" resizable="true" resizeDirection="both" minHeight="100" maxHeight="400"></ui-text>
+ * ```
+ * 
+ * @example Line Numbers & Resizable Fields
+ * ```html
+ * <ui-text textType="multi" showLineNumbers="true" lineNumberStyle="highlighted"></ui-text>
+ * <ui-text textType="multi" resizable="true" resizeDirection="both" minHeight="100" maxHeight="400"></ui-text>
  * ```
  */
 @Component({ tag: 'ui-text', shadow: true })
@@ -107,6 +127,33 @@ export class UiText {
    * ```
    */
   @Prop() showLineNumbers: boolean = false;
+
+  /**
+   * Line number style for better visualization
+   * @example
+   * ```html
+   * <ui-text textType="multi" showLineNumbers="true" lineNumberStyle="highlighted"></ui-text>
+   * ```
+   */
+  @Prop() lineNumberStyle: 'simple' | 'highlighted' | 'bordered' | 'floating' = 'simple';
+
+  /**
+   * Theme variation presets for quick styling changes
+   * @example
+   * ```html
+   * <ui-text themeVariant="modern" dark="true"></ui-text>
+   * ```
+   */
+  @Prop() themeVariant: 'default' | 'modern' | 'elegant' | 'soft' | 'vibrant' | 'sharp' = 'default';
+
+  /**
+   * Direction in which the field can be resized
+   * @example
+   * ```html
+   * <ui-text resizable="true" resizeDirection="both"></ui-text>
+   * ```
+   */
+  @Prop() resizeDirection: 'vertical' | 'horizontal' | 'both' | 'none' = 'vertical';
 
   /**
    * Enable syntax highlighting for code
@@ -642,79 +689,136 @@ export class UiText {
   /** Toggle expanded state */
   private toggleExpand = () => { this.isExpanded = !this.isExpanded; }
 
-  /** Get enhanced color classes with custom color support */
+  /** Get enhanced color classes with custom color support and theme variants */
   private getColorClasses() {
-    // Custom colors take precedence
+    // Theme variant presets override standard colors
+    if (this.themeVariant !== 'default') {
+      // Create theme presets for different visual styles
+      switch (this.themeVariant) {
+        case 'modern':
+          return {
+            border: this.dark ? 'border-indigo-500' : 'border-indigo-400',
+            bg: this.dark ? 'bg-indigo-900' : 'bg-indigo-50',
+            focus: 'focus:ring-indigo-500',
+            text: this.dark ? 'text-indigo-200' : 'text-indigo-900',
+            customBg: '',
+            customBorder: '',
+            customText: ''
+          };
+        case 'elegant':
+          return {
+            border: this.dark ? 'border-purple-500' : 'border-purple-300',
+            bg: this.dark ? 'bg-purple-900' : 'bg-purple-50',
+            focus: 'focus:ring-purple-500',
+            text: this.dark ? 'text-purple-200' : 'text-purple-900',
+            customBg: '',
+            customBorder: '',
+            customText: ''
+          };
+        case 'soft':
+          return {
+            border: this.dark ? 'border-teal-500' : 'border-teal-300',
+            bg: this.dark ? 'bg-teal-900' : 'bg-teal-50',
+            focus: 'focus:ring-teal-500',
+            text: this.dark ? 'text-teal-200' : 'text-teal-900',
+            customBg: '',
+            customBorder: '',
+            customText: ''
+          };
+        case 'vibrant':
+          return {
+            border: this.dark ? 'border-pink-600' : 'border-pink-400',
+            bg: this.dark ? 'bg-pink-900' : 'bg-pink-50',
+            focus: 'focus:ring-pink-500',
+            text: this.dark ? 'text-pink-200' : 'text-pink-900',
+            customBg: '',
+            customBorder: '',
+            customText: ''
+          };
+        case 'sharp':
+          return {
+            border: this.dark ? 'border-amber-500' : 'border-amber-400',
+            bg: this.dark ? 'bg-amber-900' : 'bg-amber-50',
+            focus: 'focus:ring-amber-500',
+            text: this.dark ? 'text-amber-200' : 'text-amber-900',
+            customBg: '',
+            customBorder: '',
+            customText: ''
+          };
+      }
+    }
+
+    // Custom colors take precedence over standard colors
     if (this.borderColor || this.backgroundColor || this.textColor) {
       return {
-        border: this.borderColor ? `border-[${this.borderColor}]` : 'border-gray-300',
-        bg: this.backgroundColor ? '' : 'bg-gray-100',
-        focus: 'focus:ring-blue-500',
-        text: this.textColor ? `text-[${this.textColor}]` : 'text-gray-900',
+        border: this.borderColor ? `border-[${this.borderColor}]` : this.dark ? 'border-gray-600' : 'border-gray-300',
+        bg: this.backgroundColor ? '' : this.dark ? 'bg-gray-800' : 'bg-gray-100',
+        focus: this.dark ? 'focus:ring-blue-400' : 'focus:ring-blue-500',
+        text: this.textColor ? `text-[${this.textColor}]` : this.dark ? 'text-gray-100' : 'text-gray-900',
         customBg: this.backgroundColor || '',
         customBorder: this.borderColor || '',
         customText: this.textColor || ''
       };
     }
 
-    // Standard color schemes
+    // Standard color schemes with dark mode support
     switch (this.color) {
       case 'secondary':
         return {
-          border: 'border-green-500',
-          bg: 'bg-green-500',
-          focus: 'focus:ring-green-500',
-          text: 'text-green-500',
+          border: this.dark ? 'border-green-600' : 'border-green-500',
+          bg: this.dark ? 'bg-green-800' : 'bg-green-500',
+          focus: this.dark ? 'focus:ring-green-400' : 'focus:ring-green-500',
+          text: this.dark ? 'text-green-200' : 'text-green-500',
           customBg: '',
           customBorder: '',
           customText: ''
         };
       case 'neutral':
         return {
-          border: 'border-gray-500',
-          bg: 'bg-gray-500',
-          focus: 'focus:ring-gray-500',
-          text: 'text-gray-500',
+          border: this.dark ? 'border-gray-600' : 'border-gray-500',
+          bg: this.dark ? 'bg-gray-700' : 'bg-gray-500',
+          focus: this.dark ? 'focus:ring-gray-400' : 'focus:ring-gray-500',
+          text: this.dark ? 'text-gray-200' : 'text-gray-500',
           customBg: '',
           customBorder: '',
           customText: ''
         };
       case 'success':
         return {
-          border: 'border-green-600',
-          bg: 'bg-green-600',
-          focus: 'focus:ring-green-600',
-          text: 'text-green-600',
+          border: this.dark ? 'border-green-700' : 'border-green-600',
+          bg: this.dark ? 'bg-green-800' : 'bg-green-600',
+          focus: this.dark ? 'focus:ring-green-500' : 'focus:ring-green-600',
+          text: this.dark ? 'text-green-200' : 'text-green-600',
           customBg: '',
           customBorder: '',
           customText: ''
         };
       case 'warning':
         return {
-          border: 'border-orange-500',
-          bg: 'bg-orange-500',
-          focus: 'focus:ring-orange-500',
-          text: 'text-orange-500',
+          border: this.dark ? 'border-orange-600' : 'border-orange-500',
+          bg: this.dark ? 'bg-orange-800' : 'bg-orange-500',
+          focus: this.dark ? 'focus:ring-orange-400' : 'focus:ring-orange-500',
+          text: this.dark ? 'text-orange-200' : 'text-orange-500',
           customBg: '',
           customBorder: '',
           customText: ''
         };
       case 'danger':
         return {
-          border: 'border-red-500',
-          bg: 'bg-red-500',
-          focus: 'focus:ring-red-500',
-          text: 'text-red-500',
+          border: this.dark ? 'border-red-600' : 'border-red-500',
+          bg: this.dark ? 'bg-red-800' : 'bg-red-500',
+          focus: this.dark ? 'focus:ring-red-400' : 'focus:ring-red-500',
+          text: this.dark ? 'text-red-200' : 'text-red-500',
           customBg: '',
           customBorder: '',
           customText: ''
         };
       default: // primary
         return {
-          border: 'border-blue-500',
-          bg: 'bg-blue-500',
-          focus: 'focus:ring-blue-500',
-          text: 'text-blue-500',
+          border: this.dark ? 'border-blue-600' : 'border-blue-500',
+          bg: this.dark ? 'bg-blue-800' : 'bg-blue-500',
+          focus: this.dark ? 'focus:ring-blue-400' : 'focus:ring-blue-500',
+          text: this.dark ? 'text-blue-200' : 'text-blue-500',
           customBg: '',
           customBorder: '',
           customText: ''
@@ -736,20 +840,39 @@ export class UiText {
       'text-sm'
     } ${this.compact ? 'leading-tight' : 'leading-relaxed'}`;
 
-    // Enhanced resizing styles
+    // Enhanced resizing styles with direction support
     if (this.resizable && this.textType === 'multi') {
-      switch (this.resizeHandle) {
-        case 'classic':
-          base += ' resize resize-vertical';
+      // Handle resize direction
+      switch (this.resizeDirection) {
+        case 'vertical':
+          base += ' resize-y';
           break;
-        case 'modern':
-          base += ' resize resize-both rounded-br-lg';
+        case 'horizontal':
+          base += ' resize-x';
           break;
-        case 'minimal':
-          base += ' resize resize-vertical';
+        case 'both':
+          base += ' resize';
+          break;
+        case 'none':
+          base += ' resize-none';
           break;
         default:
-          base += ' resize resize-vertical';
+          base += ' resize-y';
+      }
+      
+      // Apply resize handle style
+      switch (this.resizeHandle) {
+        case 'classic':
+          base += ' classic-resize-handle';
+          break;
+        case 'modern':
+          base += ' modern-resize-handle rounded-br-lg';
+          break;
+        case 'minimal':
+          base += ' minimal-resize-handle';
+          break;
+        default:
+          base += '';
       }
     } else if (this.textType === 'multi') {
       base += ' resize-none';
@@ -965,7 +1088,7 @@ export class UiText {
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', message?: string): Promise<void> {
-  StatusIndicator.applyStatus(this, status, { errorMessage: message });
+    StatusIndicator.applyStatus(this, status, { errorMessage: message });
   }
 
   /**
@@ -1024,13 +1147,34 @@ export class UiText {
           {/* Main input/display area */}
           {isEdit ? (
             <div class="relative flex">
-              {/* Line numbers for multiline with showLineNumbers */}
+              {/* Line numbers for multiline with showLineNumbers and enhanced styling */}
               {this.textType === 'multi' && this.showLineNumbers && (
                 <div class={`flex-shrink-0 px-2 py-2 border-r text-xs font-mono leading-relaxed ${
+                  this.lineNumberStyle === 'floating' ? 'absolute left-0 z-10 h-full opacity-90' : ''
+                } ${
                   this.dark ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-gray-100 border-gray-300 text-gray-500'
+                } ${
+                  this.lineNumberStyle === 'highlighted' ? (this.dark ? 'bg-gray-750' : 'bg-gray-50') : ''
+                } ${
+                  this.lineNumberStyle === 'bordered' ? `border-r-2 ${this.dark ? 'border-gray-600' : 'border-gray-400'}` : ''
+                } ${
+                  this.lineNumberStyle === 'floating' ? `rounded-l ${this.dark ? 'bg-gray-900' : 'bg-white'} shadow-md` : ''
                 }`}>
                   {Array.from({ length: Math.max(this.lineCount, 1) }, (_, i) => (
-                    <div key={i + 1} class={`${i + 1 === this.currentLine ? 'font-bold text-blue-500' : ''}`}>
+                    <div key={i + 1} class={`
+                      ${i + 1 === this.currentLine ? 
+                        (this.lineNumberStyle === 'highlighted' ? 
+                          `font-bold ${this.dark ? 'bg-blue-900 text-blue-300' : 'bg-blue-100 text-blue-700'}` : 
+                        this.lineNumberStyle === 'bordered' ? 
+                          `font-bold border-l-4 pl-1 -ml-1 ${this.dark ? 'border-blue-500 text-blue-300' : 'border-blue-500 text-blue-700'}` : 
+                        this.lineNumberStyle === 'floating' ? 
+                          `font-bold ${this.dark ? 'text-blue-300' : 'text-blue-700'}` : 
+                          `font-bold ${this.dark ? 'text-blue-400' : 'text-blue-600'}`
+                        ) : ''
+                      } 
+                      ${this.lineNumberStyle === 'highlighted' ? (i % 2 === 0 ? 'bg-opacity-10 bg-blue-500' : '') : ''}
+                      ${this.lineNumberStyle === 'bordered' ? 'border-b border-opacity-20 border-gray-500' : ''}
+                    `}>
                       {i + 1}
                     </div>
                   ))}
@@ -1060,7 +1204,13 @@ export class UiText {
                   <textarea 
                     ref={el => this.inputRef = el}
                     part="input" 
-                    class={`${inputStyles} ${this.resizable ? 'resize-vertical' : 'resize-none'} ${this.showLineNumbers ? 'pl-2' : ''}`} 
+                    class={`${inputStyles} ${
+                      this.resizable ? 
+                        (this.resizeDirection === 'vertical' ? 'resize-y' : 
+                         this.resizeDirection === 'horizontal' ? 'resize-x' : 
+                         this.resizeDirection === 'both' ? 'resize' : 'resize-none') : 
+                        'resize-none'
+                    } ${this.showLineNumbers ? 'pl-2' : ''}`} 
                     value={this.currentValue} 
                     placeholder={this.placeholder} 
                     maxLength={this.maxLength} 
@@ -1071,7 +1221,12 @@ export class UiText {
                     onBlur={this.handleBlur}
                     onClick={this.updateCursorPosition}
                     onKeyUp={this.updateCursorPosition}
-                    style={this.wordWrap ? { whiteSpace: 'pre-wrap', wordWrap: 'break-word' } : {}}
+                    style={{
+                      whiteSpace: this.wordWrap ? 'pre-wrap' : 'pre', 
+                      wordWrap: this.wordWrap ? 'break-word' : 'normal',
+                      minHeight: this.resizable ? `${this.minHeight}px` : undefined,
+                      maxHeight: this.resizable ? `${this.maxAutoHeight}px` : undefined
+                    }}
                     aria-label={this.label || 'Text area'} 
                   />
                 )}
@@ -1099,19 +1254,33 @@ export class UiText {
                 <span class='block truncate'>{this.currentValue || '\u00A0'}</span>
               ) : (
                 <div class="relative">
-                  {/* Line numbers for display mode */}
+                  {/* Line numbers for display mode with enhanced styling */}
                   {this.showLineNumbers && (
                     <div class="flex">
                       <div class={`flex-shrink-0 px-2 py-2 border-r text-xs font-mono leading-relaxed ${
+                        this.lineNumberStyle === 'floating' ? 'absolute left-0 z-10 h-full opacity-90' : ''
+                      } ${
                         this.dark ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-gray-100 border-gray-300 text-gray-500'
-                      }`}>
+                      } ${
+                        this.lineNumberStyle === 'highlighted' ? (this.dark ? 'bg-gray-750' : 'bg-gray-50') : ''
+                      } ${
+                        this.lineNumberStyle === 'bordered' ? `border-r-2 ${this.dark ? 'border-gray-600' : 'border-gray-400'}` : ''
+                      } ${
+                        this.lineNumberStyle === 'floating' ? `rounded-l ${this.dark ? 'bg-gray-900' : 'bg-white'} shadow-md` : ''
+                      } line-numbers`}>
                         {Array.from({ length: Math.max((this.currentValue || '').split('\n').length, 1) }, (_, i) => (
-                          <div key={i + 1}>{i + 1}</div>
+                          <div key={i + 1} class={`
+                            ${this.lineNumberStyle === 'highlighted' && i % 2 === 0 ? 'line-number-highlighted' : ''}
+                            ${this.lineNumberStyle === 'bordered' ? 'border-b border-opacity-20 border-gray-500' : ''}
+                          `}>{i + 1}</div>
                         ))}
                       </div>
-                      <div class="flex-1 px-2">
+                      <div class={`flex-1 px-2 ${this.lineNumberStyle === 'floating' ? 'pl-8' : ''}`}>
                         <div class={`overflow-auto ${this.expandable && !this.isExpanded ? 'max-h-48' : ''}`} 
-                             style={this.expandable && !this.isExpanded ? { maxHeight: `${this.maxHeight}px` } : {}} 
+                             style={{
+                               maxHeight: this.expandable && !this.isExpanded ? `${this.maxHeight}px` : undefined,
+                               minHeight: this.resizable ? `${this.minHeight}px` : undefined
+                             }} 
                              part="preview">
                           {this.syntaxHighlight ? (
                             <pre 
@@ -1205,6 +1374,6 @@ export class UiText {
           </div>
         </div>
       </div>
-    )
+    );
   }
 }
