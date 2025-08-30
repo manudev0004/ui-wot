@@ -1,11 +1,9 @@
+@import url('../../global/theme.css');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:host {
-  display: inline-block;
-  font-family: inherit;
-}
+:host { display: inline-block; font-family: var(--font-sans-ui, 'Josefin Sans', sans-serif); }
 
 .neon-primary-glow {
   box-shadow: 0 0 10px theme('colors.primary'), 0 0 20px theme('colors.primary'), 0 0 30px theme('colors.primary');

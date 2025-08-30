@@ -1,0 +1,200 @@
+/**
+ * UI-WoT Design Token System
+ * Centralized CSS custom properties for consistent theming
+ * Version: 1.0.0
+ */
+
+:root {
+  /* === Core Color Palette === */
+  --ui-color-primary: #067362;
+  --ui-color-primary-hover: #055a4e;
+  --ui-color-primary-light: #0891a5;
+  --ui-color-secondary: #B84A91;
+  --ui-color-secondary-hover: #a04080;
+  --ui-color-secondary-light: #c866a3;
+  --ui-color-neutral: #6b7280;
+  --ui-color-neutral-hover: #4b5563;
+  --ui-color-neutral-light: #9ca3af;
+  
+  /* === Status Colors === */
+  --ui-color-success: #16a34a;
+  --ui-color-success-hover: #15803d;
+  --ui-color-success-light: #22c55e;
+  --ui-color-warning: #d97706;
+  --ui-color-warning-hover: #b45309;
+  --ui-color-warning-light: #f59e0b;
+  --ui-color-danger: #dc2626;
+  --ui-color-danger-hover: #b91c1c;
+  --ui-color-danger-light: #ef4444;
+  --ui-color-info: #2563eb;
+  --ui-color-info-hover: #1d4ed8;
+  --ui-color-info-light: #3b82f6;
+
+  /* === Background Colors === */
+  --ui-color-bg: #ffffff;
+  --ui-color-bg-alt: #f8fafc;
+  --ui-color-bg-muted: #f1f5f9;
+  --ui-color-bg-overlay: rgba(0, 0, 0, 0.5);
+  
+  /* === Border Colors === */
+  --ui-color-border: #e2e8f0;
+  --ui-color-border-light: #f1f5f9;
+  --ui-color-border-dark: #cbd5e1;
+  --ui-color-border-focus: var(--ui-color-primary);
+  
+  /* === Text Colors === */
+  --ui-color-text: #111827;
+  --ui-color-text-muted: #6b7280;
+  --ui-color-text-light: #9ca3af;
+  --ui-color-text-inverse: #ffffff;
+  
+  /* === Typography === */
+  --ui-font-family-label: 'Josefin Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ui-font-family-mono: 'Fira Mono', 'Monaco', 'Consolas', monospace;
+  --ui-font-family-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+  --ui-font-size-xs: 0.75rem;
+  --ui-font-size-sm: 0.875rem;
+  --ui-font-size-base: 1rem;
+  --ui-font-size-lg: 1.125rem;
+  --ui-font-size-xl: 1.25rem;
+  
+  --ui-font-weight-normal: 400;
+  --ui-font-weight-medium: 500;
+  --ui-font-weight-semibold: 600;
+  --ui-font-weight-bold: 700;
+  
+  /* === Spacing & Layout === */
+  --ui-spacing-xs: 0.25rem;
+  --ui-spacing-sm: 0.5rem;
+  --ui-spacing-md: 0.75rem;
+  --ui-spacing-lg: 1rem;
+  --ui-spacing-xl: 1.5rem;
+  --ui-spacing-2xl: 2rem;
+  
+  /* === Border Radius === */
+  --ui-radius-none: 0px;
+  --ui-radius-sm: 0.25rem;
+  --ui-radius-md: 0.375rem;
+  --ui-radius-lg: 0.5rem;
+  --ui-radius-xl: 0.75rem;
+  --ui-radius-full: 9999px;
+  
+  /* === Shadows === */
+  --ui-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --ui-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --ui-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --ui-shadow-focus: 0 0 0 3px rgba(6, 115, 98, 0.1);
+  
+  /* === Transitions === */
+  --ui-transition-fast: 120ms ease-out;
+  --ui-transition-base: 200ms ease-out;
+  --ui-transition-slow: 300ms ease-out;
+  
+  /* === Z-Index Scale === */
+  --ui-z-dropdown: 1000;
+  --ui-z-overlay: 1040;
+  --ui-z-modal: 1050;
+  --ui-z-tooltip: 1070;
+}
+
+/* === Dark Mode Tokens === */
+html.dark {
+  --ui-color-bg: #0f172a;
+  --ui-color-bg-alt: #1e293b;
+  --ui-color-bg-muted: #334155;
+  
+  --ui-color-text: #f1f5f9;
+  --ui-color-text-muted: #cbd5e1;
+  --ui-color-text-light: #94a3b8;
+  --ui-color-text-inverse: #111827;
+  
+  --ui-color-border: #334155;
+  --ui-color-border-light: #475569;
+  --ui-color-border-dark: #1e293b;
+}
+
+/* === Utility Classes === */
+.ui-bg-primary { background-color: var(--ui-color-primary); }
+.ui-bg-secondary { background-color: var(--ui-color-secondary); }
+.ui-bg-neutral { background-color: var(--ui-color-neutral); }
+.ui-bg-success { background-color: var(--ui-color-success); }
+.ui-bg-warning { background-color: var(--ui-color-warning); }
+.ui-bg-danger { background-color: var(--ui-color-danger); }
+
+.ui-text-primary { color: var(--ui-color-primary); }
+.ui-text-secondary { color: var(--ui-color-secondary); }
+.ui-text-neutral { color: var(--ui-color-neutral); }
+.ui-text-success { color: var(--ui-color-success); }
+.ui-text-warning { color: var(--ui-color-warning); }
+.ui-text-danger { color: var(--ui-color-danger); }
+.ui-text-muted { color: var(--ui-color-text-muted); }
+
+.ui-border-primary { border-color: var(--ui-color-primary); }
+.ui-border-secondary { border-color: var(--ui-color-secondary); }
+.ui-border-neutral { border-color: var(--ui-color-neutral); }
+.ui-border-default { border-color: var(--ui-color-border); }
+
+.ui-rounded-sm { border-radius: var(--ui-radius-sm); }
+.ui-rounded-md { border-radius: var(--ui-radius-md); }
+.ui-rounded-lg { border-radius: var(--ui-radius-lg); }
+.ui-rounded-full { border-radius: var(--ui-radius-full); }
+
+.ui-shadow-sm { box-shadow: var(--ui-shadow-sm); }
+.ui-shadow-md { box-shadow: var(--ui-shadow-md); }
+.ui-shadow-lg { box-shadow: var(--ui-shadow-lg); }
+
+.ui-transition-fast { transition: all var(--ui-transition-fast); }
+.ui-transition-base { transition: all var(--ui-transition-base); }
+.ui-transition-slow { transition: all var(--ui-transition-slow); }
+
+/* === Legacy Compatibility Mappings === */
+:root {
+  /* Old theme tokens mapped to new system */
+  --color-primary: var(--ui-color-primary);
+  --color-primary-dark: var(--ui-color-primary-hover);
+  --color-secondary: var(--ui-color-secondary);
+  --color-neutral: var(--ui-color-neutral);
+  --color-neutral-light: var(--ui-color-neutral-light);
+  --color-neutral-dark: var(--ui-color-neutral-hover);
+  --color-white: var(--ui-color-bg);
+}
+
+/* Legacy utility classes for backward compatibility */
+.bg-neutral-light { background-color: var(--ui-color-neutral-light); }
+.bg-neutral { background-color: var(--ui-color-neutral); }
+.bg-neutral-dark { background-color: var(--ui-color-neutral-hover); }
+.bg-primary { background-color: var(--ui-color-primary); }
+.bg-primary-dark { background-color: var(--ui-color-primary-hover); }
+.bg-secondary { background-color: var(--ui-color-secondary); }
+
+.text-neutral { color: var(--ui-color-neutral); }
+.text-primary { color: var(--ui-color-primary); }
+.text-secondary { color: var(--ui-color-secondary); }
+
+.border-neutral { border-color: var(--ui-color-neutral); }
+.border-primary { border-color: var(--ui-color-primary); }
+.border-secondary { border-color: var(--ui-color-secondary); }
+
+.focus\:ring-primary:focus { --tw-ring-color: var(--ui-color-primary); }
+.focus\:ring-secondary:focus { --tw-ring-color: var(--ui-color-secondary); }
+.focus\:ring-neutral:focus { --tw-ring-color: var(--ui-color-neutral); }
+
+.hover\:bg-neutral:hover { background-color: var(--ui-color-neutral); }
+.hover\:bg-primary:hover { background-color: var(--ui-color-primary); }
+.hover\:bg-primary-dark:hover { background-color: var(--ui-color-primary-hover); }
+.hover\:bg-secondary:hover { background-color: var(--ui-color-secondary); }
+
+.dark .bg-neutral-light { background-color: var(--ui-color-neutral-hover); }
+.dark .bg-neutral { background-color: var(--ui-color-neutral); }
+.dark .bg-neutral-dark { background-color: var(--ui-color-neutral-light); }
+.dark .text-primary { color: var(--ui-color-primary-light); }
+.dark .text-secondary { color: var(--ui-color-secondary); }
+.dark .text-neutral { color: var(--ui-color-neutral); }
+.dark .border-primary { border-color: var(--color-primary-dark); }
+.dark .border-secondary { border-color: var(--color-secondary); }
+.dark .border-neutral { border-color: var(--color-neutral); }
+
+/* Utility for forcing white/black text (already used by filled variants) */
+.text-white-force, .text-white-force:hover, .text-white-force:active, .text-white-force:focus { color: #FFFFFF !important; }
+.text-black-force, .text-black-force:hover, .text-black-force:active, .text-black-force:focus { color: #000000 !important; }

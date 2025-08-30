@@ -7,11 +7,15 @@
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 import { UiButtonClick } from "./components/ui-button/ui-button";
 import { UiMsg } from "./utils/types";
+import { UiButtonClick as UiButtonClick1 } from "./components/ui-button/ui-button-normalized";
+import { ValueMessage } from "./utils";
 import { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 import { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
 import { UiTextValueChange } from "./components/ui-text/ui-text";
 export { UiButtonClick } from "./components/ui-button/ui-button";
 export { UiMsg } from "./utils/types";
+export { UiButtonClick as UiButtonClick1 } from "./components/ui-button/ui-button-normalized";
+export { ValueMessage } from "./utils";
 export { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 export { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
 export { UiTextValueChange } from "./components/ui-text/ui-text";
@@ -108,6 +112,80 @@ export namespace Components {
           * @default 'minimal'
          */
         "variant": 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Normalized Button Component
+     * A button component following UI-WoT standards with centralized utilities
+     * @example Basic Usage
+     * ```html
+     * <ui-button-normalized variant="primary" label="Click Me"></ui-button-normalized>
+     * ```
+     * @example With Status Management
+     * ```html
+     * <ui-button-normalized label="Save" auto-status="true"></ui-button-normalized>
+     * ```
+     */
+    interface UiButtonNormalized {
+        /**
+          * Auto-manage status feedback for async operations
+          * @default false
+         */
+        "autoStatus": boolean;
+        /**
+          * Debounce delay for rapid clicks (ms)
+          * @default 150
+         */
+        "debounceDelay": number;
+        /**
+          * Whether the button is disabled
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Icon to display before label
+         */
+        "icon"?: string;
+        /**
+          * Icon to display after label
+         */
+        "iconEnd"?: string;
+        /**
+          * Button text label
+          * @default 'Button'
+         */
+        "label": string;
+        /**
+          * Whether the button is in loading state
+          * @default false
+         */
+        "loading": boolean;
+        /**
+          * Perform async operation with automatic status management
+         */
+        "performAction": (action: () => Promise<any>, options?: { loadingMessage?: string; successMessage?: string; errorMessage?: string; }) => Promise<boolean>;
+        /**
+          * Set loading state with optional message
+         */
+        "setLoading": (loading: boolean, message?: string) => Promise<void>;
+        /**
+          * Size variant
+          * @default 'md'
+         */
+        "size": 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+        /**
+          * Trigger button click programmatically
+         */
+        "triggerClick": () => Promise<void>;
+        /**
+          * Button type for form submission
+          * @default 'button'
+         */
+        "type": 'button' | 'submit' | 'reset';
+        /**
+          * Visual variant of the button
+          * @default 'primary'
+         */
+        "variant": 'primary' | 'secondary' | 'outline' | 'ghost';
     }
     /**
      * Advanced calendar component with comprehensive styling, variants, and features.
@@ -1122,6 +1200,10 @@ export interface UiButtonCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiButtonElement;
 }
+export interface UiButtonNormalizedCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiButtonNormalizedElement;
+}
 export interface UiCalendarCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiCalendarElement;
@@ -1192,6 +1274,36 @@ declare global {
     var HTMLUiButtonElement: {
         prototype: HTMLUiButtonElement;
         new (): HTMLUiButtonElement;
+    };
+    interface HTMLUiButtonNormalizedElementEventMap {
+        "buttonClick": UiButtonClick1;
+        "valueMsg": ValueMessage;
+    }
+    /**
+     * Normalized Button Component
+     * A button component following UI-WoT standards with centralized utilities
+     * @example Basic Usage
+     * ```html
+     * <ui-button-normalized variant="primary" label="Click Me"></ui-button-normalized>
+     * ```
+     * @example With Status Management
+     * ```html
+     * <ui-button-normalized label="Save" auto-status="true"></ui-button-normalized>
+     * ```
+     */
+    interface HTMLUiButtonNormalizedElement extends Components.UiButtonNormalized, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiButtonNormalizedElementEventMap>(type: K, listener: (this: HTMLUiButtonNormalizedElement, ev: UiButtonNormalizedCustomEvent<HTMLUiButtonNormalizedElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiButtonNormalizedElementEventMap>(type: K, listener: (this: HTMLUiButtonNormalizedElement, ev: UiButtonNormalizedCustomEvent<HTMLUiButtonNormalizedElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiButtonNormalizedElement: {
+        prototype: HTMLUiButtonNormalizedElement;
+        new (): HTMLUiButtonNormalizedElement;
     };
     interface HTMLUiCalendarElementEventMap {
         "dateChange": UiCalendarDateChange;
@@ -1560,6 +1672,7 @@ declare global {
     };
     interface HTMLElementTagNameMap {
         "ui-button": HTMLUiButtonElement;
+        "ui-button-normalized": HTMLUiButtonNormalizedElement;
         "ui-calendar": HTMLUiCalendarElement;
         "ui-checkbox": HTMLUiCheckboxElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
@@ -1651,6 +1764,76 @@ declare namespace LocalJSX {
           * @default 'minimal'
          */
         "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Normalized Button Component
+     * A button component following UI-WoT standards with centralized utilities
+     * @example Basic Usage
+     * ```html
+     * <ui-button-normalized variant="primary" label="Click Me"></ui-button-normalized>
+     * ```
+     * @example With Status Management
+     * ```html
+     * <ui-button-normalized label="Save" auto-status="true"></ui-button-normalized>
+     * ```
+     */
+    interface UiButtonNormalized {
+        /**
+          * Auto-manage status feedback for async operations
+          * @default false
+         */
+        "autoStatus"?: boolean;
+        /**
+          * Debounce delay for rapid clicks (ms)
+          * @default 150
+         */
+        "debounceDelay"?: number;
+        /**
+          * Whether the button is disabled
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Icon to display before label
+         */
+        "icon"?: string;
+        /**
+          * Icon to display after label
+         */
+        "iconEnd"?: string;
+        /**
+          * Button text label
+          * @default 'Button'
+         */
+        "label"?: string;
+        /**
+          * Whether the button is in loading state
+          * @default false
+         */
+        "loading"?: boolean;
+        /**
+          * Event emitted when button is clicked
+         */
+        "onButtonClick"?: (event: UiButtonNormalizedCustomEvent<UiButtonClick1>) => void;
+        /**
+          * Primary event emitted when the component value changes
+         */
+        "onValueMsg"?: (event: UiButtonNormalizedCustomEvent<ValueMessage>) => void;
+        /**
+          * Size variant
+          * @default 'md'
+         */
+        "size"?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+        /**
+          * Button type for form submission
+          * @default 'button'
+         */
+        "type"?: 'button' | 'submit' | 'reset';
+        /**
+          * Visual variant of the button
+          * @default 'primary'
+         */
+        "variant"?: 'primary' | 'secondary' | 'outline' | 'ghost';
     }
     /**
      * Advanced calendar component with comprehensive styling, variants, and features.
@@ -2549,6 +2732,7 @@ declare namespace LocalJSX {
     }
     interface IntrinsicElements {
         "ui-button": UiButton;
+        "ui-button-normalized": UiButtonNormalized;
         "ui-calendar": UiCalendar;
         "ui-checkbox": UiCheckbox;
         "ui-number-picker": UiNumberPicker;
@@ -2587,6 +2771,19 @@ declare module "@stencil/core" {
              * ```
              */
             "ui-button": LocalJSX.UiButton & JSXBase.HTMLAttributes<HTMLUiButtonElement>;
+            /**
+             * Normalized Button Component
+             * A button component following UI-WoT standards with centralized utilities
+             * @example Basic Usage
+             * ```html
+             * <ui-button-normalized variant="primary" label="Click Me"></ui-button-normalized>
+             * ```
+             * @example With Status Management
+             * ```html
+             * <ui-button-normalized label="Save" auto-status="true"></ui-button-normalized>
+             * ```
+             */
+            "ui-button-normalized": LocalJSX.UiButtonNormalized & JSXBase.HTMLAttributes<HTMLUiButtonNormalizedElement>;
             /**
              * Advanced calendar component with comprehensive styling, variants, and features.
              * Matches the design family of ui-button, ui-slider, and other components.

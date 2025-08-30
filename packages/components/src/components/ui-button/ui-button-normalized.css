@@ -1,0 +1,349 @@
+/**
+ * Normalized Button Component Styles
+ * Uses standardized UI-WoT design tokens
+ */
+
+:host {
+  display: inline-block;
+  font-family: var(--ui-font-family-body);
+}
+
+.ui-button-container {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* === Base Button Styles === */
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-spacing-sm);
+  
+  font-family: inherit;
+  font-weight: var(--ui-font-weight-medium);
+  line-height: 1.2;
+  text-decoration: none;
+  
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-md);
+  cursor: pointer;
+  
+  transition: var(--ui-transition-base);
+  transition-property: background-color, border-color, color, box-shadow, transform;
+  
+  /* Focus styles */
+  &:focus {
+    outline: none;
+    box-shadow: var(--ui-shadow-focus);
+  }
+  
+  /* Disabled styles */
+  &:disabled,
+  &.ui-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  
+  /* Loading styles */
+  &.ui-loading {
+    cursor: wait;
+    position: relative;
+  }
+}
+
+/* === Size Variants === */
+.ui-size-xs {
+  height: 2rem;
+  padding: 0 var(--ui-spacing-md);
+  font-size: var(--ui-font-size-xs);
+  border-radius: var(--ui-radius-sm);
+}
+
+.ui-size-sm {
+  height: 2.25rem;
+  padding: 0 var(--ui-spacing-lg);
+  font-size: var(--ui-font-size-sm);
+  border-radius: var(--ui-radius-sm);
+}
+
+.ui-size-md {
+  height: 2.5rem;
+  padding: 0 var(--ui-spacing-xl);
+  font-size: var(--ui-font-size-base);
+}
+
+.ui-size-lg {
+  height: 3rem;
+  padding: 0 var(--ui-spacing-2xl);
+  font-size: var(--ui-font-size-lg);
+  border-radius: var(--ui-radius-lg);
+}
+
+.ui-size-xl {
+  height: 3.5rem;
+  padding: 0 2.5rem;
+  font-size: var(--ui-font-size-xl);
+  border-radius: var(--ui-radius-lg);
+}
+
+/* === Color Variants === */
+.ui-variant-primary {
+  background-color: var(--ui-color-primary);
+  border-color: var(--ui-color-primary);
+  color: var(--ui-color-text-inverse);
+  
+  &:hover:not(:disabled) {
+    background-color: var(--ui-color-primary-hover);
+    border-color: var(--ui-color-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--ui-shadow-md);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: var(--ui-shadow-sm);
+  }
+}
+
+.ui-variant-secondary {
+  background-color: var(--ui-color-secondary);
+  border-color: var(--ui-color-secondary);
+  color: var(--ui-color-text-inverse);
+  
+  &:hover:not(:disabled) {
+    background-color: var(--ui-color-secondary-hover);
+    border-color: var(--ui-color-secondary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--ui-shadow-md);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: var(--ui-shadow-sm);
+  }
+}
+
+.ui-variant-outline {
+  background-color: transparent;
+  border-color: var(--ui-color-primary);
+  color: var(--ui-color-primary);
+  
+  &:hover:not(:disabled) {
+    background-color: var(--ui-color-primary);
+    color: var(--ui-color-text-inverse);
+    transform: translateY(-1px);
+    box-shadow: var(--ui-shadow-md);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: var(--ui-shadow-sm);
+  }
+}
+
+.ui-variant-ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--ui-color-primary);
+  
+  &:hover:not(:disabled) {
+    background-color: rgba(6, 115, 98, 0.1);
+    color: var(--ui-color-primary-hover);
+  }
+  
+  &:active:not(:disabled) {
+    background-color: rgba(6, 115, 98, 0.15);
+  }
+}
+
+/* === Icon Styles === */
+.ui-button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  
+  &.ui-button-icon-start {
+    margin-right: calc(var(--ui-spacing-sm) * -0.5);
+  }
+  
+  &.ui-button-icon-end {
+    margin-left: calc(var(--ui-spacing-sm) * -0.5);
+  }
+}
+
+/* === Loading Spinner === */
+.ui-button-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  margin-right: calc(var(--ui-spacing-sm) * -0.5);
+}
+
+.ui-spinner {
+  width: 100%;
+  height: 100%;
+  animation: ui-spin 1s linear infinite;
+}
+
+@keyframes ui-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* === Label Styles === */
+.ui-button-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Loading state label */
+.ui-loading .ui-button-label {
+  opacity: 0.8;
+}
+
+/* === Status Area === */
+.ui-button-status {
+  margin-top: var(--ui-spacing-xs);
+  min-height: 1.25rem;
+  
+  /* Status messages styling */
+  .ui-status-message {
+    font-size: var(--ui-font-size-xs);
+    padding: var(--ui-spacing-xs) var(--ui-spacing-sm);
+    border-radius: var(--ui-radius-sm);
+    text-align: center;
+  }
+  
+  .ui-status-success .ui-status-message {
+    background-color: rgba(22, 163, 74, 0.1);
+    color: var(--ui-color-success);
+    border: 1px solid rgba(22, 163, 74, 0.2);
+  }
+  
+  .ui-status-error .ui-status-message {
+    background-color: rgba(220, 38, 38, 0.1);
+    color: var(--ui-color-danger);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+  }
+  
+  .ui-status-warning .ui-status-message {
+    background-color: rgba(217, 119, 6, 0.1);
+    color: var(--ui-color-warning);
+    border: 1px solid rgba(217, 119, 6, 0.2);
+  }
+  
+  .ui-status-info .ui-status-message {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: var(--ui-color-info);
+    border: 1px solid rgba(37, 99, 235, 0.2);
+  }
+}
+
+/* === Status Indicator Classes === */
+.ui-status-success {
+  border-color: var(--ui-color-success);
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.2);
+}
+
+.ui-status-error {
+  border-color: var(--ui-color-danger);
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2);
+}
+
+.ui-status-warning {
+  border-color: var(--ui-color-warning);
+  box-shadow: 0 0 0 1px rgba(217, 119, 6, 0.2);
+}
+
+.ui-status-info {
+  border-color: var(--ui-color-info);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+}
+
+/* === Focus Styles === */
+.ui-variant-primary:focus {
+  --tw-ring-color: var(--ui-color-primary);
+}
+
+.ui-variant-secondary:focus {
+  --tw-ring-color: var(--ui-color-secondary);
+}
+
+.ui-variant-outline:focus,
+.ui-variant-ghost:focus {
+  --tw-ring-color: var(--ui-color-primary);
+}
+
+/* === Dark Mode Support === */
+:host(.dark) {
+  .ui-variant-outline {
+    border-color: var(--ui-color-border);
+    color: var(--ui-color-text);
+    
+    &:hover:not(:disabled) {
+      background-color: var(--ui-color-bg-muted);
+      border-color: var(--ui-color-primary);
+      color: var(--ui-color-primary);
+    }
+  }
+  
+  .ui-variant-ghost {
+    color: var(--ui-color-text);
+    
+    &:hover:not(:disabled) {
+      background-color: var(--ui-color-bg-muted);
+      color: var(--ui-color-primary);
+    }
+  }
+}
+
+/* === Accessibility === */
+@media (prefers-reduced-motion: reduce) {
+  .ui-button {
+    transition: none;
+  }
+  
+  .ui-spinner {
+    animation: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .ui-button {
+    border-width: 2px;
+  }
+  
+  .ui-variant-ghost {
+    border-color: currentColor;
+    border-width: 1px;
+  }
+}
+
+/* === Component Parts for CSS Custom Properties === */
+[part="button"] {
+  /* Expose CSS custom properties for external styling */
+  background-color: var(--ui-button-bg, inherit);
+  border-color: var(--ui-button-border, inherit);
+  color: var(--ui-button-color, inherit);
+  border-radius: var(--ui-button-radius, inherit);
+  padding: var(--ui-button-padding, inherit);
+  font-size: var(--ui-button-font-size, inherit);
+}
+
+[part="container"] {
+  width: var(--ui-button-width, auto);
+  max-width: var(--ui-button-max-width, none);
+}

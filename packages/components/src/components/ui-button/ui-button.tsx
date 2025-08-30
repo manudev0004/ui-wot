@@ -473,14 +473,15 @@ export class UiButton {
           </button>
         </div>
         
-        {/* Unified Status Indicators - Right aligned */}
-        <div class="flex justify-between items-start mt-2">
-          <div class="flex-1"></div>
-          <div class="flex flex-col items-end gap-1">
-            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
-            {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
-          </div>
+        {/* Unified Status Badge (timestamp moved below) */}
+        <div class="flex justify-end items-start mt-2">
+          {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
         </div>
+        {this.showLastUpdated && (
+          <div class="flex justify-end mt-2">
+            {StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
+          </div>
+        )}
       </div>
     );
   }

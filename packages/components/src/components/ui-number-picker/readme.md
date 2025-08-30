@@ -119,14 +119,15 @@ Type: `Promise<void>`
 
 ## Shadow Parts
 
-| Part                   | Description |
-| ---------------------- | ----------- |
-| `"container"`          |             |
-| `"decrement-button"`   |             |
-| `"increment-button"`   |             |
-| `"label"`              |             |
-| `"readonly-indicator"` |             |
-| `"value-display"`      |             |
+| Part                    | Description |
+| ----------------------- | ----------- |
+| `"container"`           |             |
+| `"decrement-button"`    |             |
+| `"increment-button"`    |             |
+| `"interactive-wrapper"` |             |
+| `"label"`               |             |
+| `"readonly-indicator"`  |             |
+| `"value-display"`       |             |
 
 
 ----------------------------------------------

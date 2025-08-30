@@ -587,9 +587,8 @@ export class UiToggle {
             </span>
           )}
           
-          {/* Status badge positioned to the right with consistent spacing */}
+          {/* Status badge positioned to the right (timestamp moved below) */}
           {this.renderStatusBadge()}
-          {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
         </div>
         
         {/* Last updated timestamp positioned below the control */}

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Normalized UI-WoT Button Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background-color: #f8fafc;
+            line-height: 1.6;
+        }
+        
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .demo-section {
+            margin-bottom: 3rem;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .demo-item {
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+        
+        h1 {
+            color: #067362;
+            margin-bottom: 0.5rem;
+        }
+        
+        h2 {
+            color: #1f2937;
+            border-bottom: 2px solid #067362;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        h3 {
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .code-block {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .status-panel {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🚀 Normalized UI-WoT Button Component</h1>
+        <p>Demonstration of the standardized button component with centralized utilities.</p>
+
+        <!-- Variants Section -->
+        <div class="demo-section">
+            <h2>Button Variants</h2>
+            <div class="demo-grid">
+                <div class="demo-item">
+                    <h3>Primary</h3>
+                    <ui-button-normalized variant="primary" label="Primary Button"></ui-button-normalized>
+                </div>
+                <div class="demo-item">
+                    <h3>Secondary</h3>
+                    <ui-button-normalized variant="secondary" label="Secondary Button"></ui-button-normalized>
+                </div>
+                <div class="demo-item">
+                    <h3>Outline</h3>
+                    <ui-button-normalized variant="outline" label="Outline Button"></ui-button-normalized>
+                </div>
+                <div class="demo-item">
+                    <h3>Ghost</h3>
+                    <ui-button-normalized variant="ghost" label="Ghost Button"></ui-button-normalized>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sizes Section -->
+        <div class="demo-section">
+            <h2>Button Sizes</h2>
+            <div class="demo-grid">
+                <div class="demo-item">
+                    <h3>Extra Small</h3>
+                    <ui-button-normalized size="xs" label="XS Button"></ui-button-normalized>
+                </div>
+                <div class="demo-item">
+                    <h3>Small</h3>
+                    <ui-button-normalized size="sm" label="Small Button"></ui-button-normalized>
+                </div>
+                <div class="demo-item">
+                    <h3>Medium (Default)</h3>
+                    <ui-button-normalized size="md" label="Medium Button"></ui-button-normalized>
+                </div>
+                <div class="demo-item">
+                    <h3>Large</h3>
+                    <ui-button-normalized size="lg" label="Large Button"></ui-button-normalized>
+                </div>
+                <div class="demo-item">
+                    <h3>Extra Large</h3>
+                    <ui-button-normalized size="xl" label="XL Button"></ui-button-normalized>
+                </div>
+            </div>
+        </div>
+
+        <!-- States Section -->
+        <div class="demo-section">
+            <h2>Button States</h2>
+            <div class="demo-grid">
+                <div class="demo-item">
+                    <h3>Normal</h3>
+                    <ui-button-normalized label="Normal State"></ui-button-normalized>
+                </div>
+                <div class="demo-item">
+                    <h3>Disabled</h3>
+                    <ui-button-normalized label="Disabled State" disabled="true"></ui-button-normalized>
+                </div>
+                <div class="demo-item">
+                    <h3>Loading</h3>
+                    <ui-button-normalized label="Loading State" loading="true"></ui-button-normalized>
+                </div>
+                <div class="demo-item">
+                    <h3>Auto Status</h3>
+                    <ui-button-normalized id="auto-status-btn" label="Auto Status" auto-status="true"></ui-button-normalized>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Demo -->
+        <div class="demo-section">
+            <h2>Interactive Demo</h2>
+            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <ui-button-normalized 
+                    id="demo-btn"
+                    variant="primary" 
+                    label="Click Me!" 
+                    auto-status="true">
+                </ui-button-normalized>
+                
+                <ui-button-normalized 
+                    id="async-btn"
+                    variant="secondary" 
+                    label="Async Action"
+                    auto-status="true">
+                </ui-button-normalized>
+                
+                <ui-button-normalized 
+                    id="error-btn"
+                    variant="outline" 
+                    label="Trigger Error"
+                    auto-status="true">
+                </ui-button-normalized>
+                
+                <ui-button-normalized 
+                    id="loading-btn"
+                    variant="ghost" 
+                    label="Toggle Loading">
+                </ui-button-normalized>
+            </div>
+            
+            <div class="status-panel" id="event-log">
+                <strong>Event Log:</strong><br>
+                <div id="log-content">Click buttons to see events...</div>
+            </div>
+        </div>
+
+        <!-- Usage Examples -->
+        <div class="demo-section">
+            <h2>Usage Examples</h2>
+            
+            <h3>Basic HTML</h3>
+            <div class="code-block">
+&lt;ui-button-normalized variant="primary" label="Save"&gt;&lt;/ui-button-normalized&gt;
+&lt;ui-button-normalized variant="outline" size="sm" label="Cancel"&gt;&lt;/ui-button-normalized&gt;</div>
+
+            <h3>With Event Handling</h3>
+            <div class="code-block">
+const button = document.querySelector('ui-button-normalized');
+button.addEventListener('valueMsg', (event) => {
+    console.log('Value changed:', event.detail);
+});
+
+button.addEventListener('buttonClick', (event) => {
+    console.log('Button clicked:', event.detail);
+});</div>
+
+            <h3>Async Action with Status Management</h3>
+            <div class="code-block">
+const button = document.querySelector('#async-button');
+button.performAction(async () => {
+    const response = await fetch('/api/save');
+    return response.json();
+}, {
+    loadingMessage: 'Saving...',
+    successMessage: 'Saved successfully!',
+    errorMessage: 'Failed to save'
+});</div>
+        </div>
+    </div>
+
+    <!-- Load the component -->
+    <script type="module" src="../build/ui-wot-components.esm.js"></script>
+
+    <script>
+        // Event logging
+        const logContent = document.getElementById('log-content');
+        
+        function logEvent(message) {
+            const time = new Date().toLocaleTimeString();
+            logContent.innerHTML += `<br>[${time}] ${message}`;
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        // Set up event listeners for all buttons
+        document.querySelectorAll('ui-button-normalized').forEach(button => {
+            button.addEventListener('valueMsg', (event) => {
+                logEvent(`ValueMsg from ${button.id || 'button'}: ${JSON.stringify(event.detail)}`);
+            });
+            
+            button.addEventListener('buttonClick', (event) => {
+                logEvent(`ButtonClick from ${button.id || 'button'}: label="${event.detail.label}"`);
+            });
+        });
+
+        // Interactive demo handlers
+        document.getElementById('demo-btn').addEventListener('buttonClick', () => {
+            logEvent('Demo button clicked - auto status will show success!');
+        });
+
+        document.getElementById('async-btn').addEventListener('buttonClick', async () => {
+            const button = document.getElementById('async-btn');
+            await button.performAction(async () => {
+                // Simulate async operation
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                return { success: true };
+            }, {
+                loadingMessage: 'Processing request...',
+                successMessage: 'Request completed!',
+                errorMessage: 'Request failed'
+            });
+        });
+
+        document.getElementById('error-btn').addEventListener('buttonClick', async () => {
+            const button = document.getElementById('error-btn');
+            await button.performAction(async () => {
+                // Simulate error
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                throw new Error('Simulated error occurred');
+            }, {
+                loadingMessage: 'Processing...',
+                successMessage: 'Success!',
+                errorMessage: 'Operation failed!'
+            });
+        });
+
+        let isLoading = false;
+        document.getElementById('loading-btn').addEventListener('buttonClick', async () => {
+            const button = document.getElementById('loading-btn');
+            isLoading = !isLoading;
+            
+            await button.setLoading(isLoading, isLoading ? 'Loading...' : undefined);
+            logEvent(`Loading state: ${isLoading}`);
+        });
+
+        // Initialize log
+        logEvent('Demo initialized. Click buttons to see events.');
+    </script>
+</body>
+</html>

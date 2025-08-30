@@ -10,6 +10,7 @@
 
 // Core components
 export { UiButton } from './components/ui-button/ui-button';
+export { UiButtonNormalized } from './components/ui-button/ui-button-normalized';
 export { UiToggle } from './components/ui-toggle/ui-toggle';
 export { UiSlider } from './components/ui-slider/ui-slider';
 export { UiNumberPicker } from './components/ui-number-picker/ui-number-picker';
@@ -30,6 +31,9 @@ export { UiPropertyCard } from './components/ui-property-card/ui-property-card';
 export * from './utils/types';
 export { classifyTdProperty } from './utils/types';
 
+// UI-WoT Utilities (new centralized system)
+export * from './utils/index';
+
 // Type definitions
 export type {
   ConsumedThing as WoTThing,
@@ -40,3 +44,5 @@ export type {
 } from './services/wot-service';
 
 export { setMode } from '@stencil/core';
+import './global/fonts.css';
+import './global/theme.css';

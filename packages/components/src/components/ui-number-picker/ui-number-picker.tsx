@@ -595,13 +595,9 @@ export class UiNumberPicker {
           </slot>
         </div>
 
-        {/* Unified Status Indicators - consistent wrapper with other components */}
-        <div class="flex justify-between items-start mt-2">
-          <div class="flex-1"></div>
-          <div class="flex flex-col items-end gap-1">
-            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
-            {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
-          </div>
+        {/* Status badge only (timestamp moved below) */}
+        <div class="flex justify-end items-start mt-2">
+          {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
         </div>
 
         {isReadOnly ? (
@@ -616,7 +612,8 @@ export class UiNumberPicker {
             <span class={`text-lg font-medium ${this.dark ? 'text-white' : 'text-gray-900'}`}>{this.isActive}</span>
           </div>
         ) : (
-          // Show interactive number picker
+          // Show interactive number picker (wrapped with fragment to allow bottom timestamp)
+          <div class="flex flex-col items-end w-full" part="interactive-wrapper">
           <div class="relative flex items-center gap-3" tabindex={isDisabled ? -1 : 0} onKeyDown={this.handleKeyDown}>
             {/* Decrement Button */}
             <button
@@ -642,6 +639,13 @@ export class UiNumberPicker {
             >
               +
             </button>
+          </div>
+            {/* Bottom timestamp */}
+            {this.showLastUpdated && (
+              <div class="w-full flex justify-end mt-2">
+                {StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
+              </div>
+            )}
           </div>
         )}
 

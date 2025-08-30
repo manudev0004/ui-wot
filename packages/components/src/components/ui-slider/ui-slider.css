@@ -1,3 +1,4 @@
+@import url('../../global/theme.css');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,29 +7,12 @@
  * UI Slider Component Styles
  */
 
-:host {
-  /* Custom color scheme to match ThingsWeb  */
-  --color-neutral: #7E807F;
-  --color-neutral-light: #CACCCC;
-  --color-neutral-dark: #4C4D4C;
-  --color-white: #FFFFFF;
-  --color-primary: #067362;
-  --color-primary-dark: #33b8a4;
-  --color-secondary: #B84A91;
-  
-  display: block;
-  width: 100%;
-}
+:host { display: block; width:100%; font-family: var(--font-sans-ui, 'Josefin Sans', sans-serif); }
 
 /* Custom color utilities using CSS variables */
-.bg-neutral-light { background-color: var(--color-neutral-light); }
-.bg-neutral { background-color: var(--color-neutral); }
-.bg-neutral-dark { background-color: var(--color-neutral-dark); }
-.bg-primary { background-color: var(--color-primary); }
-.bg-primary-dark { background-color: var(--color-primary-dark); }
-.bg-secondary { background-color: var(--color-secondary); }
+/* background utilities now global */
 
-.text-neutral { color: var(--color-neutral); }
+/* text utilities now global */
 
 /* Neon effects for track */
 .neon-primary-track {

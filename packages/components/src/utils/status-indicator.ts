@@ -191,7 +191,7 @@ export class StatusIndicator {
     // Relative time
     let relative: string;
     if (diffMinutes < 1) {
-      relative = '(just now)';
+      relative = '(Just Now)';
     } else if (diffMinutes < 60) {
       relative = `(${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago)`;
     } else if (diffHours < 24) {
@@ -209,11 +209,11 @@ export class StatusIndicator {
    * Get unified timestamp classes
    */
   static getTimestampClasses(theme: 'light' | 'dark'): { container: string; full: string; relative: string } {
-    const baseText = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
-    const relativeText = theme === 'dark' ? 'text-gray-500' : 'text-gray-400';
+  const baseText = (theme === 'dark' ? 'text-gray-400' : 'text-gray-500') + ' font-[\'Fira Mono\']';
+  const relativeText = (theme === 'dark' ? 'text-gray-500' : 'text-gray-400') + ' italic font-[\'Fira Mono\']';
     
     return {
-      container: 'mt-2 text-xs space-y-1',
+  container: 'mt-2 text-xs space-y-1 font-[\'Fira Mono\']',
       full: `${baseText}`,
       relative: `${relativeText} italic`
     };
@@ -318,10 +318,11 @@ export class StatusIndicator {
 
     const { full, relative } = this.formatTimestamp(lastUpdated);
     const timestampClasses = this.getTimestampClasses(theme);
+    const monoStyle = { 'font-family': "var(--font-mono-ui, 'Fira Mono', monospace)" };
 
-    return h('div', { class: timestampClasses.container }, [
-      h('div', { class: timestampClasses.full }, full),
-      h('div', { class: timestampClasses.relative }, relative)
+    return h('div', { class: timestampClasses.container + ' timestamp', style: monoStyle }, [
+      h('div', { class: timestampClasses.full + ' last-updated', style: monoStyle }, full),
+      h('div', { class: timestampClasses.relative + ' relative-time', style: monoStyle }, relative)
     ]);
   }
 }

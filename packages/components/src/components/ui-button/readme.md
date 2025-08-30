@@ -7,53 +7,62 @@
 
 ## Overview
 
-Button component with various visual styles, matching the ui-number-picker design family.
-Supports the same variants, colors, and themes as the number picker.
+Normalized Button Component
+A button component following UI-WoT standards with centralized utilities
 
 ## Properties
 
-| Property          | Attribute           | Description                                                                                                                                                       | Type                                    | Default     |
-| ----------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ----------- |
-| `color`           | `color`             | Color scheme to match thingsweb webpage                                                                                                                           | `"neutral" \| "primary" \| "secondary"` | `'primary'` |
-| `dark`            | `dark`              | Dark theme variant.                                                                                                                                               | `boolean`                               | `false`     |
-| `disabled`        | `disabled`          | Whether the component is disabled (cannot be interacted with).                                                                                                    | `boolean`                               | `false`     |
-| `keyboard`        | `keyboard`          | Enable keyboard navigation.                                                                                                                                       | `boolean`                               | `true`      |
-| `label`           | `label`             | Button text label.                                                                                                                                                | `string`                                | `'Button'`  |
-| `readonly`        | `readonly`          | Whether the component is read-only (displays value but cannot be changed).                                                                                        | `boolean`                               | `false`     |
-| `showLastUpdated` | `show-last-updated` | Show last updated timestamp below the component.                                                                                                                  | `boolean`                               | `false`     |
-| `variant`         | `variant`           | Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button | `"filled" \| "minimal" \| "outlined"`   | `'minimal'` |
+| Property        | Attribute        | Description                                      | Type                                               | Default     |
+| --------------- | ---------------- | ------------------------------------------------ | -------------------------------------------------- | ----------- |
+| `autoStatus`    | `auto-status`    | Auto-manage status feedback for async operations | `boolean`                                          | `false`     |
+| `debounceDelay` | `debounce-delay` | Debounce delay for rapid clicks (ms)             | `number`                                           | `150`       |
+| `disabled`      | `disabled`       | Whether the button is disabled                   | `boolean`                                          | `false`     |
+| `icon`          | `icon`           | Icon to display before label                     | `string`                                           | `undefined` |
+| `iconEnd`       | `icon-end`       | Icon to display after label                      | `string`                                           | `undefined` |
+| `label`         | `label`          | Button text label                                | `string`                                           | `'Button'`  |
+| `loading`       | `loading`        | Whether the button is in loading state           | `boolean`                                          | `false`     |
+| `size`          | `size`           | Size variant                                     | `"lg" \| "md" \| "sm" \| "xl" \| "xs"`             | `'md'`      |
+| `type`          | `type`           | Button type for form submission                  | `"button" \| "reset" \| "submit"`                  | `'button'`  |
+| `variant`       | `variant`        | Visual variant of the button                     | `"ghost" \| "outline" \| "primary" \| "secondary"` | `'primary'` |
 
 
 ## Events
 
-| Event         | Description                                                                                           | Type                         |
-| ------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------- |
-| `buttonClick` | Event emitted when button is clicked                                                                  | `CustomEvent<UiButtonClick>` |
-| `valueMsg`    | Primary event emitted when the component value changes. Use this event for all value change handling. | `CustomEvent<UiMsg<string>>` |
+| Event         | Description                                            | Type                         |
+| ------------- | ------------------------------------------------------ | ---------------------------- |
+| `buttonClick` | Event emitted when button is clicked                   | `CustomEvent<UiButtonClick>` |
+| `valueMsg`    | Primary event emitted when the component value changes | `CustomEvent<ValueMessage>`  |
 
 
 ## Methods
 
-### `getValue() => Promise<string>`
+### `performAction(action: () => Promise<any>, options?: { loadingMessage?: string; successMessage?: string; errorMessage?: string; }) => Promise<boolean>`
 
-Get current button value (its label)
-
-#### Returns
-
-Type: `Promise<string>`
-
-
-
-### `setStatus(status: "idle" | "loading" | "success" | "error", message?: string) => Promise<void>`
-
-Manually set operation status
+Perform async operation with automatic status management
 
 #### Parameters
 
-| Name      | Type                                          | Description |
-| --------- | --------------------------------------------- | ----------- |
-| `status`  | `"idle" \| "loading" \| "success" \| "error"` |             |
-| `message` | `string`                                      |             |
+| Name      | Type                                                                           | Description |
+| --------- | ------------------------------------------------------------------------------ | ----------- |
+| `action`  | `() => Promise<any>`                                                           |             |
+| `options` | `{ loadingMessage?: string; successMessage?: string; errorMessage?: string; }` |             |
+
+#### Returns
+
+Type: `Promise<boolean>`
+
+
+
+### `setLoading(loading: boolean, message?: string) => Promise<void>`
+
+Set loading state with optional message
+
+#### Parameters
+
+| Name      | Type      | Description |
+| --------- | --------- | ----------- |
+| `loading` | `boolean` |             |
+| `message` | `string`  |             |
 
 #### Returns
 
@@ -61,42 +70,9 @@ Type: `Promise<void>`
 
 
 
-### `setValue(value: string, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>`
+### `triggerClick() => Promise<void>`
 
-Consolidated setValue method with automatic Promise-based status management
-
-#### Parameters
-
-| Name      | Type                                                                                                                                                                                                                                                 | Description |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| `value`   | `string`                                                                                                                                                                                                                                             |             |
-| `options` | `{ writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" \| "success" \| "error"; errorMessage?: string; _isRevert?: boolean; }` |             |
-
-#### Returns
-
-Type: `Promise<boolean>`
-
-
-
-### `setValueSilent(value: string) => Promise<boolean>`
-
-Set value silently without triggering events or status changes
-
-#### Parameters
-
-| Name    | Type     | Description |
-| ------- | -------- | ----------- |
-| `value` | `string` |             |
-
-#### Returns
-
-Type: `Promise<boolean>`
-
-
-
-### `triggerReadPulse() => Promise<void>`
-
-Trigger visual read pulse (brief animation)
+Trigger button click programmatically
 
 #### Returns
 
@@ -107,10 +83,15 @@ Type: `Promise<void>`
 
 ## Shadow Parts
 
-| Part          | Description |
-| ------------- | ----------- |
-| `"button"`    |             |
-| `"container"` |             |
+| Part           | Description |
+| -------------- | ----------- |
+| `"button"`     |             |
+| `"container"`  |             |
+| `"icon-end"`   |             |
+| `"icon-start"` |             |
+| `"label"`      |             |
+| `"spinner"`    |             |
+| `"status"`     |             |
 
 
 ----------------------------------------------

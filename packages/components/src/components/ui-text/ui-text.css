@@ -10,7 +10,7 @@
 :host {
   display: block;
   width: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans-ui, 'Josefin Sans', sans-serif);
 }
 
 /* Base container styles */
@@ -28,7 +28,7 @@
 
 /* Typography */
 .font-mono {
-  font-family: 'Courier New', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+  font-family: var(--font-mono-ui, 'Fira Mono', monospace);
 }
 
 .text-sm {
