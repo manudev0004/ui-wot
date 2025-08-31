@@ -17,34 +17,15 @@ import { StatusIndicator } from '../../utils/status-indicator';
  * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
  * ```
  *
- * @example Read-Only Mode
- * ```html
- * <ui-checkbox readonly="true" value="false" label="Sensor Status"></ui-checkbox>
- * ```
- *
- * @example JavaScript Integration with Multiple Checkboxes
+ * @example JavaScript Integration
  * ```javascript
- * // For single checkbox
- * const checkbox = document.querySelector('#my-checkbox');
- *
- * // For multiple checkboxes
- * const checkboxes = document.querySelectorAll('ui-checkbox');
- * checkboxes.forEach(checkbox => {
- *   checkbox.addEventListener('valueMsg', (e) => {
- *     console.log('Checkbox ID:', e.detail.source);
- *     console.log('New value:', e.detail.payload);
- *   });
+ * const checkbox = document.querySelector('#terms-checkbox');
+ * checkbox.addEventListener('valueMsg', (e) => {
+ *   console.log('Checkbox value:', e.detail.payload);
  * });
- *
- * // Set value by ID
- * const termsCheckbox = document.getElementById('terms-checkbox');
- * await termsCheckbox.setValue(true);
- * ```
- *
- * @example HTML with IDs
- * ```html
- * <ui-checkbox id="terms-checkbox" label="Accept Terms" variant="outlined"></ui-checkbox>
- * <ui-checkbox id="newsletter-checkbox" label="Subscribe to Newsletter" variant="filled"></ui-checkbox>
+ * 
+ * // Set value programmatically
+ * await checkbox.setValue(true);
  * ```
  */
 @Component({
@@ -72,10 +53,7 @@ export class UiCheckbox {
    */
   @Prop() disabled: boolean = false;
 
-  /**
-   * Whether the checkbox is read-only (displays value but cannot be changed).
-   */
-  @Prop({ mutable: true }) readonly: boolean = false;
+  // Note: checkbox does not support readonly mode
 
   /**
    * Text label displayed next to the checkbox.
@@ -116,10 +94,6 @@ export class UiCheckbox {
   /** Operation status for write mode indicators */
   @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
   @State() lastError?: string;
-  /** Timestamp of last read pulse (readonly updates) */
-  @State() readPulseTs?: number;
-  /** Connection state for readonly mode */
-  @Prop({ mutable: true }) connected: boolean = true;
   /** Timestamp of last value update for showLastUpdated feature */
   @State() lastUpdatedTs?: number;
   
@@ -178,7 +152,6 @@ export class UiCheckbox {
     if (this.operationStatus === 'error' && !options?._isRevert) {
       this.operationStatus = 'idle';
       this.lastError = undefined;
-      this.connected = true;
     }
     
     // Optimistic update (default: true)
@@ -301,9 +274,8 @@ export class UiCheckbox {
    */
   @Method()
   async triggerReadPulse(): Promise<void> {
-    if (this.readonly) {
-      this.readPulseTs = Date.now();
-    }
+  // checkbox does not support readonly/read-pulse; no-op kept for API compatibility
+  return;
   }
 
   /**
@@ -364,10 +336,9 @@ export class UiCheckbox {
 
   /** Handle checkbox click */
   private handleClick = () => {
-    if (this.disabled || this.readonly) return;
+    if (this.disabled) return;
 
     const newValue = !this.isActive;
-    // Simple value change without any operation - for basic checkbox functionality
     this.isActive = newValue;
     this.value = newValue;
     this.lastUpdatedTs = Date.now();
@@ -376,131 +347,100 @@ export class UiCheckbox {
 
   /** Get checkbox container style classes */
   private getCheckboxStyles() {
-    const isDisabled = this.disabled;
-    const isActive = this.isActive || this.readonly;
+    const { disabled, variant, color, dark, isActive } = this;
     
-    let baseClasses = 'transition-all duration-300 flex items-center justify-center cursor-pointer';
+    let classes = 'transition-all duration-300 flex items-center justify-center';
     
-    if (isDisabled) {
-      baseClasses += ' opacity-50 cursor-not-allowed';
-    }
-
-    // Variant-specific styling with creative differences
-    if (this.variant === 'minimal') {
-      // Minimal: Simple circle that fills with color when checked
-      baseClasses += ' w-4 h-4 rounded-full border-2';
-      if (isActive) {
-        baseClasses += this.color === 'primary' ? ' bg-primary border-primary text-white scale-110' :
-                      this.color === 'secondary' ? ' bg-secondary border-secondary text-white scale-110' :
-                      ' bg-neutral border-neutral text-white scale-110';
-      } else {
-        baseClasses += this.dark ? ' border-gray-500 bg-transparent hover:border-gray-400' : 
-                      ' border-gray-400 bg-transparent hover:border-gray-600';
-      }
-    } else if (this.variant === 'outlined') {
-      // Outlined: Square with thick border and checkmark
-      baseClasses += ' w-5 h-5 rounded border-2';
-      if (isActive) {
-        baseClasses += this.color === 'primary' ? ' border-primary bg-white text-primary shadow-md' :
-                      this.color === 'secondary' ? ' border-secondary bg-white text-secondary shadow-md' :
-                      ' border-neutral bg-white text-neutral shadow-md';
-      } else {
-        baseClasses += this.dark ? ' border-gray-600 bg-gray-800 hover:border-gray-500' : 
-                      ' border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm';
-      }
-    } else { // filled
-      // Filled: Traditional square checkbox with solid fill when checked
-      baseClasses += ' w-5 h-5 rounded';
-      if (isActive) {
-        baseClasses += this.color === 'primary' ? ' bg-primary text-white border border-primary' :
-                      this.color === 'secondary' ? ' bg-secondary text-white border border-secondary' :
-                      ' bg-neutral text-white border border-neutral';
-      } else {
-        baseClasses += this.dark ? ' bg-gray-700 border border-gray-600 hover:bg-gray-600' : 
-                      ' bg-gray-50 border border-gray-300 hover:bg-gray-100';
-      }
-    }
-
-    return baseClasses;
-  }
-
-  private getLabelStyles() {
-    const isDisabled = this.disabled;
+    // Base cursor and opacity
+    classes += disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer';
     
-    let classes = 'ml-3 text-sm font-medium cursor-pointer';
-    
-    if (isDisabled) {
-      classes += ' opacity-50 cursor-not-allowed';
-    } else {
-      classes += this.dark ? ' text-white' : ' text-gray-900';
+    // Variant-specific styling
+    switch (variant) {
+      case 'minimal':
+        classes += ' w-4 h-4 rounded-full border-2';
+        if (isActive) {
+          const colorClass = color === 'primary' ? 'primary' : color === 'secondary' ? 'secondary' : 'neutral';
+          classes += ` bg-${colorClass} border-${colorClass} text-white scale-110`;
+        } else {
+          classes += dark ? ' border-gray-500 bg-transparent hover:border-gray-400' : 
+                           ' border-gray-400 bg-transparent hover:border-gray-600';
+        }
+        break;
+        
+      case 'outlined':
+        classes += ' w-5 h-5 rounded border-2';
+        if (isActive) {
+          const colorClass = color === 'primary' ? 'primary' : color === 'secondary' ? 'secondary' : 'neutral';
+          classes += ` border-${colorClass} bg-white text-${colorClass} shadow-md`;
+        } else {
+          classes += dark ? ' border-gray-600 bg-gray-800 hover:border-gray-500' : 
+                           ' border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm';
+        }
+        break;
+        
+      default: // filled
+        classes += ' w-5 h-5 rounded';
+        if (isActive) {
+          const colorClass = color === 'primary' ? 'primary' : color === 'secondary' ? 'secondary' : 'neutral';
+          classes += ` bg-${colorClass} text-white border border-${colorClass}`;
+        } else {
+          classes += dark ? ' bg-gray-700 border border-gray-600 hover:bg-gray-600' : 
+                           ' bg-gray-50 border border-gray-300 hover:bg-gray-100';
+        }
+        break;
     }
 
     return classes;
   }
 
+  private getLabelStyles() {
+    const { disabled, dark } = this;
+    
+    let classes = 'ml-3 text-sm font-medium';
+    classes += disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer';
+    classes += dark ? ' text-white' : ' text-gray-900';
 
+    return classes;
+  }
 
   /** Render checkmark icon */
   private renderCheckmark() {
     if (this.variant === 'minimal') {
-      // Simple dot for minimal variant
-      return (
-        <div class="w-2 h-2 rounded-full bg-current"></div>
-      );
-    } else if (this.variant === 'outlined') {
-      // Classic checkmark for outlined variant
-      return (
-        <svg
-          class="w-3 h-3"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-            clip-rule="evenodd"
-          />
-        </svg>
-      );
-    } else {
-      // Traditional checkmark for filled variant
-      return (
-        <svg
-          class="w-3 h-3"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-            clip-rule="evenodd"
-          />
-        </svg>
-      );
+      return <div class="w-2 h-2 rounded-full bg-current"></div>;
     }
+    
+    // Both outlined and filled variants use the same checkmark SVG
+    return (
+      <svg
+        class="w-3 h-3"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    );
   }
 
   /** Render the component */
   render() {
-    const checkboxStyles = this.getCheckboxStyles();
-    const labelStyles = this.getLabelStyles();
-    const isDisabled = this.disabled;
-
     return (
       <div class="inline-block">
         <div class="flex items-center gap-2">
           <div class="relative">
             <div
-              class={checkboxStyles}
+              class={this.getCheckboxStyles()}
               onClick={this.handleClick}
               role="checkbox"
               aria-checked={this.isActive ? 'true' : 'false'}
-              aria-disabled={isDisabled ? 'true' : 'false'}
-              tabIndex={isDisabled ? -1 : 0}
+              aria-disabled={this.disabled ? 'true' : 'false'}
+              tabIndex={this.disabled ? -1 : 0}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+                if ((e.key === 'Enter' || e.key === ' ') && !this.disabled) {
                   e.preventDefault();
                   this.handleClick();
                 }
@@ -509,22 +449,33 @@ export class UiCheckbox {
               {this.isActive && this.renderCheckmark()}
             </div>
           </div>
+          
           {this.label && (
-            <label class={labelStyles} onClick={this.handleClick}>
+            <label class={this.getLabelStyles()} onClick={this.handleClick}>
               {this.label}
             </label>
           )}
 
-          {/* Render status as a sibling (outside the control) so it's right of the checkbox and vertically centered */}
+          {/* Status indicator */}
           <div class="ml-2 flex items-center self-center" role="status">
-            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+            {StatusIndicator.renderStatusBadge(
+              this.operationStatus, 
+              this.dark ? 'dark' : 'light', 
+              this.lastError, 
+              h, 
+              { position: 'sibling-right' }
+            )}
           </div>
         </div>
 
-        {/* Optional timestamp shown below the control when enabled (must remain at bottom) */}
+        {/* Timestamp */}
         {this.showLastUpdated && (
           <div class="mt-1 text-xs text-gray-500">
-            {StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
+            {StatusIndicator.renderTimestamp(
+              this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, 
+              this.dark ? 'dark' : 'light', 
+              h
+            )}
           </div>
         )}
       </div>

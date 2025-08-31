@@ -202,7 +202,8 @@ export class UiSlider {
         this.isActive = clampedValue;
         this.value = clampedValue;
         this.manualInputValue = String(clampedValue);
-        this.lastUpdatedTs = Date.now();
+  this.lastUpdatedTs = Date.now();
+  if (this.readonly) this.readPulseTs = Date.now();
         this.emitValueMsg(clampedValue, prevValue);
         return true;
       }
@@ -226,7 +227,8 @@ export class UiSlider {
       this.isActive = clampedValue;
       this.value = clampedValue;
       this.manualInputValue = String(clampedValue);
-      this.lastUpdatedTs = Date.now();
+  this.lastUpdatedTs = Date.now();
+  if (this.readonly) this.readPulseTs = Date.now();
       this.emitValueMsg(clampedValue, prevValue);
     }
     
@@ -253,6 +255,7 @@ export class UiSlider {
           this.value = clampedValue;
           this.manualInputValue = String(clampedValue);
           this.lastUpdatedTs = Date.now();
+          if (this.readonly) this.readPulseTs = Date.now();
           this.emitValueMsg(clampedValue, prevValue);
         }
         
@@ -294,7 +297,8 @@ export class UiSlider {
       this.isActive = clampedValue;
       this.value = clampedValue;
       this.manualInputValue = String(clampedValue);
-      this.lastUpdatedTs = Date.now();
+  this.lastUpdatedTs = Date.now();
+  if (this.readonly) this.readPulseTs = Date.now();
       this.emitValueMsg(clampedValue, prevValue);
     }
 
@@ -330,6 +334,7 @@ export class UiSlider {
     this.value = clampedValue;
     this.manualInputValue = String(clampedValue);
     this.lastUpdatedTs = Date.now();
+  if (this.readonly) this.readPulseTs = Date.now();
     this.suppressEvents = false;
   }
 
@@ -348,6 +353,12 @@ export class UiSlider {
   async triggerReadPulse(): Promise<void> {
     if (this.readonly) {
       this.readPulseTs = Date.now();
+      // Force re-render to show pulse, then auto-hide after duration
+      setTimeout(() => {
+        if (this.readPulseTs && (Date.now() - this.readPulseTs >= 1500)) {
+          this.readPulseTs = undefined; // Force re-render to hide pulse
+        }
+      }, 1500);
     }
   }
 
@@ -366,6 +377,13 @@ export class UiSlider {
     // Start auto-updating timestamp timer if showLastUpdated is enabled
     if (this.showLastUpdated) {
       this.startTimestampUpdater();
+    }
+  }
+
+  componentDidLoad() {
+    // Trigger a one-time read pulse on initial load for readonly components
+    if (this.readonly) {
+      setTimeout(() => { this.readPulseTs = Date.now(); }, 200);
     }
   }
 
@@ -402,6 +420,7 @@ export class UiSlider {
       this.isActive = clampedValue;
       this.manualInputValue = String(clampedValue);
       this.emitValueMsg(clampedValue, prevValue);
+  if (this.readonly) this.readPulseTs = Date.now();
     }
   }
 
@@ -781,6 +800,13 @@ export class UiSlider {
             part="readonly-indicator"
           >
             <span class={`text-lg font-medium ${this.getReadonlyText()}`}>{this.isActive}</span>
+                {/* transient read-pulse dot */}
+                {this.readPulseTs && (Date.now() - this.readPulseTs < 1500) ? (
+                  <>
+                    <style>{`@keyframes ui-read-pulse { 0% { opacity: 0; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1.2); } }`}</style>
+                    <span class="absolute -right-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400 shadow-md" style={{ animation: 'ui-read-pulse 1.4s ease-in-out forwards' } as any} title="Updated" part="readonly-pulse"></span>
+                  </>
+                ) : null}
           </div>
         ) : (
           <div
@@ -796,7 +822,7 @@ export class UiSlider {
           >
             {/* Success Indicator moved next to value display */}
             
-            <div class={trackStyles.track}>
+                 <div class={trackStyles.track}>
               {this.variant !== 'rainbow' && (
                 <div
                   class={`${trackStyles.progress} ${trackStyles.progressSize}`}
@@ -820,32 +846,30 @@ export class UiSlider {
               onKeyDown={this.handleKeyDown}
               tabIndex={isDisabled ? -1 : 0}
             />
-            <div
-              class={`absolute ${isVertical ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2 -translate-x-1/2'} ${thumbStyle} ${isDisabled ? 'opacity-50' : ''} pointer-events-none z-0`}
+                 <div
+                   class={`absolute ${isVertical ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2 -translate-x-1/2'} ${thumbStyle} ${isDisabled ? 'opacity-50' : ''} pointer-events-none z-0`}
               style={isVertical
                 ? {bottom: `calc(${percent}% - 0.5rem)`}
                 : {left: `${percent}%`}}
             >
               {this.renderCustomThumb()}
             </div>
-          </div>
-        )}
+            </div>
+          )}
 
         {/* Value labels for vertical - min at bottom; in interactive mode include current small box */}
   {isVertical && (
           <div class={`flex flex-col items-center mt-4 space-y-2 text-xs ${this.dark ? 'text-gray-300' : 'text-gray-500'}`} style={{marginBottom: '1.5rem'}}>
             <span>{this.min}</span>
             {!isReadOnly ? (
-              <div class="flex items-center">
+              <div class="flex items-center justify-center">
                 <div class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${this.dark ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`}>
                   {this.isActive}
                 </div>
-                {/* Status indicator directly next to value for vertical slider */}
-                {this.operationStatus !== 'idle' && (
-                  <div class="ml-2">
-                    {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
-                  </div>
-                )}
+                {/* Status indicator next to value for vertical slider */}
+                <div class="ml-2">
+                  {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+                </div>
               </div>
             ) : (
               // readonly: don't show the small current value box (main indicator shows value)
@@ -865,16 +889,14 @@ export class UiSlider {
               <span>{this.max}</span>
             </div>
             {!isReadOnly && (
-              <div class="flex justify-center mt-0 items-center"> {/* Increased gap (mt-4) and added items-center */}
+              <div class="flex justify-center mt-0 items-center">
                 <div class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${this.dark ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} shadow-sm`} style={{display: 'inline-block'}}>
                   {this.isActive}
                 </div>
-                {/* Status indicator directly next to value */}
-                {this.operationStatus !== 'idle' && (
-                  <div class="ml-2">
-                    {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
-                  </div>
-                )}
+                {/* Status indicator next to value for horizontal slider */}
+                <div class="ml-2">
+                  {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+                </div>
               </div>
             )}
           </>
@@ -905,7 +927,7 @@ export class UiSlider {
           </div>
         )}
         
-        {/* Timestamp only (Status indicator moved to value display) */}
+        {/* Timestamp only */}
         {this.showLastUpdated && (
           <div class="flex justify-end mt-2">
             {StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}

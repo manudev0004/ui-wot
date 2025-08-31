@@ -164,7 +164,8 @@ export class UiToggle {
         }, 1200);
         this.isActive = value;
         this.value = value;
-        this.lastUpdatedTs = Date.now();
+  this.lastUpdatedTs = Date.now();
+  if (this.readonly) this.readPulseTs = Date.now();
         this.emitValueMsg(value, prevValue);
         return true;
       }
@@ -187,7 +188,8 @@ export class UiToggle {
     if (optimistic && !options?._isRevert) {
       this.isActive = value;
       this.value = value;
-      this.lastUpdatedTs = Date.now();
+  this.lastUpdatedTs = Date.now();
+  if (this.readonly) this.readPulseTs = Date.now();
       this.emitValueMsg(value, prevValue);
     }
     
@@ -213,6 +215,7 @@ export class UiToggle {
           this.isActive = value;
           this.value = value;
           this.lastUpdatedTs = Date.now();
+          if (this.readonly) this.readPulseTs = Date.now();
           this.emitValueMsg(value, prevValue);
         }
         
@@ -252,8 +255,9 @@ export class UiToggle {
     if (!options?.writeOperation && !options?.readOperation && !options?._isRevert) {
       this.isActive = value;
       this.value = value;
-      this.lastUpdatedTs = Date.now();
-      this.emitValueMsg(value, prevValue);
+  this.lastUpdatedTs = Date.now();
+  if (this.readonly) this.readPulseTs = Date.now();
+  this.emitValueMsg(value, prevValue);
     }
 
     return true;
@@ -286,6 +290,7 @@ export class UiToggle {
     this.isActive = value;
     this.value = value;
     this.lastUpdatedTs = Date.now();
+  if (this.readonly) this.readPulseTs = Date.now();
     this.suppressEvents = false;
   }
 
@@ -304,6 +309,12 @@ export class UiToggle {
   async triggerReadPulse(): Promise<void> {
     if (this.readonly) {
       this.readPulseTs = Date.now();
+      // Auto-hide after animation duration
+      setTimeout(() => {
+        if (this.readPulseTs && (Date.now() - this.readPulseTs >= 1500)) {
+          this.readPulseTs = undefined;
+        }
+      }, 1500);
     }
   }
 
@@ -346,7 +357,17 @@ export class UiToggle {
   }
 
   componentDidLoad() {
-    // Component is ready - no state changes here to avoid re-render warnings
+    // Trigger a one-time read pulse on initial load for readonly components
+    if (this.readonly) {
+      setTimeout(() => { 
+        this.readPulseTs = Date.now(); 
+        setTimeout(() => {
+          if (this.readPulseTs && (Date.now() - this.readPulseTs >= 1500)) {
+            this.readPulseTs = undefined;
+          }
+        }, 1500);
+      }, 200);
+    }
   }
 
   disconnectedCallback() {
@@ -379,7 +400,8 @@ export class UiToggle {
     if (this.isActive !== newVal) {
       const prevValue = this.isActive;
       this.isActive = newVal;
-      this.emitValueMsg(newVal, prevValue);
+  this.emitValueMsg(newVal, prevValue);
+  if (this.readonly) this.readPulseTs = Date.now();
     }
   }
 
@@ -586,6 +608,14 @@ export class UiToggle {
               {this.renderCrossIcons()}
             </span>
           )}
+
+          {/* transient read-pulse sibling placed to the right of the control */}
+          {this.readonly && this.readPulseTs && (Date.now() - this.readPulseTs < 1500) ? (
+            <span class="ml-1 flex items-center" part="readonly-pulse-sibling">
+              <style>{`@keyframes ui-read-pulse { 0% { opacity: 0; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1.2); } }`}</style>
+              <span class="w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400 shadow-md" title="Updated" aria-hidden="true" style={{ animation: 'ui-read-pulse 1.4s ease-in-out forwards' } as any}></span>
+            </span>
+          ) : null}
           
           {/* Status badge positioned to the right (timestamp moved below) */}
           {this.renderStatusBadge()}

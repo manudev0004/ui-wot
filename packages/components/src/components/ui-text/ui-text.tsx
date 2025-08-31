@@ -101,6 +101,7 @@ export class UiText {
   @State() lastError?: string;
   @State() lastUpdatedTs?: number;
   @State() isEditing: boolean = false;
+  @State() readPulseTs?: number;
 
   // Events
   @Event() valueMsg: EventEmitter<UiMsg<string>>;
@@ -124,6 +125,53 @@ export class UiText {
   @Method()
   async getValue(): Promise<string> {
     return this.currentValue;
+  }
+
+  /**
+   * Sets the value without triggering events (useful for TD integration)
+   * @param value - The value to set
+   * 
+   * @example
+   * ```typescript
+   * await textElement.setValueSilent('Updated silently');
+   * ```
+   */
+  @Method()
+  async setValueSilent(value: string): Promise<void> {
+    this.value = value;
+    this.currentValue = value;
+    this.lastUpdatedTs = Date.now();
+  }
+
+  /**
+   * Sets the status indicator state
+   * @param status - The status to display ('idle', 'loading', 'success', 'error')
+   * @param message - Optional message to display
+   * 
+   * @example
+   * ```typescript
+   * await textElement.setStatus('error', 'Invalid input');
+   * await textElement.setStatus('success', 'Saved successfully');
+   * await textElement.setStatus(null); // Clear status
+   * ```
+   */
+  @Method()
+  async setStatus(status: 'idle' | 'loading' | 'success' | 'error' | null, message?: string): Promise<void> {
+    this.operationStatus = status === null ? 'idle' : status;
+    this.lastError = status === 'error' ? (message || '') : undefined;
+  }
+
+  /**
+   * Triggers a read pulse indicator for readonly components
+   * 
+   * @example
+   * ```typescript
+   * await textElement.triggerReadPulse();
+   * ```
+   */
+  @Method()
+  async triggerReadPulse(): Promise<void> {
+    this.readPulseTs = Date.now();
   }
 
   private handleInput = (event: Event) => {

@@ -35,18 +35,19 @@
   </head>
   <body>
     <div class="card">
-      <h1>Minimal All-Components TD Demo</h1>
-      <p class="meta">Wiring each control to the Thing Description at <code>http://plugfest.thingweb.io/http-data-schema-thing</code></p>
+      <h1>Clean TD Demo with Component Methods</h1>
+      <p class="meta">
+        Using <strong>Node-WoT</strong> to handle TD consumption and component methods (<code>setValue</code>, <code>getValue</code>, <code>setStatus</code>) for proper separation of concerns.
+        <br>Components are pure UI elements, TD integration handled entirely in HTML/JavaScript.
+      </p>
 
       <div class="row">
         <div>
           <h3>Toggle (bool)</h3>
           <ui-toggle
             id="td-toggle"
-            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
-            td-property="bool"
             label="TD Toggle"
-            show-last-updated="true "
+            show-last-updated="true"
             show-status="true"
           ></ui-toggle>
         </div>
@@ -57,8 +58,6 @@
           <h3>Slider (num)</h3>
           <ui-slider
             id="td-slider"
-            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
-            td-property="num"
             min="0"
             max="100"
             label="TD Slider"
@@ -73,8 +72,6 @@
           <h3>Number Picker (int)</h3>
           <ui-number-picker
             id="td-number"
-            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
-            td-property="int"
             min="0"
             max="100"
             label="TD Number"
@@ -87,7 +84,12 @@
       <div class="row">
         <div>
           <h3>Button</h3>
-          <ui-button id="td-button" label="TD Button" show-last-updated="true" show-status="true"></ui-button>
+          <ui-button 
+            id="td-button" 
+            label="TD Button" 
+            show-last-updated="true" 
+            show-status="true"
+          ></ui-button>
         </div>
       </div>
 
@@ -96,8 +98,6 @@
           <h3>Checkbox (bool)</h3>
           <ui-checkbox
             id="td-checkbox"
-            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
-            td-property="bool"
             label="TD Checkbox"
             show-last-updated="true"
             show-status="true"
@@ -110,8 +110,6 @@
           <h3>Text (string)</h3>
           <ui-text
             id="td-text"
-            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
-            td-property="string"
             label="TD Text"
             show-last-updated="true"
             show-status="true"
@@ -124,8 +122,6 @@
           <h3>Calendar (date)</h3>
           <ui-calendar
             id="td-calendar"
-            td-url="http://plugfest.thingweb.io/http-data-schema-thing"
-            td-property="date"
             label="TD Calendar"
             show-last-updated="true"
             show-status="true"
@@ -140,168 +136,253 @@
     <script type="module" src="./build/ui-wot-components.esm.js"></script>
 
     <script>
-      // Optimised TD wiring with: single TD fetch, shared Thing, unified polling, debounced writes, timeouts & safe teardown.
+      // Clean TD handling with Node-WoT, utilizing component methods properly
       (async function () {
+        console.log('🚀 Starting TD Demo - using component methods properly');
+        
+        // Wait for all components to be defined
         const COMPONENT_TAGS = ['ui-toggle', 'ui-slider', 'ui-number-picker', 'ui-button', 'ui-checkbox', 'ui-text', 'ui-calendar'];
-        await Promise.all(COMPONENT_TAGS.map(t => customElements.whenDefined(t)));
+        await Promise.all(COMPONENT_TAGS.map(tag => customElements.whenDefined(tag)));
+        console.log('✅ All components ready');
 
-        // ---- Load WoT bundle with timeout (avoid infinite wait hang) ----
-        const wotReady = async (timeoutMs = 10000) => {
-          const start = performance.now();
-          while (!window.WoT && performance.now() - start < timeoutMs) {
-            await new Promise(r => setTimeout(r, 100));
-          }
-          if (!window.WoT) throw new Error('WoT library failed to load within timeout');
-        };
-        try {
-          await wotReady();
-        } catch (e) {
-          console.error(e.message);
-          document.querySelectorAll('ui-*').forEach(el => el.setStatus?.('error', 'WoT lib load timeout'));
+        // Initialize WoT with timeout
+        if (!window.WoT) {
+          console.error('❌ WoT library not loaded');
           return;
         }
 
-        // ---- Single Servient / Thing reuse ----
+        // Create WoT runtime
         const servient = new window.WoT.Core.Servient();
         servient.addClientFactory(new window.WoT.Http.HttpClientFactory());
-        let wot;
-        try {
-          wot = await servient.start();
-        } catch (e) {
-          console.error('Servient start failed', e);
-          document.querySelectorAll('ui-*').forEach(el => el.setStatus?.('error', 'Servient start failed'));
-          return;
-        }
+        const wot = await servient.start();
+        console.log('✅ WoT Servient started');
 
+        // Fetch and consume TD
         const tdUrl = 'http://plugfest.thingweb.io/http-data-schema-thing';
         let thing;
         try {
-          const tdJson = await (await fetch(tdUrl, { cache: 'no-store' })).json();
+          console.log('📡 Fetching TD from:', tdUrl);
+          const response = await fetch(tdUrl);
+          const tdJson = await response.json();
           thing = await wot.consume(tdJson);
-        } catch (e) {
-          console.error('TD fetch/consume failed', e);
-          document.querySelectorAll('ui-*').forEach(el => el.setStatus?.('error', 'TD fetch failed'));
+          console.log('✅ TD consumed successfully');
+          console.log('📋 Available properties:', Object.keys(tdJson.properties || {}));
+        } catch (error) {
+          console.error('❌ Failed to fetch/consume TD:', error);
           return;
         }
 
-        // ---- Element ↔ property mapping ----
+        // Define component bindings using proper component methods
         const bindings = [
-          { el: document.getElementById('td-toggle'), prop: 'bool', type: 'boolean' },
-          { el: document.getElementById('td-slider'), prop: 'num', type: 'number' },
-          { el: document.getElementById('td-number'), prop: 'int', type: 'number' },
-          { el: document.getElementById('td-checkbox'), prop: 'bool', type: 'boolean' },
-          { el: document.getElementById('td-text'), prop: 'string', type: 'string' },
-          { el: document.getElementById('td-calendar'), prop: 'date', type: 'string' },
-        ].filter(b => b.el);
-
-        // Track last good values + inflight writes per property
-        const lastGood = new Map();
-        const writeQueues = new Map(); // prop -> {pending: any, inflight: Promise|null}
-
-        const setComponentValue = (b, val) => {
-          // only push if changed to reduce re-renders
-          if (lastGood.get(b.prop) !== val) {
-            b.el.setValueSilent?.(val);
-            lastGood.set(b.prop, val);
+          { 
+            element: document.getElementById('td-toggle'), 
+            property: 'bool',
+            getValue: (el) => el.getValue(),
+            setValue: (el, val) => el.setValueSilent(val),
+            setStatus: (el, status, msg) => el.setStatus(status, msg),
+            triggerPulse: (el) => el.triggerReadPulse()
+          },
+          { 
+            element: document.getElementById('td-slider'), 
+            property: 'num',
+            getValue: (el) => el.getValue(),
+            setValue: (el, val) => el.setValueSilent(val),
+            setStatus: (el, status, msg) => el.setStatus(status, msg),
+            triggerPulse: (el) => el.triggerReadPulse()
+          },
+          { 
+            element: document.getElementById('td-number'), 
+            property: 'int',
+            getValue: (el) => el.getValue(),
+            setValue: (el, val) => el.setValueSilent(val),
+            setStatus: (el, status, msg) => el.setStatus(status, msg),
+            triggerPulse: (el) => el.triggerReadPulse()
+          },
+          { 
+            element: document.getElementById('td-checkbox'), 
+            property: 'bool',  // Note: both toggle and checkbox use same 'bool' property
+            getValue: (el) => el.getValue(),
+            setValue: (el, val) => el.setValueSilent(val),
+            setStatus: (el, status, msg) => el.setStatus(status, msg),
+            triggerPulse: (el) => el.triggerReadPulse()
+          },
+          { 
+            element: document.getElementById('td-text'), 
+            property: 'string',
+            getValue: (el) => el.getValue(),
+            setValue: (el, val) => el.setValueSilent(val),
+            setStatus: (el, status, msg) => el.setStatus(status, msg),
+            triggerPulse: (el) => el.triggerReadPulse()
+          },
+          { 
+            element: document.getElementById('td-calendar'), 
+            property: 'date',
+            getValue: (el) => el.getValue(),
+            setValue: (el, val) => el.setValueSilent(val),
+            setStatus: (el, status, msg) => el.setStatus(status, msg),
+            triggerPulse: (el) => el.triggerReadPulse()
           }
-        };
+        ].filter(binding => binding.element);
 
-        // ---- Initial snapshot (parallel with timeout) ----
-        await Promise.all(
-          bindings.map(async b => {
-            try {
-              const val = await Promise.race([thing.readProperty(b.prop).then(p => p.value()), new Promise((_, rej) => setTimeout(() => rej(new Error('read timeout')), 4000))]);
-              setComponentValue(b, val);
-              b.el.setStatus?.('success');
-            } catch (e) {
-              b.el.setStatus?.('error', 'Init read failed');
-            }
-          }),
-        );
+        console.log(`🔗 Created ${bindings.length} component bindings`);
 
-        // ---- Debounced write handler ----
-        function queueWrite(prop, value, el) {
-          if (!writeQueues.has(prop)) writeQueues.set(prop, { pending: undefined, inflight: null });
-          const slot = writeQueues.get(prop);
-          slot.pending = value; // always keep the latest
-          if (slot.inflight) return; // will flush after current
+        // Track write operations per property to avoid conflicts
+        const writeOperations = new Map();
 
-          const flush = async () => {
-            while (slot.pending !== undefined) {
-              const next = slot.pending;
-              slot.pending = undefined;
-              el.setStatus?.('loading');
-              try {
-                await Promise.race([thing.writeProperty(prop, next), new Promise((_, rej) => setTimeout(() => rej(new Error('write timeout')), 5000))]);
-                el.setStatus?.('success');
-                lastGood.set(prop, next);
-              } catch (e) {
-                console.warn('Write failed', prop, e.message);
-                el.setStatus?.('error', 'Write failed');
-                // revert only if we have a last good
-                if (lastGood.has(prop)) el.setValueSilent?.(lastGood.get(prop));
-              }
-            }
-            slot.inflight = null;
-          };
-          slot.inflight = flush();
+        // Read initial values using Node-WoT
+        console.log('📥 Reading initial values...');
+        for (const binding of bindings) {
+          try {
+            const propertyValue = await thing.readProperty(binding.property);
+            const value = await propertyValue.value();
+            await binding.setValue(binding.element, value);
+            await binding.setStatus(binding.element, 'success');
+            await binding.triggerPulse(binding.element);
+            console.log(`✅ ${binding.property}:`, value);
+          } catch (error) {
+            console.error(`❌ Failed to read ${binding.property}:`, error);
+            await binding.setStatus(binding.element, 'error', `Read failed: ${error.message}`);
+          }
         }
 
-        // ---- Attach event listeners ----
-        bindings.forEach(b => {
-          b.el.addEventListener('valueMsg', e => {
-            e.stopPropagation();
-            const payload = e.detail.payload;
-            queueWrite(b.prop, payload, b.el);
+        // Set up value change listeners
+        bindings.forEach(binding => {
+          binding.element.addEventListener('valueMsg', async (event) => {
+            const newValue = event.detail.payload;
+            const property = binding.property;
+            
+            console.log(`📤 Component ${binding.element.id} changed ${property} to:`, newValue);
+            
+            // Prevent concurrent writes to same property
+            if (writeOperations.has(property)) {
+              console.log(`⏳ Write to ${property} already in progress, skipping`);
+              return;
+            }
+            
+            // Mark write as in progress
+            writeOperations.set(property, true);
+            
+            try {
+              await binding.setStatus(binding.element, 'loading');
+              await thing.writeProperty(property, newValue);
+              await binding.setStatus(binding.element, 'success');
+              console.log(`✅ Successfully wrote ${property}:`, newValue);
+            } catch (error) {
+              console.error(`❌ Failed to write ${property}:`, error);
+              await binding.setStatus(binding.element, 'error', `Write failed: ${error.message}`);
+              
+              // Revert to last known good value
+              try {
+                const currentValue = await thing.readProperty(property);
+                const value = await currentValue.value();
+                await binding.setValue(binding.element, value);
+                console.log(`🔄 Reverted ${property} to:`, value);
+              } catch (revertError) {
+                console.error(`❌ Failed to revert ${property}:`, revertError);
+              }
+            } finally {
+              // Clear write operation flag
+              writeOperations.delete(property);
+            }
           });
         });
 
-        // Button simple log
-        document.getElementById('td-button')?.addEventListener('valueMsg', e => {
-          e.stopPropagation();
-          console.log('Button clicked', e.detail);
+        // Button handler (actions don't have state)
+        const buttonElement = document.getElementById('td-button');
+        if (buttonElement) {
+          buttonElement.addEventListener('valueMsg', async (event) => {
+            console.log('🔘 Button clicked:', event.detail);
+            await buttonElement.setStatus('success');
+            // You could invoke TD actions here if the TD had any
+          });
+        }
+
+        // Event-driven updates using Node-WoT property observation
+        const subscriptions = [];
+        window.addEventListener('beforeunload', () => {
+          // Clean up subscriptions
+          subscriptions.forEach(sub => {
+            try {
+              sub.stop();
+            } catch (e) {
+              console.log('Subscription cleanup:', e.message);
+            }
+          });
+          console.log('🛑 Cleaned up all subscriptions');
         });
 
-        // ---- Unified polling loop ----
-        let alive = true;
-        window.addEventListener('beforeunload', () => {
-          alive = false;
-        });
-        const poll = async () => {
-          let consecutiveErrorCycles = 0;
-          while (alive) {
-            const cycleStart = performance.now();
+        const setupEventDrivenUpdates = async () => {
+          console.log('� Setting up event-driven updates...');
+          
+          for (const binding of bindings) {
             try {
-              for (const b of bindings) {
-                try {
-                  const val = await Promise.race([
-                    thing.readProperty(b.prop).then(p => p.value()),
-                    new Promise((_, rej) => setTimeout(() => rej(new Error('read timeout')), 4000)),
-                  ]);
-                  setComponentValue(b, val);
-                  if (b.el.getStatus?.() === 'error') b.el.setStatus('success');
-                } catch (e) {
-                  // Only change status if it was previously success to avoid spam
-                  b.el.setStatus?.('error', 'Read failed');
-                }
-                if (!alive) break;
+              // Check if property supports observation
+              const tdProperty = consumedTD.properties[binding.property];
+              if (tdProperty && tdProperty.observable !== false) {
+                console.log(`🔔 Subscribing to ${binding.property} changes`);
+                
+                const subscription = await thing.observeProperty(binding.property, async (data) => {
+                  try {
+                    const newValue = await data.value();
+                    const currentValue = await binding.getValue(binding.element);
+                    
+                    // Only update if value actually changed
+                    if (newValue !== currentValue) {
+                      await binding.setValue(binding.element, newValue);
+                      await binding.triggerPulse(binding.element);
+                      await binding.setStatus(binding.element, 'success');
+                      console.log(`� Event update ${binding.property}:`, newValue);
+                    }
+                  } catch (error) {
+                    console.error(`❌ Event update error for ${binding.property}:`, error);
+                    await binding.setStatus(binding.element, 'error', `Update failed: ${error.message}`);
+                  }
+                });
+                
+                subscriptions.push(subscription);
+              } else {
+                console.log(`ℹ️ ${binding.property} not observable, using fallback polling`);
+                // Fallback to less frequent polling for non-observable properties
+                setupFallbackPolling(binding);
               }
-              consecutiveErrorCycles = 0;
-            } catch (_e) {
-              consecutiveErrorCycles++;
-              if (consecutiveErrorCycles > 5) {
-                console.error('Stopping polling after repeated failures');
-                break;
-              }
+            } catch (error) {
+              console.warn(`⚠️ Failed to observe ${binding.property}:`, error.message);
+              // Fallback to polling for this property
+              setupFallbackPolling(binding);
             }
-            // dynamic delay: maintain approx 3s cadence from cycle start
-            const elapsed = performance.now() - cycleStart;
-            const wait = Math.max(3000 - elapsed, 500);
-            for (let t = 0; t < wait && alive; t += 100) await new Promise(r => setTimeout(r, 100));
           }
-          console.log('Polling loop terminated');
         };
-        poll();
+
+        // Fallback polling for non-observable properties (much less frequent)
+        const setupFallbackPolling = (binding) => {
+          const pollProperty = async () => {
+            try {
+              const propertyValue = await thing.readProperty(binding.property);
+              const currentValue = await propertyValue.value();
+              const componentValue = await binding.getValue(binding.element);
+              
+              if (currentValue !== componentValue) {
+                await binding.setValue(binding.element, currentValue);
+                await binding.triggerPulse(binding.element);
+                await binding.setStatus(binding.element, 'success');
+                console.log(`🔄 Fallback update ${binding.property}:`, currentValue);
+              }
+            } catch (error) {
+              console.warn(`⚠️ Fallback poll error for ${binding.property}:`, error.message);
+              await binding.setStatus(binding.element, 'error', `Poll failed: ${error.message}`);
+            }
+            
+            // Much less frequent polling (every 30 seconds)
+            setTimeout(pollProperty, 30000);
+          };
+          
+          // Start fallback polling after a delay
+          setTimeout(pollProperty, 10000);
+        };
+
+        // Start event-driven updates
+        await setupEventDrivenUpdates();
+        console.log('🎉 TD Demo initialized successfully');
       })();
     </script>
   </body>

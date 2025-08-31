@@ -193,13 +193,13 @@ export class UiNumberPicker {
     _isRevert?: boolean;
   }): Promise<boolean> {
     const prevValue = this.isActive;
-    
+
     // Clamp value to min/max bounds
-    const clampedValue = this.min !== undefined && this.max !== undefined 
+    const clampedValue = this.min !== undefined && this.max !== undefined
       ? Math.max(this.min, Math.min(this.max, value))
       : value;
-    
-    // Handle manual status override (backward compatibility)
+
+    // Handle manual status override
     if (options?.customStatus) {
       if (options.customStatus === 'loading') {
         this.operationStatus = 'loading';
@@ -207,12 +207,13 @@ export class UiNumberPicker {
       }
       if (options.customStatus === 'success') {
         this.operationStatus = 'success';
-        setTimeout(() => { 
-          if (this.operationStatus === 'success') this.operationStatus = 'idle'; 
+        setTimeout(() => {
+          if (this.operationStatus === 'success') this.operationStatus = 'idle';
         }, 1200);
         this.isActive = clampedValue;
         this.value = clampedValue;
         this.lastUpdatedTs = Date.now();
+        if (this.readonly) this.readPulseTs = Date.now();
         this.emitValueMsg(clampedValue, prevValue);
         return true;
       }
@@ -222,62 +223,60 @@ export class UiNumberPicker {
         return false;
       }
     }
-    
+
     // Auto-clear error state when user tries again (unless this is a revert)
     if (this.operationStatus === 'error' && !options?._isRevert) {
       this.operationStatus = 'idle';
       this.lastError = undefined;
       this.connected = true;
     }
-    
+
     // Optimistic update (default: true)
     const optimistic = options?.optimistic !== false;
     if (optimistic && !options?._isRevert) {
       this.isActive = clampedValue;
       this.value = clampedValue;
       this.lastUpdatedTs = Date.now();
+      if (this.readonly) this.readPulseTs = Date.now();
       this.emitValueMsg(clampedValue, prevValue);
     }
-    
+
     // Handle Promise-based operations
     if (options?.writeOperation || options?.readOperation) {
       const operation = options.writeOperation || options.readOperation;
-      
+
       // Show loading state
       this.operationStatus = 'loading';
-      
+
       try {
-        // Execute the operation
         await operation();
-        
+
         // Success - show success state briefly
         this.operationStatus = 'success';
-        setTimeout(() => { 
-          if (this.operationStatus === 'success') this.operationStatus = 'idle'; 
+        setTimeout(() => {
+          if (this.operationStatus === 'success') this.operationStatus = 'idle';
         }, 1200);
-        
+
         // If not optimistic, apply value now
         if (!optimistic) {
           this.isActive = clampedValue;
           this.value = clampedValue;
           this.lastUpdatedTs = Date.now();
+          if (this.readonly) this.readPulseTs = Date.now();
           this.emitValueMsg(clampedValue, prevValue);
         }
-        
+
         return true;
-        
       } catch (error) {
-        // Error - show error state and revert if optimistic
         this.operationStatus = 'error';
-        this.lastError = error.message || 'Operation failed';
-        
+        this.lastError = error?.message || String(error) || 'Operation failed';
+
         if (optimistic && !options?._isRevert) {
           // Revert to previous value
           this.isActive = prevValue;
           this.value = prevValue;
-          // Don't emit event for revert to avoid loops
         }
-        
+
         // Auto-retry logic
         if (options?.autoRetry && options.autoRetry.attempts > 0) {
           setTimeout(async () => {
@@ -291,16 +290,25 @@ export class UiNumberPicker {
             await this.setValue(clampedValue, retryOptions);
           }, options.autoRetry.delay);
         }
-        
+
         return false;
       }
     }
-    
+
     // Simple value setting (no operation)
     if (!options?.writeOperation && !options?.readOperation && !options?._isRevert) {
       this.isActive = clampedValue;
       this.value = clampedValue;
       this.lastUpdatedTs = Date.now();
+      if (this.readonly) {
+        this.readPulseTs = Date.now();
+        // Auto-hide pulse after duration
+        setTimeout(() => {
+          if (this.readPulseTs && (Date.now() - this.readPulseTs >= 1500)) {
+            this.readPulseTs = undefined;
+          }
+        }, 1500);
+      }
       this.emitValueMsg(clampedValue, prevValue);
     }
 
@@ -337,6 +345,8 @@ export class UiNumberPicker {
     this.isActive = clampedValue;
     this.value = clampedValue;
     this.lastUpdatedTs = Date.now();
+  // Visual cue for readonly components when external updates arrive
+  if (this.readonly) this.readPulseTs = Date.now();
     this.suppressEvents = false;
   }
 
@@ -355,6 +365,12 @@ export class UiNumberPicker {
   async triggerReadPulse(): Promise<void> {
     if (this.readonly) {
       this.readPulseTs = Date.now();
+      // Force re-render to show pulse, then auto-hide after duration
+      setTimeout(() => {
+        if (this.readPulseTs && (Date.now() - this.readPulseTs >= 1500)) {
+          this.readPulseTs = undefined; // Force re-render to hide pulse
+        }
+      }, 1500);
     }
   }
 
@@ -374,6 +390,16 @@ export class UiNumberPicker {
     // Start auto-updating timestamp timer if showLastUpdated is enabled
     if (this.showLastUpdated) {
       this.startTimestampUpdater();
+    }
+  }
+
+  componentDidLoad() {
+    // Trigger a one-time read pulse on initial load for readonly components
+    if (this.readonly) {
+      // small delay so styles are applied before animation
+      setTimeout(() => {
+        this.readPulseTs = Date.now();
+      }, 200);
     }
   }
 
@@ -407,7 +433,9 @@ export class UiNumberPicker {
     if (this.isActive !== newVal) {
       const prevValue = this.isActive;
       this.isActive = newVal;
-      this.emitValueMsg(newVal, prevValue);
+  this.emitValueMsg(newVal, prevValue);
+  // Trigger read pulse when readonly and value changed externally
+  if (this.readonly) this.readPulseTs = Date.now();
     }
   }
 
@@ -426,6 +454,8 @@ export class UiNumberPicker {
     };
     this.valueMsg.emit(msg);
   }
+  
+  // helper intentionally removed; timestamp updates are inlined where needed
 
   // Device read logic removed
 
@@ -630,10 +660,12 @@ export class UiNumberPicker {
           </slot>
         </div>
 
-        {/* Status badge only (timestamp moved below) */}
-        <div class="flex justify-end items-start mt-2">
-          {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
-        </div>
+        {/* Status badge only in interactive/write mode (readonly shows only pulse) */}
+        {!isReadOnly && (
+          <div class="flex justify-end items-start mt-2">
+            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
+          </div>
+        )}
 
         {isReadOnly ? (
           // Read-only indicator (no glow/shadow in readonly mode)
@@ -645,6 +677,18 @@ export class UiNumberPicker {
             part="readonly-indicator"
           >
             <span class={`text-lg font-medium ${this.getReadonlyText()}`}>{this.isActive}</span>
+            {/* transient read-pulse dot (appears briefly after triggerReadPulse()) */}
+            {this.readPulseTs && (Date.now() - this.readPulseTs < 1500) ? (
+              <>
+                <style>{`@keyframes ui-read-pulse { 0% { opacity: 0; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1.2); } }`}</style>
+                <span
+                  class="absolute -right-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400 shadow-md"
+                  style={{ animation: 'ui-read-pulse 1.4s ease-in-out forwards' } as any}
+                  title="Updated"
+                  part="readonly-pulse"
+                />
+              </>
+            ) : null}
           </div>
         ) : (
           // Show interactive number picker (wrapped with fragment to allow bottom timestamp)
