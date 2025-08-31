@@ -1,6 +1,15 @@
+/* Import single global CSS with everything */
+@import '../../global.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import single global CSS with everything */
+
 :host {
   display: block;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* Card variants */
@@ -18,7 +27,7 @@
 
 /* Animation for status changes */
 [part="status"] {
-  transition: all 0.2s ease-in-out;
+  transition: all var(--transition-base);
 }
 
 /* Success pulse animation */
@@ -74,7 +83,7 @@
 
 /* Focus styles for accessibility */
 :host(:focus-within) [part="card"] {
-  box-shadow: 0 0 0 2px #3b82f6;
+  box-shadow: 0 0 0 2px var(--color-primary);
   outline: none;
 }
 

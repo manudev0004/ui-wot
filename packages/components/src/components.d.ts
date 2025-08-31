@@ -7,18 +7,12 @@
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 import { UiButtonClick } from "./components/ui-button/ui-button";
 import { UiMsg } from "./utils/types";
-import { UiButtonClick as UiButtonClick1 } from "./components/ui-button/ui-button-normalized";
-import { ValueMessage } from "./utils";
 import { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 import { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
-import { UiTextValueChange } from "./components/ui-text/ui-text";
 export { UiButtonClick } from "./components/ui-button/ui-button";
 export { UiMsg } from "./utils/types";
-export { UiButtonClick as UiButtonClick1 } from "./components/ui-button/ui-button-normalized";
-export { ValueMessage } from "./utils";
 export { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 export { UiNumberPickerValueChange } from "./components/ui-number-picker/ui-number-picker";
-export { UiTextValueChange } from "./components/ui-text/ui-text";
 export namespace Components {
     /**
      * Button component with various visual styles, matching the ui-number-picker design family.
@@ -112,80 +106,6 @@ export namespace Components {
           * @default 'outlined'
          */
         "variant": 'minimal' | 'outlined' | 'filled';
-    }
-    /**
-     * Normalized Button Component
-     * A button component following UI-WoT standards with centralized utilities
-     * @example Basic Usage
-     * ```html
-     * <ui-button-normalized variant="primary" label="Click Me"></ui-button-normalized>
-     * ```
-     * @example With Status Management
-     * ```html
-     * <ui-button-normalized label="Save" auto-status="true"></ui-button-normalized>
-     * ```
-     */
-    interface UiButtonNormalized {
-        /**
-          * Auto-manage status feedback for async operations
-          * @default false
-         */
-        "autoStatus": boolean;
-        /**
-          * Debounce delay for rapid clicks (ms)
-          * @default 150
-         */
-        "debounceDelay": number;
-        /**
-          * Whether the button is disabled
-          * @default false
-         */
-        "disabled": boolean;
-        /**
-          * Icon to display before label
-         */
-        "icon"?: string;
-        /**
-          * Icon to display after label
-         */
-        "iconEnd"?: string;
-        /**
-          * Button text label
-          * @default 'Button'
-         */
-        "label": string;
-        /**
-          * Whether the button is in loading state
-          * @default false
-         */
-        "loading": boolean;
-        /**
-          * Perform async operation with automatic status management
-         */
-        "performAction": (action: () => Promise<any>, options?: { loadingMessage?: string; successMessage?: string; errorMessage?: string; }) => Promise<boolean>;
-        /**
-          * Set loading state with optional message
-         */
-        "setLoading": (loading: boolean, message?: string) => Promise<void>;
-        /**
-          * Size variant
-          * @default 'md'
-         */
-        "size": 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-        /**
-          * Trigger button click programmatically
-         */
-        "triggerClick": () => Promise<void>;
-        /**
-          * Button type for form submission
-          * @default 'button'
-         */
-        "type": 'button' | 'submit' | 'reset';
-        /**
-          * Visual variant of the button
-          * @default 'primary'
-         */
-        "variant": 'primary' | 'secondary' | 'outline' | 'ghost';
     }
     /**
      * Advanced calendar component with comprehensive styling, variants, and features.
@@ -357,30 +277,14 @@ export namespace Components {
      * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
      * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
      * ```
-     * @example Read-Only Mode
-     * ```html
-     * <ui-checkbox readonly="true" value="false" label="Sensor Status"></ui-checkbox>
-     * ```
-     * @example JavaScript Integration with Multiple Checkboxes
+     * @example JavaScript Integration
      * ```javascript
-     * // For single checkbox
-     * const checkbox = document.querySelector('#my-checkbox');
-     * // For multiple checkboxes
-     * const checkboxes = document.querySelectorAll('ui-checkbox');
-     * checkboxes.forEach(checkbox => {
+     * const checkbox = document.querySelector('#terms-checkbox');
      * checkbox.addEventListener('valueMsg', (e) => {
-     * console.log('Checkbox ID:', e.detail.source);
-     * console.log('New value:', e.detail.payload);
+     * console.log('Checkbox value:', e.detail.payload);
      * });
-     * });
-     * // Set value by ID
-     * const termsCheckbox = document.getElementById('terms-checkbox');
-     * await termsCheckbox.setValue(true);
-     * ```
-     * @example HTML with IDs
-     * ```html
-     * <ui-checkbox id="terms-checkbox" label="Accept Terms" variant="outlined"></ui-checkbox>
-     * <ui-checkbox id="newsletter-checkbox" label="Subscribe to Newsletter" variant="filled"></ui-checkbox>
+     * // Set value programmatically
+     * await checkbox.setValue(true);
      * ```
      */
     interface UiCheckbox {
@@ -389,11 +293,6 @@ export namespace Components {
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
-        /**
-          * Connection state for readonly mode
-          * @default true
-         */
-        "connected": boolean;
         /**
           * Enable dark theme for the component. When true, uses light text on dark backgrounds.
           * @default false
@@ -419,11 +318,6 @@ export namespace Components {
           * Text label displayed next to the checkbox.
          */
         "label"?: string;
-        /**
-          * Whether the checkbox is read-only (displays value but cannot be changed).
-          * @default false
-         */
-        "readonly": boolean;
         /**
           * Set operation status for external status management
          */
@@ -812,276 +706,105 @@ export namespace Components {
         "variant": 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
     /**
-     * Advanced text component with comprehensive styling, variants, and features.
-     * Supports display, editing, structured content, and matches component family design.
+     * Simple text component with essential styling and features.
      * @example Basic Usage
      * ```html
      * <ui-text value="Hello World" variant="display"></ui-text>
      * ```
-     * @example Different Variants & Colors
+     * @example Editable Text
      * ```html
-     * <ui-text variant="minimal" color="secondary" value="Minimal text"></ui-text>
-     * <ui-text variant="outlined" color="primary" value="Outlined text"></ui-text>
-     * <ui-text variant="filled" color="success" value="Filled text"></ui-text>
-     * <ui-text variant="elevated" color="warning" value="Elevated text"></ui-text>
-     * ```
-     * @example Editable Text with Features
-     * ```html
-     * <ui-text variant="edit" textType="multi" rows="5" 
-     * resizable="true" expandable="true" 
-     * placeholder="Type your content..."></ui-text>
-     * ```
-     * @example Structured Content with Syntax Highlighting
-     * ```html
-     * <ui-text structure="json" value='{"key": "value"}' readonly="true"></ui-text>
-     * <ui-text structure="markdown" value="# Header\n**Bold text**"></ui-text>
-     * ```
-     * @example Sizes and Themes
-     * ```html
-     * <ui-text size="large" theme="dark" variant="filled"></ui-text>
-     * <ui-text size="small" compact="true" variant="minimal"></ui-text>
+     * <ui-text variant="edit" textType="multi" rows="5" placeholder="Type your content..."></ui-text>
      * ```
      */
     interface UiText {
         /**
-          * Enable smooth animations and transitions
-          * @example ```html <ui-text animated="true" variant="filled"></ui-text> ```
-          * @default true
-         */
-        "animated": boolean;
-        /**
-          * Auto-resize textarea to content (for multi-line text)
-          * @default false
-         */
-        "autoResize": boolean;
-        /**
-          * Custom background color (hex, rgb, or color name)
-          * @example ```html <ui-text backgroundColor="linear-gradient(45deg, #ff6b6b, #4ecdc4)" variant="filled"></ui-text> ```
-         */
-        "backgroundColor"?: string;
-        /**
-          * Custom border color (hex, rgb, or color name)
-          * @example ```html <ui-text borderColor="#ff6b6b" variant="outlined"></ui-text> ```
-         */
-        "borderColor"?: string;
-        /**
-          * Border radius preset or custom value
-          * @example ```html <ui-text borderRadius="round" variant="outlined"></ui-text> <ui-text borderRadius="12px" variant="filled"></ui-text> ```
-          * @default 'medium'
-         */
-        "borderRadius": 'none' | 'small' | 'medium' | 'large' | 'round' | 'full' | string;
-        /**
-          * Border style options for enhanced visual design
-          * @example ```html <ui-text borderStyle="dashed" borderWidth="2" borderColor="#ff6b6b"></ui-text> ```
-          * @default 'solid'
-         */
-        "borderStyle": 'solid' | 'dashed' | 'dotted' | 'double' | 'groove' | 'ridge' | 'inset' | 'outset';
-        /**
-          * Border width in pixels (1-8)
-          * @example ```html <ui-text borderWidth="3" variant="outlined"></ui-text> ```
-          * @default 2
-         */
-        "borderWidth": number;
-        /**
-          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive content - warning: Orange for caution - danger: Red for errors or warnings
+          * Color scheme
           * @default 'primary'
          */
-        "color": 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger';
+        "color": 'primary' | 'secondary' | 'success' | 'warning' | 'danger';
         /**
-          * Compact mode for dense layouts
-          * @default false
-         */
-        "compact": boolean;
-        /**
-          * Enable copy to clipboard button
-          * @example ```html <ui-text copyable="true" value="Copy this text"></ui-text> ```
-          * @default false
-         */
-        "copyable": boolean;
-        /**
-          * Dark theme variant.
-          * @example ```html <ui-text dark="true" value="Dark themed text"></ui-text> ```
+          * Dark theme
           * @default false
          */
         "dark": boolean;
         /**
-          * Whether the component is disabled (cannot be interacted with).
-          * @example ```html <ui-text disabled="true" value="Cannot edit"></ui-text> ```
+          * Disabled state
           * @default false
          */
         "disabled": boolean;
-        /**
-          * Allow expanding/collapsing of text area with smooth animations
-          * @default false
-         */
-        "expandable": boolean;
-        /**
-          * Get the current text value.
-          * @returns Current text value
-          * @example ```typescript const currentText = await text.getValue(); console.log('Current text:', currentText); ```
-         */
         "getValue": () => Promise<string>;
         /**
-          * Enable keyboard navigation and shortcuts.
-          * @example ```html <ui-text keyboard="false" value="No keyboard support"></ui-text> ```
-          * @default true
-         */
-        "keyboard": boolean;
-        /**
-          * Label for the text component with enhanced styling
-          * @example ```html <ui-text label="Description" value="Text content"></ui-text> ```
+          * Label for the text component
          */
         "label"?: string;
         /**
-          * Programming language for syntax highlighting
-          * @example ```html <ui-text syntaxHighlight="true" language="python"></ui-text> ```
-          * @default 'javascript'
-         */
-        "language": 'javascript' | 'typescript' | 'python' | 'json' | 'html' | 'css' | 'yaml' | 'markdown';
-        /**
-          * Maximum height for auto-resize (pixels)
-          * @example ```html <ui-text autoResize="true" maxAutoHeight="300"></ui-text> ```
-          * @default 200
-         */
-        "maxAutoHeight": number;
-        /**
-          * Maximum height when expanded (pixels) with responsive behavior
-          * @default 200
-         */
-        "maxHeight": number;
-        /**
-          * Maximum character length with visual feedback
-         */
-        "maxLength"?: number;
-        /**
-          * Minimum height for auto-resize (pixels)
-          * @example ```html <ui-text autoResize="true" minHeight="100"></ui-text> ```
-          * @default 40
-         */
-        "minHeight": number;
-        /**
-          * Placeholder text for empty fields with enhanced styling
+          * Placeholder text
          */
         "placeholder"?: string;
         /**
-          * Whether the component is read-only (displays value but cannot be changed).
-          * @example ```html <ui-text readonly="true" value="Read-only text"></ui-text> ```
+          * Read-only mode
           * @default false
          */
         "readonly": boolean;
         /**
-          * Allow manual resizing of text area (enhanced with constraints)
+          * Allow resizing of text area
           * @default false
          */
         "resizable": boolean;
         /**
-          * Resize handle style for textareas
-          * @example ```html <ui-text resizeHandle="modern" resizable="true"></ui-text> ```
-          * @default 'modern'
-         */
-        "resizeHandle": 'classic' | 'modern' | 'minimal';
-        /**
-          * Number of rows for multi-line text (enhanced with auto-resize)
+          * Number of rows for multi-line text
           * @default 4
          */
         "rows": number;
         /**
-          * Set the visual status of the text component (success, warning, error).
-          * @param status - Status type or null to clear
-          * @param message - Optional status message
-          * @example ```typescript await text.setStatus('error', 'Invalid format'); await text.setStatus('success', 'Content saved'); await text.setStatus(null); // Clear status ```
+          * Sets the status indicator state
+          * @param status - The status to display ('idle', 'loading', 'success', 'error')
+          * @param message - Optional message to display
+          * @example ```typescript await textElement.setStatus('error', 'Invalid input'); await textElement.setStatus('success', 'Saved successfully'); await textElement.setStatus(null); // Clear status ```
          */
-        "setStatus": (status: "idle" | "loading" | "success" | "error", message?: string) => Promise<void>;
+        "setStatus": (status: "idle" | "loading" | "success" | "error" | null, message?: string) => Promise<void>;
+        "setValue": (value: string) => Promise<void>;
         /**
-          * Set the text value programmatically and emit events.
-          * @param value - Text string to set
-          * @param metadata - Optional metadata to include in the event
-          * @example ```typescript await text.setValue('Updated content'); await text.setValue('Content', { source: 'api' }); ```
-         */
-        "setValue": (value: string, metadata?: Record<string, any>) => Promise<void>;
-        /**
-          * Set value without emitting events (silent update).
-          * @param value - Text string to set
-          * @example ```typescript await text.setValueSilent('Silent update'); ```
+          * Sets the value without triggering events (useful for TD integration)
+          * @param value - The value to set
+          * @example ```typescript await textElement.setValueSilent('Updated silently'); ```
          */
         "setValueSilent": (value: string) => Promise<void>;
         /**
-          * Shadow intensity for depth effects
-          * @example ```html <ui-text shadow="heavy" variant="elevated"></ui-text> ```
-          * @default 'medium'
-         */
-        "shadow": 'none' | 'light' | 'medium' | 'heavy' | 'glow';
-        /**
-          * Show character count for text inputs
-          * @default false
-         */
-        "showCharCount": boolean;
-        /**
-          * Show last updated timestamp below the component.
-          * @example ```html <ui-text showLastUpdated="true" value="With timestamp"></ui-text> ```
+          * Show last updated timestamp
           * @default false
          */
         "showLastUpdated": boolean;
         /**
-          * Show line numbers for multi-line text (code editor style)
-          * @example ```html <ui-text textType="multi" showLineNumbers="true"></ui-text> ```
+          * Show line numbers for multi-line text
           * @default false
          */
         "showLineNumbers": boolean;
         /**
-          * Component size for different use cases. - small: Compact text for tight spaces - medium: Standard size (default) - large: Prominent text with larger typography
+          * Component size
           * @default 'medium'
          */
         "size": 'small' | 'medium' | 'large';
         /**
-          * @default true
-         */
-        "spellCheck": boolean;
-        /**
-          * Content structure for syntax highlighting and formatting
-          * @example ```html <ui-text structure="json" value='{"formatted": true}'></ui-text> ```
-          * @default 'unstructured'
-         */
-        "structure": 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown' | 'code';
-        /**
-          * Enable syntax highlighting for code
-          * @example ```html <ui-text variant="code" syntaxHighlight="true" language="javascript"></ui-text> ```
-          * @default false
-         */
-        "syntaxHighlight": boolean;
-        /**
-          * Custom text color (hex, rgb, or color name)
-          * @example ```html <ui-text textColor="#ffffff" backgroundColor="#333333"></ui-text> ```
-         */
-        "textColor"?: string;
-        /**
-          * Text input type - 'single' for single-line, 'multi' for multi-line
-          * @example ```html <ui-text textType="multi" rows="5"></ui-text> ```
+          * Text input type
           * @default 'single'
          */
         "textType": 'single' | 'multi';
         /**
-          * Trigger a visual pulse effect to indicate the value was read/accessed.
-          * @example ```typescript await text.triggerReadPulse(); ```
+          * Triggers a read pulse indicator for readonly components
+          * @example ```typescript await textElement.triggerReadPulse(); ```
          */
         "triggerReadPulse": () => Promise<void>;
         /**
           * Current text value
-          * @example ```html <ui-text value="Initial text content"></ui-text> ```
           * @default ''
          */
         "value": string;
         /**
-          * Visual style variant matching component family design. - display: Read-only text display with subtle styling - edit: Editable input/textarea with interactive styling - minimal: Clean, borderless design with subtle hover effects - outlined: Border with transparent background, colored accents - filled: Solid background with contrasting text - elevated: Shadow and depth for prominent display
+          * Visual style variant
           * @default 'display'
          */
-        "variant": 'display' | 'edit' | 'minimal' | 'outlined' | 'filled' | 'elevated';
-        /**
-          * Enable word wrap for long lines
-          * @example ```html <ui-text textType="multi" wordWrap="true"></ui-text> ```
-          * @default true
-         */
-        "wordWrap": boolean;
+        "variant": 'display' | 'edit' | 'outlined' | 'filled';
     }
     /**
      * Toggle switch component with reactive state management and multiple visual styles.
@@ -1200,10 +923,6 @@ export interface UiButtonCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiButtonElement;
 }
-export interface UiButtonNormalizedCustomEvent<T> extends CustomEvent<T> {
-    detail: T;
-    target: HTMLUiButtonNormalizedElement;
-}
 export interface UiCalendarCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiCalendarElement;
@@ -1275,36 +994,6 @@ declare global {
         prototype: HTMLUiButtonElement;
         new (): HTMLUiButtonElement;
     };
-    interface HTMLUiButtonNormalizedElementEventMap {
-        "buttonClick": UiButtonClick1;
-        "valueMsg": ValueMessage;
-    }
-    /**
-     * Normalized Button Component
-     * A button component following UI-WoT standards with centralized utilities
-     * @example Basic Usage
-     * ```html
-     * <ui-button-normalized variant="primary" label="Click Me"></ui-button-normalized>
-     * ```
-     * @example With Status Management
-     * ```html
-     * <ui-button-normalized label="Save" auto-status="true"></ui-button-normalized>
-     * ```
-     */
-    interface HTMLUiButtonNormalizedElement extends Components.UiButtonNormalized, HTMLStencilElement {
-        addEventListener<K extends keyof HTMLUiButtonNormalizedElementEventMap>(type: K, listener: (this: HTMLUiButtonNormalizedElement, ev: UiButtonNormalizedCustomEvent<HTMLUiButtonNormalizedElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
-        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
-        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
-        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
-        removeEventListener<K extends keyof HTMLUiButtonNormalizedElementEventMap>(type: K, listener: (this: HTMLUiButtonNormalizedElement, ev: UiButtonNormalizedCustomEvent<HTMLUiButtonNormalizedElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
-        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
-        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
-        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
-    }
-    var HTMLUiButtonNormalizedElement: {
-        prototype: HTMLUiButtonNormalizedElement;
-        new (): HTMLUiButtonNormalizedElement;
-    };
     interface HTMLUiCalendarElementEventMap {
         "dateChange": UiCalendarDateChange;
         "valueChange": UiCalendarValueChange;
@@ -1362,30 +1051,14 @@ declare global {
      * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
      * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
      * ```
-     * @example Read-Only Mode
-     * ```html
-     * <ui-checkbox readonly="true" value="false" label="Sensor Status"></ui-checkbox>
-     * ```
-     * @example JavaScript Integration with Multiple Checkboxes
+     * @example JavaScript Integration
      * ```javascript
-     * // For single checkbox
-     * const checkbox = document.querySelector('#my-checkbox');
-     * // For multiple checkboxes
-     * const checkboxes = document.querySelectorAll('ui-checkbox');
-     * checkboxes.forEach(checkbox => {
+     * const checkbox = document.querySelector('#terms-checkbox');
      * checkbox.addEventListener('valueMsg', (e) => {
-     * console.log('Checkbox ID:', e.detail.source);
-     * console.log('New value:', e.detail.payload);
+     * console.log('Checkbox value:', e.detail.payload);
      * });
-     * });
-     * // Set value by ID
-     * const termsCheckbox = document.getElementById('terms-checkbox');
-     * await termsCheckbox.setValue(true);
-     * ```
-     * @example HTML with IDs
-     * ```html
-     * <ui-checkbox id="terms-checkbox" label="Accept Terms" variant="outlined"></ui-checkbox>
-     * <ui-checkbox id="newsletter-checkbox" label="Subscribe to Newsletter" variant="filled"></ui-checkbox>
+     * // Set value programmatically
+     * await checkbox.setValue(true);
      * ```
      */
     interface HTMLUiCheckboxElement extends Components.UiCheckbox, HTMLStencilElement {
@@ -1565,39 +1238,17 @@ declare global {
         new (): HTMLUiSliderElement;
     };
     interface HTMLUiTextElementEventMap {
-        "textChange": UiTextValueChange;
-        "valueChange": UiTextValueChange;
         "valueMsg": UiMsg<string>;
     }
     /**
-     * Advanced text component with comprehensive styling, variants, and features.
-     * Supports display, editing, structured content, and matches component family design.
+     * Simple text component with essential styling and features.
      * @example Basic Usage
      * ```html
      * <ui-text value="Hello World" variant="display"></ui-text>
      * ```
-     * @example Different Variants & Colors
+     * @example Editable Text
      * ```html
-     * <ui-text variant="minimal" color="secondary" value="Minimal text"></ui-text>
-     * <ui-text variant="outlined" color="primary" value="Outlined text"></ui-text>
-     * <ui-text variant="filled" color="success" value="Filled text"></ui-text>
-     * <ui-text variant="elevated" color="warning" value="Elevated text"></ui-text>
-     * ```
-     * @example Editable Text with Features
-     * ```html
-     * <ui-text variant="edit" textType="multi" rows="5" 
-     * resizable="true" expandable="true" 
-     * placeholder="Type your content..."></ui-text>
-     * ```
-     * @example Structured Content with Syntax Highlighting
-     * ```html
-     * <ui-text structure="json" value='{"key": "value"}' readonly="true"></ui-text>
-     * <ui-text structure="markdown" value="# Header\n**Bold text**"></ui-text>
-     * ```
-     * @example Sizes and Themes
-     * ```html
-     * <ui-text size="large" theme="dark" variant="filled"></ui-text>
-     * <ui-text size="small" compact="true" variant="minimal"></ui-text>
+     * <ui-text variant="edit" textType="multi" rows="5" placeholder="Type your content..."></ui-text>
      * ```
      */
     interface HTMLUiTextElement extends Components.UiText, HTMLStencilElement {
@@ -1672,7 +1323,6 @@ declare global {
     };
     interface HTMLElementTagNameMap {
         "ui-button": HTMLUiButtonElement;
-        "ui-button-normalized": HTMLUiButtonNormalizedElement;
         "ui-calendar": HTMLUiCalendarElement;
         "ui-checkbox": HTMLUiCheckboxElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
@@ -1764,76 +1414,6 @@ declare namespace LocalJSX {
           * @default 'outlined'
          */
         "variant"?: 'minimal' | 'outlined' | 'filled';
-    }
-    /**
-     * Normalized Button Component
-     * A button component following UI-WoT standards with centralized utilities
-     * @example Basic Usage
-     * ```html
-     * <ui-button-normalized variant="primary" label="Click Me"></ui-button-normalized>
-     * ```
-     * @example With Status Management
-     * ```html
-     * <ui-button-normalized label="Save" auto-status="true"></ui-button-normalized>
-     * ```
-     */
-    interface UiButtonNormalized {
-        /**
-          * Auto-manage status feedback for async operations
-          * @default false
-         */
-        "autoStatus"?: boolean;
-        /**
-          * Debounce delay for rapid clicks (ms)
-          * @default 150
-         */
-        "debounceDelay"?: number;
-        /**
-          * Whether the button is disabled
-          * @default false
-         */
-        "disabled"?: boolean;
-        /**
-          * Icon to display before label
-         */
-        "icon"?: string;
-        /**
-          * Icon to display after label
-         */
-        "iconEnd"?: string;
-        /**
-          * Button text label
-          * @default 'Button'
-         */
-        "label"?: string;
-        /**
-          * Whether the button is in loading state
-          * @default false
-         */
-        "loading"?: boolean;
-        /**
-          * Event emitted when button is clicked
-         */
-        "onButtonClick"?: (event: UiButtonNormalizedCustomEvent<UiButtonClick1>) => void;
-        /**
-          * Primary event emitted when the component value changes
-         */
-        "onValueMsg"?: (event: UiButtonNormalizedCustomEvent<ValueMessage>) => void;
-        /**
-          * Size variant
-          * @default 'md'
-         */
-        "size"?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-        /**
-          * Button type for form submission
-          * @default 'button'
-         */
-        "type"?: 'button' | 'submit' | 'reset';
-        /**
-          * Visual variant of the button
-          * @default 'primary'
-         */
-        "variant"?: 'primary' | 'secondary' | 'outline' | 'ghost';
     }
     /**
      * Advanced calendar component with comprehensive styling, variants, and features.
@@ -1987,30 +1567,14 @@ declare namespace LocalJSX {
      * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
      * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
      * ```
-     * @example Read-Only Mode
-     * ```html
-     * <ui-checkbox readonly="true" value="false" label="Sensor Status"></ui-checkbox>
-     * ```
-     * @example JavaScript Integration with Multiple Checkboxes
+     * @example JavaScript Integration
      * ```javascript
-     * // For single checkbox
-     * const checkbox = document.querySelector('#my-checkbox');
-     * // For multiple checkboxes
-     * const checkboxes = document.querySelectorAll('ui-checkbox');
-     * checkboxes.forEach(checkbox => {
+     * const checkbox = document.querySelector('#terms-checkbox');
      * checkbox.addEventListener('valueMsg', (e) => {
-     * console.log('Checkbox ID:', e.detail.source);
-     * console.log('New value:', e.detail.payload);
+     * console.log('Checkbox value:', e.detail.payload);
      * });
-     * });
-     * // Set value by ID
-     * const termsCheckbox = document.getElementById('terms-checkbox');
-     * await termsCheckbox.setValue(true);
-     * ```
-     * @example HTML with IDs
-     * ```html
-     * <ui-checkbox id="terms-checkbox" label="Accept Terms" variant="outlined"></ui-checkbox>
-     * <ui-checkbox id="newsletter-checkbox" label="Subscribe to Newsletter" variant="filled"></ui-checkbox>
+     * // Set value programmatically
+     * await checkbox.setValue(true);
      * ```
      */
     interface UiCheckbox {
@@ -2019,11 +1583,6 @@ declare namespace LocalJSX {
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
-        /**
-          * Connection state for readonly mode
-          * @default true
-         */
-        "connected"?: boolean;
         /**
           * Enable dark theme for the component. When true, uses light text on dark backgrounds.
           * @default false
@@ -2047,11 +1606,6 @@ declare namespace LocalJSX {
           * Primary event emitted when the checkbox value changes.
          */
         "onValueMsg"?: (event: UiCheckboxCustomEvent<UiMsg<boolean>>) => void;
-        /**
-          * Whether the checkbox is read-only (displays value but cannot be changed).
-          * @default false
-         */
-        "readonly"?: boolean;
         /**
           * Show last updated timestamp when true
           * @default true
@@ -2389,252 +1943,86 @@ declare namespace LocalJSX {
         "variant"?: 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
     /**
-     * Advanced text component with comprehensive styling, variants, and features.
-     * Supports display, editing, structured content, and matches component family design.
+     * Simple text component with essential styling and features.
      * @example Basic Usage
      * ```html
      * <ui-text value="Hello World" variant="display"></ui-text>
      * ```
-     * @example Different Variants & Colors
+     * @example Editable Text
      * ```html
-     * <ui-text variant="minimal" color="secondary" value="Minimal text"></ui-text>
-     * <ui-text variant="outlined" color="primary" value="Outlined text"></ui-text>
-     * <ui-text variant="filled" color="success" value="Filled text"></ui-text>
-     * <ui-text variant="elevated" color="warning" value="Elevated text"></ui-text>
-     * ```
-     * @example Editable Text with Features
-     * ```html
-     * <ui-text variant="edit" textType="multi" rows="5" 
-     * resizable="true" expandable="true" 
-     * placeholder="Type your content..."></ui-text>
-     * ```
-     * @example Structured Content with Syntax Highlighting
-     * ```html
-     * <ui-text structure="json" value='{"key": "value"}' readonly="true"></ui-text>
-     * <ui-text structure="markdown" value="# Header\n**Bold text**"></ui-text>
-     * ```
-     * @example Sizes and Themes
-     * ```html
-     * <ui-text size="large" theme="dark" variant="filled"></ui-text>
-     * <ui-text size="small" compact="true" variant="minimal"></ui-text>
+     * <ui-text variant="edit" textType="multi" rows="5" placeholder="Type your content..."></ui-text>
      * ```
      */
     interface UiText {
         /**
-          * Enable smooth animations and transitions
-          * @example ```html <ui-text animated="true" variant="filled"></ui-text> ```
-          * @default true
-         */
-        "animated"?: boolean;
-        /**
-          * Auto-resize textarea to content (for multi-line text)
-          * @default false
-         */
-        "autoResize"?: boolean;
-        /**
-          * Custom background color (hex, rgb, or color name)
-          * @example ```html <ui-text backgroundColor="linear-gradient(45deg, #ff6b6b, #4ecdc4)" variant="filled"></ui-text> ```
-         */
-        "backgroundColor"?: string;
-        /**
-          * Custom border color (hex, rgb, or color name)
-          * @example ```html <ui-text borderColor="#ff6b6b" variant="outlined"></ui-text> ```
-         */
-        "borderColor"?: string;
-        /**
-          * Border radius preset or custom value
-          * @example ```html <ui-text borderRadius="round" variant="outlined"></ui-text> <ui-text borderRadius="12px" variant="filled"></ui-text> ```
-          * @default 'medium'
-         */
-        "borderRadius"?: 'none' | 'small' | 'medium' | 'large' | 'round' | 'full' | string;
-        /**
-          * Border style options for enhanced visual design
-          * @example ```html <ui-text borderStyle="dashed" borderWidth="2" borderColor="#ff6b6b"></ui-text> ```
-          * @default 'solid'
-         */
-        "borderStyle"?: 'solid' | 'dashed' | 'dotted' | 'double' | 'groove' | 'ridge' | 'inset' | 'outset';
-        /**
-          * Border width in pixels (1-8)
-          * @example ```html <ui-text borderWidth="3" variant="outlined"></ui-text> ```
-          * @default 2
-         */
-        "borderWidth"?: number;
-        /**
-          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive content - warning: Orange for caution - danger: Red for errors or warnings
+          * Color scheme
           * @default 'primary'
          */
-        "color"?: 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger';
+        "color"?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger';
         /**
-          * Compact mode for dense layouts
-          * @default false
-         */
-        "compact"?: boolean;
-        /**
-          * Enable copy to clipboard button
-          * @example ```html <ui-text copyable="true" value="Copy this text"></ui-text> ```
-          * @default false
-         */
-        "copyable"?: boolean;
-        /**
-          * Dark theme variant.
-          * @example ```html <ui-text dark="true" value="Dark themed text"></ui-text> ```
+          * Dark theme
           * @default false
          */
         "dark"?: boolean;
         /**
-          * Whether the component is disabled (cannot be interacted with).
-          * @example ```html <ui-text disabled="true" value="Cannot edit"></ui-text> ```
+          * Disabled state
           * @default false
          */
         "disabled"?: boolean;
         /**
-          * Allow expanding/collapsing of text area with smooth animations
-          * @default false
-         */
-        "expandable"?: boolean;
-        /**
-          * Enable keyboard navigation and shortcuts.
-          * @example ```html <ui-text keyboard="false" value="No keyboard support"></ui-text> ```
-          * @default true
-         */
-        "keyboard"?: boolean;
-        /**
-          * Label for the text component with enhanced styling
-          * @example ```html <ui-text label="Description" value="Text content"></ui-text> ```
+          * Label for the text component
          */
         "label"?: string;
-        /**
-          * Programming language for syntax highlighting
-          * @example ```html <ui-text syntaxHighlight="true" language="python"></ui-text> ```
-          * @default 'javascript'
-         */
-        "language"?: 'javascript' | 'typescript' | 'python' | 'json' | 'html' | 'css' | 'yaml' | 'markdown';
-        /**
-          * Maximum height for auto-resize (pixels)
-          * @example ```html <ui-text autoResize="true" maxAutoHeight="300"></ui-text> ```
-          * @default 200
-         */
-        "maxAutoHeight"?: number;
-        /**
-          * Maximum height when expanded (pixels) with responsive behavior
-          * @default 200
-         */
-        "maxHeight"?: number;
-        /**
-          * Maximum character length with visual feedback
-         */
-        "maxLength"?: number;
-        /**
-          * Minimum height for auto-resize (pixels)
-          * @example ```html <ui-text autoResize="true" minHeight="100"></ui-text> ```
-          * @default 40
-         */
-        "minHeight"?: number;
-        "onTextChange"?: (event: UiTextCustomEvent<UiTextValueChange>) => void;
-        "onValueChange"?: (event: UiTextCustomEvent<UiTextValueChange>) => void;
-        /**
-          * Standardized value event emitter - emits UiMsg<string> with enhanced metadata. Provides consistent value change notifications with unified messaging format.
-          * @example ```typescript text.addEventListener('valueMsg', (e) => {   console.log('Text changed:', e.detail.payload);   console.log('Metadata:', e.detail.meta); }); ```
-         */
         "onValueMsg"?: (event: UiTextCustomEvent<UiMsg<string>>) => void;
         /**
-          * Placeholder text for empty fields with enhanced styling
+          * Placeholder text
          */
         "placeholder"?: string;
         /**
-          * Whether the component is read-only (displays value but cannot be changed).
-          * @example ```html <ui-text readonly="true" value="Read-only text"></ui-text> ```
+          * Read-only mode
           * @default false
          */
         "readonly"?: boolean;
         /**
-          * Allow manual resizing of text area (enhanced with constraints)
+          * Allow resizing of text area
           * @default false
          */
         "resizable"?: boolean;
         /**
-          * Resize handle style for textareas
-          * @example ```html <ui-text resizeHandle="modern" resizable="true"></ui-text> ```
-          * @default 'modern'
-         */
-        "resizeHandle"?: 'classic' | 'modern' | 'minimal';
-        /**
-          * Number of rows for multi-line text (enhanced with auto-resize)
+          * Number of rows for multi-line text
           * @default 4
          */
         "rows"?: number;
         /**
-          * Shadow intensity for depth effects
-          * @example ```html <ui-text shadow="heavy" variant="elevated"></ui-text> ```
-          * @default 'medium'
-         */
-        "shadow"?: 'none' | 'light' | 'medium' | 'heavy' | 'glow';
-        /**
-          * Show character count for text inputs
-          * @default false
-         */
-        "showCharCount"?: boolean;
-        /**
-          * Show last updated timestamp below the component.
-          * @example ```html <ui-text showLastUpdated="true" value="With timestamp"></ui-text> ```
+          * Show last updated timestamp
           * @default false
          */
         "showLastUpdated"?: boolean;
         /**
-          * Show line numbers for multi-line text (code editor style)
-          * @example ```html <ui-text textType="multi" showLineNumbers="true"></ui-text> ```
+          * Show line numbers for multi-line text
           * @default false
          */
         "showLineNumbers"?: boolean;
         /**
-          * Component size for different use cases. - small: Compact text for tight spaces - medium: Standard size (default) - large: Prominent text with larger typography
+          * Component size
           * @default 'medium'
          */
         "size"?: 'small' | 'medium' | 'large';
         /**
-          * @default true
-         */
-        "spellCheck"?: boolean;
-        /**
-          * Content structure for syntax highlighting and formatting
-          * @example ```html <ui-text structure="json" value='{"formatted": true}'></ui-text> ```
-          * @default 'unstructured'
-         */
-        "structure"?: 'unstructured' | 'json' | 'yaml' | 'xml' | 'markdown' | 'code';
-        /**
-          * Enable syntax highlighting for code
-          * @example ```html <ui-text variant="code" syntaxHighlight="true" language="javascript"></ui-text> ```
-          * @default false
-         */
-        "syntaxHighlight"?: boolean;
-        /**
-          * Custom text color (hex, rgb, or color name)
-          * @example ```html <ui-text textColor="#ffffff" backgroundColor="#333333"></ui-text> ```
-         */
-        "textColor"?: string;
-        /**
-          * Text input type - 'single' for single-line, 'multi' for multi-line
-          * @example ```html <ui-text textType="multi" rows="5"></ui-text> ```
+          * Text input type
           * @default 'single'
          */
         "textType"?: 'single' | 'multi';
         /**
           * Current text value
-          * @example ```html <ui-text value="Initial text content"></ui-text> ```
           * @default ''
          */
         "value"?: string;
         /**
-          * Visual style variant matching component family design. - display: Read-only text display with subtle styling - edit: Editable input/textarea with interactive styling - minimal: Clean, borderless design with subtle hover effects - outlined: Border with transparent background, colored accents - filled: Solid background with contrasting text - elevated: Shadow and depth for prominent display
+          * Visual style variant
           * @default 'display'
          */
-        "variant"?: 'display' | 'edit' | 'minimal' | 'outlined' | 'filled' | 'elevated';
-        /**
-          * Enable word wrap for long lines
-          * @example ```html <ui-text textType="multi" wordWrap="true"></ui-text> ```
-          * @default true
-         */
-        "wordWrap"?: boolean;
+        "variant"?: 'display' | 'edit' | 'outlined' | 'filled';
     }
     /**
      * Toggle switch component with reactive state management and multiple visual styles.
@@ -2732,7 +2120,6 @@ declare namespace LocalJSX {
     }
     interface IntrinsicElements {
         "ui-button": UiButton;
-        "ui-button-normalized": UiButtonNormalized;
         "ui-calendar": UiCalendar;
         "ui-checkbox": UiCheckbox;
         "ui-number-picker": UiNumberPicker;
@@ -2772,19 +2159,6 @@ declare module "@stencil/core" {
              */
             "ui-button": LocalJSX.UiButton & JSXBase.HTMLAttributes<HTMLUiButtonElement>;
             /**
-             * Normalized Button Component
-             * A button component following UI-WoT standards with centralized utilities
-             * @example Basic Usage
-             * ```html
-             * <ui-button-normalized variant="primary" label="Click Me"></ui-button-normalized>
-             * ```
-             * @example With Status Management
-             * ```html
-             * <ui-button-normalized label="Save" auto-status="true"></ui-button-normalized>
-             * ```
-             */
-            "ui-button-normalized": LocalJSX.UiButtonNormalized & JSXBase.HTMLAttributes<HTMLUiButtonNormalizedElement>;
-            /**
              * Advanced calendar component with comprehensive styling, variants, and features.
              * Matches the design family of ui-button, ui-slider, and other components.
              * @example Basic Usage
@@ -2820,30 +2194,14 @@ declare module "@stencil/core" {
              * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
              * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
              * ```
-             * @example Read-Only Mode
-             * ```html
-             * <ui-checkbox readonly="true" value="false" label="Sensor Status"></ui-checkbox>
-             * ```
-             * @example JavaScript Integration with Multiple Checkboxes
+             * @example JavaScript Integration
              * ```javascript
-             * // For single checkbox
-             * const checkbox = document.querySelector('#my-checkbox');
-             * // For multiple checkboxes
-             * const checkboxes = document.querySelectorAll('ui-checkbox');
-             * checkboxes.forEach(checkbox => {
+             * const checkbox = document.querySelector('#terms-checkbox');
              * checkbox.addEventListener('valueMsg', (e) => {
-             * console.log('Checkbox ID:', e.detail.source);
-             * console.log('New value:', e.detail.payload);
+             * console.log('Checkbox value:', e.detail.payload);
              * });
-             * });
-             * // Set value by ID
-             * const termsCheckbox = document.getElementById('terms-checkbox');
-             * await termsCheckbox.setValue(true);
-             * ```
-             * @example HTML with IDs
-             * ```html
-             * <ui-checkbox id="terms-checkbox" label="Accept Terms" variant="outlined"></ui-checkbox>
-             * <ui-checkbox id="newsletter-checkbox" label="Subscribe to Newsletter" variant="filled"></ui-checkbox>
+             * // Set value programmatically
+             * await checkbox.setValue(true);
              * ```
              */
             "ui-checkbox": LocalJSX.UiCheckbox & JSXBase.HTMLAttributes<HTMLUiCheckboxElement>;
@@ -2956,34 +2314,14 @@ declare module "@stencil/core" {
              */
             "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
             /**
-             * Advanced text component with comprehensive styling, variants, and features.
-             * Supports display, editing, structured content, and matches component family design.
+             * Simple text component with essential styling and features.
              * @example Basic Usage
              * ```html
              * <ui-text value="Hello World" variant="display"></ui-text>
              * ```
-             * @example Different Variants & Colors
+             * @example Editable Text
              * ```html
-             * <ui-text variant="minimal" color="secondary" value="Minimal text"></ui-text>
-             * <ui-text variant="outlined" color="primary" value="Outlined text"></ui-text>
-             * <ui-text variant="filled" color="success" value="Filled text"></ui-text>
-             * <ui-text variant="elevated" color="warning" value="Elevated text"></ui-text>
-             * ```
-             * @example Editable Text with Features
-             * ```html
-             * <ui-text variant="edit" textType="multi" rows="5" 
-             * resizable="true" expandable="true" 
-             * placeholder="Type your content..."></ui-text>
-             * ```
-             * @example Structured Content with Syntax Highlighting
-             * ```html
-             * <ui-text structure="json" value='{"key": "value"}' readonly="true"></ui-text>
-             * <ui-text structure="markdown" value="# Header\n**Bold text**"></ui-text>
-             * ```
-             * @example Sizes and Themes
-             * ```html
-             * <ui-text size="large" theme="dark" variant="filled"></ui-text>
-             * <ui-text size="small" compact="true" variant="minimal"></ui-text>
+             * <ui-text variant="edit" textType="multi" rows="5" placeholder="Type your content..."></ui-text>
              * ```
              */
             "ui-text": LocalJSX.UiText & JSXBase.HTMLAttributes<HTMLUiTextElement>;

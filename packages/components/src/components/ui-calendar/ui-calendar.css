@@ -1,32 +1,28 @@
+/* Import single global CSS with everything */
+@import '../../global.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :host { 
-  display: inline-block; 
-  font-family: var(--font-sans-ui, 'Josefin Sans', sans-serif);
-  /* CSS variable mappings for legacy compatibility */
-  --color-primary: var(--ui-color-primary, #067362);
-  --color-primary-dark: var(--ui-color-primary-hover, #055a4e);
-  --color-secondary: var(--ui-color-secondary, #B84A91);
-  --color-neutral: var(--ui-color-neutral, #6b7280);
-  --color-neutral-light: var(--ui-color-neutral-light, #9ca3af);
-  --color-neutral-dark: var(--ui-color-neutral-hover, #4b5563);
+  display: inline-block;
 }
 
+/* Component-specific neon effects */
 .neon-primary-glow {
-  box-shadow: 0 0 10px theme('colors.primary'), 0 0 20px theme('colors.primary'), 0 0 30px theme('colors.primary');
+  box-shadow: 0 0 10px var(--color-primary), 0 0 20px var(--color-primary), 0 0 30px var(--color-primary);
 }
 
 .neon-secondary-glow {
-  box-shadow: 0 0 10px theme('colors.secondary'), 0 0 20px theme('colors.secondary'), 0 0 30px theme('colors.secondary');
+  box-shadow: 0 0 10px var(--color-secondary), 0 0 20px var(--color-secondary), 0 0 30px var(--color-secondary);
 }
 
 /* Calendar animations */
 .calendar-enter {
   opacity: 0;
   transform: translateY(-10px);
-  animation: calendar-fade-in 0.2s ease-out forwards;
+  animation: calendar-fade-in var(--transition-base) ease-out forwards;
 }
 
 @keyframes calendar-fade-in {
@@ -46,17 +42,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 /* Focus styles */
-input:focus {
+input:focus, button:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(6, 115, 98, 0.3);
 }
 
-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(6, 115, 98, 0.3);
-}
-
-/* Read pulse animation for standardized API */
+/* Read pulse animation */
 :host(.read-pulse) {
   animation: read-pulse 0.3s ease-out;
 }
@@ -78,7 +69,7 @@ button:focus {
 
 /* Hover animations */
 button {
-  transition: all 0.15s ease;
+  transition: all var(--transition-fast);
 }
 
 button:hover {

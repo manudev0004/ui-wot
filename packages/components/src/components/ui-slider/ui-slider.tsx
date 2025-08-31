@@ -921,7 +921,7 @@ export class UiSlider {
               <button
                 type="submit"
                 disabled={isDisabled}
-                class={`px-3 py-1 text-sm font-medium rounded transition-colors ${isDisabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-primary text-white hover:bg-primary-dark'}`}
+                class={`px-3 py-1 text-sm font-medium rounded transition-colors ${isDisabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-primary text-white hover:bg-primary-hover'}`}
               >Set</button>
             </form>
           </div>

@@ -113,13 +113,14 @@ Type: `Promise<void>`
 
 ## Shadow Parts
 
-| Part                   | Description |
-| ---------------------- | ----------- |
-| `"container"`          |             |
-| `"control"`            |             |
-| `"label"`              |             |
-| `"readonly-indicator"` |             |
-| `"thumb"`              |             |
+| Part                       | Description |
+| -------------------------- | ----------- |
+| `"container"`              |             |
+| `"control"`                |             |
+| `"label"`                  |             |
+| `"readonly-indicator"`     |             |
+| `"readonly-pulse-sibling"` |             |
+| `"thumb"`                  |             |
 
 
 ----------------------------------------------

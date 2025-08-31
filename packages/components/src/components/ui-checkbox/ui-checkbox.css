@@ -1,39 +1,20 @@
+/* Import single global CSS with everything */
+@import '../../global.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/**
- * UI Checkbox Component Styles
- */
-
 :host { 
-  display: inline-block; 
-  font-family: var(--font-sans-ui, 'Josefin Sans', sans-serif);
-  /* CSS variable mappings for legacy compatibility */
-  --color-primary: var(--ui-color-primary, #067362);
-  --color-primary-dark: var(--ui-color-primary-hover, #055a4e);
-  --color-secondary: var(--ui-color-secondary, #B84A91);
-  --color-neutral: var(--ui-color-neutral, #6b7280);
-  --color-neutral-light: var(--ui-color-neutral-light, #9ca3af);
-  --color-neutral-dark: var(--ui-color-neutral-hover, #4b5563);
+  display: inline-block;
   /* Add right padding to avoid clipped right-aligned indicators */
-  padding-right: 1.5rem; /* corresponds to approx -right-6 space */
+  padding-right: 1.5rem;
+  transition: all var(--transition-base);
 }
 
-/* Custom color utilities using CSS variables */
-
-/* Dark mode text and border colors */
-
-.border-primary { border-color: var(--color-primary); }
-.border-secondary { border-color: var(--color-secondary); }
-/* border utilities now global */
-
-.ring-primary { --tw-ring-color: var(--color-primary); }
-.ring-secondary { --tw-ring-color: var(--color-secondary); }
-
-/* Gradient utilities for filled variant */
-.bg-gradient-to-r.from-primary.to-primary-dark {
-  background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark));
+/* Component-specific gradients */
+.bg-gradient-to-r.from-primary.to-primary-hover {
+  background: linear-gradient(to right, var(--color-primary), var(--color-primary-hover));
 }
 
 .bg-gradient-to-r.from-secondary.to-pink-600 {
@@ -53,37 +34,19 @@
   background: linear-gradient(to right, #e5e7eb, #d1d5db);
 }
 
-/* Focus styles */
+/* Focus and hover effects */
 :host(:focus-within) {
   outline: none;
 }
 
-/* Hover effects for non-disabled checkboxes */
 :host(:not([state="disabled"])) .cursor-pointer:hover {
   transform: translateY(-1px);
 }
 
-/* Dark mode overrides */
-.dark .bg-neutral-light { background-color: var(--color-neutral-dark); }
-.dark .bg-neutral { background-color: var(--color-neutral); }
-.dark .bg-neutral-dark { background-color: var(--color-neutral-light); }
-.dark .bg-primary { background-color: var(--color-primary-dark); }
-
-/* Animation for smooth state transitions */
-:host {
-  transition: all 0.2s ease-in-out;
-}
-
-/* Spinner keyframes used by StatusIndicator */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Utility to ensure absolute positioned indicator can sit to the right */
+/* Indicator positioning */
 .indicator-right-offset {
   position: absolute;
-  right: -1.5rem; /* matches padding-right on host */
+  right: -1.5rem;
   top: 50%;
   transform: translateY(-50%);
 }

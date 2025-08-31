@@ -117,6 +117,14 @@ Type: `Promise<void>`
 
 
 
+## Shadow Parts
+
+| Part                   | Description |
+| ---------------------- | ----------- |
+| `"readonly-indicator"` |             |
+| `"readonly-pulse"`     |             |
+
+
 ----------------------------------------------
 
 *Built with [StencilJS](https://stenciljs.com/)*

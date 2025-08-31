@@ -127,6 +127,7 @@ Type: `Promise<void>`
 | `"interactive-wrapper"` |             |
 | `"label"`               |             |
 | `"readonly-indicator"`  |             |
+| `"readonly-pulse"`      |             |
 | `"value-display"`       |             |
 
 

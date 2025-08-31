@@ -1,82 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;500;600;700&family=Fira+Mono:wght@400;500;700&display=swap');
+/* Import single global CSS with everything */
+@import '../../global.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/**
- * UI Toggle Component Styles
- * Note: CSS custom properties are defined globally in theme.css
- */
-:host {
-  /* Ensure CSS variables are available in shadow DOM */
-  --color-primary: var(--ui-color-primary, #067362);
-  --color-primary-dark: var(--ui-color-primary-hover, #055a4e);
-  --color-secondary: var(--ui-color-secondary, #B84A91);
-  --color-neutral: var(--ui-color-neutral, #6b7280);
-  --color-neutral-light: var(--ui-color-neutral-light, #9ca3af);
-  --color-neutral-dark: var(--ui-color-neutral-hover, #4b5563);
-  --color-white: var(--ui-color-bg, #ffffff);
+:host { 
+  display: inline-block;
 }
 
-:host { display: inline-block; font-family: 'Josefin Sans', sans-serif; }
+/* Fallback gray classes remain from tailwind */
 
-/* Fonts imported at top */
-
-/* Ensure labels use Josefin Sans */
-:host, :host * {
-  font-family: 'Josefin Sans', sans-serif;
-}
-
-/* Timestamp specific font override */
-.timestamp, .last-updated, .relative-time {
-  font-family: 'Fira Mono', monospace;
-}
-
-/* Essential animations for status indicators */
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes ping {
-  75%, 100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-}
-
-/* Custom color utilities using CSS variables */
-
-/* Light theme utilities */
-
-/* Focus ring for primary color */
-.focus\:ring-primary {
-  --tw-ring-color: var(--color-primary);
-}
-
-/* Disabled state */
-.disabled-state { 
-  opacity: 0.5; 
-  cursor: not-allowed !important;
-  pointer-events: none;
-}
-
-/* Enhanced transitions */
-.transition-all {
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Hover effects */
-.hover\:shadow-md:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.hover\:text-opacity-80:hover {
-  --tw-text-opacity: 0.8;
-}
-
-/* Neon effects */
+/* Component-specific neon effects */
 .neon-primary {
   background-color: var(--color-primary) !important;
   border: 2px solid var(--color-primary) !important;
@@ -118,8 +53,8 @@
 }
 
 .neon-red {
-  background-color: #ef4444 !important;
-  border: 2px solid #ef4444 !important;
+  background-color: var(--color-danger) !important;
+  border: 2px solid var(--color-danger) !important;
   box-shadow: 
     0 0 5px rgba(239, 68, 68, 0.6),
     0 0 15px rgba(239, 68, 68, 0.5),
@@ -128,15 +63,10 @@
   filter: brightness(1.1) saturate(1.2);
 }
 
-/* Dark mode overrides */
-.dark .bg-neutral-light { background-color: var(--color-neutral-dark); }
-.dark .bg-neutral { background-color: var(--color-neutral); }
-.dark .bg-neutral-dark { background-color: var(--color-neutral-light); }
-.dark .bg-primary { background-color: var(--color-primary-dark); }
-
+/* Dark mode neon adjustments */
 .dark .neon-primary {
-  background-color: var(--color-primary-dark) !important;
-  border-color: var(--color-primary-dark) !important;
+  background-color: var(--color-primary-hover) !important;
+  border-color: var(--color-primary-hover) !important;
   box-shadow: 
     0 0 5px rgba(51, 184, 164, 0.7),
     0 0 15px rgba(51, 184, 164, 0.6),
@@ -146,8 +76,8 @@
 }
 
 .dark .neon-red {
-  background-color: #f87171 !important;
-  border-color: #f87171 !important;
+  background-color: var(--color-danger-light) !important;
+  border-color: var(--color-danger-light) !important;
   box-shadow: 
     0 0 5px rgba(248, 113, 113, 0.7),
     0 0 15px rgba(248, 113, 113, 0.6),

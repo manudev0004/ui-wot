@@ -4,6 +4,7 @@ import autoprefixer from 'autoprefixer';
 
 export const config: Config = {
   namespace: 'ui-wot-components',
+  globalStyle: 'src/global.css',
   plugins: [
     postcss({
       plugins: [

@@ -15,6 +15,6 @@
     "jsxFactory": "h",
     "jsxFragmentFactory": "h.Fragment"
   },
-  "include": ["src"],
+  "include": ["src", "../../backup/ui-text-fixed.tsx", "../../backup/ui-button-normalized.tsx"],
   "exclude": ["node_modules"]
 }

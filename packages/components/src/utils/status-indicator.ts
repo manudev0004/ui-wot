@@ -339,7 +339,7 @@ export class StatusIndicator {
 
     const { full, relative } = this.formatTimestamp(lastUpdated);
     const timestampClasses = this.getTimestampClasses(theme);
-    const monoStyle = { 'font-family': "var(--font-mono-ui, 'Fira Mono', monospace)" };
+    const monoStyle = { 'font-family': "var(--font-mono, 'Fira Mono', monospace)" };
 
     return h('div', { class: timestampClasses.container + ' timestamp', style: monoStyle }, [
       h('div', { class: timestampClasses.full + ' last-updated', style: monoStyle }, full),

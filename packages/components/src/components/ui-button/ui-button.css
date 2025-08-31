@@ -1,95 +1,19 @@
+/* Import single global CSS with everything */
+@import '../../global.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/**
- * UI Button Component Styles
- */
-
 :host { 
   display: inline-block;
-  /* CSS variable mappings for legacy compatibility */
-  --color-primary: var(--ui-color-primary, #067362);
-  --color-primary-dark: var(--ui-color-primary-hover, #055a4e);
-  --color-secondary: var(--ui-color-secondary, #B84A91);
-  --color-neutral: var(--ui-color-neutral, #6b7280);
-  --color-neutral-light: var(--ui-color-neutral-light, #9ca3af);
-  --color-neutral-dark: var(--ui-color-neutral-hover, #4b5563);
 }
 
-/* Custom color utilities using CSS variables */
-.border-primary { border-color: var(--color-primary); }
-.border-secondary { border-color: var(--color-secondary); }
-
-/* Dark mode text and border colors */
-.dark .text-primary { color: var(--color-primary-dark); }
-.dark .border-primary { border-color: var(--color-primary-dark); }
-.dark .text-secondary { color: var(--color-secondary); }
-.dark .border-secondary { border-color: var(--color-secondary); }
-.dark .text-neutral { color: var(--color-neutral); }
-.dark .border-neutral { border-color: var(--color-neutral); }
-
-.focus\:ring-primary:focus { 
-  --tw-ring-color: var(--color-primary); 
-  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
-}
-
-.focus\:ring-secondary:focus { 
-  --tw-ring-color: var(--color-secondary); 
-  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
-}
-
-.focus\:ring-neutral:focus { 
-  --tw-ring-color: var(--color-neutral); 
-  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
-}
-
-/* Hover states for colored buttons */
-.hover\:bg-primary:hover { background-color: var(--color-primary); }
-.hover\:bg-primary-dark:hover { background-color: var(--color-primary-dark); }
-.hover\:bg-secondary:hover { background-color: var(--color-secondary); }
-.hover\:bg-neutral:hover { background-color: var(--color-neutral); }
-
-/* Additional hover and focus utilities */
-.hover\:text-white:hover { color: white; }
-.focus\:ring-primary:focus { --tw-ring-color: var(--color-primary); }
-.focus\:ring-secondary:focus { --tw-ring-color: var(--color-secondary); }
-.focus\:ring-neutral:focus { --tw-ring-color: var(--color-neutral); }
-
-/* Force white text for filled buttons - highest specificity */
-button.text-white-force,
-button.text-white-force:hover,
-button.text-white-force:active,
-button.text-white-force:focus {
-  color: white !important;
-}
-
-/* Force black text in light theme - highest specificity */
-button.text-black-force,
-button.text-black-force:hover,
-button.text-black-force:active,
-button.text-black-force:focus {
-  color: black !important;
-}
-
-/* Force white text in dark theme - highest specificity */
-button.text-white-dark,
-button.text-white-dark:hover,
-button.text-white-dark:active,
-button.text-white-dark:focus {
-  color: white !important;
-}
-
+/* Component-specific styles only */
 /* Extra specificity for filled variant buttons */
 :host(.ui-button) button.text-white-force {
   color: white !important;
 }
-
-/* Dark mode overrides */
-.dark .bg-neutral-light { background-color: var(--color-neutral-dark); }
-.dark .bg-neutral { background-color: var(--color-neutral); }
-.dark .bg-neutral-dark { background-color: var(--color-neutral-light); }
-.dark .bg-primary { background-color: var(--color-primary-dark); }
 
 /* Button animations */
 .hover\:scale-105:hover {
@@ -112,7 +36,7 @@ button:disabled:hover {
 
 /* Smooth transitions */
 button {
-  transition: all 0.2s ease-in-out;
+  transition: all var(--transition-base);
 }
 
 /* Focus styles */
@@ -121,9 +45,4 @@ button:focus {
   --tw-ring-width: 2px;
   --tw-ring-offset-width: 2px;
   box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
-}
-
-/* Ensure all elements use Josefin Sans */
-button, div, label, span {
-  font-family: 'Josefin Sans', sans-serif;
 }

@@ -1,18 +1,18 @@
+/* Import single global CSS with everything */
+@import '../../global.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/**
- * UI Text Component - Minimal CSS, mostly Tailwind
- */
+/* Import single global CSS with everything */
 
 :host { 
   display: block; 
-  width: 100%; 
-  font-family: var(--font-sans-ui, 'Josefin Sans', sans-serif);
+  width: 100%;
 }
 
-/* Custom resize utilities */
+/* Component-specific utilities */
 .resize {
   resize: both;
   overflow: auto;
@@ -22,9 +22,8 @@
   resize: none;
 }
 
-/* Line numbers font */
 .line-numbers {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata, "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-mono);
 }
 
 /* Enhanced scrollbar for textareas */
@@ -37,18 +36,18 @@ textarea::-webkit-scrollbar-track {
 }
 
 textarea::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
+  background: var(--color-neutral-light);
+  border-radius: var(--radius-sm);
 }
 
 textarea::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: var(--color-neutral);
 }
 
 :host([dark]) textarea::-webkit-scrollbar-thumb {
-  background: #6b7280;
+  background: var(--color-neutral);
 }
 
 :host([dark]) textarea::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: var(--color-neutral-light);
 }
