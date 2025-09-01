@@ -1,9 +1,0 @@
-// Components entry point for tree-shaking
-export { UiButton } from './components/ui-button/ui-button';
-export { UiToggle } from './components/ui-toggle/ui-toggle';
-export { UiSlider } from './components/ui-slider/ui-slider';
-export { UiNumberPicker } from './components/ui-number-picker/ui-number-picker';
-export { UiCalendar } from './components/ui-calendar/ui-calendar';
-export { UiCheckbox } from './components/ui-checkbox/ui-checkbox';
-export { UiText } from './components/ui-text/ui-text';
-export { UiPropertyCard } from './components/ui-property-card/ui-property-card';

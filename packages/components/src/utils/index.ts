@@ -5,5 +5,4 @@
 
 // Core utilities - only export what's actually used
 export * from './status-indicator';
-export * from './common-props';
 export * from './types';
