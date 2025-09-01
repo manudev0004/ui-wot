@@ -4,8 +4,6 @@ import { StatusIndicator } from '../../utils/status-indicator';
 
 export interface UiButtonClick { label: string }
 
-export interface UiButtonClick { label: string }
-
 /**
  * Button component with various visual styles, matching the ui-number-picker design family.
  * Supports the same variants, colors, and themes as the number picker.
