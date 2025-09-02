@@ -651,7 +651,7 @@ export namespace Components {
          */
         "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
         /**
-          * Set the toggle value with optional device communication and status management.
+          * Set the toggle value and it has optional device communication and status management.
           * @param value - The boolean value to set (true = on, false = off)
           * @param options - Configuration options for the operation
           * @returns Promise<boolean> - true if successful, false if failed
@@ -671,11 +671,9 @@ export namespace Components {
          */
         "showLastUpdated": boolean;
         /**
-          * Trigger a read pulse indicator for readonly mode when data is actually fetched. Use this method to provide visual feedback when refreshing data from external sources like IoT devices, APIs, or real-time data streams.
+          * Trigger a read pulse indicator for readonly mode whenever data is fetched. Use this method to provide visual feedback when refreshing data from external sources
           * @returns Promise<void>
           * @example Basic Usage (Easy) ```javascript // Show visual pulse when data is refreshed const toggle = document.querySelector('ui-toggle'); await toggle.triggerReadPulse(); ```
-          * @example API Data Refresh (Advanced) ```javascript // Periodic data refresh with visual feedback const sensorToggle = document.querySelector('#motion-sensor');  setInterval(async () => { try { const response = await fetch('/api/sensors/motion'); const data = await response.json();  // Update value silently await sensorToggle.setValueSilent(data.motionDetected);  // Show visual pulse to indicate fresh data await sensorToggle.triggerReadPulse();  } catch (error) { console.error('Failed to refresh sensor data:', error); } }, 5000); // Every 5 seconds ```
-          * @example Real-time Data Stream (Advanced) ```javascript // Server-Sent Events with pulse feedback const toggle = document.querySelector('#live-status');  const eventSource = new EventSource('/api/device-stream'); eventSource.addEventListener('device-update', async (event) => { const data = JSON.parse(event.data);  if (data.deviceId === toggle.id) { // Silent update from real-time stream await toggle.setValueSilent(data.isActive);  // Pulse to show live data await toggle.triggerReadPulse(); } }); ```  ```javascript // Show visual pulse when data is refreshed await toggle.setValueSilent(newValue); await toggle.triggerReadPulse(); ```
          */
         "triggerReadPulse": () => Promise<void>;
         /**
