@@ -19,12 +19,62 @@ export function ComponentCanvasPage() {
   const [attributesValues, setAttributesValues] = useState<Record<string, string>>({});
   const [attributesTypes, setAttributesTypes] = useState<Record<string, 'string' | 'number' | 'boolean'>>({});
 
+  // Dashboard save/load state
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [saveDescription, setSaveDescription] = useState('');
+
   // Close the sidebar whenever Edit Mode is turned off
   useEffect(() => {
     if (!isEditMode && editingComponent) {
       setEditingComponent(null);
     }
   }, [isEditMode]);
+
+  // Load saved dashboards on mount
+  useEffect(() => {
+    // No longer needed since we removed load functionality
+  }, []);
+
+  const handleSaveDashboard = async () => {
+    if (!saveName.trim()) {
+      alert('Please enter a dashboard name');
+      return;
+    }
+
+    try {
+      const dashboardData = {
+        name: saveName.trim(),
+        description: saveDescription.trim() || undefined,
+        version: '1.0.0',
+        timestamp: Date.now(),
+        tdInfos: state.tdInfos,
+        components: state.components,
+        availableAffordances: state.availableAffordances,
+      };
+
+      // Export directly as JSON file instead of saving to localStorage
+      const jsonString = JSON.stringify(dashboardData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${saveName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_dashboard.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setShowSaveModal(false);
+      setSaveName('');
+      setSaveDescription('');
+      alert('Dashboard exported successfully!');
+    } catch (error) {
+      console.error('Failed to export dashboard:', error);
+      alert('Failed to export dashboard. Please try again.');
+    }
+  };
 
   const handleLayoutChange = (layout: Layout[]) => {
     if (!isEditMode) return;
@@ -265,6 +315,179 @@ export function ComponentCanvasPage() {
     const isEditing = editingComponent === component.id;
     const affordance = state.availableAffordances.find(a => a.key === component.affordanceKey);
 
+    // Common component creation function
+    const createComponentElement = (el: HTMLElement | null) => {
+      if (el && !isEditing) {
+        el.innerHTML = '';
+        
+        try {
+          const element = document.createElement(component.uiComponent);
+
+          // Set component attributes using your component's API
+          element.setAttribute('variant', component.variant || 'minimal');
+          element.setAttribute('label', component.title);
+          element.setAttribute('color', 'primary');
+
+          // Set value and change handler attributes
+          if (affordance?.schema) {
+            if (affordance.schema.default !== undefined) {
+              element.setAttribute('value', String(affordance.schema.default));
+            }
+            if (affordance.schema.minimum !== undefined) {
+              element.setAttribute('min', String(affordance.schema.minimum));
+            }
+            if (affordance.schema.maximum !== undefined) {
+              element.setAttribute('max', String(affordance.schema.maximum));
+            }
+          }
+
+          // Add change handler for interactivity
+          element.setAttribute('change-handler', `handle_${component.affordanceKey}_change`);
+
+          // Add click handler for buttons
+          if (component.uiComponent === 'ui-button') {
+            element.setAttribute('click-handler', `handle_${component.affordanceKey}_click`);
+          }
+
+          // Add TD URL for WoT integration
+          if (affordance?.forms?.[0]?.href) {
+            element.setAttribute('td-url', affordance.forms[0].href);
+          }
+
+          // attach runtime listeners to the created element so it talks to WoT
+          try {
+            const thing = state.things.get(component.tdId);
+
+            // If property, sync with current value and hook value updates
+            if (affordance?.type === 'property' && thing) {
+              // Set up periodic reading for properties
+              const readInterval = setInterval(async () => {
+                if (!el.isConnected) {
+                  clearInterval(readInterval);
+                  return;
+                }
+                try {
+                  const current = await wotService.interactWithProperty(thing, affordance.key);
+                  if (typeof current !== 'undefined') {
+                    element.setAttribute('value', String(current));
+                  }
+                } catch (err) {
+                  // ignore read errors
+                }
+              }, 2000);
+
+              // Also read once immediately
+              (async () => {
+                try {
+                  const current = await wotService.interactWithProperty(thing, affordance.key);
+                  if (typeof current !== 'undefined') {
+                    element.setAttribute('value', String(current));
+                  }
+                } catch (err) {
+                  // ignore read errors
+                }
+              })();
+            }
+
+            // If action, hook click to invoke action
+            if (affordance?.type === 'action') {
+              element.addEventListener('click', async () => {
+                try {
+                  if (thing) await wotService.invokeAction(thing, affordance.key);
+                } catch (err) {
+                  console.error('Failed to invoke action via WoT:', err);
+                }
+              });
+            }
+          } catch (listenerErr) {
+            console.warn('Failed to attach WoT listeners to element', listenerErr);
+          }
+
+          el.appendChild(element);
+        } catch (error) {
+          // Fallback when custom elements are not available
+          console.warn(`Could not create custom element ${component.uiComponent}:`, error);
+          const fallbackDiv = document.createElement('div');
+          fallbackDiv.className = 'p-4 bg-gray-100 rounded border-2 border-dashed border-gray-300 text-center text-gray-500';
+          fallbackDiv.innerHTML = `
+            <div class="text-sm font-medium">${component.title}</div>
+            <div class="text-xs mt-1">${component.uiComponent}</div>
+            <div class="text-xs mt-2 text-gray-400">Component not loaded</div>
+          `;
+          el.appendChild(fallbackDiv);
+        }
+      }
+    };
+
+    // If hideCard is true, render only the component without card wrapper
+    if (component.hideCard) {
+      return (
+        <div
+          key={component.layout.i}
+          data-component-id={component.id}
+          className="relative w-full h-full flex items-center justify-center"
+          style={{ zIndex: isEditing ? 1000 : 1 }}
+          onClick={(e) => {
+            // When edit mode is on, clicking opens the editor
+            if (isEditMode) {
+              e.stopPropagation();
+              handleComponentEdit(component.id);
+            }
+          }}
+        >
+          {/* Edit overlay for card-less components */}
+          {isEditMode && (
+            <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 bg-white rounded shadow-md border no-drag edit-controls">
+              <button
+                type="button"
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  e.stopPropagation(); 
+                  handleComponentEdit(component.id); 
+                }}
+                className={`p-1 rounded transition-colors ${isEditing ? 'bg-accent text-white' : 'text-primary hover:text-accent'}`}
+                title="Edit component"
+                style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2001 }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+              </button>
+              <button 
+                type="button"
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  e.stopPropagation(); 
+                  handleComponentClose(component.id); 
+                }} 
+                className="p-1 rounded text-primary hover:text-red-600 transition-colors" 
+                title="Remove component"
+                style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2001 }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+          
+          {/* Component Content - takes full container */}
+          <div className="w-full h-full flex items-center justify-center component-drag-handle no-drag" style={{ cursor: isEditMode ? 'move' : 'default' }}>
+            <div
+              ref={createComponentElement}
+              className="w-full h-full flex items-center justify-center"
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // Default card wrapper rendering
     return (
       <div
         key={component.layout.i}
@@ -326,115 +549,10 @@ export function ComponentCanvasPage() {
           )}
         </div>
 
-  {/* Component Content */}
-  <div className="p-4 relative no-drag">
+        {/* Component Content */}
+        <div className="p-4 relative no-drag">
           <div
-            ref={el => {
-              if (el && !isEditing) {
-                el.innerHTML = '';
-                
-                try {
-                  const element = document.createElement(component.uiComponent);
-
-                  // Set component attributes using your component's API
-                  element.setAttribute('variant', component.variant || 'minimal');
-                  element.setAttribute('label', component.title);
-                  element.setAttribute('color', 'primary');
-
-                  // Set value and change handler attributes
-                  if (affordance?.schema) {
-                    if (affordance.schema.default !== undefined) {
-                      element.setAttribute('value', String(affordance.schema.default));
-                    }
-                    if (affordance.schema.minimum !== undefined) {
-                      element.setAttribute('min', String(affordance.schema.minimum));
-                    }
-                    if (affordance.schema.maximum !== undefined) {
-                      element.setAttribute('max', String(affordance.schema.maximum));
-                    }
-                  }
-
-                  // Add change handler for interactivity
-                  element.setAttribute('change-handler', `handle_${component.affordanceKey}_change`);
-
-                  // Add click handler for buttons
-                  if (component.uiComponent === 'ui-button') {
-                    element.setAttribute('click-handler', `handle_${component.affordanceKey}_click`);
-                  }
-
-                  // Add TD URL for WoT integration
-                  if (affordance?.forms?.[0]?.href) {
-                    element.setAttribute('td-url', affordance.forms[0].href);
-                  }
-
-                  // attach runtime listeners to the created element so it talks to WoT
-                    try {
-                    // Try to locate the WoT thing. component.tdId may be the generated tdInfo.id
-                    // while wotService stores the thing under the parsed TD's id (td.id).
-                    let thing: any = null;
-                    if (component.tdId) thing = wotService.getThing(component.tdId);
-                    if (!thing) {
-                      const tdInfo = state.tdInfos.find(td => td.id === component.tdId);
-                      if (tdInfo && tdInfo.td && tdInfo.td.id) {
-                        thing = wotService.getThing(tdInfo.td.id);
-                      }
-                    }
-
-                    // If property, listen for change/input to write property
-                    if (affordance?.type === 'property') {
-                      element.addEventListener('change', async (ev: any) => {
-                        const val = ev.target?.value ?? ev.detail?.value ?? null;
-                        try {
-                          if (thing) await wotService.interactWithProperty(thing, affordance.key, val);
-                        } catch (err) {
-                          console.error('Failed to write property via WoT:', err);
-                        }
-                      });
-
-                      // try to read initial value
-                      (async () => {
-                        try {
-                          if (thing) {
-                            const current = await wotService.interactWithProperty(thing, affordance.key);
-                            if (current !== undefined && current !== null) {
-                              element.setAttribute('value', String(current));
-                            }
-                          }
-                        } catch (err) {
-                          // ignore read errors
-                        }
-                      })();
-                    }
-
-                    // If action, hook click to invoke action
-                    if (affordance?.type === 'action') {
-                      element.addEventListener('click', async () => {
-                        try {
-                          if (thing) await wotService.invokeAction(thing, affordance.key);
-                        } catch (err) {
-                          console.error('Failed to invoke action via WoT:', err);
-                        }
-                      });
-                    }
-                  } catch (listenerErr) {
-                    console.warn('Failed to attach WoT listeners to element', listenerErr);
-                  }
-
-                  el.appendChild(element);
-                } catch (error) {
-                  // Fallback when custom elements are not available
-                  console.warn(`Could not create custom element ${component.uiComponent}:`, error);
-                  const fallbackDiv = document.createElement('div');
-                  fallbackDiv.className = 'p-4 bg-gray-100 rounded border-2 border-dashed border-gray-300 text-center text-gray-500';
-                  fallbackDiv.innerHTML = `
-                    <div class="text-sm font-medium">${component.title}</div>
-                    <div class="text-xs mt-1">${component.uiComponent}</div>
-                    <div class="text-xs mt-2 text-gray-400">Component not loaded</div>
-                  `;
-                  el.appendChild(fallbackDiv);
-                }
-              }
-            }}
+            ref={createComponentElement}
             className="min-h-16 flex items-center justify-center"
           />
 
@@ -490,6 +608,14 @@ export function ComponentCanvasPage() {
                 </button>
               </div>
               <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowSaveModal(true)}
+                  disabled={state.components.length === 0}
+                  className="bg-primary hover:bg-primary-light disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-heading font-medium py-2 px-4 rounded-lg transition-colors"
+                  title={state.components.length === 0 ? 'Add components to save dashboard' : 'Save current dashboard'}
+                >
+                  Save Dashboard
+                </button>
                 <button
                   onClick={() => {
                     dispatch({ type: 'SET_VIEW', payload: 'td-input' });
@@ -616,6 +742,24 @@ export function ComponentCanvasPage() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="flex items-center space-x-2 text-sm font-heading font-medium text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={comp.hideCard || false}
+                      onChange={e => {
+                        dispatch({
+                          type: 'UPDATE_COMPONENT',
+                          payload: { id: comp.id, updates: { hideCard: e.target.checked } }
+                        });
+                      }}
+                      className="w-4 h-4 text-accent border-gray-300 rounded focus:ring-accent focus:ring-2"
+                    />
+                    <span>Hide card wrapper</span>
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">Show only the component without the card border and header</p>
                 </div>
 
                 {/* Layout */}
@@ -759,6 +903,55 @@ export function ComponentCanvasPage() {
           </div>
         );
       })()}
+
+      {/* Save Dashboard Modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-heading font-medium text-primary mb-4">Save Dashboard</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Dashboard Name</label>
+                <input
+                  type="text"
+                  value={saveName}
+                  onChange={e => setSaveName(e.target.value)}
+                  placeholder="Enter dashboard name..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Description (Optional)</label>
+                <textarea
+                  value={saveDescription}
+                  onChange={e => setSaveDescription(e.target.value)}
+                  placeholder="Enter description..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowSaveModal(false);
+                    setSaveName('');
+                    setSaveDescription('');
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 font-heading font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveDashboard}
+                  className="px-4 py-2 bg-primary hover:bg-primary-light text-white font-heading font-medium rounded-lg transition-colors"
+                >
+                  Export
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

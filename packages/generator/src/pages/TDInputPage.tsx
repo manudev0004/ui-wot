@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useAppContext } from '../context/AppContext';
 import { wotService } from '../services/wotService';
+import { dashboardService } from '../services/dashboardService';
 
 export function TDInputPage() {
   const { state, dispatch } = useAppContext();
@@ -86,6 +87,36 @@ export function TDInputPage() {
     }
   };
 
+  const handleImportDashboard = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setLoading(true);
+
+    try {
+      const dashboardData = await dashboardService.importDashboard(file);
+      
+      dispatch({
+        type: 'LOAD_DASHBOARD',
+        payload: {
+          tdInfos: dashboardData.tdInfos,
+          components: dashboardData.components,
+          availableAffordances: dashboardData.availableAffordances
+        }
+      });
+
+      dispatch({ type: 'SET_VIEW', payload: 'component-canvas' });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to import dashboard. Please check the file format.');
+    } finally {
+      setLoading(false);
+    }
+
+    // Reset the file input
+    event.target.value = '';
+  };
+
   const handleBack = () => {
     if (state.components.length > 0) {
       // If we have existing components, go back to canvas
@@ -151,29 +182,55 @@ export function TDInputPage() {
         {/* File Upload */}
         <div className="bg-white rounded-lg shadow-sm border border-primary/20 p-6">
           <h2 className="text-xl font-heading font-semibold text-primary mb-4">From File</h2>
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-              isDragActive ? 'border-accent bg-accent/10' : 'border-primary/30 hover:border-primary/50'
-            } ${loading ? 'pointer-events-none opacity-50' : ''}`}
-          >
-            <input {...getInputProps()} />
-            <div className="text-primary">
-              {loading ? (
-                <div>
-                  <div className="text-lg font-heading font-medium">Processing...</div>
+          
+          {/* Thing Description Upload */}
+          <div className="mb-6">
+            <h3 className="text-lg font-heading font-medium text-primary mb-3">Thing Description</h3>
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                isDragActive ? 'border-accent bg-accent/10' : 'border-primary/30 hover:border-primary/50'
+              } ${loading ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              <input {...getInputProps()} />
+              <div className="text-primary">
+                {loading ? (
+                  <div>
+                    <div className="text-lg font-heading font-medium">Processing...</div>
+                  </div>
+                ) : isDragActive ? (
+                  <div>
+                    <div className="text-lg font-heading font-medium">Drop the TD file here</div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-lg font-heading font-medium mb-2">Drag & drop a Thing Description file here</div>
+                    <div className="text-sm text-primary/70 font-body mb-4">or click to select a file</div>
+                    <div className="text-xs text-primary/50 font-body">Supports .json and .jsonld files</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Dashboard Import */}
+          <div>
+            <h3 className="text-lg font-heading font-medium text-primary mb-3">Dashboard</h3>
+            <div className="border-2 border-dashed border-primary/30 hover:border-primary/50 rounded-lg p-6 text-center transition-colors">
+              <label className="cursor-pointer block">
+                <div className="text-primary">
+                  <div className="text-lg font-heading font-medium mb-2">Import Saved Dashboard</div>
+                  <div className="text-sm text-primary/70 font-body mb-4">Upload a previously exported dashboard file</div>
+                  <div className="text-xs text-primary/50 font-body">Supports .json dashboard files</div>
                 </div>
-              ) : isDragActive ? (
-                <div>
-                  <div className="text-lg font-heading font-medium">Drop the file here</div>
-                </div>
-              ) : (
-                <div>
-                  <div className="text-lg font-heading font-medium mb-2">Drag & drop a Thing Description file here</div>
-                  <div className="text-sm text-primary/70 font-body mb-4">or click to select a file</div>
-                  <div className="text-xs text-primary/50 font-body">Supports .json and .jsonld files</div>
-                </div>
-              )}
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportDashboard}
+                  className="hidden"
+                  disabled={loading}
+                />
+              </label>
             </div>
           </div>
         </div>

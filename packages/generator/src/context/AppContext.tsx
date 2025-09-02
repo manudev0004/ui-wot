@@ -14,6 +14,7 @@ type AppAction =
   | { type: 'REMOVE_COMPONENT'; payload: string }
   | { type: 'UPDATE_LAYOUT'; payload: { id: string; layout: WoTComponent['layout'] } }
   | { type: 'SET_THING'; payload: { id: string; thing: any } }
+  | { type: 'LOAD_DASHBOARD'; payload: { tdInfos: TDInfo[]; components: WoTComponent[]; availableAffordances: ParsedAffordance[] } }
   | { type: 'RESET_STATE' };
 
 const initialState: AppState = {
@@ -86,6 +87,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const newThings = new Map(state.things);
       newThings.set(action.payload.id, action.payload.thing);
       return { ...state, things: newThings };
+
+    case 'LOAD_DASHBOARD':
+      return {
+        ...state,
+        tdInfos: action.payload.tdInfos,
+        components: action.payload.components,
+        availableAffordances: action.payload.availableAffordances,
+        currentView: 'component-canvas'
+      };
 
     case 'RESET_STATE':
       return initialState;

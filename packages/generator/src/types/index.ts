@@ -23,6 +23,7 @@ export interface WoTComponent {
   thing: any; // Reference to the WoT thing
   affordanceKey: string; // Key of the affordance in TD
   tdId: string; // Reference to the TD this component belongs to
+  hideCard?: boolean; // Whether to hide the card wrapper and show only the component
 }
 
 export interface TDSource {
