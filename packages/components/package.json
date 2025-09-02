@@ -1,7 +1,7 @@
 {
   "name": "@thingweb/ui-wot-components",
   "version": "0.1.0",
-  "description": "Independent UI components library to build interfaces for IoT applications",
+  "description": "Web of Things (WoT) UI components library with Eclipse Thingweb node-wot integration",
   "main": "dist/index.cjs.js",
   "module": "dist/index.js",
   "types": "dist/types/index.d.ts",
@@ -14,6 +14,21 @@
       "types": "./dist/types/index.d.ts",
       "require": "./dist/index.cjs.js"
     },
+    "./components": {
+      "import": "./dist/components.js",
+      "types": "./dist/types/components.d.ts",
+      "require": "./dist/components.cjs.js"
+    },
+    "./services": {
+      "import": "./dist/services.js",
+      "types": "./dist/types/services.d.ts",
+      "require": "./dist/services.cjs.js"
+    },
+    "./utils": {
+      "import": "./dist/utils.js",
+      "types": "./dist/types/utils.d.ts",
+      "require": "./dist/utils.cjs.js"
+    },
     "./loader": {
       "import": "./loader/index.js",
       "require": "./loader/index.cjs",
@@ -25,9 +40,18 @@
     "url": "git+https://github.com/eclipse-thingweb/ui-wot.git"
   },
   "keywords": [
+    "web-of-things",
+    "wot",
+    "thing-description",
+    "eclipse-thingweb",
+    "node-wot",
     "ui-components",
     "iot",
-    "dashboard"
+    "dashboard",
+    "web-components",
+    "stencil",
+    "typescript",
+    "tree-shaking"
   ],
   "author": "Eclipse Thingweb <thingweb-dev@eclipse.org> (https://thingweb.io/)",
   "license": "EPL-2.0 OR W3C-20150513",
@@ -37,14 +61,25 @@
   "homepage": "https://github.com/eclipse-thingweb/ui-wot/packages/components#readme",
   "files": [
     "dist/",
-    "loader/"
+    "loader/",
+    "README.md"
   ],
+  "sideEffects": false,
   "scripts": {
     "build": "stencil build",
-    "start": "stencil build --dev --watch --serve",
+    "start": "node ./dev-serve.js",
     "test": "stencil test --spec --e2e",
     "test.watch": "stencil test --spec --e2e --watchAll",
-    "generate": "stencil generate"
+    "generate": "stencil generate",
+    "docs": "npx typedoc --options typedoc.json"
+  },
+  "peerDependencies": {
+    "@node-wot/binding-websockets": "^0.9.0"
+  },
+  "peerDependenciesMeta": {
+    "@node-wot/binding-websockets": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@stencil-community/postcss": "2.2.0",
@@ -64,6 +99,11 @@
     "jest-cli": "^29.7.0",
     "postcss-import": "16.1.1",
     "puppeteer": "^24.3.0",
-    "tailwindcss": "3.4.17"
+    "tailwindcss": "3.4.17",
+    "typedoc": "^0.26.0"
+  },
+  "dependencies": {
+    "@node-wot/core": "^0.9.1",
+  "@node-wot/binding-http": "^0.9.0"
   }
 }

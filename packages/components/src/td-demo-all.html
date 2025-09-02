@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Minimal All-Components TD Demo</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 900px;
+        margin: 28px auto;
+        padding: 18px;
+        background: #f8fafc;
+      }
+      .card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      }
+      .row {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        margin: 14px 0;
+      }
+      h1 {
+        margin: 0 0 12px;
+      }
+      .meta {
+        color: #6b7280;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Clean TD Demo with Component Methods</h1>
+
+
+      <div class="row">
+        <div>
+          <h3>Toggle (bool)</h3>
+          <ui-toggle
+            id="td-toggle"
+            label="TD Toggle"
+            show-last-updated="true"
+            show-status="true"
+          ></ui-toggle>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Slider (num)</h3>
+          <ui-slider
+            id="td-slider"
+            min="0"
+            max="100"
+            label="TD Slider"
+            orientation="horizontal"
+            show-last-updated="true"
+            show-status="true"
+          ></ui-slider>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Number Picker (int)</h3>
+          <ui-number-picker
+            id="td-number"
+            min="0"
+            max="100"
+            label="TD Number"
+            show-last-updated="true"
+            show-status="true"
+          ></ui-number-picker>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Button</h3>
+          <ui-button 
+            id="td-button" 
+            label="TD Button" 
+            show-last-updated="true" 
+            show-status="true"
+          ></ui-button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Checkbox (bool)</h3>
+          <ui-checkbox
+            id="td-checkbox"
+            label="TD Checkbox"
+            show-last-updated="true"
+            show-status="true"
+          ></ui-checkbox>
+        </div>
+      </div>
+
+
+      <div class="meta">Open the browser console to see events and status messages.</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
+    <script type="module" src="./build/ui-wot-components.esm.js"></script>
+
+    <script>
+      // TD handling with Node-WoT
+      (async function () {
+        
+        
+        // Wait for all components to be defined
+        const COMPONENT_TAGS = ['ui-toggle', 'ui-slider', 'ui-number-picker', 'ui-button', 'ui-checkbox'];
+        await Promise.all(COMPONENT_TAGS.map(tag => customElements.whenDefined(tag)));
+        console.log('All components ready');
+
+        // Initialize WoT with timeout
+        if (!window.WoT) {
+          console.error('WoT library not loaded');
+          return;
+        }
+
+        // Create WoT runtime
+        const servient = new window.WoT.Core.Servient();
+        servient.addClientFactory(new window.WoT.Http.HttpClientFactory());
+        const wot = await servient.start();
+  console.log('WoT Servient started');
+
+        // Fetch and consume TD
+        const tdUrl = 'http://plugfest.thingweb.io/http-data-schema-thing';
+        let thing;
+        try {
+            console.log('Fetching TD from:', tdUrl);
+          const response = await fetch(tdUrl);
+          const tdJson = await response.json();
+          thing = await wot.consume(tdJson);
+          console.log('TD consumed successfully');
+          console.log('Available properties:', Object.keys(tdJson.properties || {}));
+        } catch (error) {
+          console.error('Failed to fetch/consume TD:', error);
+          return;
+        }
+
+        // --- Simplified demo binding ---------------------------------
+        // This demo shows the minimal pattern to bind a UI component to
+        // a Thing Description (TD) property. It does three things:
+        // 1) Waits for the component to be ready
+        // 2) Reads the current value from the Thing and calls component.setValue(value)
+        // 3) Listens for the component's `valueMsg` events and writes back to the Thing
+        // ----------------------------------------------------------------
+
+        const bindings = [
+          { element: document.getElementById('td-toggle'), property: 'bool' },
+          { element: document.getElementById('td-slider'), property: 'num' },
+          { element: document.getElementById('td-number'), property: 'int' },
+          { element: document.getElementById('td-checkbox'), property: 'bool' }
+        ].filter(b => b.element);
+
+        console.log(`Bindings: ${bindings.length}`);
+
+        // Initial read and simple binding setup
+        for (const binding of bindings) {
+          // Ensure the Stencil component is ready
+          if (binding.element && typeof binding.element.componentOnReady === 'function') {
+            await binding.element.componentOnReady();
+          }
+
+          try {
+            // Read the property once and set the component's value
+            const propertyValue = await thing.readProperty(binding.property);
+            const value = await propertyValue.value();
+            // Call the component's public method so it updates its UI/state
+            if (typeof binding.element.setValue === 'function') {
+              await binding.element.setValue(value);
+            }
+            if (typeof binding.element.setStatus === 'function') {
+              await binding.element.setStatus('success');
+            }
+            console.log(`Initial ${binding.property}:`, value);
+          } catch (e) {
+            console.error(`Read failed ${binding.property}:`, e.message || e);
+            if (typeof binding.element.setStatus === 'function') {
+              await binding.element.setStatus('error', e.message || String(e));
+            }
+          }
+
+          // Write-back: when the component emits a valueMsg, write to the Thing
+          binding.element.addEventListener('valueMsg', async (ev) => {
+            const newValue = ev.detail && (ev.detail.payload ?? ev.detail);
+            try {
+              if (typeof binding.element.setStatus === 'function') {
+                await binding.element.setStatus('loading');
+              }
+              await thing.writeProperty(binding.property, newValue);
+              if (typeof binding.element.setStatus === 'function') {
+                await binding.element.setStatus('success');
+              }
+              console.log(`Wrote ${binding.property}:`, newValue);
+            } catch (err) {
+              console.error(`Write failed ${binding.property}:`, err.message || err);
+              if (typeof binding.element.setStatus === 'function') {
+                await binding.element.setStatus('error', err.message || String(err));
+              }
+            }
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,170 +1,1022 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wot-Components</title>
-  <script type="module" src="/build/ui-wot-components.esm.js"></script>
-  <script nomodule src="/build/ui-wot-components.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            primary: '#067362',
-            secondary: '#B84A91',
-          }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wot-Components</title>
+    <script type="module" src="/build/ui-wot-components.esm.js"></script>
+    <script nomodule src="/build/ui-wot-components.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: '#067362',
+              secondary: '#B84A91',
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-gray-50 dark:bg-gray-900 min-h-screen font-sans transition-colors duration-300">
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 transition-colors duration-300">
+      <div class="flex justify-between items-center max-w-6xl mx-auto">
+        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Wot-Components</h1>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-gray-600 dark:text-gray-300">Light</span>
+          <ui-toggle id="theme-toggle" variant="circle" color="primary"></ui-toggle>
+          <span class="text-sm text-gray-600 dark:text-gray-300">Dark</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto p-6">
+      <!-- Tabs -->
+      <div class="mb-6">
+        <div class="border-b border-gray-200 dark:border-gray-700">
+          <nav class="-mb-px flex space-x-8">
+            <button id="toggle-tab" class="tab-button active border-b-2 border-primary text-primary font-medium py-2 px-1 text-sm">UI Toggle</button>
+            <button
+              id="slider-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI Slider
+            </button>
+            <button
+              id="number-picker-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI Number Picker
+            </button>
+            <button
+              id="button-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI Button
+            </button>
+            <button
+              id="checkbox-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI Checkbox
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Toggle Content -->
+      <div id="toggle-content" class="tab-content">
+        <!-- Basic Usage Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Toggle Usage</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Interactive Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Interactive Mode</h3>
+              <ui-toggle
+                variant="neon"
+                color="primary"
+                label="Smart Light"
+                show-last-updated="true"
+                show-status="true"
+              >
+              </ui-toggle>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle
+  variant="neon"
+  color="primary"
+  label="Smart Light"
+  show-last-updated="true"&gt;
+&lt;/ui-toggle&gt;</pre>
+            </div>
+
+            <!-- Read-Only Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode (Status Display)</h3>
+              <div class="flex items-center gap-4">
+                <ui-toggle readonly="true" value="true" label="Sensor Status" show-last-updated="true"></ui-toggle>
+              </div>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle
+  readonly="true"
+  value="true"
+  label="Sensor Status"
+  show-last-updated="true"&gt;
+&lt;/ui-toggle&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Variants -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Toggle Variants</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Circle (Default)</h3>
+              <div class="flex gap-2 mb-3">
+                <ui-toggle variant="circle"></ui-toggle>
+                <ui-toggle variant="circle" value="true"></ui-toggle>
+                <ui-toggle variant="circle" disabled="true"></ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle variant="circle"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Square</h3>
+              <div class="flex gap-2 mb-3">
+                <ui-toggle variant="square"></ui-toggle>
+                <ui-toggle variant="square" value="true"></ui-toggle>
+                <ui-toggle variant="square" disabled="true"></ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle variant="square"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Apple (iOS Style)</h3>
+              <div class="flex gap-2 mb-3">
+                <ui-toggle variant="apple"></ui-toggle>
+                <ui-toggle variant="apple" value="true"></ui-toggle>
+                <ui-toggle variant="apple" disabled="true"></ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle variant="apple"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Cross (✓/×)</h3>
+              <div class="flex gap-2 mb-3">
+                <ui-toggle variant="cross"></ui-toggle>
+                <ui-toggle variant="cross" value="true"></ui-toggle>
+                <ui-toggle variant="cross" disabled="true"></ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle variant="cross"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Neon (Glowing)</h3>
+              <div class="flex gap-2 mb-3">
+                <ui-toggle variant="neon"></ui-toggle>
+                <ui-toggle variant="neon" value="true"></ui-toggle>
+                <ui-toggle variant="neon" disabled="true"></ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle variant="neon"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">With Label</h3>
+              <div class="flex flex-col gap-2 mb-3">
+                <ui-toggle variant="apple" label="Smart Light" value="true"></ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle label="Smart Light"&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toggle Colors -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Toggle Colors</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Primary</h3>
+              <div class="flex gap-2 mb-3">
+                <ui-toggle color="primary" value="true"></ui-toggle>
+                <ui-toggle color="primary" variant="square" value="true"></ui-toggle>
+                <ui-toggle color="primary" variant="apple" value="true"></ui-toggle>
+                <ui-toggle color="primary" variant="neon" value="true"></ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle color="primary"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Secondary</h3>
+              <div class="flex gap-2 mb-3">
+                <ui-toggle color="secondary" value="true"></ui-toggle>
+                <ui-toggle color="secondary" variant="square" value="true"></ui-toggle>
+                <ui-toggle color="secondary" variant="apple" value="true"></ui-toggle>
+                <ui-toggle color="secondary" variant="neon" value="true"></ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle color="secondary"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Neutral</h3>
+              <div class="flex gap-2 mb-3">
+                <ui-toggle color="neutral" value="true"></ui-toggle>
+                <ui-toggle color="neutral" variant="square" value="true"></ui-toggle>
+                <ui-toggle color="neutral" variant="apple" value="true"></ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle color="neutral"&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toggle Labels -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Toggle Labels</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Basic Labels</h3>
+              <div class="space-y-3 mb-3">
+                <ui-toggle label="Switch" variant="circle"></ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle label="Switch"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Styled Labels</h3>
+              <div class="space-y-3 mb-3">
+                <ui-toggle label="Turbo mode" variant="neon" color="secondary" value="true"></ui-toggle>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-toggle label="Turbo mode" variant="neon"&gt;</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Number Picker Content -->
+      <div id="number-picker-content" class="tab-content hidden">
+        <!-- Basic Usage Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Number Picker Usage</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Interactive Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Interactive Mode</h3>
+              <ui-number-picker
+                variant="outlined"
+                color="primary"
+                label="Temperature"
+                min="0"
+                max="100"
+                value="23"
+                show-last-updated="true"
+              >
+              </ui-number-picker>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-number-picker
+  variant="outlined"
+  color="primary"
+  label="Temperature"
+  min="0"
+  max="100"
+  value="23"
+  show-last-updated="true"&gt;
+&lt;/ui-number-picker&gt;</pre>
+            </div>
+
+            <!-- Read-Only Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode (Status Display)</h3>
+              <ui-number-picker
+                readonly="true"
+                label="Sensor Reading"
+                min="0"
+                max="100"
+                value="75"
+                color="primary"
+                show-last-updated="true"
+              >
+              </ui-number-picker>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-number-picker
+  readonly="true"
+  label="Sensor Reading"
+  min="0"
+  max="100"
+  value="75"
+  show-last-updated="true"&gt;
+&lt;/ui-number-picker&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Basic Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Number Picker Variants</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Minimal Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Minimal Primary Light</h3>
+              <div class="flex justify-center mb-4">
+                <ui-number-picker variant="minimal" value="3" min="0" max="10" color="primary" label=""> </ui-number-picker>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-number-picker
+  variant="minimal"
+  value="3"
+  color="primary"&gt;
+&lt;/ui-number-picker&gt;</pre>
+            </div>
+
+            <!-- Outlined Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Outlined Primary Light</h3>
+              <div class="flex justify-center mb-4">
+                <ui-number-picker variant="outlined" value="3" min="0" max="10" color="primary" label=""> </ui-number-picker>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-number-picker
+  variant="outlined"
+  value="3"
+  color="primary"&gt;
+&lt;/ui-number-picker&gt;</pre>
+            </div>
+
+            <!-- Filled Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Filled Primary Light</h3>
+              <div class="flex justify-center mb-4">
+                <ui-number-picker variant="filled" value="3" min="0" max="10" color="primary" label=""> </ui-number-picker>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-number-picker
+  variant="filled"
+  value="3"
+  color="primary"&gt;
+&lt;/ui-number-picker&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Color Variations -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Color Variations</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Primary Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Primary Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-number-picker variant="minimal" value="1" color="primary" label="Minimal"></ui-number-picker>
+                <ui-number-picker variant="outlined" value="2" color="primary" label="Outlined"></ui-number-picker>
+                <ui-number-picker variant="filled" value="3" color="primary" label="Filled"></ui-number-picker>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-number-picker
+  color="primary"
+  variant="filled"&gt;
+&lt;/ui-number-picker&gt;</pre>
+            </div>
+
+            <!-- Secondary Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Secondary Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-number-picker variant="minimal" value="1" color="secondary" label="Minimal"></ui-number-picker>
+                <ui-number-picker variant="outlined" value="2" color="secondary" label="Outlined"></ui-number-picker>
+                <ui-number-picker variant="filled" value="3" color="secondary" label="Filled"></ui-number-picker>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-number-picker
+  color="secondary"
+  variant="outlined"&gt;
+&lt;/ui-number-picker&gt;</pre>
+            </div>
+
+            <!-- Neutral Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Neutral Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-number-picker variant="minimal" value="1" color="neutral" label="Minimal"></ui-number-picker>
+                <ui-number-picker variant="outlined" value="2" color="neutral" label="Outlined"></ui-number-picker>
+                <ui-number-picker variant="filled" value="3" color="neutral" label="Filled"></ui-number-picker>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-number-picker
+  color="neutral"
+  variant="minimal"&gt;
+&lt;/ui-number-picker&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- States -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Component States</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Active State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Active State</h3>
+              <div class="flex justify-center mb-4">
+                <ui-number-picker variant="filled" value="3" color="primary" label="Active Counter"> </ui-number-picker>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-number-picker
+  state="active"&gt;
+&lt;/ui-number-picker&gt;</pre>
+            </div>
+
+            <!-- Disabled State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Disabled State</h3>
+              <div class="flex justify-center mb-4">
+                <ui-number-picker variant="filled" value="3" disabled="true" color="primary" label="Disabled Counter"> </ui-number-picker>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-number-picker
+  state="disabled"&gt;
+&lt;/ui-number-picker&gt;</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slider Content -->
+      <div id="slider-content" class="tab-content hidden">
+        <!-- Slider Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Slider Usage</h2>
+          <div class="space-y-6 max-w-md">
+            <div>
+              <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Interactive Slider</h4>
+              <ui-slider
+                min="0"
+                max="100"
+                value="50"
+                variant="neon"
+                color="primary"
+                label="Smart Dimmer"
+                show-last-updated="true"
+              >
+              </ui-slider>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-slider
+  min="0"
+  max="100"
+  value="50"
+  variant="neon"
+  color="primary"
+  label="Smart Dimmer"
+  show-last-updated="true"&gt;
+&lt;/ui-slider&gt;</pre>
+            </div>
+            
+            <!-- Read-only Slider Example -->
+            <div class="space-y-4 max-w-md mt-6">
+              <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">Read-only Slider</h4>
+              <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading" show-last-updated="true"></ui-slider>
+              <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-slider 
+  readonly="true" 
+  value="75" 
+  min="0" 
+  max="100" 
+  label="Sensor Reading"
+  show-last-updated="true"&gt;
+&lt;/ui-slider&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slider Variants -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Slider Variants</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Narrow (Default)</h3>
+              <ui-slider variant="narrow" min="0" max="100" value="30" label="Brightness"></ui-slider>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-slider variant="narrow" 
+  min="0" max="100" 
+  label="Brightness"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Wide</h3>
+              <ui-slider variant="wide" min="0" max="100" value="60" label="Volume"></ui-slider>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-slider variant="wide" 
+  min="0" max="100" 
+  label="Volume"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Rainbow</h3>
+              <ui-slider variant="rainbow" min="0" max="360" value="180" label="Hue"></ui-slider>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-slider variant="rainbow" 
+  min="0" max="360" 
+  label="Hue"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Neon</h3>
+              <ui-slider variant="neon" min="0" max="100" value="75" label="Intensity"></ui-slider>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-slider variant="neon" 
+  min="0" max="100" 
+  label="Intensity"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Stepped</h3>
+              <ui-slider variant="stepped" min="0" max="20" step="5" value="10" label="Steps"></ui-slider>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-slider variant="stepped" 
+  step="5" min="0" max="20" 
+  label="Steps"&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thumb Shapes -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Thumb Shapes</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Circle (Default)</h3>
+              <ui-slider thumb-shape="circle" min="0" max="100" value="50" label="Circle"></ui-slider>
+              <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider 
+  thumb-shape="circle"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Square</h3>
+              <ui-slider thumb-shape="square" min="0" max="100" value="40" label="Square"></ui-slider>
+              <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider 
+  thumb-shape="square"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Arrow</h3>
+              <ui-slider thumb-shape="arrow" min="0" max="100" value="60" label="Arrow"></ui-slider>
+              <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider 
+  thumb-shape="arrow"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Triangle</h3>
+              <ui-slider thumb-shape="triangle" min="0" max="100" value="30" label="Triangle"></ui-slider>
+              <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider 
+  thumb-shape="triangle"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Diamond</h3>
+              <ui-slider thumb-shape="diamond" min="0" max="100" value="80" label="Diamond"></ui-slider>
+              <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider 
+  thumb-shape="diamond"&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Orientation -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Orientation</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Horizontal (Default)</h3>
+              <div class="space-y-4">
+                <ui-slider orientation="horizontal" variant="narrow" min="0" max="100" value="30" label="Narrow"></ui-slider>
+                <ui-slider orientation="horizontal" variant="wide" min="0" max="100" value="60" label="Wide"></ui-slider>
+                <ui-slider orientation="horizontal" variant="rainbow" min="0" max="360" value="180" label="Rainbow"></ui-slider>
+                <ui-slider orientation="horizontal" variant="stepped" min="0" max="20" step="5" value="15" label="Stepped"></ui-slider>
+              </div>
+              <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider 
+  orientation="horizontal"
+  variant="narrow"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Vertical</h3>
+              <div class="flex justify-around items-start h-80 pt-4 pb-8">
+                <div class="flex flex-col items-center">
+                  <ui-slider orientation="vertical" variant="narrow" min="0" max="100" value="30" label=""></ui-slider>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2 text-center">Narrow</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <ui-slider orientation="vertical" variant="wide" min="0" max="100" value="60" label=""></ui-slider>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2 text-center">Wide</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <ui-slider orientation="vertical" variant="rainbow" min="0" max="360" value="180" label=""></ui-slider>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2 text-center">Rainbow</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <ui-slider orientation="vertical" variant="stepped" min="0" max="20" step="5" value="15" label=""></ui-slider>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2 text-center">Stepped</span>
+                </div>
+              </div>
+              <pre class="mt-20 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider 
+  orientation="vertical"
+  variant="narrow"&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slider Colors -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Slider Colors</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <ui-slider color="primary" min="0" max="100" value="70" label="Primary"></ui-slider>
+              <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider color="primary"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <ui-slider color="secondary" min="0" max="100" value="70" label="Secondary"></ui-slider>
+              <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider color="secondary"&gt;</pre>
+            </div>
+
+            <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
+              <ui-slider color="neutral" min="0" max="100" value="70" label="Neutral"></ui-slider>
+              <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider color="neutral"&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mixed Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Mixed Examples</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ui-slider variant="wide" thumb-shape="square" color="secondary" min="0" max="255" value="128" label="Color"></ui-slider>
+            <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider variant="wide" 
+  thumb-shape="square" 
+  color="secondary"&gt;</pre>
+            <ui-slider variant="neon" thumb-shape="arrow" color="primary" min="-50" max="50" value="0" label="Temperature"></ui-slider>
+            <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider variant="neon" 
+  thumb-shape="arrow" 
+  min="-50" max="50"&gt;</pre>
+            <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Volume"></ui-slider>
+            <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider variant="stepped" 
+  step="10"&gt;</pre>
+            <ui-slider disabled="true" min="0" max="100" value="25" label="Disabled"></ui-slider>
+            <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto">&lt;ui-slider state="disabled"&gt;</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Button Content -->
+      <div id="button-content" class="tab-content hidden">
+        <!-- Button Variants -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Button Variants</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Minimal Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Minimal</h3>
+              <div class="flex justify-center mb-4">
+                <ui-button variant="minimal" color="primary" label="Minimal Button"></ui-button>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  variant="minimal"
+  label="Minimal Button"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+
+            <!-- Outlined Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Outlined</h3>
+              <div class="flex justify-center mb-4">
+                <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  variant="outlined"
+  label="Outlined Button"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+
+            <!-- Filled Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Filled</h3>
+              <div class="flex justify-center mb-4">
+                <ui-button variant="filled" color="primary" label="Filled Button"></ui-button>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  variant="filled"
+  label="Filled Button"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Button Colors -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Button Colors</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Primary Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Primary Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-button variant="minimal" color="primary" label="Minimal"></ui-button>
+                <ui-button variant="outlined" color="primary" label="Outlined"></ui-button>
+                <ui-button variant="filled" color="primary" label="Filled"></ui-button>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  color="primary"
+  variant="filled"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+
+            <!-- Secondary Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Secondary Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-button variant="minimal" color="secondary" label="Minimal"></ui-button>
+                <ui-button variant="outlined" color="secondary" label="Outlined"></ui-button>
+                <ui-button variant="filled" color="secondary" label="Filled"></ui-button>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  color="secondary"
+  variant="outlined"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+
+            <!-- Neutral Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Neutral Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-button variant="minimal" color="neutral" label="Minimal"></ui-button>
+                <ui-button variant="outlined" color="neutral" label="Outlined"></ui-button>
+                <ui-button variant="filled" color="neutral" label="Filled"></ui-button>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  color="neutral"
+  variant="minimal"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Button States -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Button States</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Active State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Active State</h3>
+              <div class="flex justify-center mb-4">
+                <ui-button variant="filled" color="primary" label="Active Button"></ui-button>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  variant="filled"
+  color="primary"
+  label="Active Button"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+
+            <!-- Disabled State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Disabled State</h3>
+              <div class="flex justify-center mb-4">
+                <ui-button variant="filled" disabled="true" color="primary" label="Disabled Button"></ui-button>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-button
+  variant="filled"
+  color="primary"
+  disabled="true"
+  label="Disabled Button"&gt;
+&lt;/ui-button&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Checkbox Content -->
+      <div id="checkbox-content" class="tab-content hidden">
+        <!-- Checkbox Variants -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Checkbox Variants</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Minimal Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Radio</h3>
+              <div class="flex flex-col items-center space-y-4">
+                <ui-checkbox variant="minimal" color="primary" label="Unchecked Radio"></ui-checkbox>
+                <ui-checkbox variant="minimal" color="primary" label="Checked Radio" value="true"></ui-checkbox>
+                <ui-checkbox variant="minimal" color="secondary" label="Secondary" value="true"></ui-checkbox>
+                <ui-checkbox variant="minimal" color="neutral" label="Neutral" value="true"></ui-checkbox>
+              </div>
+              <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  variant="minimal"
+  label="Radio Style"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+
+            <!-- Outlined Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Outlined</h3>
+              <div class="flex flex-col items-center space-y-4">
+                <ui-checkbox variant="outlined" color="primary" label="Unchecked Outlined"></ui-checkbox>
+                <ui-checkbox variant="outlined" color="primary" label="Checked Outlined" value="true"></ui-checkbox>
+                <ui-checkbox variant="outlined" color="secondary" label="Secondary" value="true"></ui-checkbox>
+                <ui-checkbox variant="outlined" color="neutral" label="Neutral" value="true"></ui-checkbox>
+              </div>
+              <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  variant="outlined"
+  label="Outlined Style"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+
+            <!-- Filled Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Filled</h3>
+              <div class="flex flex-col items-center space-y-4">
+                <ui-checkbox variant="filled" color="primary" label="Unchecked Filled"></ui-checkbox>
+                <ui-checkbox variant="filled" color="primary" label="Checked Filled" value="true"></ui-checkbox>
+                <ui-checkbox variant="filled" color="secondary" label="Secondary" value="true"></ui-checkbox>
+                <ui-checkbox variant="filled" color="neutral" label="Neutral" value="true"></ui-checkbox>
+              </div>
+              <pre class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  variant="filled"
+  label="Filled Style"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checkbox Colors -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Checkbox Colors</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Primary Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Primary Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-checkbox variant="minimal" color="primary" label="Minimal" value="true"></ui-checkbox>
+                <ui-checkbox variant="outlined" color="primary" label="Outlined" value="true"></ui-checkbox>
+                <ui-checkbox variant="filled" color="primary" label="Filled" value="true"></ui-checkbox>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  color="primary"
+  variant="filled"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+
+            <!-- Secondary Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Secondary Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-checkbox variant="minimal" color="secondary" label="Minimal" value="true"></ui-checkbox>
+                <ui-checkbox variant="outlined" color="secondary" label="Outlined" value="true"></ui-checkbox>
+                <ui-checkbox variant="filled" color="secondary" label="Filled" value="true"></ui-checkbox>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  color="secondary"
+  variant="outlined"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+
+            <!-- Neutral Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Neutral Color</h3>
+              <div class="space-y-4 flex flex-col items-center">
+                <ui-checkbox variant="minimal" color="neutral" label="Minimal" checked></ui-checkbox>
+                <ui-checkbox variant="outlined" color="neutral" label="Outlined" checked></ui-checkbox>
+                <ui-checkbox variant="filled" color="neutral" label="Filled" checked></ui-checkbox>
+              </div>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  color="neutral"
+  variant="minimal"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checkbox States -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Checkbox States</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Default State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Default State</h3>
+              <div class="flex justify-center mb-4">
+                <ui-checkbox variant="outlined" color="primary" label="Default Checkbox"></ui-checkbox>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  variant="outlined"
+  color="primary"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+
+            <!-- Active State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Active State</h3>
+              <div class="flex justify-center mb-4">
+                <ui-checkbox variant="outlined" color="primary" label="Active Checkbox" checked></ui-checkbox>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  variant="outlined"
+  color="primary"
+  checked&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+
+            <!-- Disabled State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Disabled State</h3>
+              <div class="flex justify-center mb-4">
+                <ui-checkbox variant="outlined" color="primary" label="Disabled Checkbox" disabled></ui-checkbox>
+              </div>
+              <pre class="p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-checkbox
+  variant="outlined"
+  color="primary"
+  disabled&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <script>
+      const themeToggle = document.getElementById('theme-toggle');
+      const html = document.documentElement;
+      // guard to avoid recursive theme sync loops
+      let suppressThemeSync = false;
+      const toggleTab = document.getElementById('toggle-tab');
+      const numberPickerTab = document.getElementById('number-picker-tab');
+      const sliderTab = document.getElementById('slider-tab');
+      const buttonTab = document.getElementById('button-tab');
+      const checkboxTab = document.getElementById('checkbox-tab');
+      const toggleContent = document.getElementById('toggle-content');
+      const numberPickerContent = document.getElementById('number-picker-content');
+      const sliderContent = document.getElementById('slider-content');
+      const buttonContent = document.getElementById('button-content');
+      const checkboxContent = document.getElementById('checkbox-content');
+
+      function setTheme(isDark) {
+        if (suppressThemeSync) return;
+        suppressThemeSync = true;
+        try {
+          html.classList.toggle('dark', isDark);
+          localStorage.setItem('theme', isDark ? 'dark' : 'light');
+          document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox').forEach(component => {
+            component.dark = isDark;
+          });
+        } finally {
+          suppressThemeSync = false;
         }
       }
-    }
-  </script>
-</head>
-<body class="bg-gray-50 dark:bg-gray-900 min-h-screen font-sans transition-colors duration-300">
-  <!-- Navigation -->
-  <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 transition-colors duration-300">
-    <div class="flex justify-between items-center max-w-6xl mx-auto">
-      <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Wot-Components</h1>
-      <div class="flex items-center gap-3">
-        <span class="text-sm text-gray-600 dark:text-gray-300">Light</span>
-        <ui-toggle id="theme-toggle" variant="apple"></ui-toggle>
-        <span class="text-sm text-gray-600 dark:text-gray-300">Dark</span>
-      </div>
-    </div>
-  </nav>
 
-  <div class="max-w-6xl mx-auto p-6">
-    <!-- TD Integration -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">TD Integration</h2>
-      <div class="space-y-4">
+      function switchTab(activeTab, activeContent, ...inactivePairs) {
+        // Activate the selected tab
+        activeTab.classList.add('active', 'border-primary', 'text-primary');
+        activeTab.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+        activeContent.classList.remove('hidden');
 
-        <ui-toggle 
-          td-url="http://plugfest.thingweb.io:80/http-data-schema-thing/properties/bool"
-          variant="neon" 
-          color="primary" 
-          label="Test Thing">
-        </ui-toggle>
+        // Deactivate all other tabs
+        for (let i = 0; i < inactivePairs.length; i += 2) {
+          const tab = inactivePairs[i];
+          const content = inactivePairs[i + 1];
+          tab.classList.remove('active', 'border-primary', 'text-primary');
+          tab.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+          content.classList.add('hidden');
+        }
+      }
 
-      </div>
-    </div>
+      // Event logging for demonstration
+      function logEvent(eventName, detail) {
+        console.log(`[${new Date().toLocaleTimeString()}] ${eventName}:`, detail);
+      }
 
-    <!-- Variants -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Variants</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      // Listen to component events
+      document.addEventListener('valueMsg', event => {
+        logEvent('Value Change', event.detail);
+      });
 
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Circle</h3>
-          <div class="flex gap-2">
-            <ui-toggle variant="circle" state="default"></ui-toggle>
-            <ui-toggle variant="circle" state="active"></ui-toggle>
-            <ui-toggle variant="circle" state="disabled"></ui-toggle>
-          </div>
-        </div>
-        
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Square</h3>
-          <div class="flex gap-2">
-            <ui-toggle variant="square" state="default"></ui-toggle>
-            <ui-toggle variant="square" state="active"></ui-toggle>
-            <ui-toggle variant="square" state="disabled"></ui-toggle>
-          </div>
-        </div>
-        
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Apple</h3>
-          <div class="flex gap-2">
-            <ui-toggle variant="apple" state="default"></ui-toggle>
-            <ui-toggle variant="apple" state="active"></ui-toggle>
-            <ui-toggle variant="apple" state="disabled"></ui-toggle>
-          </div>
-        </div>
-        
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cross</h3>
-          <div class="flex gap-2">
-            <ui-toggle variant="cross" state="default"></ui-toggle>
-            <ui-toggle variant="cross" state="active"></ui-toggle>
-            <ui-toggle variant="cross" state="disabled"></ui-toggle>
-          </div>
-        </div>
-        
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Neon</h3>
-          <div class="flex gap-2">
-            <ui-toggle variant="neon" state="default"></ui-toggle>
-            <ui-toggle variant="neon" state="active"></ui-toggle>
-            <ui-toggle variant="neon" state="disabled"></ui-toggle>
-          </div>
-        </div>
-      </div>
-    </div>
+      // Tab switching - only for existing tabs
+      toggleTab.addEventListener('click', () => {
+        switchTab(toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent);
+      });
 
-    <!-- Colors -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Colors</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Primary</h3>
-          <div class="flex gap-2">
-            <ui-toggle color="primary" state="active"></ui-toggle>
-            <ui-toggle color="primary" variant="square" state="active"></ui-toggle>
-            <ui-toggle color="primary" variant="apple" state="active"></ui-toggle>
-            <ui-toggle color="primary" variant="neon" state="active"></ui-toggle>
-          </div>
-        </div>
-        
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Secondary</h3>
-          <div class="flex gap-2">
-            <ui-toggle color="secondary" state="active"></ui-toggle>
-            <ui-toggle color="secondary" variant="square" state="active"></ui-toggle>
-            <ui-toggle color="secondary" variant="apple" state="active"></ui-toggle>
-            <ui-toggle color="secondary" variant="neon" state="active"></ui-toggle>
-          </div>
-        </div>
-        
-        <div class="p-4 border border-gray-100 dark:border-gray-600 rounded">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Neutral</h3>
-          <div class="flex gap-2">
-            <ui-toggle color="neutral" state="active"></ui-toggle>
-            <ui-toggle color="neutral" variant="square" state="active"></ui-toggle>
-            <ui-toggle color="neutral" variant="apple" state="active"></ui-toggle>
+      numberPickerTab.addEventListener('click', () => {
+        switchTab(numberPickerTab, numberPickerContent, toggleTab, toggleContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent);
+      });
 
-          </div>
-        </div>
-      </div>
-    </div>
+      sliderTab.addEventListener('click', () => {
+        switchTab(sliderTab, sliderContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, buttonTab, buttonContent, checkboxTab, checkboxContent);
+      });
 
-    <!-- Labels -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Labels</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ui-toggle label="Switch" state="default" variant="circle"></ui-toggle>
-        <ui-toggle label="Fan" variant="apple" color="primary" state="default"></ui-toggle>
-        <ui-toggle label="Turbo mode" variant="neon" color="secondary" state="active"></ui-toggle>
-        <ui-toggle label="Coffee Machine" variant="cross" color="neutral" state="active"></ui-toggle>
-      </div>
-    </div>
-  </div>
-  <script>
-    const themeToggle = document.getElementById('theme-toggle');
-    const html = document.documentElement;
+      buttonTab.addEventListener('click', () => {
+        switchTab(buttonTab, buttonContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, checkboxTab, checkboxContent);
+      });
 
-    function setTheme(isDark) {
-      html.classList.toggle('dark', isDark);
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      document.querySelectorAll('ui-toggle').forEach(t => t.theme = isDark ? 'dark' : 'light');
-      themeToggle.state = isDark ? 'active' : 'default';
-    }
+      checkboxTab.addEventListener('click', () => {
+        switchTab(checkboxTab, checkboxContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent);
+      });
 
-    // Initialize theme
-    const savedTheme = localStorage.getItem('theme');
-    setTheme(savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches));
+      // Initialize theme
+      const savedTheme = localStorage.getItem('theme');
+      const isDarkMode = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      setTheme(isDarkMode);
 
-    themeToggle.addEventListener('toggle', e => setTheme(e.detail.active));
-  </script>
-</body>
+      // Wire the theme toggle
+      if (themeToggle) {
+        if (window.customElements && typeof window.customElements.whenDefined === 'function') {
+          window.customElements.whenDefined('ui-toggle').then(() => {
+            themeToggle.addEventListener('valueMsg', e => setTheme(e.detail.payload));
+            themeToggle.value = isDarkMode;
+          });
+        } else {
+          themeToggle.addEventListener('valueMsg', e => setTheme(e.detail.payload));
+          themeToggle.value = isDarkMode;
+        }
+      }
+
+      // Add event listeners for component interaction
+      document.addEventListener('DOMContentLoaded', () => {
+        // Listen to all valueMsg events from components
+        document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox').forEach(component => {
+          component.addEventListener('valueMsg', (event) => {
+            console.log(`Component ${component.tagName} changed:`, event.detail);
+          });
+        });
+      });
+    </script>
+
+    <style>
+      .tab-button.active {
+        color: #067362 !important;
+        border-color: #067362 !important;
+      }
+    </style>
+  </body>
 </html>

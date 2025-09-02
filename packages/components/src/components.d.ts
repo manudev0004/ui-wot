@@ -5,35 +5,1655 @@
  * It contains typing information for all components that exist in this project.
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
+import { UiMsg } from "./utils/types";
+export { UiMsg } from "./utils/types";
 export namespace Components {
-    interface UiHeading {
-        "text": string;
+    /**
+     * Button component with various visual styles, matching the ui-number-picker design family.
+     * Supports the same variants, colors, and themes as the number picker.
+     * @example Basic Usage
+     * ```html
+     * <ui-button variant="minimal" label="Click Me"></ui-button>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
+     * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
+     * ```
+     * @example Event Handling
+     * ```html
+     * <ui-button id="my-button" label="Custom Handler"></ui-button>
+     * ```
+     * @example JavaScript Event Handling
+     * ```javascript
+     * document.querySelector('#my-button').addEventListener('valueMsg', (event) => {
+     * console.log('Button clicked:', event.detail.payload);
+     * console.log('Button label:', event.detail.source);
+     * });
+     * ```
+     */
+    interface UiButton {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @example ```html <ui-button color="secondary" label="Colored Button"></ui-button> ```
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected": boolean;
+        /**
+          * Dark theme variant.
+          * @example ```html <ui-button dark="true" label="Dark Button"></ui-button> ```
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the component is disabled (cannot be interacted with).
+          * @example ```html <ui-button disabled="true" label="Cannot Click"></ui-button> ```
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Get current button value (its label).
+          * @returns Promise<string> - The current button label/text
+          * @example Basic Usage (Easy) ```javascript // Get current button text const button = document.querySelector('ui-button'); const currentText = await button.getValue(); console.log('Button says:', currentText); ```
+          * @example Dynamic UI Updates (Advanced) ```javascript // Check button state and update other elements const buttons = document.querySelectorAll('ui-button');  for (const button of buttons) { const text = await button.getValue(); const status = document.querySelector(`#status-${button.id}`);  if (text.includes('✓')) { status.textContent = 'Completed'; status.className = 'status-success'; } else if (text.includes('...')) { status.textContent = 'In Progress'; status.className = 'status-loading'; } } ```
+          * @example Button State Management (Advanced) ```javascript // Store and restore button states const buttons = document.querySelectorAll('ui-button'); const buttonStates = new Map();  // Save current states for (const button of buttons) { const value = await button.getValue(); buttonStates.set(button.id, value); }  // Later restore states for (const [buttonId, savedValue] of buttonStates) { const button = document.querySelector(`#${buttonId}`); await button.setValue(savedValue); } ```
+         */
+        "getValue": () => Promise<string>;
+        /**
+          * Enable keyboard navigation.
+          * @example ```html <ui-button keyboard="false" label="No Keyboard"></ui-button> ```
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Button text label.
+          * @example ```html <ui-button label="Click Me"></ui-button> ```
+          * @default 'Button'
+         */
+        "label": string;
+        /**
+          * Whether the component is read-only (displays value but cannot be changed).
+          * @example ```html <ui-button readonly="true" label="Display Only"></ui-button> ```
+          * @default false
+         */
+        "readonly": boolean;
+        /**
+          * Manually set operation status for external status management.
+          * @param status - The status to set ('idle', 'loading', 'success', 'error')
+          * @param message - Optional error message for error status
+          * @returns Promise<void>
+          * @example Basic Usage (Easy) ```javascript const button = document.querySelector('ui-button');  // Show loading await button.setStatus('loading');  // Show success await button.setStatus('success');  // Show error await button.setStatus('error', 'Operation failed');  // Clear status await button.setStatus('idle'); ```
+          * @example Form Submission (Advanced) ```javascript // Form submission with status feedback const submitButton = document.querySelector('#submit-form'); const form = document.querySelector('#my-form');  form.addEventListener('submit', async (e) => { e.preventDefault();  try { await submitButton.setStatus('loading');  const formData = new FormData(form); const response = await fetch('/api/submit', { method: 'POST', body: formData });  if (!response.ok) { throw new Error(`HTTP ${response.status}: ${response.statusText}`); }  await submitButton.setStatus('success'); form.reset();  } catch (error) { await submitButton.setStatus('error', error.message); } }); ```
+          * @example Multi-Button Workflow (Advanced) ```javascript // Coordinate status across multiple buttons const buttons = document.querySelectorAll('.workflow-button');  async function runWorkflow() { for (let i = 0; i < buttons.length; i++) { const button = buttons[i];  try { // Set current button to loading await button.setStatus('loading');  // Set previous buttons to success for (let j = 0; j < i; j++) { await buttons[j].setStatus('success'); }  // Perform step await performWorkflowStep(i);  // Set to success await button.setStatus('success');  } catch (error) { await button.setStatus('error', `Step ${i + 1} failed`); break; } } } ```
+         */
+        "setStatus": (status: "idle" | "loading" | "success" | "error", message?: string) => Promise<void>;
+        /**
+          * Set the button value (label) with automatic operation management. This method allows you to change the button text and optionally perform operations.
+          * @param value - The string value to set as button label
+          * @param options - Configuration options for the operation
+          * @returns Promise<boolean> - true if successful, false if failed
+          * @example Basic Usage (Easy) ```javascript // Simple label change const button = document.querySelector('ui-button'); await button.setValue('Click Me'); await button.setValue('Save Changes'); ```
+          * @example Dynamic Button States (Advanced) ```javascript // Button that changes based on state const saveButton = document.querySelector('#save-button');  // Initial state await saveButton.setValue('Save');  // When user makes changes await saveButton.setValue('Save Changes*');  // During save operation await saveButton.setValue('Saving...', { writeOperation: async () => { const response = await fetch('/api/save', { method: 'POST', body: JSON.stringify(formData) }); if (!response.ok) throw new Error('Save failed'); } });  // After successful save await saveButton.setValue('Saved ✓'); ```
+          * @example API Operation Button (Advanced) ```javascript // Button that performs API calls const deployButton = document.querySelector('#deploy-button');  await deployButton.setValue('Deploy', { writeOperation: async () => { // Start deployment const deployResponse = await fetch('/api/deploy', { method: 'POST' }); if (!deployResponse.ok) throw new Error('Deployment failed');  // Wait for completion const { deploymentId } = await deployResponse.json(); await waitForDeployment(deploymentId); }, autoRetry: { attempts: 2, delay: 5000 } }); ```
+          * @example Multi-step Workflow (Advanced) ```javascript // Button for complex workflows const processButton = document.querySelector('#process-button');  // Step 1: Validate await processButton.setValue('Validating...', { customStatus: 'loading' }); await validateData();  // Step 2: Process await processButton.setValue('Processing...', { writeOperation: async () => { await processData(); await uploadResults(); } });  // Step 3: Complete await processButton.setValue('Completed ✓', { customStatus: 'success' }); ```
+         */
+        "setValue": (value: string, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>;
+        /**
+          * Set value silently without triggering events or status changes. Use this for external updates that shouldn't trigger event listeners.
+          * @param value - The string value to set as button label
+          * @returns Promise<boolean> - Always returns true
+          * @example Basic Usage (Easy) ```javascript // Update button text without triggering events const button = document.querySelector('ui-button'); await button.setValueSilent('Updated Text'); ```
+          * @example External Data Sync (Advanced) ```javascript // Sync button states from server without events const response = await fetch('/api/ui-state'); const uiState = await response.json();  for (const [buttonId, label] of Object.entries(uiState.buttons)) { const button = document.querySelector(`#${buttonId}`); if (button) { await button.setValueSilent(label); } } ```
+          * @example Real-time Collaboration (Advanced) ```javascript // Update UI from other users' actions websocket.addEventListener('message', async (event) => { const { type, buttonId, newLabel } = JSON.parse(event.data);  if (type === 'button-update') { const button = document.querySelector(`#${buttonId}`); if (button) { // Silent update to prevent event loops await button.setValueSilent(newLabel); } } }); ```
+         */
+        "setValueSilent": (value: string) => Promise<boolean>;
+        /**
+          * Show last updated timestamp below the component.
+          * @example ```html <ui-button showLastUpdated="true" label="With Timestamp"></ui-button> ```
+          * @default true
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Trigger visual read pulse (brief animation). Provides visual feedback for data refresh or read operations.
+          * @returns Promise<void>
+          * @example Basic Usage (Easy) ```javascript // Show visual feedback after reading data const button = document.querySelector('ui-button'); await button.triggerReadPulse(); ```
+          * @example Data Refresh Indicator (Advanced) ```javascript // Show pulse when refreshing button data const refreshButton = document.querySelector('#refresh-data');  setInterval(async () => { try { const response = await fetch('/api/status'); const data = await response.json();  // Update button text silently await refreshButton.setValueSilent(`Status: ${data.status}`);  // Show pulse to indicate refresh await refreshButton.triggerReadPulse();  } catch (error) { console.error('Failed to refresh:', error); } }, 30000); // Every 30 seconds ```
+          * @example User Action Feedback (Advanced) ```javascript // Provide feedback for quick actions const copyButton = document.querySelector('#copy-button');  copyButton.addEventListener('click', async () => { try { await navigator.clipboard.writeText('copied content');  // Brief feedback await copyButton.setValue('Copied!'); await copyButton.triggerReadPulse();  // Reset after delay setTimeout(async () => { await copyButton.setValue('Copy'); }, 2000);  } catch (error) { await copyButton.setStatus('error', 'Copy failed'); } }); ```
+         */
+        "triggerReadPulse": () => Promise<void>;
+        /**
+          * Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button
+          * @default 'outlined'
+         */
+        "variant": 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Advanced checkbox component with reactive state management and multiple visual styles.
+     * @example Basic Usage
+     * ```html
+     * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-checkbox variant="minimal" value="false" label="Minimal Style"></ui-checkbox>
+     * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
+     * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const checkbox = document.querySelector('#terms-checkbox');
+     * checkbox.addEventListener('valueMsg', (e) => {
+     * console.log('Checkbox value:', e.detail.payload);
+     * });
+     * // Set value programmatically
+     * await checkbox.setValue(true);
+     * ```
+     */
+    interface UiCheckbox {
+        /**
+          * Backwards-compatible `checked` attribute alias for `value`. Accepts attribute usage like `checked` or `checked="true"` in demos.
+         */
+        "checked"?: boolean;
+        /**
+          * Color theme variant.
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected": boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the checkbox is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Get the current checkbox value with optional metadata.
+          * @param includeMetadata - Include last updated timestamp and status
+          * @returns Promise that resolves to the current value or value with metadata
+          * @example Basic Usage (Easy) ```javascript const checkbox = document.querySelector('ui-checkbox'); const isChecked = await checkbox.getValue(); console.log('Checkbox is:', isChecked ? 'checked' : 'unchecked'); ```
+          * @example With Metadata (Advanced) ```javascript const result = await checkbox.getValue(true); console.log('Value:', result.value, 'Status:', result.status); ```
+         */
+        "getValue": (includeMetadata?: boolean) => Promise<boolean | { value: boolean; lastUpdated?: number; status: string; error?: string; }>;
+        /**
+          * Enable keyboard navigation (Space and Enter keys). Default: true
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Text label displayed next to the checkbox.
+         */
+        "label"?: string;
+        /**
+          * Set operation status for external status management.
+          * @param status - The status to set ('idle', 'loading', 'success', 'error')
+          * @param errorMessage - Optional error message for error status
+          * @returns Promise<void>
+          * @example Basic Usage (Easy) ```javascript const checkbox = document.querySelector('ui-checkbox'); await checkbox.setStatus('loading'); await checkbox.setStatus('success'); await checkbox.setStatus('error', 'Permission denied'); ```
+         */
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
+        /**
+          * Set the checkbox value with automatic device communication and status management.
+          * @param value - The boolean value to set (true = checked, false = unchecked)
+          * @param options - Configuration options for the operation
+          * @returns Promise<boolean> - true if successful, false if failed
+          * @example Basic Usage (Easy) ```javascript const checkbox = document.querySelector('ui-checkbox'); await checkbox.setValue(true);   // Check await checkbox.setValue(false);  // Uncheck ```
+          * @example IoT Device Control (Advanced) ```javascript const securityCheckbox = document.querySelector('#security-system'); await securityCheckbox.setValue(true, { writeOperation: async () => { await fetch('/api/security/arm', { method: 'POST' }); }, autoRetry: { attempts: 3, delay: 2000 } }); ```
+         */
+        "setValue": (value: boolean, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>;
+        /**
+          * Set value programmatically without triggering events (for external updates).
+          * @param value - The boolean value to set silently
+          * @returns Promise<void>
+          * @example Basic Usage (Easy) ```javascript const checkbox = document.querySelector('ui-checkbox'); await checkbox.setValueSilent(true); ```
+          * @example External Sync (Advanced) ```javascript // Sync from external system without events const response = await fetch('/api/settings'); const settings = await response.json(); await checkbox.setValueSilent(settings.notifications); ```
+         */
+        "setValueSilent": (value: boolean) => Promise<void>;
+        /**
+          * Show last updated timestamp when true
+          * @default true
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Trigger a read pulse indicator for readonly mode when data is actually fetched. Note: Checkboxes don't support readonly mode, so this method is kept for API compatibility.
+          * @returns Promise<void>
+          * @example Basic Usage (Easy) ```javascript const checkbox = document.querySelector('ui-checkbox'); await checkbox.triggerReadPulse(); // No visual effect for checkboxes ```
+         */
+        "triggerReadPulse": () => Promise<void>;
+        /**
+          * Current boolean value of the checkbox.
+          * @default false
+         */
+        "value": boolean;
+        /**
+          * Visual style variant of the checkbox.
+          * @default 'outlined'
+         */
+        "variant": 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Number picker component with various visual styles, TD integration and customizable range.
+     * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+     * @example Basic Usage
+     * ```html
+     * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+     * ```
+     * @example TD Integration with HTTP
+     * ```html
+     * <ui-number-picker
+     * td-url="http://device.local/properties/volume"
+     * label="Device Volume"
+     * protocol="http"
+     * mode="readwrite"
+     * min="0"
+     * max="100">
+     * </ui-number-picker>
+     * ```
+     * @example TD Integration with MQTT
+     * ```html
+     * <ui-number-picker
+     * td-url="mqtt://device"
+     * mqtt-host="localhost:1883"
+     * mqtt-topic="device/volume"
+     * label="MQTT Volume"
+     * protocol="mqtt"
+     * mode="readwrite">
+     * </ui-number-picker>
+     * ```
+     * @example TD Device Read-Only (shows value only)
+     * ```html
+     * <ui-number-picker
+     * td-url="http://sensor.local/temperature"
+     * label="Temperature Sensor"
+     * mode="read">
+     * </ui-number-picker>
+     * ```
+     * @example Local Control with Custom Handler
+     * ```html
+     * <ui-number-picker
+     * value="3"
+     * on-change="handleNumberChange"
+     * variant="filled"
+     * label="Custom Counter">
+     * </ui-number-picker>
+     * ```
+     * @example Event Handling
+     * ```javascript
+     * window.handleNumberChange = function(data) {
+     * console.log('Number changed:', data.value);
+     * console.log('Label:', data.label);
+     * // Your custom logic here
+     * };
+     * ```
+     */
+    interface UiNumberPicker {
+        /**
+          * Color theme variant.
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected": boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the number picker is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Get the current number picker value with optional metadata.
+          * @param includeMetadata - Include last updated timestamp and status
+          * @returns Promise that resolves to the current value or value with metadata
+          * @example Basic Usage (Easy) ```javascript const picker = document.querySelector('ui-number-picker'); const currentValue = await picker.getValue(); console.log('Current number:', currentValue); ```
+          * @example With Metadata (Advanced) ```javascript const result = await picker.getValue(true); console.log('Value:', result.value, 'Status:', result.status); ```
+         */
+        "getValue": (includeMetadata?: boolean) => Promise<number | { value: number; lastUpdated?: number; status: string; error?: string; }>;
+        /**
+          * Enable keyboard navigation (Arrow keys). Default: true
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Text label displayed above the number picker.
+         */
+        "label"?: string;
+        /**
+          * Maximum allowed value.
+          * @default 100
+         */
+        "max"?: number;
+        /**
+          * Minimum allowed value.
+          * @default 0
+         */
+        "min"?: number;
+        /**
+          * Whether the number picker is read-only (displays value but cannot be changed).
+          * @default false
+         */
+        "readonly": boolean;
+        /**
+          * Set operation status for external status management.
+          * @param status - The status to set ('idle', 'loading', 'success', 'error')
+          * @param errorMessage - Optional error message for error status
+          * @returns Promise<void>
+          * @example Basic Usage (Easy) ```javascript const picker = document.querySelector('ui-number-picker'); await picker.setStatus('loading'); await picker.setStatus('success'); await picker.setStatus('error', 'Value out of range'); ```
+         */
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
+        /**
+          * Set the number picker value with automatic device communication and status management. Values are automatically clamped to the min/max range and adjusted to step increments.
+          * @param value - The numeric value to set (will be clamped and stepped)
+          * @param options - Configuration options for the operation
+          * @returns Promise<boolean> - true if successful, false if failed
+          * @example Basic Usage (Easy) ```javascript const picker = document.querySelector('ui-number-picker'); await picker.setValue(42);     // Set to 42 await picker.setValue(99.5);   // Set to 99.5 (if step allows decimals) ```
+          * @example Device Configuration (Advanced) ```javascript const devicePicker = document.querySelector('#device-setting'); await devicePicker.setValue(100, { writeOperation: async () => { await fetch('/api/device/config', { method: 'POST', body: JSON.stringify({ setting: 100 }) }); }, autoRetry: { attempts: 3, delay: 1000 } }); ```
+         */
+        "setValue": (value: number, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>;
+        /**
+          * Set value programmatically without triggering events (for external updates). Values are automatically clamped to the min/max range.
+          * @param value - The numeric value to set silently
+          * @returns Promise<void>
+          * @example Basic Usage (Easy) ```javascript const picker = document.querySelector('ui-number-picker'); await picker.setValueSilent(50); ```
+          * @example External Data Sync (Advanced) ```javascript // Sync from API without triggering events const response = await fetch('/api/device/current-value'); const data = await response.json(); await picker.setValueSilent(data.value); ```
+         */
+        "setValueSilent": (value: number) => Promise<void>;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Step increment/decrement amount.
+          * @default 1
+         */
+        "step": number;
+        /**
+          * Trigger a read pulse indicator for readonly mode when data is actually fetched. Shows a visual pulse animation to indicate fresh data.
+          * @returns Promise<void>
+          * @example Basic Usage (Easy) ```javascript const picker = document.querySelector('ui-number-picker'); await picker.triggerReadPulse(); ```
+          * @example Sensor Data Refresh (Advanced) ```javascript // Show pulse when refreshing sensor values const sensorPicker = document.querySelector('#sensor-value'); const response = await fetch('/api/sensors/current'); const data = await response.json(); await sensorPicker.setValueSilent(data.value); await sensorPicker.triggerReadPulse(); ```
+         */
+        "triggerReadPulse": () => Promise<void>;
+        /**
+          * Current numeric value of the number picker.
+          * @default 0
+         */
+        "value": number;
+        /**
+          * Visual style variant of the number picker. - minimal: Clean buttons with subtle background (default) - outlined: Buttons with border outline - filled: Solid filled buttons
+          * @default 'minimal'
+         */
+        "variant": 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Advanced slider component with reactive state management and multiple visual styles.
+     * @example Basic Usage
+     * ```html
+     * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
+     * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
+     * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
+     * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
+     * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
+     * ```
+     * @example Read-Only Mode
+     * ```html
+     * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
+     * ```
+     * @example JavaScript Integration with Multiple Sliders
+     * ```javascript
+     * // For single slider
+     * const slider = document.querySelector('#my-slider');
+     * // For multiple sliders
+     * const sliders = document.querySelectorAll('ui-slider');
+     * sliders.forEach(slider => {
+     * slider.addEventListener('valueMsg', (e) => {
+     * console.log('Slider ID:', e.detail.source);
+     * console.log('New value:', e.detail.payload);
+     * });
+     * });
+     * // Set value by ID
+     * const brightnessSlider = document.getElementById('brightness-slider');
+     * await brightnessSlider.setValue(75);
+     * ```
+     * @example HTML with IDs
+     * ```html
+     * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
+     * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
+     * ```
+     */
+    interface UiSlider {
+        /**
+          * Color theme variant.
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected": boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the slider is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Get the current slider value with optional metadata.
+          * @param includeMetadata - Include last updated timestamp and status information
+          * @returns Promise that resolves to the current value or value with metadata
+          * @example Basic Usage (Easy) ```javascript // Get simple numeric value const slider = document.querySelector('ui-slider'); const currentValue = await slider.getValue(); console.log('Current position:', currentValue); ```
+          * @example With Metadata (Advanced) ```javascript // Get value with status information const slider = document.querySelector('ui-slider'); const result = await slider.getValue(true);  console.log('Value:', result.value); console.log('Last updated:', new Date(result.lastUpdated)); console.log('Status:', result.status); if (result.error) { console.error('Error:', result.error); } ```
+          * @example Multi-Slider Dashboard (Advanced) ```javascript // Monitor multiple sliders const sliders = document.querySelectorAll('ui-slider'); const dashboard = {};  for (const slider of sliders) { const data = await slider.getValue(true); dashboard[slider.id] = { value: data.value, percentage: ((data.value - slider.min) / (slider.max - slider.min)) * 100, status: data.status, lastUpdated: data.lastUpdated }; }  console.log('Slider Dashboard:', dashboard); ```
+          * @example Range Validation (Advanced) ```javascript // Check if values are in acceptable ranges const temperatureSliders = document.querySelectorAll('.temperature-slider'); const alerts = [];  for (const slider of temperatureSliders) { const value = await slider.getValue(); const zone = slider.getAttribute('data-zone');  if (value < 65 || value > 78) { alerts.push({ zone, temperature: value, status: value < 65 ? 'too-cold' : 'too-hot' }); } }  if (alerts.length > 0) { console.warn('Temperature alerts:', alerts); } ```
+         */
+        "getValue": (includeMetadata?: boolean) => Promise<number | { value: number; lastUpdated?: number; status: string; error?: string; }>;
+        /**
+          * Enable keyboard navigation (Arrow keys, Home, End, PageUp, PageDown). Default: true
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Text label displayed above the slider.
+         */
+        "label"?: string;
+        /**
+          * Maximum value of the slider.
+          * @default 100
+         */
+        "max": number;
+        /**
+          * Minimum value of the slider.
+          * @default 0
+         */
+        "min": number;
+        /**
+          * Orientation of the slider.
+          * @default 'horizontal'
+         */
+        "orientation": 'horizontal' | 'vertical';
+        /**
+          * Whether the slider is read-only (displays value but cannot be changed).
+          * @default false
+         */
+        "readonly": boolean;
+        /**
+          * Set operation status for external status management.
+          * @param status - The status to set ('idle', 'loading', 'success', 'error')
+          * @param errorMessage - Optional error message for error status
+          * @returns Promise<void>
+          * @example Basic Usage (Easy) ```javascript const slider = document.querySelector('ui-slider');  // Show loading await slider.setStatus('loading');  // Show success await slider.setStatus('success');  // Show error await slider.setStatus('error', 'Connection timeout');  // Clear status await slider.setStatus('idle'); ```
+          * @example Climate System Control (Advanced) ```javascript // HVAC system with complex status management const thermostatSlider = document.querySelector('#thermostat');  async function updateHVACSetpoint(temperature) { try { await thermostatSlider.setStatus('loading');  // Step 1: Validate temperature range if (temperature < 60 || temperature > 85) { throw new Error('Temperature out of acceptable range'); }  // Step 2: Check system status const systemResponse = await fetch('/api/hvac/status'); const systemStatus = await systemResponse.json();  if (systemStatus.maintenance_mode) { throw new Error('System in maintenance mode'); }  // Step 3: Set new temperature const setResponse = await fetch('/api/hvac/setpoint', { method: 'POST', body: JSON.stringify({ temperature }) });  if (!setResponse.ok) { throw new Error('Failed to update setpoint'); }  // Success await thermostatSlider.setStatus('success');  } catch (error) { await thermostatSlider.setStatus('error', error.message); } } ```
+          * @example Progressive Status Updates (Advanced) ```javascript // Multi-step process with progressive status const calibrationSlider = document.querySelector('#sensor-calibration');  async function calibrateSensor(offset) { const steps = [ 'Preparing sensor...', 'Applying offset...', 'Stabilizing...', 'Verifying calibration...' ];  try { for (let i = 0; i < steps.length; i++) { await calibrationSlider.setStatus('loading'); console.log(`Step ${i + 1}: ${steps[i]}`);  // Simulate step processing await performCalibrationStep(i, offset); await new Promise(resolve => setTimeout(resolve, 1000)); }  await calibrationSlider.setStatus('success');  } catch (error) { await calibrationSlider.setStatus('error', `Calibration failed at step ${i + 1}`); } } ```
+         */
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
+        /**
+          * Set the slider value with automatic device communication and status management. Values are automatically clamped to the min/max range.
+          * @param value - The numeric value to set (will be clamped to min/max range)
+          * @param options - Configuration options for the operation
+          * @returns Promise<boolean> - true if successful, false if failed
+          * @example Basic Usage (Easy) ```javascript // Simple value setting const slider = document.querySelector('ui-slider'); await slider.setValue(50);    // Set to 50 await slider.setValue(75.5);  // Set to 75.5 (decimals supported) ```
+          * @example Temperature Control (Advanced) ```javascript // Smart thermostat control const thermostat = document.querySelector('#thermostat');  await thermostat.setValue(72, { writeOperation: async () => { const response = await fetch('/api/hvac/setpoint', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({  temperature: 72,  zone: 'living-room'  }) }); if (!response.ok) throw new Error('Failed to set temperature'); }, optimistic: true, autoRetry: { attempts: 2, delay: 3000 } }); ```
+          * @example Volume Control (Advanced) ```javascript // Audio system volume control const volumeSlider = document.querySelector('#volume');  await volumeSlider.setValue(85, { writeOperation: async () => { await fetch(`/api/audio/volume/${85}`); }, readOperation: async () => { // Verify the actual volume was set const response = await fetch('/api/audio/volume'); const { volume } = await response.json(); if (Math.abs(volume - 85) > 1) { throw new Error('Volume mismatch'); } } }); ```
+          * @example Sensor Calibration (Advanced) ```javascript // Sensor calibration with validation const calibrationSlider = document.querySelector('#sensor-offset');  await calibrationSlider.setValue(-2.5, { writeOperation: async () => { // Apply calibration offset await fetch('/api/sensors/calibrate', { method: 'POST', body: JSON.stringify({ offset: -2.5 }) });  // Wait for sensor to stabilize await new Promise(resolve => setTimeout(resolve, 2000));  // Validate calibration worked const testReading = await fetch('/api/sensors/test-reading'); const { reading } = await testReading.json(); if (Math.abs(reading) > 0.1) { throw new Error('Calibration verification failed'); } } }); ```
+         */
+        "setValue": (value: number, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>;
+        /**
+          * Set value programmatically without triggering events (for external updates). Values are automatically clamped to the min/max range.
+          * @param value - The numeric value to set silently
+          * @returns Promise<void>
+          * @example Basic Usage (Easy) ```javascript // Update from external data without triggering events const slider = document.querySelector('ui-slider'); await slider.setValueSilent(45); ```
+          * @example Sensor Data Updates (Advanced) ```javascript // Real-time sensor data updates const temperatureSlider = document.querySelector('#temperature-display');  // WebSocket connection for live sensor data const ws = new WebSocket('ws://sensors.example.com/temperature'); ws.addEventListener('message', async (event) => { const sensorData = JSON.parse(event.data);  if (sensorData.sensorId === 'temp-001') { // Silent update to prevent event loops await temperatureSlider.setValueSilent(sensorData.temperature);  // Visual pulse to show fresh data await temperatureSlider.triggerReadPulse(); } }); ```
+          * @example Multi-Zone Climate Control (Advanced) ```javascript // Update multiple zone sliders from API async function updateAllZones() { const response = await fetch('/api/climate/zones'); const zones = await response.json();  for (const zone of zones) { const slider = document.querySelector(`#zone-${zone.id}`); if (slider) { // Silent update from API data await slider.setValueSilent(zone.currentTemperature);  // Update setpoint slider too const setpointSlider = document.querySelector(`#setpoint-${zone.id}`); if (setpointSlider) { await setpointSlider.setValueSilent(zone.targetTemperature); } } } }  // Update every 30 seconds setInterval(updateAllZones, 30000); ```
+          * @example Data Synchronization (Advanced) ```javascript // Sync slider with external control system const volumeSlider = document.querySelector('#system-volume');  // Listen for external volume changes (from physical controls) const eventSource = new EventSource('/api/audio/events'); eventSource.addEventListener('volume-changed', async (event) => { const { newVolume, source } = JSON.parse(event.data);  // Only update if change came from external source if (source !== 'web-ui') { await volumeSlider.setValueSilent(newVolume); await volumeSlider.triggerReadPulse(); } }); ```
+         */
+        "setValueSilent": (value: number) => Promise<void>;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Step increment for the slider.
+          * @default 1
+         */
+        "step": number;
+        /**
+          * Shape of the slider thumb.
+          * @default 'circle'
+         */
+        "thumbShape": 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond';
+        /**
+          * Trigger a read pulse indicator for readonly mode when data is actually fetched. Provides visual feedback for data refresh operations.
+          * @returns Promise<void>
+          * @example Basic Usage (Easy) ```javascript // Show visual pulse when data is refreshed const slider = document.querySelector('ui-slider'); await slider.triggerReadPulse(); ```
+          * @example Periodic Data Refresh (Advanced) ```javascript // Regular sensor data updates with visual feedback const sensorSlider = document.querySelector('#pressure-sensor');  setInterval(async () => { try { const response = await fetch('/api/sensors/pressure'); const data = await response.json();  // Update value silently await sensorSlider.setValueSilent(data.pressure);  // Show visual pulse to indicate fresh data await sensorSlider.triggerReadPulse();  } catch (error) { console.error('Failed to refresh pressure data:', error); } }, 10000); // Every 10 seconds ```
+          * @example User-Triggered Refresh (Advanced) ```javascript // Manual refresh button with pulse feedback const refreshButton = document.querySelector('#refresh-sensors'); const sliders = document.querySelectorAll('ui-slider[readonly]');  refreshButton.addEventListener('click', async () => { refreshButton.disabled = true; refreshButton.textContent = 'Refreshing...';  try { // Fetch all sensor data const response = await fetch('/api/sensors/all'); const sensorData = await response.json();  // Update each slider with pulse for (const slider of sliders) { const sensorId = slider.getAttribute('data-sensor'); if (sensorData[sensorId]) { await slider.setValueSilent(sensorData[sensorId].value); await slider.triggerReadPulse(); } }  } catch (error) { console.error('Refresh failed:', error); } finally { refreshButton.disabled = false; refreshButton.textContent = 'Refresh Sensors'; } }); ```
+          * @example Real-time Streaming Data (Advanced) ```javascript // Continuous data stream with selective pulse const temperatureSliders = document.querySelectorAll('.temperature-sensor');  const eventSource = new EventSource('/api/sensors/stream'); eventSource.addEventListener('temperature', async (event) => { const { sensorId, temperature, isSignificantChange } = JSON.parse(event.data);  const slider = document.querySelector(`[data-sensor="${sensorId}"]`); if (slider) { // Always update value await slider.setValueSilent(temperature);  // Only pulse for significant changes (> 1 degree) if (isSignificantChange) { await slider.triggerReadPulse(); } } }); ```
+         */
+        "triggerReadPulse": () => Promise<void>;
+        /**
+          * Current numeric value of the slider.
+          * @default 0
+         */
+        "value": number;
+        /**
+          * Visual style variant of the slider.
+          * @default 'narrow'
+         */
+        "variant": 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
+    }
+    /**
+     * Toggle switch component with reactive state management and multiple visual styles.
+     * Supports IoT device integration with status indicators and error handling.
+     * @example Basic Usage
+     * ```html
+     * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+     * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+     * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const toggle = document.getElementById('light-toggle');
+     * // Set value with event handling
+     * await toggle.setValue(true);
+     * // Listen for changes
+     * toggle.addEventListener('valueMsg', (e) => {
+     * console.log('Toggle changed to:', e.detail.payload);
+     * });
+     * // Device communication (IoT)
+     * await toggle.setValue(true, {
+     * writeOperation: async () => {
+     * await fetch('/api/devices/light/power', {
+     * method: 'POST',
+     * body: JSON.stringify({ on: true })
+     * });
+     * },
+     * optimistic: true
+     * });
+     * ```
+     */
+    interface UiToggle {
+        /**
+          * Color theme variant.
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected": boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the toggle is disabled when true, it cannot be interacted with.
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Get the current toggle value with optional metadata.
+          * @param includeMetadata - Whether to include additional metadata (default: false)
+          * @returns Promise<boolean | MetadataResult> - Current value or object with metadata
+          * @example ```javascript // Basic usage const isOn = await toggle.getValue(); console.log('Toggle is:', isOn ? 'ON' : 'OFF');  // With metadata const result = await toggle.getValue(true); console.log('Value:', result.value); console.log('Last updated:', new Date(result.lastUpdated)); console.log('Status:', result.status); ```
+         */
+        "getValue": (includeMetadata?: boolean) => Promise<boolean | { value: boolean; lastUpdated?: number; status: string; error?: string; }>;
+        /**
+          * Enable keyboard navigation (Space and Enter keys). Default: true
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Text label displayed next to the toggle.
+         */
+        "label"?: string;
+        /**
+          * Whether the toggle is read-only (when true displays value but cannot be changed).
+          * @default false
+         */
+        "readonly": boolean;
+        /**
+          * Set operation status for external status management. Use this method to manually control the visual status indicators when managing device communication externally.
+          * @param status - The status to set ('idle', 'loading', 'success', 'error')
+          * @param errorMessage - Optional error message for error status
+          * @returns Promise<void>
+          * @example ```javascript const toggle = document.querySelector('ui-toggle');  // Show loading indicator await toggle.setStatus('loading');  try {   await deviceOperation();   await toggle.setStatus('success'); } catch (error) {   await toggle.setStatus('error', error.message); }  // Clear status indicator await toggle.setStatus('idle'); ```
+         */
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
+        /**
+          * Set the toggle value with optional device communication and status management.
+          * @param value - The boolean value to set (true = on, false = off)
+          * @param options - Configuration options for the operation
+          * @returns Promise<boolean> - true if successful, false if failed
+          * @example ```javascript // Basic usage await toggle.setValue(true);  // With device communication await toggle.setValue(true, {   writeOperation: async () => {     const response = await fetch('/api/devices/light', {       method: 'POST',       body: JSON.stringify({ on: true })     });   },   optimistic: true,  // Update UI immediately   autoRetry: { attempts: 3, delay: 1000 } }); ```
+         */
+        "setValue": (value: boolean, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>;
+        /**
+          * Set value without triggering events (for external updates). Use this method when updating from external data sources to prevent event loops.
+          * @param value - The boolean value to set silently
+          * @returns Promise<void>
+          * @example ```javascript // Basic silent update await toggle.setValueSilent(true);  // In real-time context (WebSocket) websocket.onmessage = async (event) => {   const data = JSON.parse(event.data);   await toggle.setValueSilent(data.isOn);    // Optional visual indicator   if (toggle.readonly) {     await toggle.triggerReadPulse();   } }; ```
+         */
+        "setValueSilent": (value: boolean) => Promise<void>;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Trigger a read pulse indicator for readonly mode when data is actually fetched. Use this method to provide visual feedback when refreshing data from external sources like IoT devices, APIs, or real-time data streams.
+          * @returns Promise<void>
+          * @example Basic Usage (Easy) ```javascript // Show visual pulse when data is refreshed const toggle = document.querySelector('ui-toggle'); await toggle.triggerReadPulse(); ```
+          * @example API Data Refresh (Advanced) ```javascript // Periodic data refresh with visual feedback const sensorToggle = document.querySelector('#motion-sensor');  setInterval(async () => { try { const response = await fetch('/api/sensors/motion'); const data = await response.json();  // Update value silently await sensorToggle.setValueSilent(data.motionDetected);  // Show visual pulse to indicate fresh data await sensorToggle.triggerReadPulse();  } catch (error) { console.error('Failed to refresh sensor data:', error); } }, 5000); // Every 5 seconds ```
+          * @example Real-time Data Stream (Advanced) ```javascript // Server-Sent Events with pulse feedback const toggle = document.querySelector('#live-status');  const eventSource = new EventSource('/api/device-stream'); eventSource.addEventListener('device-update', async (event) => { const data = JSON.parse(event.data);  if (data.deviceId === toggle.id) { // Silent update from real-time stream await toggle.setValueSilent(data.isActive);  // Pulse to show live data await toggle.triggerReadPulse(); } }); ```  ```javascript // Show visual pulse when data is refreshed await toggle.setValueSilent(newValue); await toggle.triggerReadPulse(); ```
+         */
+        "triggerReadPulse": () => Promise<void>;
+        /**
+          * Current boolean value of the toggle.
+          * @default false
+         */
+        "value": boolean;
+        /**
+          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
+          * @default 'circle'
+         */
+        "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
     }
 }
+export interface UiButtonCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiButtonElement;
+}
+export interface UiCheckboxCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiCheckboxElement;
+}
+export interface UiNumberPickerCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiNumberPickerElement;
+}
+export interface UiSliderCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiSliderElement;
+}
+export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiToggleElement;
+}
 declare global {
-    interface HTMLUiHeadingElement extends Components.UiHeading, HTMLStencilElement {
+    interface HTMLUiButtonElementEventMap {
+        "valueMsg": UiMsg<string>;
     }
-    var HTMLUiHeadingElement: {
-        prototype: HTMLUiHeadingElement;
-        new (): HTMLUiHeadingElement;
+    /**
+     * Button component with various visual styles, matching the ui-number-picker design family.
+     * Supports the same variants, colors, and themes as the number picker.
+     * @example Basic Usage
+     * ```html
+     * <ui-button variant="minimal" label="Click Me"></ui-button>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
+     * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
+     * ```
+     * @example Event Handling
+     * ```html
+     * <ui-button id="my-button" label="Custom Handler"></ui-button>
+     * ```
+     * @example JavaScript Event Handling
+     * ```javascript
+     * document.querySelector('#my-button').addEventListener('valueMsg', (event) => {
+     * console.log('Button clicked:', event.detail.payload);
+     * console.log('Button label:', event.detail.source);
+     * });
+     * ```
+     */
+    interface HTMLUiButtonElement extends Components.UiButton, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiButtonElementEventMap>(type: K, listener: (this: HTMLUiButtonElement, ev: UiButtonCustomEvent<HTMLUiButtonElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiButtonElementEventMap>(type: K, listener: (this: HTMLUiButtonElement, ev: UiButtonCustomEvent<HTMLUiButtonElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiButtonElement: {
+        prototype: HTMLUiButtonElement;
+        new (): HTMLUiButtonElement;
+    };
+    interface HTMLUiCheckboxElementEventMap {
+        "valueMsg": UiMsg<boolean>;
+    }
+    /**
+     * Advanced checkbox component with reactive state management and multiple visual styles.
+     * @example Basic Usage
+     * ```html
+     * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-checkbox variant="minimal" value="false" label="Minimal Style"></ui-checkbox>
+     * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
+     * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const checkbox = document.querySelector('#terms-checkbox');
+     * checkbox.addEventListener('valueMsg', (e) => {
+     * console.log('Checkbox value:', e.detail.payload);
+     * });
+     * // Set value programmatically
+     * await checkbox.setValue(true);
+     * ```
+     */
+    interface HTMLUiCheckboxElement extends Components.UiCheckbox, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiCheckboxElementEventMap>(type: K, listener: (this: HTMLUiCheckboxElement, ev: UiCheckboxCustomEvent<HTMLUiCheckboxElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiCheckboxElementEventMap>(type: K, listener: (this: HTMLUiCheckboxElement, ev: UiCheckboxCustomEvent<HTMLUiCheckboxElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiCheckboxElement: {
+        prototype: HTMLUiCheckboxElement;
+        new (): HTMLUiCheckboxElement;
+    };
+    interface HTMLUiNumberPickerElementEventMap {
+        "valueMsg": UiMsg<number>;
+    }
+    /**
+     * Number picker component with various visual styles, TD integration and customizable range.
+     * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+     * @example Basic Usage
+     * ```html
+     * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+     * ```
+     * @example TD Integration with HTTP
+     * ```html
+     * <ui-number-picker
+     * td-url="http://device.local/properties/volume"
+     * label="Device Volume"
+     * protocol="http"
+     * mode="readwrite"
+     * min="0"
+     * max="100">
+     * </ui-number-picker>
+     * ```
+     * @example TD Integration with MQTT
+     * ```html
+     * <ui-number-picker
+     * td-url="mqtt://device"
+     * mqtt-host="localhost:1883"
+     * mqtt-topic="device/volume"
+     * label="MQTT Volume"
+     * protocol="mqtt"
+     * mode="readwrite">
+     * </ui-number-picker>
+     * ```
+     * @example TD Device Read-Only (shows value only)
+     * ```html
+     * <ui-number-picker
+     * td-url="http://sensor.local/temperature"
+     * label="Temperature Sensor"
+     * mode="read">
+     * </ui-number-picker>
+     * ```
+     * @example Local Control with Custom Handler
+     * ```html
+     * <ui-number-picker
+     * value="3"
+     * on-change="handleNumberChange"
+     * variant="filled"
+     * label="Custom Counter">
+     * </ui-number-picker>
+     * ```
+     * @example Event Handling
+     * ```javascript
+     * window.handleNumberChange = function(data) {
+     * console.log('Number changed:', data.value);
+     * console.log('Label:', data.label);
+     * // Your custom logic here
+     * };
+     * ```
+     */
+    interface HTMLUiNumberPickerElement extends Components.UiNumberPicker, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiNumberPickerElementEventMap>(type: K, listener: (this: HTMLUiNumberPickerElement, ev: UiNumberPickerCustomEvent<HTMLUiNumberPickerElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiNumberPickerElementEventMap>(type: K, listener: (this: HTMLUiNumberPickerElement, ev: UiNumberPickerCustomEvent<HTMLUiNumberPickerElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiNumberPickerElement: {
+        prototype: HTMLUiNumberPickerElement;
+        new (): HTMLUiNumberPickerElement;
+    };
+    interface HTMLUiSliderElementEventMap {
+        "valueMsg": UiMsg<number>;
+    }
+    /**
+     * Advanced slider component with reactive state management and multiple visual styles.
+     * @example Basic Usage
+     * ```html
+     * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
+     * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
+     * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
+     * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
+     * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
+     * ```
+     * @example Read-Only Mode
+     * ```html
+     * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
+     * ```
+     * @example JavaScript Integration with Multiple Sliders
+     * ```javascript
+     * // For single slider
+     * const slider = document.querySelector('#my-slider');
+     * // For multiple sliders
+     * const sliders = document.querySelectorAll('ui-slider');
+     * sliders.forEach(slider => {
+     * slider.addEventListener('valueMsg', (e) => {
+     * console.log('Slider ID:', e.detail.source);
+     * console.log('New value:', e.detail.payload);
+     * });
+     * });
+     * // Set value by ID
+     * const brightnessSlider = document.getElementById('brightness-slider');
+     * await brightnessSlider.setValue(75);
+     * ```
+     * @example HTML with IDs
+     * ```html
+     * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
+     * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
+     * ```
+     */
+    interface HTMLUiSliderElement extends Components.UiSlider, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiSliderElementEventMap>(type: K, listener: (this: HTMLUiSliderElement, ev: UiSliderCustomEvent<HTMLUiSliderElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiSliderElementEventMap>(type: K, listener: (this: HTMLUiSliderElement, ev: UiSliderCustomEvent<HTMLUiSliderElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiSliderElement: {
+        prototype: HTMLUiSliderElement;
+        new (): HTMLUiSliderElement;
+    };
+    interface HTMLUiToggleElementEventMap {
+        "valueMsg": UiMsg<boolean>;
+    }
+    /**
+     * Toggle switch component with reactive state management and multiple visual styles.
+     * Supports IoT device integration with status indicators and error handling.
+     * @example Basic Usage
+     * ```html
+     * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+     * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+     * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const toggle = document.getElementById('light-toggle');
+     * // Set value with event handling
+     * await toggle.setValue(true);
+     * // Listen for changes
+     * toggle.addEventListener('valueMsg', (e) => {
+     * console.log('Toggle changed to:', e.detail.payload);
+     * });
+     * // Device communication (IoT)
+     * await toggle.setValue(true, {
+     * writeOperation: async () => {
+     * await fetch('/api/devices/light/power', {
+     * method: 'POST',
+     * body: JSON.stringify({ on: true })
+     * });
+     * },
+     * optimistic: true
+     * });
+     * ```
+     */
+    interface HTMLUiToggleElement extends Components.UiToggle, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiToggleElementEventMap>(type: K, listener: (this: HTMLUiToggleElement, ev: UiToggleCustomEvent<HTMLUiToggleElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiToggleElement: {
+        prototype: HTMLUiToggleElement;
+        new (): HTMLUiToggleElement;
     };
     interface HTMLElementTagNameMap {
-        "ui-heading": HTMLUiHeadingElement;
+        "ui-button": HTMLUiButtonElement;
+        "ui-checkbox": HTMLUiCheckboxElement;
+        "ui-number-picker": HTMLUiNumberPickerElement;
+        "ui-slider": HTMLUiSliderElement;
+        "ui-toggle": HTMLUiToggleElement;
     }
 }
 declare namespace LocalJSX {
-    interface UiHeading {
-        "text"?: string;
+    /**
+     * Button component with various visual styles, matching the ui-number-picker design family.
+     * Supports the same variants, colors, and themes as the number picker.
+     * @example Basic Usage
+     * ```html
+     * <ui-button variant="minimal" label="Click Me"></ui-button>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
+     * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
+     * ```
+     * @example Event Handling
+     * ```html
+     * <ui-button id="my-button" label="Custom Handler"></ui-button>
+     * ```
+     * @example JavaScript Event Handling
+     * ```javascript
+     * document.querySelector('#my-button').addEventListener('valueMsg', (event) => {
+     * console.log('Button clicked:', event.detail.payload);
+     * console.log('Button label:', event.detail.source);
+     * });
+     * ```
+     */
+    interface UiButton {
+        /**
+          * Color scheme to match thingsweb webpage
+          * @example ```html <ui-button color="secondary" label="Colored Button"></ui-button> ```
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected"?: boolean;
+        /**
+          * Dark theme variant.
+          * @example ```html <ui-button dark="true" label="Dark Button"></ui-button> ```
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the component is disabled (cannot be interacted with).
+          * @example ```html <ui-button disabled="true" label="Cannot Click"></ui-button> ```
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Enable keyboard navigation.
+          * @example ```html <ui-button keyboard="false" label="No Keyboard"></ui-button> ```
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Button text label.
+          * @example ```html <ui-button label="Click Me"></ui-button> ```
+          * @default 'Button'
+         */
+        "label"?: string;
+        /**
+          * Primary event emitted when the component value changes. Use this event for all value change handling.
+          * @example ```javascript document.querySelector('ui-button').addEventListener('valueMsg', (event) => {   console.log('Button clicked:', event.detail); }); ```
+         */
+        "onValueMsg"?: (event: UiButtonCustomEvent<UiMsg<string>>) => void;
+        /**
+          * Whether the component is read-only (displays value but cannot be changed).
+          * @example ```html <ui-button readonly="true" label="Display Only"></ui-button> ```
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * Show last updated timestamp below the component.
+          * @example ```html <ui-button showLastUpdated="true" label="With Timestamp"></ui-button> ```
+          * @default true
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button
+          * @default 'outlined'
+         */
+        "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Advanced checkbox component with reactive state management and multiple visual styles.
+     * @example Basic Usage
+     * ```html
+     * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-checkbox variant="minimal" value="false" label="Minimal Style"></ui-checkbox>
+     * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
+     * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const checkbox = document.querySelector('#terms-checkbox');
+     * checkbox.addEventListener('valueMsg', (e) => {
+     * console.log('Checkbox value:', e.detail.payload);
+     * });
+     * // Set value programmatically
+     * await checkbox.setValue(true);
+     * ```
+     */
+    interface UiCheckbox {
+        /**
+          * Backwards-compatible `checked` attribute alias for `value`. Accepts attribute usage like `checked` or `checked="true"` in demos.
+         */
+        "checked"?: boolean;
+        /**
+          * Color theme variant.
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected"?: boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the checkbox is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Enable keyboard navigation (Space and Enter keys). Default: true
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Text label displayed next to the checkbox.
+         */
+        "label"?: string;
+        /**
+          * Primary event emitted when the checkbox value changes.
+         */
+        "onValueMsg"?: (event: UiCheckboxCustomEvent<UiMsg<boolean>>) => void;
+        /**
+          * Show last updated timestamp when true
+          * @default true
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Current boolean value of the checkbox.
+          * @default false
+         */
+        "value"?: boolean;
+        /**
+          * Visual style variant of the checkbox.
+          * @default 'outlined'
+         */
+        "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Number picker component with various visual styles, TD integration and customizable range.
+     * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+     * @example Basic Usage
+     * ```html
+     * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+     * ```
+     * @example TD Integration with HTTP
+     * ```html
+     * <ui-number-picker
+     * td-url="http://device.local/properties/volume"
+     * label="Device Volume"
+     * protocol="http"
+     * mode="readwrite"
+     * min="0"
+     * max="100">
+     * </ui-number-picker>
+     * ```
+     * @example TD Integration with MQTT
+     * ```html
+     * <ui-number-picker
+     * td-url="mqtt://device"
+     * mqtt-host="localhost:1883"
+     * mqtt-topic="device/volume"
+     * label="MQTT Volume"
+     * protocol="mqtt"
+     * mode="readwrite">
+     * </ui-number-picker>
+     * ```
+     * @example TD Device Read-Only (shows value only)
+     * ```html
+     * <ui-number-picker
+     * td-url="http://sensor.local/temperature"
+     * label="Temperature Sensor"
+     * mode="read">
+     * </ui-number-picker>
+     * ```
+     * @example Local Control with Custom Handler
+     * ```html
+     * <ui-number-picker
+     * value="3"
+     * on-change="handleNumberChange"
+     * variant="filled"
+     * label="Custom Counter">
+     * </ui-number-picker>
+     * ```
+     * @example Event Handling
+     * ```javascript
+     * window.handleNumberChange = function(data) {
+     * console.log('Number changed:', data.value);
+     * console.log('Label:', data.label);
+     * // Your custom logic here
+     * };
+     * ```
+     */
+    interface UiNumberPicker {
+        /**
+          * Color theme variant.
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected"?: boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the number picker is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Enable keyboard navigation (Arrow keys). Default: true
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Text label displayed above the number picker.
+         */
+        "label"?: string;
+        /**
+          * Maximum allowed value.
+          * @default 100
+         */
+        "max"?: number;
+        /**
+          * Minimum allowed value.
+          * @default 0
+         */
+        "min"?: number;
+        /**
+          * Primary event emitted when the number picker value changes.
+         */
+        "onValueMsg"?: (event: UiNumberPickerCustomEvent<UiMsg<number>>) => void;
+        /**
+          * Whether the number picker is read-only (displays value but cannot be changed).
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Step increment/decrement amount.
+          * @default 1
+         */
+        "step"?: number;
+        /**
+          * Current numeric value of the number picker.
+          * @default 0
+         */
+        "value"?: number;
+        /**
+          * Visual style variant of the number picker. - minimal: Clean buttons with subtle background (default) - outlined: Buttons with border outline - filled: Solid filled buttons
+          * @default 'minimal'
+         */
+        "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Advanced slider component with reactive state management and multiple visual styles.
+     * @example Basic Usage
+     * ```html
+     * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+     * ```
+     * @example Different Variants
+     * ```html
+     * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
+     * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
+     * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
+     * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
+     * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
+     * ```
+     * @example Read-Only Mode
+     * ```html
+     * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
+     * ```
+     * @example JavaScript Integration with Multiple Sliders
+     * ```javascript
+     * // For single slider
+     * const slider = document.querySelector('#my-slider');
+     * // For multiple sliders
+     * const sliders = document.querySelectorAll('ui-slider');
+     * sliders.forEach(slider => {
+     * slider.addEventListener('valueMsg', (e) => {
+     * console.log('Slider ID:', e.detail.source);
+     * console.log('New value:', e.detail.payload);
+     * });
+     * });
+     * // Set value by ID
+     * const brightnessSlider = document.getElementById('brightness-slider');
+     * await brightnessSlider.setValue(75);
+     * ```
+     * @example HTML with IDs
+     * ```html
+     * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
+     * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
+     * ```
+     */
+    interface UiSlider {
+        /**
+          * Color theme variant.
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected"?: boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the slider is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Enable keyboard navigation (Arrow keys, Home, End, PageUp, PageDown). Default: true
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Text label displayed above the slider.
+         */
+        "label"?: string;
+        /**
+          * Maximum value of the slider.
+          * @default 100
+         */
+        "max"?: number;
+        /**
+          * Minimum value of the slider.
+          * @default 0
+         */
+        "min"?: number;
+        /**
+          * Primary event emitted when the slider value changes.
+         */
+        "onValueMsg"?: (event: UiSliderCustomEvent<UiMsg<number>>) => void;
+        /**
+          * Orientation of the slider.
+          * @default 'horizontal'
+         */
+        "orientation"?: 'horizontal' | 'vertical';
+        /**
+          * Whether the slider is read-only (displays value but cannot be changed).
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Step increment for the slider.
+          * @default 1
+         */
+        "step"?: number;
+        /**
+          * Shape of the slider thumb.
+          * @default 'circle'
+         */
+        "thumbShape"?: 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond';
+        /**
+          * Current numeric value of the slider.
+          * @default 0
+         */
+        "value"?: number;
+        /**
+          * Visual style variant of the slider.
+          * @default 'narrow'
+         */
+        "variant"?: 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
+    }
+    /**
+     * Toggle switch component with reactive state management and multiple visual styles.
+     * Supports IoT device integration with status indicators and error handling.
+     * @example Basic Usage
+     * ```html
+     * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+     * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+     * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const toggle = document.getElementById('light-toggle');
+     * // Set value with event handling
+     * await toggle.setValue(true);
+     * // Listen for changes
+     * toggle.addEventListener('valueMsg', (e) => {
+     * console.log('Toggle changed to:', e.detail.payload);
+     * });
+     * // Device communication (IoT)
+     * await toggle.setValue(true, {
+     * writeOperation: async () => {
+     * await fetch('/api/devices/light/power', {
+     * method: 'POST',
+     * body: JSON.stringify({ on: true })
+     * });
+     * },
+     * optimistic: true
+     * });
+     * ```
+     */
+    interface UiToggle {
+        /**
+          * Color theme variant.
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected"?: boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the toggle is disabled when true, it cannot be interacted with.
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Enable keyboard navigation (Space and Enter keys). Default: true
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Text label displayed next to the toggle.
+         */
+        "label"?: string;
+        /**
+          * Event emitted when the toggle value changes.
+          * @example ```javascript toggle.addEventListener('valueMsg', (event) => {   // event.detail contains:   // - payload: new value (boolean)   // - prev: previous value   // - source: component id   // - ts: timestamp    console.log('New value:', event.detail.payload);    // Example: Send to server   fetch('/api/device/light', {     method: 'POST',     body: JSON.stringify({ on: event.detail.payload })   }); }); ```
+         */
+        "onValueMsg"?: (event: UiToggleCustomEvent<UiMsg<boolean>>) => void;
+        /**
+          * Whether the toggle is read-only (when true displays value but cannot be changed).
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Current boolean value of the toggle.
+          * @default false
+         */
+        "value"?: boolean;
+        /**
+          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
+          * @default 'circle'
+         */
+        "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
     }
     interface IntrinsicElements {
-        "ui-heading": UiHeading;
+        "ui-button": UiButton;
+        "ui-checkbox": UiCheckbox;
+        "ui-number-picker": UiNumberPicker;
+        "ui-slider": UiSlider;
+        "ui-toggle": UiToggle;
     }
 }
 export { LocalJSX as JSX };
 declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
-            "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
+            /**
+             * Button component with various visual styles, matching the ui-number-picker design family.
+             * Supports the same variants, colors, and themes as the number picker.
+             * @example Basic Usage
+             * ```html
+             * <ui-button variant="minimal" label="Click Me"></ui-button>
+             * ```
+             * @example Different Variants
+             * ```html
+             * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
+             * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
+             * ```
+             * @example Event Handling
+             * ```html
+             * <ui-button id="my-button" label="Custom Handler"></ui-button>
+             * ```
+             * @example JavaScript Event Handling
+             * ```javascript
+             * document.querySelector('#my-button').addEventListener('valueMsg', (event) => {
+             * console.log('Button clicked:', event.detail.payload);
+             * console.log('Button label:', event.detail.source);
+             * });
+             * ```
+             */
+            "ui-button": LocalJSX.UiButton & JSXBase.HTMLAttributes<HTMLUiButtonElement>;
+            /**
+             * Advanced checkbox component with reactive state management and multiple visual styles.
+             * @example Basic Usage
+             * ```html
+             * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+             * ```
+             * @example Different Variants
+             * ```html
+             * <ui-checkbox variant="minimal" value="false" label="Minimal Style"></ui-checkbox>
+             * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
+             * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
+             * ```
+             * @example JavaScript Integration
+             * ```javascript
+             * const checkbox = document.querySelector('#terms-checkbox');
+             * checkbox.addEventListener('valueMsg', (e) => {
+             * console.log('Checkbox value:', e.detail.payload);
+             * });
+             * // Set value programmatically
+             * await checkbox.setValue(true);
+             * ```
+             */
+            "ui-checkbox": LocalJSX.UiCheckbox & JSXBase.HTMLAttributes<HTMLUiCheckboxElement>;
+            /**
+             * Number picker component with various visual styles, TD integration and customizable range.
+             * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+             * @example Basic Usage
+             * ```html
+             * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+             * ```
+             * @example TD Integration with HTTP
+             * ```html
+             * <ui-number-picker
+             * td-url="http://device.local/properties/volume"
+             * label="Device Volume"
+             * protocol="http"
+             * mode="readwrite"
+             * min="0"
+             * max="100">
+             * </ui-number-picker>
+             * ```
+             * @example TD Integration with MQTT
+             * ```html
+             * <ui-number-picker
+             * td-url="mqtt://device"
+             * mqtt-host="localhost:1883"
+             * mqtt-topic="device/volume"
+             * label="MQTT Volume"
+             * protocol="mqtt"
+             * mode="readwrite">
+             * </ui-number-picker>
+             * ```
+             * @example TD Device Read-Only (shows value only)
+             * ```html
+             * <ui-number-picker
+             * td-url="http://sensor.local/temperature"
+             * label="Temperature Sensor"
+             * mode="read">
+             * </ui-number-picker>
+             * ```
+             * @example Local Control with Custom Handler
+             * ```html
+             * <ui-number-picker
+             * value="3"
+             * on-change="handleNumberChange"
+             * variant="filled"
+             * label="Custom Counter">
+             * </ui-number-picker>
+             * ```
+             * @example Event Handling
+             * ```javascript
+             * window.handleNumberChange = function(data) {
+             * console.log('Number changed:', data.value);
+             * console.log('Label:', data.label);
+             * // Your custom logic here
+             * };
+             * ```
+             */
+            "ui-number-picker": LocalJSX.UiNumberPicker & JSXBase.HTMLAttributes<HTMLUiNumberPickerElement>;
+            /**
+             * Advanced slider component with reactive state management and multiple visual styles.
+             * @example Basic Usage
+             * ```html
+             * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+             * ```
+             * @example Different Variants
+             * ```html
+             * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
+             * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
+             * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
+             * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
+             * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
+             * ```
+             * @example Read-Only Mode
+             * ```html
+             * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
+             * ```
+             * @example JavaScript Integration with Multiple Sliders
+             * ```javascript
+             * // For single slider
+             * const slider = document.querySelector('#my-slider');
+             * // For multiple sliders
+             * const sliders = document.querySelectorAll('ui-slider');
+             * sliders.forEach(slider => {
+             * slider.addEventListener('valueMsg', (e) => {
+             * console.log('Slider ID:', e.detail.source);
+             * console.log('New value:', e.detail.payload);
+             * });
+             * });
+             * // Set value by ID
+             * const brightnessSlider = document.getElementById('brightness-slider');
+             * await brightnessSlider.setValue(75);
+             * ```
+             * @example HTML with IDs
+             * ```html
+             * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
+             * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
+             * ```
+             */
+            "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
+            /**
+             * Toggle switch component with reactive state management and multiple visual styles.
+             * Supports IoT device integration with status indicators and error handling.
+             * @example Basic Usage
+             * ```html
+             * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+             * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+             * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
+             * ```
+             * @example JavaScript Integration
+             * ```javascript
+             * const toggle = document.getElementById('light-toggle');
+             * // Set value with event handling
+             * await toggle.setValue(true);
+             * // Listen for changes
+             * toggle.addEventListener('valueMsg', (e) => {
+             * console.log('Toggle changed to:', e.detail.payload);
+             * });
+             * // Device communication (IoT)
+             * await toggle.setValue(true, {
+             * writeOperation: async () => {
+             * await fetch('/api/devices/light/power', {
+             * method: 'POST',
+             * body: JSON.stringify({ on: true })
+             * });
+             * },
+             * optimistic: true
+             * });
+             * ```
+             */
+            "ui-toggle": LocalJSX.UiToggle & JSXBase.HTMLAttributes<HTMLUiToggleElement>;
         }
     }
 }
