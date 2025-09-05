@@ -1,7 +1,12 @@
 import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
 import { UiMsg } from '../../utils/types';
 import { StatusIndicator } from '../../utils/status-indicator';
-import { UiComponentHelper, BaseUiState, BaseUiMethods } from '../common/base-ui-component';
+import { 
+  UiComponentUtils, 
+  UiComponentMethods, 
+  SetValueOptions, 
+  OperationStatus 
+} from '../../utils/ui-mixins';
 
 /**
  * Toggle switch component with reactive state management and multiple visual styles.
@@ -43,13 +48,18 @@ import { UiComponentHelper, BaseUiState, BaseUiMethods } from '../common/base-ui
   styleUrl: 'ui-toggle.css',
   shadow: true,
 })
-export class UiToggle implements BaseUiMethods<boolean> {
+export class UiToggle implements UiComponentMethods<boolean> {
   @Element() el: HTMLElement;
 
-  /** Base state for common functionality */
-  @State() private baseState: BaseUiState = UiComponentHelper.createBaseState();
+  // Shared state using utility pattern
+  @State() operationStatus: OperationStatus = 'idle';
+  @State() lastError?: string;
+  @State() lastUpdatedTs?: number;
+  @State() timestampCounter: number = 0;
+  @State() readPulseTs?: number;
+  @State() connected: boolean = true;
 
-  /** Component props */
+  // Component-specific props
 
   /**
    * Visual style variant of the toggle.
@@ -103,72 +113,71 @@ export class UiToggle implements BaseUiMethods<boolean> {
    */
   @Prop() showLastUpdated: boolean = false;
 
-  /** Connection state for readonly mode */
-  @Prop({ mutable: true }) connected: boolean = true;
-
-  /** Internal state tracking current visual state */
+  // Component-specific state
   @State() private isActive: boolean = false;
+  @State() private isInitialized: boolean = false;
 
-  /** Timestamp of last read pulse (for readonly) */
-  @State() readPulseTs?: number;
+  // Timer for timestamp updates
+  private timestampTimer?: number;
 
-  /**
-   * Event emitted when the toggle value changes.
-   */
+  // Event emitter
   @Event() valueMsg: EventEmitter<UiMsg<boolean>>;
 
-  /**
-   * Set the toggle value and it has optional device communication and status management.
-   *
-   * @param value - The boolean value to set (true = on, false = off)
-   * @param options - Configuration options for the operation
-   * @returns Promise<boolean> - true if successful, false if failed
-   *
-   * @example
-   * ```javascript
-   * // Basic usage
-   * await toggle.setValue(true);
-   *
-   * // With device communication
-   * await toggle.setValue(true, {
-   *   writeOperation: async () => {
-   *     const response = await fetch('/api/devices/light', {
-   *       method: 'POST',
-   *       body: JSON.stringify({ on: true })
-   *     });
-   *   },
-   *   optimistic: true,  // Update UI immediately
-   *   autoRetry: { attempts: 3, delay: 1000 }
-   * });
-   * ```
-   */
-  @Method()
-  async setValue(
-    value: boolean,
-    options?: {
-      /** Automatic write operation - component handles all status transitions */
-      writeOperation?: () => Promise<any>;
-      /** Automatic read operation with pulse indicator */
-      readOperation?: () => Promise<any>;
-      /** Apply change optimistically, revert on failure (default: true) */
-      optimistic?: boolean;
-      /** Auto-retry configuration for failed operations */
-      autoRetry?: {
-        attempts: number;
-        delay: number;
-      };
-      /** Manual status override (for advanced uses) */
-      customStatus?: 'loading' | 'success' | 'error';
-      /** Error message for manual error status */
-      errorMessage?: string;
-      /** Internal flag to indicate this is a revert operation */
-      _isRevert?: boolean;
-    },
-  ): Promise<boolean> {
-    return UiComponentHelper.setValue(this, this.baseState, value, this.valueMsg, options);
+  // Implement UiComponentMethods interface
+  getComponentTag(): string {
+    return 'ui-toggle';
   }
 
-  /** Render status badge */
+  updateInternalValue(value: boolean): void {
+    this.isActive = value;
+    this.value = value;
+  }
+
+  getCurrentValue(): boolean {
+    return this.isActive;
+  }
+
+  // Public API methods
+  @Method()
+  async setValue(value: boolean, options?: SetValueOptions): Promise<boolean> {
+    const prevValue = this.getCurrentValue();
+    
+    // Simple value setting (no operation)
+    if (!options?.writeOperation && !options?.readOperation) {
+      this.updateInternalValue(value);
+      this.lastUpdatedTs = Date.now();
+      if (this.readonly) UiComponentUtils.triggerReadPulse(this);
+      UiComponentUtils.emitValueChange(this.valueMsg, this.getComponentTag(), value, prevValue);
+      return true;
+    }
+    
+    // Delegate complex operations to utility
+    return UiComponentUtils.performValueOperation(this, value, this.valueMsg, options);
+  }
+
+  @Method()
+  async getValue(): Promise<boolean> {
+    return this.getCurrentValue();
+  }
+
+  @Method()
+  async setValueSilent(value: boolean): Promise<void> {
+    this.updateInternalValue(value);
+    this.lastUpdatedTs = Date.now();
+    if (this.readonly) UiComponentUtils.triggerReadPulse(this);
+  }
+
+  @Method()
+  async setStatus(status: OperationStatus, errorMessage?: string): Promise<void> {
+    UiComponentUtils.setOperationStatus(this, status, errorMessage);
+  }
+
+  @Method()
+  async triggerReadPulse(): Promise<void> {
+    if (this.readonly) UiComponentUtils.triggerReadPulse(this);
+  }
+
+  // Render status badge
   private renderStatusBadge() {
     if (this.readonly) {
       if (!this.connected) {
@@ -179,15 +188,16 @@ export class UiToggle implements BaseUiMethods<boolean> {
       }
       return null;
     }
-    return StatusIndicator.renderStatusBadge(this.baseState.operationStatus, 'light', this.baseState.lastError || '', h);
+    return StatusIndicator.renderStatusBadge(this.operationStatus, 'light', this.lastError || '', h);
   }
 
-  /** Component lifecycle */
+  // Component lifecycle
   componentWillLoad() {
     this.isActive = Boolean(this.value);
-  // attach component reference for helper methods that need reassignment
-  (this.baseState as any).__component = this;
-  UiComponentHelper.baseComponentWillLoad(this as any, this.baseState, this.showLastUpdated);
+    this.isInitialized = true;
+    if (this.showLastUpdated) {
+      this.timestampTimer = UiComponentUtils.startTimestampUpdater(this);
+    }
   }
 
   componentDidLoad() {
@@ -197,34 +207,33 @@ export class UiToggle implements BaseUiMethods<boolean> {
   }
 
   disconnectedCallback() {
-    UiComponentHelper.baseDisconnectedCallback(this.baseState);
+    if (this.timestampTimer) {
+      clearInterval(this.timestampTimer);
+    }
   }
 
-  /** Watch for value prop changes and update internal state */
+  // Watch for value prop changes
   @Watch('value')
   watchValue(newVal: boolean) {
-    if (!this.baseState.isInitialized) return;
+    if (!this.isInitialized) return;
 
     if (this.isActive !== newVal) {
       const prevValue = this.isActive;
       this.isActive = newVal;
-      UiComponentHelper.emitValueMsg(this.baseState, this, this.valueMsg, newVal, prevValue);
+      UiComponentUtils.emitValueChange(this.valueMsg, this.getComponentTag(), newVal, prevValue);
       if (this.readonly) this.readPulseTs = Date.now();
     }
   }
 
-  /** Event handling */
+  // Event handling
   private handleToggle = () => {
     if (this.disabled || this.readonly) return;
     const newValue = !this.isActive;
     this.isActive = newValue;
     this.value = newValue;
-  // ensure re-render for lastUpdatedTs
-  (this as any).baseState = { ...(this as any).baseState, lastUpdatedTs: Date.now() };
-    UiComponentHelper.emitValueMsg(this.baseState, this, this.valueMsg, newValue, !newValue);
-  };
-
-  private handleKeyDown = (event: KeyboardEvent) => {
+    this.lastUpdatedTs = Date.now();
+    UiComponentUtils.emitValueChange(this.valueMsg, this.getComponentTag(), newValue, !newValue);
+  };  private handleKeyDown = (event: KeyboardEvent) => {
     if (this.disabled || this.readonly || !this.keyboard) return;
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
@@ -315,10 +324,10 @@ export class UiToggle implements BaseUiMethods<boolean> {
     );
   }
 
-  /** Render last updated timestamp */
-  private renderLastUpdated() {
-    if (!this.showLastUpdated || !this.baseState.lastUpdatedTs) return null;
-    return StatusIndicator.renderTimestamp(new Date(this.baseState.lastUpdatedTs), this.dark ? 'dark' : 'light', h);
+    /** Render timestamp */
+  private renderTimestamp() {
+    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
+    return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), this.dark ? 'dark' : 'light', h);
   }
 
   /** Render the component */
@@ -404,17 +413,14 @@ export class UiToggle implements BaseUiMethods<boolean> {
         </div>
 
         {/* Last updated timestamp */}
-        {this.renderLastUpdated()}
+        {this.renderTimestamp()}
       </div>
     );
   }
 
   // Implementation of BaseUiMethods interface
 
-  getCurrentValue(): boolean {
-    return this.isActive;
-  }
-
+  // Helper methods for utility functions (interfaces requirements)
   updateValue(value: boolean): void {
     this.isActive = value;
     this.value = value;
@@ -422,10 +428,6 @@ export class UiToggle implements BaseUiMethods<boolean> {
 
   isReadonly(): boolean {
     return this.readonly;
-  }
-
-  getComponentTag(): string {
-    return 'ui-toggle';
   }
 
   clearConnectionError(): void {
@@ -438,27 +440,5 @@ export class UiToggle implements BaseUiMethods<boolean> {
 
   setReadPulseTimestamp(timestamp: number | undefined): void {
     this.readPulseTs = timestamp;
-  }
-
-  // Additional helper methods that delegate to the base helper
-
-  @Method()
-  async getValue(includeMetadata: boolean = false): Promise<boolean | { value: boolean; lastUpdated?: number; status: string; error?: string }> {
-    return UiComponentHelper.getValue(this, this.baseState, includeMetadata);
-  }
-
-  @Method()
-  async setValueSilent(value: boolean): Promise<void> {
-    UiComponentHelper.setValueSilent(this, this.baseState, value);
-  }
-
-  @Method()
-  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
-    UiComponentHelper.setStatus(this.baseState, status, errorMessage);
-  }
-
-  @Method()
-  async triggerReadPulse(): Promise<void> {
-    UiComponentHelper.triggerReadPulse(this);
   }
 }
