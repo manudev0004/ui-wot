@@ -621,12 +621,6 @@ export namespace Components {
           * @default false
          */
         "disabled": boolean;
-        /**
-          * Get the current toggle value with optional metadata.
-          * @param includeMetadata - Whether to include additional metadata (default: false)
-          * @returns Promise<boolean | MetadataResult> - Current value or object with metadata
-          * @example ```javascript // Basic usage const isOn = await toggle.getValue(); console.log('Toggle is:', isOn ? 'ON' : 'OFF');  // With metadata const result = await toggle.getValue(true); console.log('Value:', result.value); console.log('Last updated:', new Date(result.lastUpdated)); console.log('Status:', result.status); ```
-         */
         "getValue": (includeMetadata?: boolean) => Promise<boolean | { value: boolean; lastUpdated?: number; status: string; error?: string; }>;
         /**
           * Enable keyboard navigation (Space and Enter keys). Default: true
@@ -642,13 +636,6 @@ export namespace Components {
           * @default false
          */
         "readonly": boolean;
-        /**
-          * Set operation status for external status management. Use this method to manually control the visual status indicators when managing device communication externally.
-          * @param status - The status to set ('idle', 'loading', 'success', 'error')
-          * @param errorMessage - Optional error message for error status
-          * @returns Promise<void>
-          * @example ```javascript const toggle = document.querySelector('ui-toggle');  // Show loading indicator await toggle.setStatus('loading');  try {   await deviceOperation();   await toggle.setStatus('success'); } catch (error) {   await toggle.setStatus('error', error.message); }  // Clear status indicator await toggle.setStatus('idle'); ```
-         */
         "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
         /**
           * Set the toggle value and it has optional device communication and status management.
@@ -658,23 +645,12 @@ export namespace Components {
           * @example ```javascript // Basic usage await toggle.setValue(true);  // With device communication await toggle.setValue(true, {   writeOperation: async () => {     const response = await fetch('/api/devices/light', {       method: 'POST',       body: JSON.stringify({ on: true })     });   },   optimistic: true,  // Update UI immediately   autoRetry: { attempts: 3, delay: 1000 } }); ```
          */
         "setValue": (value: boolean, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>;
-        /**
-          * Set value without triggering events (for external updates). Use this method when updating from external data sources to prevent event loops.
-          * @param value - The boolean value to set silently
-          * @returns Promise<void>
-          * @example ```javascript // Basic silent update await toggle.setValueSilent(true);  // In real-time context (WebSocket) websocket.onmessage = async (event) => {   const data = JSON.parse(event.data);   await toggle.setValueSilent(data.isOn);    // Optional visual indicator   if (toggle.readonly) {     await toggle.triggerReadPulse();   } }; ```
-         */
         "setValueSilent": (value: boolean) => Promise<void>;
         /**
           * Show last updated timestamp when true
           * @default false
          */
         "showLastUpdated": boolean;
-        /**
-          * Trigger a read pulse indicator for readonly mode whenever data is fetched. Use this method to provide visual feedback when refreshing data from external sources
-          * @returns Promise<void>
-          * @example Basic Usage (Easy) ```javascript // Show visual pulse when data is refreshed const toggle = document.querySelector('ui-toggle'); await toggle.triggerReadPulse(); ```
-         */
         "triggerReadPulse": () => Promise<void>;
         /**
           * Current boolean value of the toggle.
@@ -1440,7 +1416,6 @@ declare namespace LocalJSX {
         "label"?: string;
         /**
           * Event emitted when the toggle value changes.
-          * @example ```javascript toggle.addEventListener('valueMsg', (event) => {   // event.detail contains:   // - payload: new value (boolean)   // - prev: previous value   // - source: component id   // - ts: timestamp    console.log('New value:', event.detail.payload);    // Example: Send to server   fetch('/api/device/light', {     method: 'POST',     body: JSON.stringify({ on: event.detail.payload })   }); }); ```
          */
         "onValueMsg"?: (event: UiToggleCustomEvent<UiMsg<boolean>>) => void;
         /**
