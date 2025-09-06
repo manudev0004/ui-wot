@@ -4,6 +4,7 @@ import { wotService } from '../services/wotService';
 import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import { useAppContext } from '../context/AppContext';
 import { WoTComponent } from '../types';
+import { GroupContainer } from '../components/GroupContainer';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -53,6 +54,7 @@ export function ComponentCanvasPage() {
         tdInfos: state.tdInfos,
         components: state.components,
         availableAffordances: state.availableAffordances,
+        groups: state.groups, // Include groups in the export
       };
 
       // Export directly as JSON file instead of saving to localStorage
@@ -78,10 +80,35 @@ export function ComponentCanvasPage() {
     }
   };
 
-  const handleLayoutChange = (layout: Layout[]) => {
+  /**
+   * Handle layout changes for both groups and standalone components
+   */
+  const handleMainLayoutChange = (layout: Layout[]) => {
     if (!isEditMode) return;
 
     layout.forEach(layoutItem => {
+      // Check if this is a group
+      const group = state.groups.find(g => g.layout.i === layoutItem.i);
+      if (group) {
+        dispatch({
+          type: 'UPDATE_GROUP',
+          payload: {
+            id: group.id,
+            updates: {
+              layout: {
+                ...group.layout,
+                x: layoutItem.x,
+                y: layoutItem.y,
+                w: layoutItem.w,
+                h: layoutItem.h
+              }
+            }
+          }
+        });
+        return;
+      }
+
+      // Otherwise, handle as standalone component
       const component = state.components.find(c => c.layout.i === layoutItem.i);
       if (component) {
         dispatch({
@@ -324,6 +351,15 @@ export function ComponentCanvasPage() {
         
         try {
           const element = document.createElement(component.uiComponent);
+
+          // Prevent CSS @import errors by disabling adoptedStyleSheets
+          if (element.shadowRoot) {
+            try {
+              element.shadowRoot.adoptedStyleSheets = [];
+            } catch (e) {
+              // Ignore if not supported
+            }
+          }
 
           // Set component attributes using your component's API
           element.setAttribute('variant', component.variant || 'minimal');
@@ -642,42 +678,127 @@ export function ComponentCanvasPage() {
       </div>
 
       {/* Canvas */}
-      <div className={`${editingComponent ? 'mr-80 transition-all duration-200' : 'transition-all duration-200'}`}>
-        <div className="max-w-7xl mx-auto px-4 py-6">
-        {state.components.length > 0 ? (
-          <AnyResponsiveGridLayout
-            className="layout"
-            layouts={{
-              lg: state.components.map(c => ({ ...c.layout, minW: 2, minH: 2, maxW: 6 })),
-              md: state.components.map(c => ({ ...c.layout, minW: 2, minH: 2, maxW: 4 })),
-              sm: state.components.map(c => ({ ...c.layout, minW: 2, minH: 2, maxW: 3 })),
-              xs: state.components.map(c => ({ ...c.layout, minW: 2, minH: 2, maxW: 2 })),
-              xxs: state.components.map(c => ({ ...c.layout, minW: 1, minH: 2, maxW: 2 })),
-            }}
-            breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-            cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-            rowHeight={60}
-            onLayoutChange={handleLayoutChange}
-            isDraggable={isEditMode}
-            isResizable={isEditMode}
-            margin={[16, 16]}
-            containerPadding={[0, 0]}
-            draggableHandle={'.component-drag-handle'}
-            draggableCancel={'.no-drag, button, input, select, textarea, .edit-controls'}
-          >
-            {state.components.map(renderComponent)}
-          </AnyResponsiveGridLayout>
-        ) : (
-          <div className="text-center py-12">
-            <div className="max-w-md mx-auto">
-              <svg className="mx-auto h-12 w-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-              <h3 className="mt-2 text-sm font-heading font-medium text-primary">No components</h3>
-              <p className="mt-1 text-sm font-body text-gray-500">No components have been selected yet. Go back to select affordances from your Thing Description.</p>
-              <div className="mt-6">
-                <button
-                  onClick={handleBack}
+      <div className={`w-full min-h-screen ${editingComponent ? 'pr-80 transition-all duration-200' : 'transition-all duration-200'}`}>
+        <div className="w-full px-4 py-6">
+          {state.groups.length > 0 || state.components.some(c => !state.groups.some(g => g.affordanceIds.includes(c.id))) ? (
+            <AnyResponsiveGridLayout
+              className="layout"
+              layouts={{
+                lg: [
+                  // Group layouts - enable proper resizing and positioning
+                  ...state.groups.map(g => ({ 
+                    ...g.layout, 
+                    minW: 6, 
+                    minH: 4, 
+                    maxW: Infinity,
+                    maxH: Infinity,
+                    isResizable: true,
+                    isDraggable: true
+                  })),
+                  // Standalone component layouts
+                  ...state.components
+                    .filter(c => !state.groups.some(g => g.affordanceIds.includes(c.id)))
+                    .map(c => ({ 
+                      ...c.layout, 
+                      minW: 2, 
+                      minH: 2, 
+                      maxW: Infinity,
+                      maxH: Infinity,
+                      isResizable: true,
+                      isDraggable: true
+                    }))
+                ],
+                md: [
+                  ...state.groups.map(g => ({ 
+                    ...g.layout, 
+                    minW: 4, 
+                    minH: 4, 
+                    maxW: Infinity,
+                    maxH: Infinity,
+                    isResizable: true,
+                    isDraggable: true
+                  })),
+                  ...state.components
+                    .filter(c => !state.groups.some(g => g.affordanceIds.includes(c.id)))
+                    .map(c => ({ 
+                      ...c.layout, 
+                      minW: 2, 
+                      minH: 2, 
+                      maxW: Infinity,
+                      maxH: Infinity,
+                      isResizable: true,
+                      isDraggable: true
+                    }))
+                ],
+                sm: [
+                  ...state.groups.map(g => ({ 
+                    ...g.layout, 
+                    minW: 3, 
+                    minH: 4, 
+                    maxW: Infinity,
+                    maxH: Infinity,
+                    isResizable: true,
+                    isDraggable: true
+                  })),
+                  ...state.components
+                    .filter(c => !state.groups.some(g => g.affordanceIds.includes(c.id)))
+                    .map(c => ({ 
+                      ...c.layout, 
+                      minW: 2, 
+                      minH: 2, 
+                      maxW: Infinity,
+                      maxH: Infinity,
+                      isResizable: true,
+                      isDraggable: true
+                    }))
+                ]
+              }}
+              breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+              cols={{ lg: 24, md: 20, sm: 12, xs: 8, xxs: 4 }}
+              rowHeight={60}
+              onLayoutChange={handleMainLayoutChange}
+              isDraggable={isEditMode}
+              isResizable={isEditMode}
+              margin={[16, 16]}
+              containerPadding={[16, 16]}
+              compactType={null}
+              preventCollision={false}
+              allowOverlap={true}
+              draggableHandle={'.group-header, .component-drag-handle'}
+              draggableCancel={'.no-drag, button, input, select, textarea, .edit-controls, .group-options'}
+              resizeHandles={['se', 'sw', 'nw', 'ne', 's', 'n', 'e', 'w']}
+            >
+              {/* Render Groups */}
+              {state.groups.map(group => (
+                <div key={group.id} data-group-id={group.id} className="group-wrapper">
+                  <GroupContainer
+                    group={group}
+                    components={state.components.filter(c => group.affordanceIds.includes(c.id))}
+                    isEditMode={isEditMode}
+                    onComponentEdit={handleComponentEdit}
+                    renderComponent={renderComponent}
+                    editingComponent={editingComponent}
+                  />
+                </div>
+              ))}
+              
+              {/* Render Standalone Components */}
+              {state.components
+                .filter(c => !state.groups.some(g => g.affordanceIds.includes(c.id)))
+                .map(renderComponent)
+              }
+            </AnyResponsiveGridLayout>
+          ) : (
+            <div className="text-center py-12">
+              <div className="max-w-md mx-auto">
+                <svg className="mx-auto h-12 w-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <h3 className="mt-2 text-sm font-heading font-medium text-primary">No components</h3>
+                <p className="mt-1 text-sm font-body text-gray-500">No components have been selected yet. Go back to select affordances from your Thing Description.</p>
+                <div className="mt-6">
+                  <button
+                    onClick={handleBack}
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-heading font-medium rounded-md text-white bg-primary hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
                 >
                   Select Affordances

@@ -57,6 +57,7 @@ export function AffordanceSelectionPage() {
 
       // Get the active TD ID (prefer existing tdInfo id, fallback to parsedTD.id)
       const activeTdId = state.activeTdId || registerKey || (state.tdInfos.length > 0 ? state.tdInfos[0].id : 'default');
+      const activeTdInfo = state.tdInfos.find(td => td.id === activeTdId);
 
       // Create components for selected affordances
       const components: WoTComponent[] = selectedAffordances
@@ -64,12 +65,7 @@ export function AffordanceSelectionPage() {
           const affordance = state.availableAffordances.find(a => a.key === affordanceKey);
           if (!affordance) return null;
 
-          const gridPosition = {
-            x: (index % 3) * 4, // 3 columns
-            y: Math.floor(index / 3) * 4, // 4 units height per row
-          };
-
-            return {
+          return {
             id: `${affordanceKey}-${Date.now()}-${index}`,
             type: affordance.type,
             title: affordance.title || affordanceKey,
@@ -80,9 +76,9 @@ export function AffordanceSelectionPage() {
             variant: affordance.availableVariants[0],
             layout: {
               i: `${affordanceKey}-${Date.now()}-${index}`,
-              x: gridPosition.x,
-              y: gridPosition.y,
-              w: 4,
+              x: (index % 4) * 3, // 4 columns in group, 3 units wide
+              y: Math.floor(index / 4) * 3, // 3 units height per row
+              w: 3,
               h: 3,
               minW: 2,
               minH: 2,
@@ -93,6 +89,50 @@ export function AffordanceSelectionPage() {
           };
         })
         .filter(Boolean) as WoTComponent[];
+
+      // Create a group for these components
+      if (components.length > 0) {
+        const groupId = `group-${activeTdId}-${Date.now()}`;
+        
+        // Create the affordance group
+        const group = {
+          id: groupId,
+          tdId: activeTdId,
+          title: activeTdInfo?.title || state.parsedTD?.title || 'Device Group',
+          description: `Components from ${activeTdInfo?.title || state.parsedTD?.title}`,
+          layout: {
+            i: groupId,
+            x: 0,
+            y: Math.max(0, ...state.components.map(c => c.layout.y + c.layout.h), 
+                        ...state.groups.map(g => g.layout.y + g.layout.h)),
+            w: 12, // Full width
+            h: Math.ceil(components.length / 4) * 4 + 2, // Height based on component count + header
+            minW: 8,
+            minH: 6,
+          },
+          options: {
+            visible: true,
+            borderStyle: 'solid' as const,
+            backgroundColor: '#f8fafc',
+            collapsed: false,
+          },
+          affordanceIds: components.map(c => c.id),
+          innerLayout: components.map(comp => ({
+            i: comp.id,
+            x: comp.layout.x,
+            y: comp.layout.y,
+            w: comp.layout.w,
+            h: comp.layout.h,
+          })),
+          minSize: {
+            width: 400,
+            height: 300,
+          },
+        };
+
+        // Add group to state
+        dispatch({ type: 'ADD_GROUP', payload: group });
+      }
 
       // Add components to state
       components.forEach(component => {

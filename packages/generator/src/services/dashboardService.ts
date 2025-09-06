@@ -1,4 +1,4 @@
-import { AppState, WoTComponent, TDInfo, ParsedAffordance } from '../types';
+import { AppState, WoTComponent, TDInfo, ParsedAffordance, AffordanceGroup } from '../types';
 
 export interface DashboardData {
   name: string;
@@ -8,6 +8,7 @@ export interface DashboardData {
   tdInfos: TDInfo[];
   components: WoTComponent[];
   availableAffordances: ParsedAffordance[];
+  groups?: AffordanceGroup[]; // Optional for backward compatibility
 }
 
 class DashboardService {
@@ -26,6 +27,7 @@ class DashboardService {
       tdInfos: state.tdInfos,
       components: state.components,
       availableAffordances: state.availableAffordances,
+      groups: state.groups,
     };
 
     const existingDashboards = this.getSavedDashboards();

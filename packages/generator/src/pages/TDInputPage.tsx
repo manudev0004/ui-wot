@@ -104,7 +104,8 @@ export function TDInputPage() {
         payload: {
           tdInfos: dashboardData.tdInfos,
           components: dashboardData.components,
-          availableAffordances: dashboardData.availableAffordances
+          availableAffordances: dashboardData.availableAffordances,
+          groups: dashboardData.groups || [] // Include groups if available
         }
       });
 

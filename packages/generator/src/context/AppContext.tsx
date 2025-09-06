@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { AppState, WoTComponent, ParsedAffordance, TDSource, TDInfo } from '../types';
+import { AppState, WoTComponent, ParsedAffordance, TDSource, TDInfo, AffordanceGroup } from '../types';
 
 type AppAction =
   | { type: 'SET_VIEW'; payload: AppState['currentView'] }
@@ -14,7 +14,13 @@ type AppAction =
   | { type: 'REMOVE_COMPONENT'; payload: string }
   | { type: 'UPDATE_LAYOUT'; payload: { id: string; layout: WoTComponent['layout'] } }
   | { type: 'SET_THING'; payload: { id: string; thing: any } }
-  | { type: 'LOAD_DASHBOARD'; payload: { tdInfos: TDInfo[]; components: WoTComponent[]; availableAffordances: ParsedAffordance[] } }
+  | { type: 'LOAD_DASHBOARD'; payload: { tdInfos: TDInfo[]; components: WoTComponent[]; availableAffordances: ParsedAffordance[]; groups?: AffordanceGroup[] } }
+  | { type: 'ADD_GROUP'; payload: AffordanceGroup }
+  | { type: 'UPDATE_GROUP'; payload: { id: string; updates: Partial<AffordanceGroup> } }
+  | { type: 'REMOVE_GROUP'; payload: string }
+  | { type: 'ADD_COMPONENT_TO_GROUP'; payload: { groupId: string; componentId: string } }
+  | { type: 'REMOVE_COMPONENT_FROM_GROUP'; payload: { groupId: string; componentId: string } }
+  | { type: 'UPDATE_GROUP_INNER_LAYOUT'; payload: { groupId: string; layout: AffordanceGroup['innerLayout'] } }
   | { type: 'RESET_STATE' };
 
 const initialState: AppState = {
@@ -24,6 +30,7 @@ const initialState: AppState = {
   selectedAffordances: [],
   components: [],
   things: new Map(),
+  groups: [],
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -94,7 +101,60 @@ function appReducer(state: AppState, action: AppAction): AppState {
         tdInfos: action.payload.tdInfos,
         components: action.payload.components,
         availableAffordances: action.payload.availableAffordances,
+        groups: action.payload.groups || [],
         currentView: 'component-canvas'
+      };
+
+    case 'ADD_GROUP':
+      return {
+        ...state,
+        groups: [...state.groups, action.payload]
+      };
+
+    case 'UPDATE_GROUP':
+      return {
+        ...state,
+        groups: state.groups.map(group => 
+          group.id === action.payload.id 
+            ? { ...group, ...action.payload.updates }
+            : group
+        )
+      };
+
+    case 'REMOVE_GROUP':
+      return {
+        ...state,
+        groups: state.groups.filter(group => group.id !== action.payload)
+      };
+
+    case 'ADD_COMPONENT_TO_GROUP':
+      return {
+        ...state,
+        groups: state.groups.map(group => 
+          group.id === action.payload.groupId
+            ? { ...group, affordanceIds: [...group.affordanceIds, action.payload.componentId] }
+            : group
+        )
+      };
+
+    case 'REMOVE_COMPONENT_FROM_GROUP':
+      return {
+        ...state,
+        groups: state.groups.map(group => 
+          group.id === action.payload.groupId
+            ? { ...group, affordanceIds: group.affordanceIds.filter(id => id !== action.payload.componentId) }
+            : group
+        )
+      };
+
+    case 'UPDATE_GROUP_INNER_LAYOUT':
+      return {
+        ...state,
+        groups: state.groups.map(group => 
+          group.id === action.payload.groupId
+            ? { ...group, innerLayout: action.payload.layout }
+            : group
+        )
       };
 
     case 'RESET_STATE':

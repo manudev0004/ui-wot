@@ -51,6 +51,45 @@ export interface TDInfo {
   source: TDSource;
 }
 
+export interface AffordanceGroup {
+  /** Unique group identifier */
+  id: string;
+  /** Reference to the TD this group belongs to */
+  tdId: string;
+  /** Display name (TD title or user-defined) */
+  title: string;
+  /** Optional description */
+  description?: string;
+  /** Group's position and size in main grid */
+  layout: ComponentLayout;
+  /** Group visual and behavior options */
+  options: {
+    /** Toggle transparency/collapse */
+    visible: boolean;
+    /** Border style for the group container */
+    borderStyle: 'solid' | 'dashed' | 'none';
+    /** Background color (hex color or CSS color name) */
+    backgroundColor: string;
+    /** Whether the group is collapsed */
+    collapsed: boolean;
+  };
+  /** List of component IDs in this group */
+  affordanceIds: string[];
+  /** Internal grid layout for components within group */
+  innerLayout: Array<{
+    i: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }>;
+  /** Minimum group dimensions */
+  minSize: {
+    width: number;
+    height: number;
+  };
+}
+
 export interface AppState {
   currentView: 'home' | 'td-input' | 'affordance-selection' | 'component-canvas';
   tdInfos: TDInfo[]; // Support multiple TDs
@@ -61,4 +100,5 @@ export interface AppState {
   selectedAffordances: string[];
   components: WoTComponent[];
   things: Map<string, any>; // WoT thing instances
+  groups: AffordanceGroup[]; // Affordance groups for organizing components
 }
