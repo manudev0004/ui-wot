@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { wotService } from '../services/wotService';
 import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import { useAppContext } from '../context/AppContext';
@@ -12,6 +13,7 @@ const AnyResponsiveGridLayout = ResponsiveGridLayout as unknown as React.Compone
 
 export function ComponentCanvasPage() {
   const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   const [editingComponent, setEditingComponent] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   // attributes state for the currently editing component
@@ -308,7 +310,7 @@ export function ComponentCanvasPage() {
   };
 
   const handleBack = () => {
-    dispatch({ type: 'SET_VIEW', payload: 'affordance-selection' });
+    navigate('/affordances');
   };
 
   const renderComponent = (component: WoTComponent) => {
@@ -618,7 +620,7 @@ export function ComponentCanvasPage() {
                 </button>
                 <button
                   onClick={() => {
-                    dispatch({ type: 'SET_VIEW', payload: 'td-input' });
+                    navigate('/td-input');
                   }}
                   className="bg-accent hover:bg-accent-light text-white font-heading font-medium py-2 px-4 rounded-lg transition-colors"
                 >
@@ -627,7 +629,7 @@ export function ComponentCanvasPage() {
                 <button
                   onClick={() => {
                     dispatch({ type: 'RESET_STATE' });
-                    dispatch({ type: 'SET_VIEW', payload: 'home' });
+                    navigate('/');
                   }}
                   className="bg-primary hover:bg-primary-light text-white font-heading font-medium py-2 px-4 rounded-lg transition-colors"
                 >

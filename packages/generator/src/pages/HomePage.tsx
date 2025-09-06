@@ -1,10 +1,10 @@
-import { useAppContext } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
 
 export function HomePage() {
-  const { dispatch } = useAppContext();
+  const navigate = useNavigate();
 
   const handleAddClick = () => {
-    dispatch({ type: 'SET_VIEW', payload: 'td-input' });
+    navigate('/td-input');
   };
 
   return (

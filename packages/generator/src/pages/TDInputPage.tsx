@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { wotService } from '../services/wotService';
 import { dashboardService } from '../services/dashboardService';
 
 export function TDInputPage() {
   const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   const [urlInput, setUrlInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export function TDInputPage() {
   dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
   dispatch({ type: 'ADD_TD', payload: tdInfo });
         
-        dispatch({ type: 'SET_VIEW', payload: 'affordance-selection' });
+        navigate('/affordances');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to parse Thing Description');
       } finally {
@@ -79,7 +81,7 @@ export function TDInputPage() {
   dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
   dispatch({ type: 'ADD_TD', payload: tdInfo });
 
-      dispatch({ type: 'SET_VIEW', payload: 'affordance-selection' });
+      navigate('/affordances');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch Thing Description');
     } finally {
@@ -106,7 +108,7 @@ export function TDInputPage() {
         }
       });
 
-      dispatch({ type: 'SET_VIEW', payload: 'component-canvas' });
+      navigate('/components');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to import dashboard. Please check the file format.');
     } finally {
@@ -120,10 +122,10 @@ export function TDInputPage() {
   const handleBack = () => {
     if (state.components.length > 0) {
       // If we have existing components, go back to canvas
-      dispatch({ type: 'SET_VIEW', payload: 'component-canvas' });
+      navigate('/components');
     } else {
       // Otherwise go to home
-      dispatch({ type: 'SET_VIEW', payload: 'home' });
+      navigate('/');
     }
   };
 

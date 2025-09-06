@@ -1,38 +1,64 @@
 import { useEffect } from "react";
-import { AppProvider, useAppContext } from "./context/AppContext";
+import { AppProvider } from "./context/AppContext";
 import { HomePage } from "./pages/HomePage";
 import { TDInputPage } from "./pages/TDInputPage";
 import { AffordanceSelectionPage } from "./pages/AffordanceSelectionPage";
 import { ComponentCanvasPage } from "./pages/ComponentCanvasPage";
 import { wotService } from "./services/wotService";
 import "./App.css";
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { useAppContext as useCtx } from './context/AppContext';
 
-function AppContent() {
-  const { state } = useAppContext();
+function RouterSync() {
+  const { dispatch } = useCtx();
+  const location = useLocation();
 
+  // Initialize WoT service once
   useEffect(() => {
-    // Initialize WoT service
     wotService.start();
   }, []);
 
-  switch (state.currentView) {
-    case 'home':
-      return <HomePage />;
-    case 'td-input':
-      return <TDInputPage />;
-    case 'affordance-selection':
-      return <AffordanceSelectionPage />;
-    case 'component-canvas':
-      return <ComponentCanvasPage />;
-    default:
-      return <HomePage />;
-  }
+  // Only sync URL changes to context, never context to URL
+  useEffect(() => {
+    const pathToView = (path: string) => {
+      if (path === '/' || path === '') return 'home';
+      if (path.startsWith('/td-input')) return 'td-input';
+      if (path.startsWith('/affordances')) return 'affordance-selection';
+      if (path.startsWith('/components')) return 'component-canvas';
+      return 'home';
+    };
+
+    const newView = pathToView(location.pathname);
+    dispatch({ type: 'SET_VIEW', payload: newView });
+  }, [location.pathname, dispatch]);
+
+  return (
+    <div className="min-h-screen">
+      <main>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/td-input" element={<TDInputPage />} />
+          <Route path="/affordances" element={<AffordanceSelectionPage />} />
+          <Route path="/components/*" element={<ComponentCanvasPage />} />
+          {/* keep a fallback to home */}
+          <Route path="*" element={<HomePage />} />
+        </Routes>
+      </main>
+    </div>
+  );
 }
 
 function App() {
   return (
     <AppProvider>
-      <AppContent />
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <RouterSync />
+      </BrowserRouter>
     </AppProvider>
   );
 }

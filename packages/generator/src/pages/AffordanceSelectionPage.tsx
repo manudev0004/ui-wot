@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { wotService } from '../services/wotService';
 import { WoTComponent } from '../types';
 
 export function AffordanceSelectionPage() {
   const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
   const [selectedAffordances, setSelectedAffordances] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   // map affordanceKey -> selected component type (when multiple are available)
@@ -98,7 +100,7 @@ export function AffordanceSelectionPage() {
       });
 
       dispatch({ type: 'SELECT_AFFORDANCES', payload: selectedAffordances });
-      dispatch({ type: 'SET_VIEW', payload: 'component-canvas' });
+      navigate('/components');
     } catch (error) {
       console.error('Failed to load affordances:', error);
     } finally {
@@ -107,7 +109,7 @@ export function AffordanceSelectionPage() {
   };
 
   const handleBack = () => {
-    dispatch({ type: 'SET_VIEW', payload: 'td-input' });
+    navigate('/td-input');
   };
 
   const getComponentBadgeColor = (component: string) => {
