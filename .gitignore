@@ -76,3 +76,5 @@ UserInterfaceState.xcuserstate
 .env
 typedoc.json
 docs
+.docs
+.backup
