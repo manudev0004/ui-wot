@@ -14,6 +14,7 @@ export { UiCheckbox } from './components/ui-checkbox/ui-checkbox';
 export { UiCalendar } from './components/ui-calendar/ui-calendar';
 export { UiNotification } from './components/ui-notification/ui-notification';
 export { UiText } from './components/ui-text/ui-text';
+export { UiEvent } from './components/ui-event/ui-event';
 
 // Export utility types
 export * from './utils/types';

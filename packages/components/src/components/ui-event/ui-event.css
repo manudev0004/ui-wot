@@ -1,0 +1,127 @@
+/* Import single global CSS with everything */
+@import '../../global.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+/* Base container styling */
+.event-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Event history scrollbar styling */
+.event-history::-webkit-scrollbar {
+  width: 6px;
+}
+
+.event-history::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.event-history::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.event-history::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.8);
+}
+
+/* Dark mode scrollbar */
+:host(.dark) .event-history::-webkit-scrollbar-thumb {
+  background-color: rgba(75, 85, 99, 0.5);
+}
+
+:host(.dark) .event-history::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(75, 85, 99, 0.8);
+}
+
+/* Status indicator animations */
+.status-indicator {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Button hover effects */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Event item animations */
+.event-item {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Connection status indicator */
+.connection-status {
+  position: relative;
+}
+
+.connection-status::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -8px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translateY(-50%);
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .event-container {
+    padding: 12px;
+  }
+
+  .event-history {
+    max-height: 32rem;
+  }
+
+  button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

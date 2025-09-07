@@ -413,21 +413,21 @@ export namespace Components {
      * Provides real-time event handling with filtering, buffering, and visual feedback.
      * @example Basic Event Subscription
      * ```html
-     * <ui-event-listener
+     * <ui-event
      * label="Temperature Events"
      * event-name="temperatureChanged"
      * max-events="10"
      * show-timestamp="true">
-     * </ui-event-listener>
+     * </ui-event>
      * ```
      * @example Event Publishing
      * ```html
-     * <ui-event-listener
+     * <ui-event
      * label="Alert Publisher"
      * mode="publisher"
      * event-name="alertTriggered"
      * auto-publish="true">
-     * </ui-event-listener>
+     * </ui-event>
      * ```
      * @example Advanced Filtering
      * ```javascript
@@ -442,7 +442,7 @@ export namespace Components {
      * });
      * ```
      */
-    interface UiEventListener {
+    interface UiEvent {
         /**
           * Auto-publish mode for publishers
           * @default false
@@ -457,6 +457,11 @@ export namespace Components {
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection status indicator
+          * @default false
+         */
+        "connected": boolean;
         /**
           * Dark mode support
           * @default false
@@ -511,6 +516,11 @@ export namespace Components {
           * Publish an event
          */
         "publishEvent": (payload: any, options?: { eventName?: string; }) => Promise<void>;
+        /**
+          * Whether component is in readonly mode
+          * @default false
+         */
+        "readonly": boolean;
         /**
           * Set event filter function
          */
@@ -1230,9 +1240,9 @@ export interface UiCheckboxCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiCheckboxElement;
 }
-export interface UiEventListenerCustomEvent<T> extends CustomEvent<T> {
+export interface UiEventCustomEvent<T> extends CustomEvent<T> {
     detail: T;
-    target: HTMLUiEventListenerElement;
+    target: HTMLUiEventElement;
 }
 export interface UiNotificationCustomEvent<T> extends CustomEvent<T> {
     detail: T;
@@ -1377,7 +1387,7 @@ declare global {
         prototype: HTMLUiCheckboxElement;
         new (): HTMLUiCheckboxElement;
     };
-    interface HTMLUiEventListenerElementEventMap {
+    interface HTMLUiEventElementEventMap {
         "eventReceived": UiMsg<any>;
         "eventPublished": UiMsg<any>;
         "valueMsg": UiMsg<any>;
@@ -1387,21 +1397,21 @@ declare global {
      * Provides real-time event handling with filtering, buffering, and visual feedback.
      * @example Basic Event Subscription
      * ```html
-     * <ui-event-listener
+     * <ui-event
      * label="Temperature Events"
      * event-name="temperatureChanged"
      * max-events="10"
      * show-timestamp="true">
-     * </ui-event-listener>
+     * </ui-event>
      * ```
      * @example Event Publishing
      * ```html
-     * <ui-event-listener
+     * <ui-event
      * label="Alert Publisher"
      * mode="publisher"
      * event-name="alertTriggered"
      * auto-publish="true">
-     * </ui-event-listener>
+     * </ui-event>
      * ```
      * @example Advanced Filtering
      * ```javascript
@@ -1416,19 +1426,19 @@ declare global {
      * });
      * ```
      */
-    interface HTMLUiEventListenerElement extends Components.UiEventListener, HTMLStencilElement {
-        addEventListener<K extends keyof HTMLUiEventListenerElementEventMap>(type: K, listener: (this: HTMLUiEventListenerElement, ev: UiEventListenerCustomEvent<HTMLUiEventListenerElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+    interface HTMLUiEventElement extends Components.UiEvent, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiEventElementEventMap>(type: K, listener: (this: HTMLUiEventElement, ev: UiEventCustomEvent<HTMLUiEventElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
         addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
         addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
         addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
-        removeEventListener<K extends keyof HTMLUiEventListenerElementEventMap>(type: K, listener: (this: HTMLUiEventListenerElement, ev: UiEventListenerCustomEvent<HTMLUiEventListenerElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiEventElementEventMap>(type: K, listener: (this: HTMLUiEventElement, ev: UiEventCustomEvent<HTMLUiEventElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
         removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
         removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
         removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
     }
-    var HTMLUiEventListenerElement: {
-        prototype: HTMLUiEventListenerElement;
-        new (): HTMLUiEventListenerElement;
+    var HTMLUiEventElement: {
+        prototype: HTMLUiEventElement;
+        new (): HTMLUiEventElement;
     };
     interface HTMLUiNotificationElementEventMap {
         "notificationClose": {
@@ -1717,7 +1727,7 @@ declare global {
         "ui-button": HTMLUiButtonElement;
         "ui-calendar": HTMLUiCalendarElement;
         "ui-checkbox": HTMLUiCheckboxElement;
-        "ui-event-listener": HTMLUiEventListenerElement;
+        "ui-event": HTMLUiEventElement;
         "ui-notification": HTMLUiNotificationElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
         "ui-slider": HTMLUiSliderElement;
@@ -2035,21 +2045,21 @@ declare namespace LocalJSX {
      * Provides real-time event handling with filtering, buffering, and visual feedback.
      * @example Basic Event Subscription
      * ```html
-     * <ui-event-listener
+     * <ui-event
      * label="Temperature Events"
      * event-name="temperatureChanged"
      * max-events="10"
      * show-timestamp="true">
-     * </ui-event-listener>
+     * </ui-event>
      * ```
      * @example Event Publishing
      * ```html
-     * <ui-event-listener
+     * <ui-event
      * label="Alert Publisher"
      * mode="publisher"
      * event-name="alertTriggered"
      * auto-publish="true">
-     * </ui-event-listener>
+     * </ui-event>
      * ```
      * @example Advanced Filtering
      * ```javascript
@@ -2064,7 +2074,7 @@ declare namespace LocalJSX {
      * });
      * ```
      */
-    interface UiEventListener {
+    interface UiEvent {
         /**
           * Auto-publish mode for publishers
           * @default false
@@ -2075,6 +2085,11 @@ declare namespace LocalJSX {
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection status indicator
+          * @default false
+         */
+        "connected"?: boolean;
         /**
           * Dark mode support
           * @default false
@@ -2120,19 +2135,24 @@ declare namespace LocalJSX {
         /**
           * Emitted when an event is published (publisher mode)
          */
-        "onEventPublished"?: (event: UiEventListenerCustomEvent<UiMsg<any>>) => void;
+        "onEventPublished"?: (event: UiEventCustomEvent<UiMsg<any>>) => void;
         /**
           * Emitted when an event is received (listener mode)
          */
-        "onEventReceived"?: (event: UiEventListenerCustomEvent<UiMsg<any>>) => void;
+        "onEventReceived"?: (event: UiEventCustomEvent<UiMsg<any>>) => void;
         /**
           * Standard value message event
          */
-        "onValueMsg"?: (event: UiEventListenerCustomEvent<UiMsg<any>>) => void;
+        "onValueMsg"?: (event: UiEventCustomEvent<UiMsg<any>>) => void;
         /**
           * Event payload template for publishing
          */
         "payloadTemplate"?: string;
+        /**
+          * Whether component is in readonly mode
+          * @default false
+         */
+        "readonly"?: boolean;
         /**
           * Show last updated timestamp
           * @default false
@@ -2685,7 +2705,7 @@ declare namespace LocalJSX {
         "ui-button": UiButton;
         "ui-calendar": UiCalendar;
         "ui-checkbox": UiCheckbox;
-        "ui-event-listener": UiEventListener;
+        "ui-event": UiEvent;
         "ui-notification": UiNotification;
         "ui-number-picker": UiNumberPicker;
         "ui-slider": UiSlider;
@@ -2774,21 +2794,21 @@ declare module "@stencil/core" {
              * Provides real-time event handling with filtering, buffering, and visual feedback.
              * @example Basic Event Subscription
              * ```html
-             * <ui-event-listener
+             * <ui-event
              * label="Temperature Events"
              * event-name="temperatureChanged"
              * max-events="10"
              * show-timestamp="true">
-             * </ui-event-listener>
+             * </ui-event>
              * ```
              * @example Event Publishing
              * ```html
-             * <ui-event-listener
+             * <ui-event
              * label="Alert Publisher"
              * mode="publisher"
              * event-name="alertTriggered"
              * auto-publish="true">
-             * </ui-event-listener>
+             * </ui-event>
              * ```
              * @example Advanced Filtering
              * ```javascript
@@ -2803,7 +2823,7 @@ declare module "@stencil/core" {
              * });
              * ```
              */
-            "ui-event-listener": LocalJSX.UiEventListener & JSXBase.HTMLAttributes<HTMLUiEventListenerElement>;
+            "ui-event": LocalJSX.UiEvent & JSXBase.HTMLAttributes<HTMLUiEventElement>;
             /**
              * Notification component for displaying temporary event data with auto-dismiss functionality.
              * Supports multiple notification types with smooth animations and customizable duration.

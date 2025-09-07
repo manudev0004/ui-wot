@@ -223,6 +223,34 @@
         </div>
       </div>
 
+      <div class="row">
+        <div>
+          <h3>Event Listener/Publisher</h3>
+          <div>
+            <ui-event
+              id="td-event-listener"
+              label="Temperature Events"
+              mode="listener"
+              event-name="temperatureChanged"
+              max-events="5"
+              show-timestamp="true"
+              show-last-updated="true"
+            ></ui-event>
+          </div>
+          <div style="margin-top: 12px;">
+            <ui-event
+              id="td-event-publisher"
+              label="Alert Publisher"
+              mode="publisher"
+              event-name="alertTriggered"
+              auto-publish="false"
+              variant="filled"
+              color="secondary"
+            ></ui-event>
+          </div>
+        </div>
+      </div>
+
 
       <div class="meta">Open the browser console to see events and status messages.</div>
     </div>
@@ -236,7 +264,7 @@
         
         
         // Wait for all components to be defined
-        const COMPONENT_TAGS = ['ui-toggle', 'ui-slider', 'ui-number-picker', 'ui-button', 'ui-checkbox', 'ui-calendar', 'ui-notification', 'ui-text'];
+        const COMPONENT_TAGS = ['ui-toggle', 'ui-slider', 'ui-number-picker', 'ui-button', 'ui-checkbox', 'ui-calendar', 'ui-notification', 'ui-text', 'ui-event'];
         await Promise.all(COMPONENT_TAGS.map(tag => customElements.whenDefined(tag)));
         console.log('All components ready');
 
