@@ -1,6 +1,5 @@
 import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
 import { UiMsg } from '../../utils/types';
-import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 
 /**
  * Notification component for displaying temporary event data with auto-dismiss functionality.
@@ -90,65 +89,15 @@ export class UiNotification {
   @Prop() showIcon: boolean = true;
 
   /**
-   * Position of the notification (for styling purposes).
-   */
-  @Prop() position: 'top' | 'bottom' | 'center' = 'top';
-
-  /**
    * Enable dark theme for the component.
    */
   @Prop() dark: boolean = false;
-
-  /**
-   * Custom CSS classes to apply to the notification.
-   */
-  @Prop() customClass?: string;
-
-  /**
-   * Text label displayed with the notification.
-   */
-  @Prop() label?: string;
-
-  /**
-   * Color theme variant.
-   */
-  @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
-
-  /**
-   * Whether the notification is disabled (cannot be interacted with).
-   */
-  @Prop() disabled: boolean = false;
-
-  /**
-   * Whether the notification is read-only (displays but cannot be dismissed manually).
-   */
-  @Prop({ mutable: true }) readonly: boolean = false;
-
-  /**
-   * Show last updated timestamp when true
-   */
-  @Prop() showLastUpdated: boolean = false;
-
-  /** Connection state for readonly mode */
-  @Prop({ mutable: true }) connected: boolean = true;
 
   /** Component state */
 
   @State() private isVisible: boolean = false;
   @State() private isAnimating: boolean = false;
   @State() private dismissTimer?: number;
-
-  /** Operation status for unified status indicators */
-  @State() operationStatus: OperationStatus = 'idle';
-
-  /** Last error message (if any) */
-  @State() lastError?: string;
-
-  /** Timestamp of last read pulse (for readonly) */
-  @State() readPulseTs?: number;
-
-  /** Timestamp of last value update for showLastUpdated feature */
-  @State() lastUpdatedTs?: number;
 
   /** Component events */
 
@@ -188,9 +137,6 @@ export class UiNotification {
     this.isAnimating = true;
     this.isVisible = true;
     
-    // Update timestamp for status tracking
-    this.lastUpdatedTs = Date.now();
-    
     // Allow animation to complete
     setTimeout(() => {
       this.isAnimating = false;
@@ -223,9 +169,6 @@ export class UiNotification {
 
     this.clearAutoDismiss();
     this.isAnimating = true;
-
-    // Update timestamp for status tracking
-    this.lastUpdatedTs = Date.now();
 
     // Emit valueMsg event for consistency with other components
     this.valueMsg.emit({
@@ -274,10 +217,6 @@ export class UiNotification {
   componentDidLoad() {
     // Auto-show on load
     this.show();
-    // Initialize timestamp if showLastUpdated is enabled
-    if (this.showLastUpdated) {
-      this.lastUpdatedTs = Date.now();
-    }
   }
 
   disconnectedCallback() {
@@ -444,24 +383,6 @@ export class UiNotification {
       containerClasses += ' notification-visible';
     }
 
-    // Position classes
-    switch (this.position) {
-      case 'top':
-        containerClasses += ' notification-top';
-        break;
-      case 'bottom':
-        containerClasses += ' notification-bottom';
-        break;
-      case 'center':
-        containerClasses += ' notification-center';
-        break;
-    }
-
-    // Custom classes
-    if (this.customClass) {
-      containerClasses += ` ${this.customClass}`;
-    }
-
     const iconClasses = this.dark ? typeConfig.darkIconClass : typeConfig.iconClass;
 
     return (
@@ -492,12 +413,6 @@ export class UiNotification {
             ></div>
           </div>
         )}
-
-        {/* Status indicators and badges */}
-        <div class="flex items-center justify-between mt-2 gap-2">
-          {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
-          {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
-        </div>
       </div>
     );
   }

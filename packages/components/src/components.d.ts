@@ -409,6 +409,141 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
+     * Event listener component for subscribing to and publishing WoT events.
+     * Provides real-time event handling with filtering, buffering, and visual feedback.
+     * @example Basic Event Subscription
+     * ```html
+     * <ui-event-listener
+     * label="Temperature Events"
+     * event-name="temperatureChanged"
+     * max-events="10"
+     * show-timestamp="true">
+     * </ui-event-listener>
+     * ```
+     * @example Event Publishing
+     * ```html
+     * <ui-event-listener
+     * label="Alert Publisher"
+     * mode="publisher"
+     * event-name="alertTriggered"
+     * auto-publish="true">
+     * </ui-event-listener>
+     * ```
+     * @example Advanced Filtering
+     * ```javascript
+     * const listener = document.getElementById('event-listener');
+     * // Set custom filter
+     * await listener.setEventFilter((event) => {
+     * return event.payload.temperature > 25;
+     * });
+     * // Subscribe to events
+     * listener.addEventListener('eventReceived', (e) => {
+     * console.log('Filtered event:', e.detail);
+     * });
+     * ```
+     */
+    interface UiEventListener {
+        /**
+          * Auto-publish mode for publishers
+          * @default false
+         */
+        "autoPublish": boolean;
+        /**
+          * Clear event history
+         */
+        "clearEvents": () => Promise<void>;
+        /**
+          * Color theme
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Dark mode support
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the component is disabled
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Enable event filtering
+          * @default false
+         */
+        "enableFiltering": boolean;
+        /**
+          * Event name to subscribe to or publish
+         */
+        "eventName"?: string;
+        /**
+          * Filter expression (JSONPath or simple property)
+         */
+        "filterExpression"?: string;
+        /**
+          * Get event history
+         */
+        "getEventHistory": () => Promise<Array<any>>;
+        /**
+          * Enable keyboard interactions
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Display label for the component
+         */
+        "label"?: string;
+        /**
+          * Maximum number of events to keep in history
+          * @default 50
+         */
+        "maxEvents": number;
+        /**
+          * Component mode: listener or publisher
+          * @default 'listener'
+         */
+        "mode": 'listener' | 'publisher' | 'bidirectional';
+        /**
+          * Event payload template for publishing
+         */
+        "payloadTemplate"?: string;
+        /**
+          * Publish an event
+         */
+        "publishEvent": (payload: any, options?: { eventName?: string; }) => Promise<void>;
+        /**
+          * Set event filter function
+         */
+        "setEventFilter": (filterFn: (event: any) => boolean) => Promise<void>;
+        /**
+          * Set component status
+         */
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
+        /**
+          * Show last updated timestamp
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Show event timestamps
+          * @default true
+         */
+        "showTimestamp": boolean;
+        /**
+          * Start listening for events
+         */
+        "startListening": () => Promise<void>;
+        /**
+          * Stop listening for events
+         */
+        "stopListening": () => Promise<void>;
+        /**
+          * Visual style variant
+          * @default 'outlined'
+         */
+        "variant": 'minimal' | 'outlined' | 'filled';
+    }
+    /**
      * Notification component for displaying temporary event data with auto-dismiss functionality.
      * Supports multiple notification types with smooth animations and customizable duration.
      * @example Basic Notification
@@ -447,29 +582,10 @@ export namespace Components {
      */
     interface UiNotification {
         /**
-          * Color theme variant.
-          * @default 'primary'
-         */
-        "color": 'primary' | 'secondary' | 'neutral';
-        /**
-          * Connection state for readonly mode
-          * @default true
-         */
-        "connected": boolean;
-        /**
-          * Custom CSS classes to apply to the notification.
-         */
-        "customClass"?: string;
-        /**
           * Enable dark theme for the component.
           * @default false
          */
         "dark": boolean;
-        /**
-          * Whether the notification is disabled (cannot be interacted with).
-          * @default false
-         */
-        "disabled": boolean;
         /**
           * Dismiss the notification with animation.
           * @param method - How the notification was dismissed
@@ -481,24 +597,10 @@ export namespace Components {
          */
         "duration": number;
         /**
-          * Text label displayed with the notification.
-         */
-        "label"?: string;
-        /**
           * The message text to display in the notification.
           * @default ''
          */
         "message": string;
-        /**
-          * Position of the notification (for styling purposes).
-          * @default 'top'
-         */
-        "position": 'top' | 'bottom' | 'center';
-        /**
-          * Whether the notification is read-only (displays but cannot be dismissed manually).
-          * @default false
-         */
-        "readonly": boolean;
         /**
           * Show the notification with animation.
          */
@@ -513,11 +615,6 @@ export namespace Components {
           * @default true
          */
         "showIcon": boolean;
-        /**
-          * Show last updated timestamp when true
-          * @default false
-         */
-        "showLastUpdated": boolean;
         /**
           * Toggle the notification visibility.
          */
@@ -1133,6 +1230,10 @@ export interface UiCheckboxCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiCheckboxElement;
 }
+export interface UiEventListenerCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiEventListenerElement;
+}
 export interface UiNotificationCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiNotificationElement;
@@ -1275,6 +1376,59 @@ declare global {
     var HTMLUiCheckboxElement: {
         prototype: HTMLUiCheckboxElement;
         new (): HTMLUiCheckboxElement;
+    };
+    interface HTMLUiEventListenerElementEventMap {
+        "eventReceived": UiMsg<any>;
+        "eventPublished": UiMsg<any>;
+        "valueMsg": UiMsg<any>;
+    }
+    /**
+     * Event listener component for subscribing to and publishing WoT events.
+     * Provides real-time event handling with filtering, buffering, and visual feedback.
+     * @example Basic Event Subscription
+     * ```html
+     * <ui-event-listener
+     * label="Temperature Events"
+     * event-name="temperatureChanged"
+     * max-events="10"
+     * show-timestamp="true">
+     * </ui-event-listener>
+     * ```
+     * @example Event Publishing
+     * ```html
+     * <ui-event-listener
+     * label="Alert Publisher"
+     * mode="publisher"
+     * event-name="alertTriggered"
+     * auto-publish="true">
+     * </ui-event-listener>
+     * ```
+     * @example Advanced Filtering
+     * ```javascript
+     * const listener = document.getElementById('event-listener');
+     * // Set custom filter
+     * await listener.setEventFilter((event) => {
+     * return event.payload.temperature > 25;
+     * });
+     * // Subscribe to events
+     * listener.addEventListener('eventReceived', (e) => {
+     * console.log('Filtered event:', e.detail);
+     * });
+     * ```
+     */
+    interface HTMLUiEventListenerElement extends Components.UiEventListener, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiEventListenerElementEventMap>(type: K, listener: (this: HTMLUiEventListenerElement, ev: UiEventListenerCustomEvent<HTMLUiEventListenerElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiEventListenerElementEventMap>(type: K, listener: (this: HTMLUiEventListenerElement, ev: UiEventListenerCustomEvent<HTMLUiEventListenerElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiEventListenerElement: {
+        prototype: HTMLUiEventListenerElement;
+        new (): HTMLUiEventListenerElement;
     };
     interface HTMLUiNotificationElementEventMap {
         "notificationClose": {
@@ -1563,6 +1717,7 @@ declare global {
         "ui-button": HTMLUiButtonElement;
         "ui-calendar": HTMLUiCalendarElement;
         "ui-checkbox": HTMLUiCheckboxElement;
+        "ui-event-listener": HTMLUiEventListenerElement;
         "ui-notification": HTMLUiNotificationElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
         "ui-slider": HTMLUiSliderElement;
@@ -1876,6 +2031,125 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
+     * Event listener component for subscribing to and publishing WoT events.
+     * Provides real-time event handling with filtering, buffering, and visual feedback.
+     * @example Basic Event Subscription
+     * ```html
+     * <ui-event-listener
+     * label="Temperature Events"
+     * event-name="temperatureChanged"
+     * max-events="10"
+     * show-timestamp="true">
+     * </ui-event-listener>
+     * ```
+     * @example Event Publishing
+     * ```html
+     * <ui-event-listener
+     * label="Alert Publisher"
+     * mode="publisher"
+     * event-name="alertTriggered"
+     * auto-publish="true">
+     * </ui-event-listener>
+     * ```
+     * @example Advanced Filtering
+     * ```javascript
+     * const listener = document.getElementById('event-listener');
+     * // Set custom filter
+     * await listener.setEventFilter((event) => {
+     * return event.payload.temperature > 25;
+     * });
+     * // Subscribe to events
+     * listener.addEventListener('eventReceived', (e) => {
+     * console.log('Filtered event:', e.detail);
+     * });
+     * ```
+     */
+    interface UiEventListener {
+        /**
+          * Auto-publish mode for publishers
+          * @default false
+         */
+        "autoPublish"?: boolean;
+        /**
+          * Color theme
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Dark mode support
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the component is disabled
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Enable event filtering
+          * @default false
+         */
+        "enableFiltering"?: boolean;
+        /**
+          * Event name to subscribe to or publish
+         */
+        "eventName"?: string;
+        /**
+          * Filter expression (JSONPath or simple property)
+         */
+        "filterExpression"?: string;
+        /**
+          * Enable keyboard interactions
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Display label for the component
+         */
+        "label"?: string;
+        /**
+          * Maximum number of events to keep in history
+          * @default 50
+         */
+        "maxEvents"?: number;
+        /**
+          * Component mode: listener or publisher
+          * @default 'listener'
+         */
+        "mode"?: 'listener' | 'publisher' | 'bidirectional';
+        /**
+          * Emitted when an event is published (publisher mode)
+         */
+        "onEventPublished"?: (event: UiEventListenerCustomEvent<UiMsg<any>>) => void;
+        /**
+          * Emitted when an event is received (listener mode)
+         */
+        "onEventReceived"?: (event: UiEventListenerCustomEvent<UiMsg<any>>) => void;
+        /**
+          * Standard value message event
+         */
+        "onValueMsg"?: (event: UiEventListenerCustomEvent<UiMsg<any>>) => void;
+        /**
+          * Event payload template for publishing
+         */
+        "payloadTemplate"?: string;
+        /**
+          * Show last updated timestamp
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Show event timestamps
+          * @default true
+         */
+        "showTimestamp"?: boolean;
+        /**
+          * Visual style variant
+          * @default 'outlined'
+         */
+        "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
+    /**
      * Notification component for displaying temporary event data with auto-dismiss functionality.
      * Supports multiple notification types with smooth animations and customizable duration.
      * @example Basic Notification
@@ -1914,38 +2188,15 @@ declare namespace LocalJSX {
      */
     interface UiNotification {
         /**
-          * Color theme variant.
-          * @default 'primary'
-         */
-        "color"?: 'primary' | 'secondary' | 'neutral';
-        /**
-          * Connection state for readonly mode
-          * @default true
-         */
-        "connected"?: boolean;
-        /**
-          * Custom CSS classes to apply to the notification.
-         */
-        "customClass"?: string;
-        /**
           * Enable dark theme for the component.
           * @default false
          */
         "dark"?: boolean;
         /**
-          * Whether the notification is disabled (cannot be interacted with).
-          * @default false
-         */
-        "disabled"?: boolean;
-        /**
           * Duration in milliseconds before auto-dismiss. Set to 0 to disable auto-dismiss. Default: 3000 (3 seconds)
           * @default 3000
          */
         "duration"?: number;
-        /**
-          * Text label displayed with the notification.
-         */
-        "label"?: string;
         /**
           * The message text to display in the notification.
           * @default ''
@@ -1965,16 +2216,6 @@ declare namespace LocalJSX {
          */
         "onValueMsg"?: (event: UiNotificationCustomEvent<UiMsg>) => void;
         /**
-          * Position of the notification (for styling purposes).
-          * @default 'top'
-         */
-        "position"?: 'top' | 'bottom' | 'center';
-        /**
-          * Whether the notification is read-only (displays but cannot be dismissed manually).
-          * @default false
-         */
-        "readonly"?: boolean;
-        /**
           * Whether to show a close button. Default: true
           * @default true
          */
@@ -1984,11 +2225,6 @@ declare namespace LocalJSX {
           * @default true
          */
         "showIcon"?: boolean;
-        /**
-          * Show last updated timestamp when true
-          * @default false
-         */
-        "showLastUpdated"?: boolean;
         /**
           * Type of notification affecting styling and icons. - info: General information (blue) - success: Success messages (green)  - warning: Warning messages (orange) - error: Error messages (red)
           * @default 'info'
@@ -2449,6 +2685,7 @@ declare namespace LocalJSX {
         "ui-button": UiButton;
         "ui-calendar": UiCalendar;
         "ui-checkbox": UiCheckbox;
+        "ui-event-listener": UiEventListener;
         "ui-notification": UiNotification;
         "ui-number-picker": UiNumberPicker;
         "ui-slider": UiSlider;
@@ -2532,6 +2769,41 @@ declare module "@stencil/core" {
              * ```
              */
             "ui-checkbox": LocalJSX.UiCheckbox & JSXBase.HTMLAttributes<HTMLUiCheckboxElement>;
+            /**
+             * Event listener component for subscribing to and publishing WoT events.
+             * Provides real-time event handling with filtering, buffering, and visual feedback.
+             * @example Basic Event Subscription
+             * ```html
+             * <ui-event-listener
+             * label="Temperature Events"
+             * event-name="temperatureChanged"
+             * max-events="10"
+             * show-timestamp="true">
+             * </ui-event-listener>
+             * ```
+             * @example Event Publishing
+             * ```html
+             * <ui-event-listener
+             * label="Alert Publisher"
+             * mode="publisher"
+             * event-name="alertTriggered"
+             * auto-publish="true">
+             * </ui-event-listener>
+             * ```
+             * @example Advanced Filtering
+             * ```javascript
+             * const listener = document.getElementById('event-listener');
+             * // Set custom filter
+             * await listener.setEventFilter((event) => {
+             * return event.payload.temperature > 25;
+             * });
+             * // Subscribe to events
+             * listener.addEventListener('eventReceived', (e) => {
+             * console.log('Filtered event:', e.detail);
+             * });
+             * ```
+             */
+            "ui-event-listener": LocalJSX.UiEventListener & JSXBase.HTMLAttributes<HTMLUiEventListenerElement>;
             /**
              * Notification component for displaying temporary event data with auto-dismiss functionality.
              * Supports multiple notification types with smooth animations and customizable duration.
