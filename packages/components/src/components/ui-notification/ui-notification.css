@@ -1,0 +1,158 @@
+/* Import single global CSS with everything */
+@import '../../global.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host { 
+  display: block;
+  position: relative;
+  z-index: 1000;
+}
+
+/* Notification container animations */
+.notification-container {
+  font-family: var(--font-sans);
+  max-width: 100%;
+  transform-origin: center;
+}
+
+/* Entry animation */
+.notification-enter {
+  opacity: 0;
+  transform: translateY(-20px) scale(0.95);
+  animation: notificationEnter 0.3s ease-out forwards;
+}
+
+.notification-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Exit animation */
+.notification-exit {
+  opacity: 1;
+  animation: notificationExit 0.3s ease-in forwards;
+}
+
+/* Position-specific animations */
+.notification-top.notification-enter {
+  transform: translateY(-40px) scale(0.95);
+}
+
+.notification-bottom.notification-enter {
+  transform: translateY(40px) scale(0.95);
+}
+
+.notification-center.notification-enter {
+  transform: scale(0.9);
+}
+
+/* Keyframe animations */
+@keyframes notificationEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes notificationExit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+}
+
+/* Progress bar animation for auto-dismiss */
+.notification-progress {
+  animation: progressShrink linear;
+  animation-fill-mode: forwards;
+  transform-origin: left;
+}
+
+@keyframes progressShrink {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Hover effects */
+.notification-container:hover .notification-progress {
+  animation-play-state: paused;
+}
+
+/* Close button hover effect */
+button:hover {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+/* Focus styles for accessibility */
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  border-radius: 4px;
+}
+
+/* Icon animations */
+.notification-container svg {
+  transition: transform 0.2s ease;
+}
+
+.notification-container:hover svg:not(button svg) {
+  transform: scale(1.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .notification-container {
+    margin: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .notification-container svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+/* Dark theme enhancements */
+:host(.dark) .notification-container {
+  backdrop-filter: blur(8px);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .notification-container {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .notification-enter,
+  .notification-exit,
+  .notification-progress,
+  button,
+  svg {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+  
+  .notification-visible {
+    opacity: 1;
+  }
+}

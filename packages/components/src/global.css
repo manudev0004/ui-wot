@@ -62,11 +62,11 @@
 }
 
 /* Component font */
-ui-button, ui-number-picker, ui-slider, ui-checkbox, ui-toggle {
+ui-button, ui-number-picker, ui-slider, ui-checkbox, ui-toggle, ui-calendar, ui-notification, ui-text {
   font-family: var(--font-sans);
 }
 
-ui-button *, ui-number-picker *, ui-slider *, ui-checkbox *, ui-toggle * {
+ui-button *, ui-number-picker *, ui-slider *, ui-checkbox *, ui-toggle *, ui-calendar *, ui-notification *, ui-text * {
   font-family: inherit;
 }
 

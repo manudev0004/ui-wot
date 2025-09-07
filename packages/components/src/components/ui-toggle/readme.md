@@ -8,30 +8,29 @@
 ## Overview
 
 Toggle switch component with reactive state management and multiple visual styles.
-Designed for Web of Things (WoT) applications with built-in IoT device integration,
-optimistic updates, error handling, and real-time status indicators.
+Supports IoT device integration with status indicators and error handling.
 
 ## Properties
 
-| Property          | Attribute           | Description                                                                          | Type                                                   | Default     |
-| ----------------- | ------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------ | ----------- |
-| `color`           | `color`             | Color theme variant.                                                                 | `"neutral" \| "primary" \| "secondary"`                | `'primary'` |
-| `connected`       | `connected`         | Connection state for readonly mode                                                   | `boolean`                                              | `true`      |
-| `dark`            | `dark`              | Enable dark theme for the component. When true, uses light text on dark backgrounds. | `boolean`                                              | `false`     |
-| `disabled`        | `disabled`          | Whether the toggle is disabled (cannot be interacted with).                          | `boolean`                                              | `false`     |
-| `keyboard`        | `keyboard`          | Enable keyboard navigation (Space and Enter keys). Default: true                     | `boolean`                                              | `true`      |
-| `label`           | `label`             | Text label displayed next to the toggle.                                             | `string`                                               | `undefined` |
-| `readonly`        | `readonly`          | Whether the toggle is read-only (displays value but cannot be changed).              | `boolean`                                              | `false`     |
-| `showLastUpdated` | `show-last-updated` | Show last updated timestamp when true                                                | `boolean`                                              | `false`     |
-| `value`           | `value`             | Current boolean value of the toggle.                                                 | `boolean`                                              | `false`     |
-| `variant`         | `variant`           | Visual style variant of the toggle.                                                  | `"apple" \| "circle" \| "cross" \| "neon" \| "square"` | `'circle'`  |
+| Property          | Attribute           | Description                                                                                                                                                                                                                                                                                                    | Type                                                   | Default     |
+| ----------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ----------- |
+| `color`           | `color`             | Color theme variant.                                                                                                                                                                                                                                                                                           | `"neutral" \| "primary" \| "secondary"`                | `'primary'` |
+| `connected`       | `connected`         | Connection state for readonly mode                                                                                                                                                                                                                                                                             | `boolean`                                              | `true`      |
+| `dark`            | `dark`              | Enable dark theme for the component. When true, uses light text on dark backgrounds.                                                                                                                                                                                                                           | `boolean`                                              | `false`     |
+| `disabled`        | `disabled`          | Whether the toggle is disabled when true, it cannot be interacted with.                                                                                                                                                                                                                                        | `boolean`                                              | `false`     |
+| `keyboard`        | `keyboard`          | Enable keyboard navigation (Space and Enter keys). Default: true                                                                                                                                                                                                                                               | `boolean`                                              | `true`      |
+| `label`           | `label`             | Text label displayed next to the toggle.                                                                                                                                                                                                                                                                       | `string`                                               | `undefined` |
+| `readonly`        | `readonly`          | Whether the toggle is read-only (when true displays value but cannot be changed).                                                                                                                                                                                                                              | `boolean`                                              | `false`     |
+| `showLastUpdated` | `show-last-updated` | Show last updated timestamp when true                                                                                                                                                                                                                                                                          | `boolean`                                              | `false`     |
+| `value`           | `value`             | Current boolean value of the toggle.                                                                                                                                                                                                                                                                           | `boolean`                                              | `false`     |
+| `variant`         | `variant`           | Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active | `"apple" \| "circle" \| "cross" \| "neon" \| "square"` | `'circle'`  |
 
 
 ## Events
 
-| Event      | Description                                                                                                            | Type                          |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| `valueMsg` | Primary event emitted when the toggle value changes. Use this event for all value change handling in IoT applications. | `CustomEvent<UiMsg<boolean>>` |
+| Event      | Description                                  | Type                          |
+| ---------- | -------------------------------------------- | ----------------------------- |
+| `valueMsg` | Event emitted when the toggle value changes. | `CustomEvent<UiMsg<boolean>>` |
 
 
 ## Methods
@@ -39,7 +38,6 @@ optimistic updates, error handling, and real-time status indicators.
 ### `getValue(includeMetadata?: boolean) => Promise<boolean | { value: boolean; lastUpdated?: number; status: string; error?: string; }>`
 
 Get the current toggle value with optional metadata.
-Use this method to read the current state and optionally get additional information.
 
 #### Parameters
 
@@ -74,8 +72,7 @@ Promise<void>
 
 ### `setValue(value: boolean, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>`
 
-Set the toggle value with automatic device communication and status management.
-This is the primary method for interacting with the toggle component.
+Set the toggle value and it has optional device communication and status management.
 
 #### Parameters
 
@@ -92,9 +89,8 @@ Promise<boolean> - true if successful, false if failed
 
 ### `setValueSilent(value: boolean) => Promise<void>`
 
-Set value programmatically without triggering events (for external updates).
-Use this method when updating the toggle from external data sources
-to prevent event loops and maintain proper state synchronization.
+Set value without triggering events (for external updates).
+Use this method when updating from external data sources to prevent event loops.
 
 #### Parameters
 
@@ -110,9 +106,8 @@ Promise<void>
 
 ### `triggerReadPulse() => Promise<void>`
 
-Trigger a read pulse indicator for readonly mode when data is actually fetched.
+Trigger a read pulse indicator for readonly mode whenever data is fetched.
 Use this method to provide visual feedback when refreshing data from external sources
-like IoT devices, APIs, or real-time data streams.
 
 #### Returns
 

@@ -6,7 +6,9 @@
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 import { UiMsg } from "./utils/types";
+import { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 export { UiMsg } from "./utils/types";
+export { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 export namespace Components {
     /**
      * Button component with various visual styles, matching the ui-number-picker design family.
@@ -133,6 +135,169 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
+     * Advanced calendar component with comprehensive styling, variants, and features.
+     * Matches the design family of ui-button, ui-slider, and other components.
+     * @example Basic Usage
+     * ```html
+     * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+     * ```
+     * @example Different Variants & Colors
+     * ```html
+     * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
+     * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
+     * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
+     * ```
+     * @example Sizes & Features
+     * ```html
+     * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
+     * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
+     * ```
+     * @example Dark Theme
+     * ```html
+     * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
+     * ```
+     */
+    interface UiCalendar {
+        /**
+          * Animation style for transitions. - none: No animations - slide: Slide transitions between months - fade: Fade transitions   - bounce: Playful bounce effects
+          * @default 'slide'
+         */
+        "animation": 'none' | 'slide' | 'fade' | 'bounce';
+        /**
+          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive actions - warning: Orange for caution - danger: Red for destructive actions
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected": boolean;
+        /**
+          * Dark theme variant.
+          * @example ```html <ui-calendar dark="true" variant="filled"></ui-calendar> ```
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the component is disabled (cannot be interacted with).
+          * @example ```html <ui-calendar disabled="true" label="Cannot select"></ui-calendar> ```
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * First day of week (0 = Sunday, 1 = Monday).
+          * @default 0
+         */
+        "firstDayOfWeek": 0 | 1;
+        /**
+          * Get the current calendar value.
+          * @returns Current date value as ISO string or undefined
+          * @example ```typescript const currentDate = await calendar.getValue(); console.log('Selected date:', currentDate); ```
+         */
+        "getValue": () => Promise<string | undefined>;
+        /**
+          * Include time picker alongside date picker. Supports hour:minute selection with AM/PM or 24-hour format.
+          * @default false
+         */
+        "includeTime": boolean;
+        /**
+          * Display calendar inline instead of as dropdown popup. Perfect for always-visible date selection.
+          * @default false
+         */
+        "inline": boolean;
+        /**
+          * Enable keyboard navigation and shortcuts.
+          * @example ```html <ui-calendar keyboard="false"></ui-calendar> ```
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Optional text label for the calendar with enhanced styling.
+          * @example ```html <ui-calendar label="Select Date"></ui-calendar> ```
+         */
+        "label"?: string;
+        /**
+          * Maximum selectable date (ISO string).
+         */
+        "maxDate"?: string;
+        /**
+          * Minimum selectable date (ISO string).
+         */
+        "minDate"?: string;
+        /**
+          * Whether the component is read-only (displays value but cannot be changed).
+          * @example ```html <ui-calendar readonly="true" value="2023-12-25"></ui-calendar> ```
+          * @default false
+         */
+        "readonly": boolean;
+        /**
+          * Set the visual status of the calendar (success, warning, error).
+          * @param status - Status type or null to clear
+          * @param message - Optional status message
+          * @example ```typescript await calendar.setStatus('error', 'Invalid date selected'); await calendar.setStatus('success', 'Date saved successfully'); await calendar.setStatus(null); // Clear status ```
+         */
+        "setStatus": (status: "idle" | "loading" | "success" | "error", message?: string) => Promise<void>;
+        /**
+          * Set the calendar value programmatically and emit events.
+          * @param value - ISO date string to set
+          * @param metadata - Optional metadata to include in the event
+          * @example ```typescript await calendar.setValue('2023-12-25'); await calendar.setValue('2023-12-25T10:30:00', { source: 'api' }); ```
+         */
+        "setValue": (value: string, metadata?: Record<string, any>) => Promise<void>;
+        /**
+          * Set value without emitting events (silent update).
+          * @param value - ISO date string to set
+          * @example ```typescript await calendar.setValueSilent('2023-12-25'); ```
+         */
+        "setValueSilent": (value: string) => Promise<void>;
+        /**
+          * Show clear button to reset selection.
+          * @default true
+         */
+        "showClearButton": boolean;
+        /**
+          * Show last updated timestamp below the component.
+          * @example ```html <ui-calendar showLastUpdated="true"></ui-calendar> ```
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Show today button for quick navigation.
+          * @default true
+         */
+        "showTodayButton": boolean;
+        /**
+          * Show week numbers in calendar grid.
+          * @default false
+         */
+        "showWeekNumbers": boolean;
+        /**
+          * Component size for different use cases. - small: Compact calendar for tight spaces - medium: Standard size (default) - large: Prominent calendar with larger touch targets
+          * @default 'medium'
+         */
+        "size": 'small' | 'medium' | 'large';
+        /**
+          * Time format when includeTime is enabled. - 12: 12-hour format with AM/PM - 24: 24-hour format
+          * @default '12'
+         */
+        "timeFormat": '12' | '24';
+        /**
+          * Trigger a visual pulse effect to indicate the value was read/accessed.
+          * @example ```typescript await calendar.triggerReadPulse(); ```
+         */
+        "triggerReadPulse": () => Promise<void>;
+        /**
+          * Current selected date-time value (ISO string).
+         */
+        "value"?: string;
+        /**
+          * Visual style variant matching component family design. - minimal: Clean, borderless design with subtle hover effects - outlined: Border with transparent background, colored accents - filled: Solid background with contrasting text - elevated: Shadow and depth for prominent display
+          * @default 'minimal'
+         */
+        "variant": 'minimal' | 'outlined' | 'filled' | 'elevated';
+    }
+    /**
      * Advanced checkbox component with reactive state management and multiple visual styles.
      * @example Basic Usage
      * ```html
@@ -242,6 +407,126 @@ export namespace Components {
           * @default 'outlined'
          */
         "variant": 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Notification component for displaying temporary event data with auto-dismiss functionality.
+     * Supports multiple notification types with smooth animations and customizable duration.
+     * @example Basic Notification
+     * ```html
+     * <ui-notification message="Operation completed successfully" type="success"></ui-notification>
+     * ```
+     * @example Custom Duration
+     * ```html
+     * <ui-notification 
+     * message="This will auto-dismiss in 5 seconds" 
+     * type="info" 
+     * duration="5000">
+     * </ui-notification>
+     * ```
+     * @example Manual Dismiss
+     * ```html
+     * <ui-notification 
+     * message="Click to dismiss" 
+     * type="warning" 
+     * duration="0"
+     * id="manual-notification">
+     * </ui-notification>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const notification = document.querySelector('#manual-notification');
+     * // Listen for close events
+     * notification.addEventListener('notificationClose', (e) => {
+     * console.log('Notification closed:', e.detail);
+     * });
+     * // Dismiss programmatically
+     * await notification.dismiss();
+     * // Show notification programmatically
+     * await notification.show();
+     * ```
+     */
+    interface UiNotification {
+        /**
+          * Color theme variant.
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected": boolean;
+        /**
+          * Custom CSS classes to apply to the notification.
+         */
+        "customClass"?: string;
+        /**
+          * Enable dark theme for the component.
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the notification is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Dismiss the notification with animation.
+          * @param method - How the notification was dismissed
+         */
+        "dismiss": (method?: "auto" | "manual" | "programmatic") => Promise<void>;
+        /**
+          * Duration in milliseconds before auto-dismiss. Set to 0 to disable auto-dismiss. Default: 3000 (3 seconds)
+          * @default 3000
+         */
+        "duration": number;
+        /**
+          * Text label displayed with the notification.
+         */
+        "label"?: string;
+        /**
+          * The message text to display in the notification.
+          * @default ''
+         */
+        "message": string;
+        /**
+          * Position of the notification (for styling purposes).
+          * @default 'top'
+         */
+        "position": 'top' | 'bottom' | 'center';
+        /**
+          * Whether the notification is read-only (displays but cannot be dismissed manually).
+          * @default false
+         */
+        "readonly": boolean;
+        /**
+          * Show the notification with animation.
+         */
+        "show": () => Promise<void>;
+        /**
+          * Whether to show a close button. Default: true
+          * @default true
+         */
+        "showCloseButton": boolean;
+        /**
+          * Whether to show an icon based on the notification type. Default: true
+          * @default true
+         */
+        "showIcon": boolean;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Toggle the notification visibility.
+         */
+        "toggle": () => Promise<void>;
+        /**
+          * Type of notification affecting styling and icons. - info: General information (blue) - success: Success messages (green)  - warning: Warning messages (orange) - error: Error messages (red)
+          * @default 'info'
+         */
+        "type": 'info' | 'success' | 'warning' | 'error';
     }
     /**
      * Number picker component with various visual styles, TD integration and customizable range.
@@ -571,6 +856,154 @@ export namespace Components {
         "variant": 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
     /**
+     * TextDisplay component supports multiple variants for text-heavy data display and editing.
+     * Provides field, area, structured, unstructured, and editable modes with consistent styling.
+     * @example Basic Field Display
+     * ```html
+     * <ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
+     * ```
+     * @example Multi-line Area
+     * ```html
+     * <ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
+     * ```
+     * @example Structured Data Display
+     * ```html
+     * <ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
+     * ```
+     * @example Editable Mode
+     * ```html
+     * <ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const textDisplay = document.querySelector('#notes-field');
+     * // Listen for value changes in editable mode
+     * textDisplay.addEventListener('valueMsg', (e) => {
+     * console.log('Text changed to:', e.detail.payload);
+     * });
+     * // Set value programmatically
+     * await textDisplay.setValue('New content');
+     * ```
+     */
+    interface UiText {
+        /**
+          * Color theme variant.
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected": boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Whether the component is disabled (editable mode only).
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Focus the input element (editable mode only).
+         */
+        "focusInput": () => Promise<void>;
+        /**
+          * Get the current text value with optional metadata.
+          * @param includeMetadata - Whether to include additional metadata (default: false)
+          * @returns Promise<string | MetadataResult> - Current value or object with metadata
+          * @example ```javascript // Basic usage const text = await textDisplay.getValue(); console.log('Current text:', text);  // With metadata const result = await textDisplay.getValue(true); console.log('Value:', result.value); console.log('Last updated:', new Date(result.lastUpdated)); console.log('Status:', result.status); ```
+         */
+        "getValue": (includeMetadata?: boolean) => Promise<string | { value: string; lastUpdated?: number; status: string; error?: string; }>;
+        /**
+          * Enable keyboard navigation for editable mode. Default: true
+          * @default true
+         */
+        "keyboard": boolean;
+        /**
+          * Text label displayed above the text display.
+         */
+        "label"?: string;
+        /**
+          * Maximum character limit (editable mode only).
+         */
+        "maxLength"?: number;
+        /**
+          * Maximum number of rows for area mode.
+          * @default 10
+         */
+        "maxRows": number;
+        /**
+          * Minimum number of rows for area mode.
+          * @default 3
+         */
+        "minRows": number;
+        /**
+          * Display mode for the text component. - field: One-line text display - area: Expandable text box (multi-line) - unstructured: Plain style, no highlighting - structured: Highlighted block (for JSON-like or formatted text) - editable: User can edit/write directly
+          * @default 'field'
+         */
+        "mode": 'field' | 'area' | 'unstructured' | 'structured' | 'editable';
+        /**
+          * Placeholder text shown when value is empty (editable mode only).
+         */
+        "placeholder"?: string;
+        /**
+          * Whether the component is read-only.
+          * @default false
+         */
+        "readonly": boolean;
+        /**
+          * Set operation status for external status management. Use this method to manually control the visual status indicators when managing operations externally.
+          * @param status - The status to set ('idle', 'loading', 'success', 'error')
+          * @param errorMessage - Optional error message for error status
+          * @returns Promise<void>
+          * @example ```javascript const textDisplay = document.querySelector('ui-text');  // Show loading indicator await textDisplay.setStatus('loading');  try {   await saveToServer();   await textDisplay.setStatus('success'); } catch (error) {   await textDisplay.setStatus('error', error.message); }  // Clear status indicator await textDisplay.setStatus('idle'); ```
+         */
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
+        /**
+          * Set the text value and handle optional operations and status management.
+          * @param value - The string value to set
+          * @param options - Configuration options for the operation
+          * @returns Promise<boolean> - true if successful, false if failed
+          * @example ```javascript // Basic usage await textDisplay.setValue('New text content');  // With external operation await textDisplay.setValue('Updated text', {   writeOperation: async () => {     const response = await fetch('/api/text', {       method: 'POST',       body: JSON.stringify({ text: 'Updated text' })     });   },   optimistic: true }); ```
+         */
+        "setValue": (value: string, options?: { writeOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>;
+        /**
+          * Set value without triggering events (for external updates). Use this method when updating from external data sources to prevent event loops.
+          * @param value - The string value to set silently
+          * @returns Promise<void>
+          * @example ```javascript // Basic silent update await textDisplay.setValueSilent('Updated from server');  // In real-time context (WebSocket) websocket.onmessage = async (event) => {   const data = JSON.parse(event.data);   await textDisplay.setValueSilent(data.text); }; ```
+         */
+        "setValueSilent": (value: string) => Promise<void>;
+        /**
+          * Show character count (editable mode only).
+          * @default false
+         */
+        "showCharCount": boolean;
+        /**
+          * Show last updated timestamp.
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Show line numbers (area and structured modes).
+          * @default false
+         */
+        "showLineNumbers": boolean;
+        /**
+          * Current text value of the component.
+          * @default ''
+         */
+        "value": string;
+        /**
+          * Visual style variant of the text display. - minimal: Text-only with subtle underline or accent - outlined: Border style applied (default) - filled: Background color applied
+          * @default 'outlined'
+         */
+        "variant": 'minimal' | 'outlined' | 'filled';
+    }
+    /**
      * Toggle switch component with reactive state management and multiple visual styles.
      * Supports IoT device integration with status indicators and error handling.
      * @example Basic Usage
@@ -692,9 +1125,17 @@ export interface UiButtonCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiButtonElement;
 }
+export interface UiCalendarCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiCalendarElement;
+}
 export interface UiCheckboxCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiCheckboxElement;
+}
+export interface UiNotificationCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiNotificationElement;
 }
 export interface UiNumberPickerCustomEvent<T> extends CustomEvent<T> {
     detail: T;
@@ -703,6 +1144,10 @@ export interface UiNumberPickerCustomEvent<T> extends CustomEvent<T> {
 export interface UiSliderCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiSliderElement;
+}
+export interface UiTextCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiTextElement;
 }
 export interface UiToggleCustomEvent<T> extends CustomEvent<T> {
     detail: T;
@@ -750,6 +1195,48 @@ declare global {
         prototype: HTMLUiButtonElement;
         new (): HTMLUiButtonElement;
     };
+    interface HTMLUiCalendarElementEventMap {
+        "dateChange": UiCalendarDateChange;
+        "valueChange": UiCalendarValueChange;
+        "valueMsg": UiMsg<string>;
+    }
+    /**
+     * Advanced calendar component with comprehensive styling, variants, and features.
+     * Matches the design family of ui-button, ui-slider, and other components.
+     * @example Basic Usage
+     * ```html
+     * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+     * ```
+     * @example Different Variants & Colors
+     * ```html
+     * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
+     * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
+     * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
+     * ```
+     * @example Sizes & Features
+     * ```html
+     * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
+     * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
+     * ```
+     * @example Dark Theme
+     * ```html
+     * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
+     * ```
+     */
+    interface HTMLUiCalendarElement extends Components.UiCalendar, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiCalendarElementEventMap>(type: K, listener: (this: HTMLUiCalendarElement, ev: UiCalendarCustomEvent<HTMLUiCalendarElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiCalendarElementEventMap>(type: K, listener: (this: HTMLUiCalendarElement, ev: UiCalendarCustomEvent<HTMLUiCalendarElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiCalendarElement: {
+        prototype: HTMLUiCalendarElement;
+        new (): HTMLUiCalendarElement;
+    };
     interface HTMLUiCheckboxElementEventMap {
         "valueMsg": UiMsg<boolean>;
     }
@@ -788,6 +1275,66 @@ declare global {
     var HTMLUiCheckboxElement: {
         prototype: HTMLUiCheckboxElement;
         new (): HTMLUiCheckboxElement;
+    };
+    interface HTMLUiNotificationElementEventMap {
+        "notificationClose": {
+    message: string;
+    type: string;
+    dismissMethod: 'auto' | 'manual' | 'programmatic';
+    timestamp: number;
+  };
+        "valueMsg": UiMsg;
+    }
+    /**
+     * Notification component for displaying temporary event data with auto-dismiss functionality.
+     * Supports multiple notification types with smooth animations and customizable duration.
+     * @example Basic Notification
+     * ```html
+     * <ui-notification message="Operation completed successfully" type="success"></ui-notification>
+     * ```
+     * @example Custom Duration
+     * ```html
+     * <ui-notification 
+     * message="This will auto-dismiss in 5 seconds" 
+     * type="info" 
+     * duration="5000">
+     * </ui-notification>
+     * ```
+     * @example Manual Dismiss
+     * ```html
+     * <ui-notification 
+     * message="Click to dismiss" 
+     * type="warning" 
+     * duration="0"
+     * id="manual-notification">
+     * </ui-notification>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const notification = document.querySelector('#manual-notification');
+     * // Listen for close events
+     * notification.addEventListener('notificationClose', (e) => {
+     * console.log('Notification closed:', e.detail);
+     * });
+     * // Dismiss programmatically
+     * await notification.dismiss();
+     * // Show notification programmatically
+     * await notification.show();
+     * ```
+     */
+    interface HTMLUiNotificationElement extends Components.UiNotification, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiNotificationElementEventMap>(type: K, listener: (this: HTMLUiNotificationElement, ev: UiNotificationCustomEvent<HTMLUiNotificationElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiNotificationElementEventMap>(type: K, listener: (this: HTMLUiNotificationElement, ev: UiNotificationCustomEvent<HTMLUiNotificationElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiNotificationElement: {
+        prototype: HTMLUiNotificationElement;
+        new (): HTMLUiNotificationElement;
     };
     interface HTMLUiNumberPickerElementEventMap {
         "valueMsg": UiMsg<number>;
@@ -918,6 +1465,53 @@ declare global {
         prototype: HTMLUiSliderElement;
         new (): HTMLUiSliderElement;
     };
+    interface HTMLUiTextElementEventMap {
+        "valueMsg": UiMsg<string>;
+    }
+    /**
+     * TextDisplay component supports multiple variants for text-heavy data display and editing.
+     * Provides field, area, structured, unstructured, and editable modes with consistent styling.
+     * @example Basic Field Display
+     * ```html
+     * <ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
+     * ```
+     * @example Multi-line Area
+     * ```html
+     * <ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
+     * ```
+     * @example Structured Data Display
+     * ```html
+     * <ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
+     * ```
+     * @example Editable Mode
+     * ```html
+     * <ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const textDisplay = document.querySelector('#notes-field');
+     * // Listen for value changes in editable mode
+     * textDisplay.addEventListener('valueMsg', (e) => {
+     * console.log('Text changed to:', e.detail.payload);
+     * });
+     * // Set value programmatically
+     * await textDisplay.setValue('New content');
+     * ```
+     */
+    interface HTMLUiTextElement extends Components.UiText, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiTextElementEventMap>(type: K, listener: (this: HTMLUiTextElement, ev: UiTextCustomEvent<HTMLUiTextElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiTextElementEventMap>(type: K, listener: (this: HTMLUiTextElement, ev: UiTextCustomEvent<HTMLUiTextElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiTextElement: {
+        prototype: HTMLUiTextElement;
+        new (): HTMLUiTextElement;
+    };
     interface HTMLUiToggleElementEventMap {
         "valueMsg": UiMsg<boolean>;
     }
@@ -967,9 +1561,12 @@ declare global {
     };
     interface HTMLElementTagNameMap {
         "ui-button": HTMLUiButtonElement;
+        "ui-calendar": HTMLUiCalendarElement;
         "ui-checkbox": HTMLUiCheckboxElement;
+        "ui-notification": HTMLUiNotificationElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
         "ui-slider": HTMLUiSliderElement;
+        "ui-text": HTMLUiTextElement;
         "ui-toggle": HTMLUiToggleElement;
     }
 }
@@ -1058,6 +1655,151 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
+     * Advanced calendar component with comprehensive styling, variants, and features.
+     * Matches the design family of ui-button, ui-slider, and other components.
+     * @example Basic Usage
+     * ```html
+     * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+     * ```
+     * @example Different Variants & Colors
+     * ```html
+     * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
+     * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
+     * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
+     * ```
+     * @example Sizes & Features
+     * ```html
+     * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
+     * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
+     * ```
+     * @example Dark Theme
+     * ```html
+     * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
+     * ```
+     */
+    interface UiCalendar {
+        /**
+          * Animation style for transitions. - none: No animations - slide: Slide transitions between months - fade: Fade transitions   - bounce: Playful bounce effects
+          * @default 'slide'
+         */
+        "animation"?: 'none' | 'slide' | 'fade' | 'bounce';
+        /**
+          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive actions - warning: Orange for caution - danger: Red for destructive actions
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected"?: boolean;
+        /**
+          * Dark theme variant.
+          * @example ```html <ui-calendar dark="true" variant="filled"></ui-calendar> ```
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the component is disabled (cannot be interacted with).
+          * @example ```html <ui-calendar disabled="true" label="Cannot select"></ui-calendar> ```
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * First day of week (0 = Sunday, 1 = Monday).
+          * @default 0
+         */
+        "firstDayOfWeek"?: 0 | 1;
+        /**
+          * Include time picker alongside date picker. Supports hour:minute selection with AM/PM or 24-hour format.
+          * @default false
+         */
+        "includeTime"?: boolean;
+        /**
+          * Display calendar inline instead of as dropdown popup. Perfect for always-visible date selection.
+          * @default false
+         */
+        "inline"?: boolean;
+        /**
+          * Enable keyboard navigation and shortcuts.
+          * @example ```html <ui-calendar keyboard="false"></ui-calendar> ```
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Optional text label for the calendar with enhanced styling.
+          * @example ```html <ui-calendar label="Select Date"></ui-calendar> ```
+         */
+        "label"?: string;
+        /**
+          * Maximum selectable date (ISO string).
+         */
+        "maxDate"?: string;
+        /**
+          * Minimum selectable date (ISO string).
+         */
+        "minDate"?: string;
+        /**
+          * Event emitted when date changes
+         */
+        "onDateChange"?: (event: UiCalendarCustomEvent<UiCalendarDateChange>) => void;
+        /**
+          * Standardized valueChange event for calendar
+         */
+        "onValueChange"?: (event: UiCalendarCustomEvent<UiCalendarValueChange>) => void;
+        /**
+          * Standardized value event emitter - emits UiMsg<string> with enhanced metadata. Provides consistent value change notifications with unified messaging format.
+          * @example ```typescript calendar.addEventListener('valueMsg', (e) => {   console.log('Date changed:', e.detail.value);   console.log('Metadata:', e.detail.metadata); }); ```
+         */
+        "onValueMsg"?: (event: UiCalendarCustomEvent<UiMsg<string>>) => void;
+        /**
+          * Whether the component is read-only (displays value but cannot be changed).
+          * @example ```html <ui-calendar readonly="true" value="2023-12-25"></ui-calendar> ```
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * Show clear button to reset selection.
+          * @default true
+         */
+        "showClearButton"?: boolean;
+        /**
+          * Show last updated timestamp below the component.
+          * @example ```html <ui-calendar showLastUpdated="true"></ui-calendar> ```
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Show today button for quick navigation.
+          * @default true
+         */
+        "showTodayButton"?: boolean;
+        /**
+          * Show week numbers in calendar grid.
+          * @default false
+         */
+        "showWeekNumbers"?: boolean;
+        /**
+          * Component size for different use cases. - small: Compact calendar for tight spaces - medium: Standard size (default) - large: Prominent calendar with larger touch targets
+          * @default 'medium'
+         */
+        "size"?: 'small' | 'medium' | 'large';
+        /**
+          * Time format when includeTime is enabled. - 12: 12-hour format with AM/PM - 24: 24-hour format
+          * @default '12'
+         */
+        "timeFormat"?: '12' | '24';
+        /**
+          * Current selected date-time value (ISO string).
+         */
+        "value"?: string;
+        /**
+          * Visual style variant matching component family design. - minimal: Clean, borderless design with subtle hover effects - outlined: Border with transparent background, colored accents - filled: Solid background with contrasting text - elevated: Shadow and depth for prominent display
+          * @default 'minimal'
+         */
+        "variant"?: 'minimal' | 'outlined' | 'filled' | 'elevated';
+    }
+    /**
      * Advanced checkbox component with reactive state management and multiple visual styles.
      * @example Basic Usage
      * ```html
@@ -1132,6 +1874,126 @@ declare namespace LocalJSX {
           * @default 'outlined'
          */
         "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Notification component for displaying temporary event data with auto-dismiss functionality.
+     * Supports multiple notification types with smooth animations and customizable duration.
+     * @example Basic Notification
+     * ```html
+     * <ui-notification message="Operation completed successfully" type="success"></ui-notification>
+     * ```
+     * @example Custom Duration
+     * ```html
+     * <ui-notification 
+     * message="This will auto-dismiss in 5 seconds" 
+     * type="info" 
+     * duration="5000">
+     * </ui-notification>
+     * ```
+     * @example Manual Dismiss
+     * ```html
+     * <ui-notification 
+     * message="Click to dismiss" 
+     * type="warning" 
+     * duration="0"
+     * id="manual-notification">
+     * </ui-notification>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const notification = document.querySelector('#manual-notification');
+     * // Listen for close events
+     * notification.addEventListener('notificationClose', (e) => {
+     * console.log('Notification closed:', e.detail);
+     * });
+     * // Dismiss programmatically
+     * await notification.dismiss();
+     * // Show notification programmatically
+     * await notification.show();
+     * ```
+     */
+    interface UiNotification {
+        /**
+          * Color theme variant.
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected"?: boolean;
+        /**
+          * Custom CSS classes to apply to the notification.
+         */
+        "customClass"?: string;
+        /**
+          * Enable dark theme for the component.
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the notification is disabled (cannot be interacted with).
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Duration in milliseconds before auto-dismiss. Set to 0 to disable auto-dismiss. Default: 3000 (3 seconds)
+          * @default 3000
+         */
+        "duration"?: number;
+        /**
+          * Text label displayed with the notification.
+         */
+        "label"?: string;
+        /**
+          * The message text to display in the notification.
+          * @default ''
+         */
+        "message"?: string;
+        /**
+          * Emitted when the notification is closed/dismissed. Contains information about how it was closed (auto, manual, programmatic).
+         */
+        "onNotificationClose"?: (event: UiNotificationCustomEvent<{
+    message: string;
+    type: string;
+    dismissMethod: 'auto' | 'manual' | 'programmatic';
+    timestamp: number;
+  }>) => void;
+        /**
+          * Emitted when notification value/state changes. Compatible with other UI components for unified event handling.
+         */
+        "onValueMsg"?: (event: UiNotificationCustomEvent<UiMsg>) => void;
+        /**
+          * Position of the notification (for styling purposes).
+          * @default 'top'
+         */
+        "position"?: 'top' | 'bottom' | 'center';
+        /**
+          * Whether the notification is read-only (displays but cannot be dismissed manually).
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * Whether to show a close button. Default: true
+          * @default true
+         */
+        "showCloseButton"?: boolean;
+        /**
+          * Whether to show an icon based on the notification type. Default: true
+          * @default true
+         */
+        "showIcon"?: boolean;
+        /**
+          * Show last updated timestamp when true
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Type of notification affecting styling and icons. - info: General information (blue) - success: Success messages (green)  - warning: Warning messages (orange) - error: Error messages (red)
+          * @default 'info'
+         */
+        "type"?: 'info' | 'success' | 'warning' | 'error';
     }
     /**
      * Number picker component with various visual styles, TD integration and customizable range.
@@ -1379,6 +2241,125 @@ declare namespace LocalJSX {
         "variant"?: 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
     /**
+     * TextDisplay component supports multiple variants for text-heavy data display and editing.
+     * Provides field, area, structured, unstructured, and editable modes with consistent styling.
+     * @example Basic Field Display
+     * ```html
+     * <ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
+     * ```
+     * @example Multi-line Area
+     * ```html
+     * <ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
+     * ```
+     * @example Structured Data Display
+     * ```html
+     * <ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
+     * ```
+     * @example Editable Mode
+     * ```html
+     * <ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const textDisplay = document.querySelector('#notes-field');
+     * // Listen for value changes in editable mode
+     * textDisplay.addEventListener('valueMsg', (e) => {
+     * console.log('Text changed to:', e.detail.payload);
+     * });
+     * // Set value programmatically
+     * await textDisplay.setValue('New content');
+     * ```
+     */
+    interface UiText {
+        /**
+          * Color theme variant.
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Connection state for readonly mode
+          * @default true
+         */
+        "connected"?: boolean;
+        /**
+          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Whether the component is disabled (editable mode only).
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Enable keyboard navigation for editable mode. Default: true
+          * @default true
+         */
+        "keyboard"?: boolean;
+        /**
+          * Text label displayed above the text display.
+         */
+        "label"?: string;
+        /**
+          * Maximum character limit (editable mode only).
+         */
+        "maxLength"?: number;
+        /**
+          * Maximum number of rows for area mode.
+          * @default 10
+         */
+        "maxRows"?: number;
+        /**
+          * Minimum number of rows for area mode.
+          * @default 3
+         */
+        "minRows"?: number;
+        /**
+          * Display mode for the text component. - field: One-line text display - area: Expandable text box (multi-line) - unstructured: Plain style, no highlighting - structured: Highlighted block (for JSON-like or formatted text) - editable: User can edit/write directly
+          * @default 'field'
+         */
+        "mode"?: 'field' | 'area' | 'unstructured' | 'structured' | 'editable';
+        /**
+          * Event emitted when the text value changes (editable mode only).
+          * @example ```javascript textDisplay.addEventListener('valueMsg', (event) => {   // event.detail contains:   // - payload: new value (string)   // - prev: previous value   // - source: component id   // - ts: timestamp    console.log('New value:', event.detail.payload);    // Example: Send to server   fetch('/api/text', {     method: 'POST',     body: JSON.stringify({ text: event.detail.payload })   }); }); ```
+         */
+        "onValueMsg"?: (event: UiTextCustomEvent<UiMsg<string>>) => void;
+        /**
+          * Placeholder text shown when value is empty (editable mode only).
+         */
+        "placeholder"?: string;
+        /**
+          * Whether the component is read-only.
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * Show character count (editable mode only).
+          * @default false
+         */
+        "showCharCount"?: boolean;
+        /**
+          * Show last updated timestamp.
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Show line numbers (area and structured modes).
+          * @default false
+         */
+        "showLineNumbers"?: boolean;
+        /**
+          * Current text value of the component.
+          * @default ''
+         */
+        "value"?: string;
+        /**
+          * Visual style variant of the text display. - minimal: Text-only with subtle underline or accent - outlined: Border style applied (default) - filled: Background color applied
+          * @default 'outlined'
+         */
+        "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
+    /**
      * Toggle switch component with reactive state management and multiple visual styles.
      * Supports IoT device integration with status indicators and error handling.
      * @example Basic Usage
@@ -1466,9 +2447,12 @@ declare namespace LocalJSX {
     }
     interface IntrinsicElements {
         "ui-button": UiButton;
+        "ui-calendar": UiCalendar;
         "ui-checkbox": UiCheckbox;
+        "ui-notification": UiNotification;
         "ui-number-picker": UiNumberPicker;
         "ui-slider": UiSlider;
+        "ui-text": UiText;
         "ui-toggle": UiToggle;
     }
 }
@@ -1502,6 +2486,30 @@ declare module "@stencil/core" {
              */
             "ui-button": LocalJSX.UiButton & JSXBase.HTMLAttributes<HTMLUiButtonElement>;
             /**
+             * Advanced calendar component with comprehensive styling, variants, and features.
+             * Matches the design family of ui-button, ui-slider, and other components.
+             * @example Basic Usage
+             * ```html
+             * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+             * ```
+             * @example Different Variants & Colors
+             * ```html
+             * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
+             * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
+             * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
+             * ```
+             * @example Sizes & Features
+             * ```html
+             * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
+             * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
+             * ```
+             * @example Dark Theme
+             * ```html
+             * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
+             * ```
+             */
+            "ui-calendar": LocalJSX.UiCalendar & JSXBase.HTMLAttributes<HTMLUiCalendarElement>;
+            /**
              * Advanced checkbox component with reactive state management and multiple visual styles.
              * @example Basic Usage
              * ```html
@@ -1524,6 +2532,44 @@ declare module "@stencil/core" {
              * ```
              */
             "ui-checkbox": LocalJSX.UiCheckbox & JSXBase.HTMLAttributes<HTMLUiCheckboxElement>;
+            /**
+             * Notification component for displaying temporary event data with auto-dismiss functionality.
+             * Supports multiple notification types with smooth animations and customizable duration.
+             * @example Basic Notification
+             * ```html
+             * <ui-notification message="Operation completed successfully" type="success"></ui-notification>
+             * ```
+             * @example Custom Duration
+             * ```html
+             * <ui-notification 
+             * message="This will auto-dismiss in 5 seconds" 
+             * type="info" 
+             * duration="5000">
+             * </ui-notification>
+             * ```
+             * @example Manual Dismiss
+             * ```html
+             * <ui-notification 
+             * message="Click to dismiss" 
+             * type="warning" 
+             * duration="0"
+             * id="manual-notification">
+             * </ui-notification>
+             * ```
+             * @example JavaScript Integration
+             * ```javascript
+             * const notification = document.querySelector('#manual-notification');
+             * // Listen for close events
+             * notification.addEventListener('notificationClose', (e) => {
+             * console.log('Notification closed:', e.detail);
+             * });
+             * // Dismiss programmatically
+             * await notification.dismiss();
+             * // Show notification programmatically
+             * await notification.show();
+             * ```
+             */
+            "ui-notification": LocalJSX.UiNotification & JSXBase.HTMLAttributes<HTMLUiNotificationElement>;
             /**
              * Number picker component with various visual styles, TD integration and customizable range.
              * Supports increment/decrement buttons with Thing Description integration for IoT devices.
@@ -1621,6 +2667,37 @@ declare module "@stencil/core" {
              * ```
              */
             "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
+            /**
+             * TextDisplay component supports multiple variants for text-heavy data display and editing.
+             * Provides field, area, structured, unstructured, and editable modes with consistent styling.
+             * @example Basic Field Display
+             * ```html
+             * <ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
+             * ```
+             * @example Multi-line Area
+             * ```html
+             * <ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
+             * ```
+             * @example Structured Data Display
+             * ```html
+             * <ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
+             * ```
+             * @example Editable Mode
+             * ```html
+             * <ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
+             * ```
+             * @example JavaScript Integration
+             * ```javascript
+             * const textDisplay = document.querySelector('#notes-field');
+             * // Listen for value changes in editable mode
+             * textDisplay.addEventListener('valueMsg', (e) => {
+             * console.log('Text changed to:', e.detail.payload);
+             * });
+             * // Set value programmatically
+             * await textDisplay.setValue('New content');
+             * ```
+             */
+            "ui-text": LocalJSX.UiText & JSXBase.HTMLAttributes<HTMLUiTextElement>;
             /**
              * Toggle switch component with reactive state management and multiple visual styles.
              * Supports IoT device integration with status indicators and error handling.

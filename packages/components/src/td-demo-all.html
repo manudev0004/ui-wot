@@ -103,6 +103,126 @@
         </div>
       </div>
 
+      <div class="row">
+        <div>
+          <h3>Calendar (standalone demo)</h3>
+          <ui-calendar
+            id="td-calendar"
+            label="Date Picker"
+            show-last-updated="true"
+            variant="outlined"
+            color="primary"
+            value="2025-09-08"
+          ></ui-calendar>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Notification</h3>
+          <ui-notification
+            id="td-notification"
+            message="Connected to Thing"
+            type="success"
+            show-last-updated="true"
+            duration="0"
+          ></ui-notification>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Text Display - Different Modes & Variants</h3>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <!-- Field Mode -->
+            <ui-text
+              id="td-text-field"
+              mode="field"
+              variant="outlined"
+              value="Single line text field"
+              label="Field Mode (outlined)"
+            ></ui-text>
+            
+            <ui-text
+              id="td-text-field-filled"
+              mode="field"
+              variant="filled"
+              value="Single line text field"
+              label="Field Mode (filled)"
+            ></ui-text>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <!-- Area Mode -->
+            <ui-text
+              id="td-text-area"
+              mode="area"
+              variant="outlined"
+              value="Multi-line text area&#10;Line 2 of content&#10;Line 3 of content&#10;Line 4 with more text"
+              label="Area Mode (outlined)"
+              min-rows="3"
+              max-rows="6"
+              show-line-numbers="true"
+            ></ui-text>
+            
+            <ui-text
+              id="td-text-area-filled"
+              mode="area"
+              variant="filled"
+              value="Multi-line text area&#10;Line 2 of content&#10;Line 3 of content&#10;Line 4 with more text"
+              label="Area Mode (filled)"
+              min-rows="3"
+              max-rows="6"
+            ></ui-text>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <!-- Structured Mode -->
+            <ui-text
+              id="td-text-structured"
+              mode="structured"
+              variant="outlined"
+              value='{"temperature": 23.5, "humidity": 45, "status": "online", "lastUpdate": "2025-09-08T10:30:00Z"}'
+              label="Structured Mode (JSON with line numbers)"
+              show-line-numbers="true"
+            ></ui-text>
+            
+            <ui-text
+              id="td-text-unstructured"
+              mode="unstructured"
+              variant="minimal"
+              value="Plain unstructured text with no special formatting or highlighting applied to the content."
+              label="Unstructured Mode (minimal)"
+            ></ui-text>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <!-- Editable Mode -->
+            <ui-text
+              id="td-text-editable"
+              mode="editable"
+              variant="outlined"
+              value="Edit this text content"
+              label="Editable Mode"
+              show-char-count="true"
+              max-length="100"
+            ></ui-text>
+            
+            <!-- TD Connected Text -->
+            <ui-text
+              id="td-text"
+              mode="structured"
+              variant="filled"
+              value="Thing Description Data"
+              label="TD Connected (string property)"
+              show-last-updated="true"
+              readonly="true"
+            ></ui-text>
+          </div>
+        </div>
+      </div>
+
 
       <div class="meta">Open the browser console to see events and status messages.</div>
     </div>
@@ -116,7 +236,7 @@
         
         
         // Wait for all components to be defined
-        const COMPONENT_TAGS = ['ui-toggle', 'ui-slider', 'ui-number-picker', 'ui-button', 'ui-checkbox'];
+        const COMPONENT_TAGS = ['ui-toggle', 'ui-slider', 'ui-number-picker', 'ui-button', 'ui-checkbox', 'ui-calendar', 'ui-notification', 'ui-text'];
         await Promise.all(COMPONENT_TAGS.map(tag => customElements.whenDefined(tag)));
         console.log('All components ready');
 
@@ -159,8 +279,30 @@
           { element: document.getElementById('td-toggle'), property: 'bool' },
           { element: document.getElementById('td-slider'), property: 'num' },
           { element: document.getElementById('td-number'), property: 'int' },
-          { element: document.getElementById('td-checkbox'), property: 'bool' }
+          { element: document.getElementById('td-checkbox'), property: 'bool' },
+          { element: document.getElementById('td-text'), property: 'string' }
         ].filter(b => b.element);
+
+        // Special handling for non-TD components (display only, no binding)
+        const standaloneComponents = [
+          document.getElementById('td-calendar'),
+          document.getElementById('td-notification'),
+          document.getElementById('td-text-field'),
+          document.getElementById('td-text-field-filled'),
+          document.getElementById('td-text-area'),
+          document.getElementById('td-text-area-filled'),
+          document.getElementById('td-text-structured'),
+          document.getElementById('td-text-unstructured'),
+          document.getElementById('td-text-editable')
+        ].filter(el => el);
+
+        // Initialize standalone components
+        for (const element of standaloneComponents) {
+          if (element && typeof element.componentOnReady === 'function') {
+            await element.componentOnReady();
+          }
+        }
+        console.log(`Standalone components ready: ${standaloneComponents.length}`);
 
         console.log(`Bindings: ${bindings.length}`);
 
@@ -174,7 +316,14 @@
           try {
             // Read the property once and set the component's value
             const propertyValue = await thing.readProperty(binding.property);
-            const value = await propertyValue.value();
+            let value = await propertyValue.value();
+            
+            // Special handling for different component types
+            if (binding.element.id === 'td-text' && typeof value !== 'string') {
+              // Convert non-string values to string representation
+              value = String(value);
+            }
+            
             // Call the component's public method so it updates its UI/state
             if (typeof binding.element.setValue === 'function') {
               await binding.element.setValue(value);
@@ -192,7 +341,8 @@
 
           // Write-back: when the component emits a valueMsg, write to the Thing
           binding.element.addEventListener('valueMsg', async (ev) => {
-            const newValue = ev.detail && (ev.detail.payload ?? ev.detail);
+            let newValue = ev.detail && (ev.detail.payload ?? ev.detail);
+            
             try {
               if (typeof binding.element.setStatus === 'function') {
                 await binding.element.setStatus('loading');
