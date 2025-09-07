@@ -2,16 +2,31 @@
 .group-container {
   position: relative;
   transition: all 0.3s ease;
-  border: 2px solid transparent;
   border-radius: 12px;
   overflow: visible;
   min-width: 400px;
   min-height: 200px;
 }
 
+/* Custom styled groups with higher specificity */
+.group-container.custom-styled {
+  /* Use CSS custom properties for dynamic styling */
+  background-color: var(--custom-bg-color, #ffffff) !important;
+  border: var(--custom-border, 2px solid #e2e8f0) !important;
+}
+
+/* Handle transparent background specifically */
+.group-container.custom-styled[style*="--custom-bg-color: transparent"] {
+  background-color: transparent !important;
+}
+
 .group-container.edit-mode {
-  border-color: #3b82f6;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Only apply blue border if no custom styling is set */
+.group-container.edit-mode:not(.custom-styled) {
+  border: 2px solid #3b82f6;
 }
 
 .group-container:hover {
@@ -20,13 +35,14 @@
 
 .group-header {
   backdrop-filter: blur(8px);
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--custom-header-color, rgba(255, 255, 255, 0.95));
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   cursor: move;
   user-select: none;
   position: sticky;
   top: 0;
-  z-index: 10;
+  /* Ensure header (and its absolute children like the options panel) is above the outside overlay */
+  z-index: 1001;
 }
 
 .group-content {
@@ -83,15 +99,37 @@
 .group-container .react-grid-layout {
   position: relative;
   min-height: 150px;
+  width: 100% !important;
+}
+
+.group-container .inner-layout {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 8px;
 }
 
 .group-container .react-grid-item {
   transition: all 200ms ease;
-  transition-property: left, top;
+  transition-property: left, top, width, height;
+  border: 1px solid transparent;
+}
+
+.group-container .react-grid-item:hover {
+  border-color: rgba(59, 130, 246, 0.3);
 }
 
 .group-container .react-grid-item.cssTransforms {
-  transition-property: transform;
+  transition-property: transform, width, height;
+}
+
+.group-container .react-grid-item.react-draggable-dragging {
+  z-index: 100;
+  opacity: 0.8;
+}
+
+.group-container .react-grid-item.react-resizable-resizing {
+  z-index: 100;
+  opacity: 0.9;
 }
 
 .group-container .react-grid-item > .react-resizable-handle {
@@ -107,6 +145,12 @@
   box-sizing: border-box;
   cursor: se-resize;
   z-index: 20;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.group-container .react-grid-item:hover > .react-resizable-handle {
+  opacity: 1;
 }
 
 /* Enhanced resize handles */
@@ -115,10 +159,36 @@
   position: absolute;
   right: 3px;
   bottom: 3px;
-  width: 5px;
-  height: 5px;
-  border-right: 2px solid #666;
-  border-bottom: 2px solid #666;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #3b82f6;
+  border-bottom: 2px solid #3b82f6;
+  opacity: 0.7;
+}
+
+/* Multi-directional resize handles */
+.group-container .react-grid-item > .react-resizable-handle.react-resizable-handle-se {
+  bottom: -3px;
+  right: -3px;
+  cursor: se-resize;
+}
+
+.group-container .react-grid-item > .react-resizable-handle.react-resizable-handle-sw {
+  bottom: -3px;
+  left: -3px;
+  cursor: sw-resize;
+}
+
+.group-container .react-grid-item > .react-resizable-handle.react-resizable-handle-ne {
+  top: -3px;
+  right: -3px;
+  cursor: ne-resize;
+}
+
+.group-container .react-grid-item > .react-resizable-handle.react-resizable-handle-nw {
+  top: -3px;
+  left: -3px;
+  cursor: nw-resize;
 }
 
 /* Drag handle styling */
@@ -128,6 +198,19 @@
 
 .component-drag-handle:hover {
   cursor: move;
+}
+
+/* Disable dragging when not in edit mode */
+.group-container:not(.edit-mode) .group-header {
+  cursor: default !important;
+}
+
+.group-container:not(.edit-mode) .component-drag-handle {
+  cursor: default !important;
+}
+
+.group-container:not(.edit-mode) .react-resizable-handle {
+  display: none !important;
 }
 
 /* Responsive adjustments */
@@ -186,4 +269,26 @@
 .group-container input:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
+}
+
+/* Options panel styling */
+.options-panel {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  background: white;
+  position: absolute;
+  z-index: 1000;
+}
+
+.options-panel button {
+  pointer-events: auto !important;
+}
+
+.options-panel input {
+  pointer-events: auto !important;
+}
+
+/* Ensure the entire options panel accepts pointer events */
+.options-panel {
+  pointer-events: auto !important;
 }

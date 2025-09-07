@@ -1,0 +1,138 @@
+{
+  "@context": [
+    "https://www.w3.org/2019/wot/td/v1",
+    {
+      "@language": "en"
+    }
+  ],
+  "@type": "Thing",
+  "id": "urn:smart-home-device:living-room",
+  "title": "Smart Living Room Hub",
+  "description": "A comprehensive smart home device with multiple sensors and controls",
+  "securityDefinitions": {
+    "nosec": {
+      "scheme": "nosec"
+    }
+  },
+  "security": ["nosec"],
+  "base": "http://192.168.1.100:8080/",
+  "properties": {
+    "temperature": {
+      "type": "number",
+      "title": "Room Temperature",
+      "description": "Current temperature in Celsius",
+      "minimum": -10,
+      "maximum": 40,
+      "unit": "°C",
+      "readOnly": true,
+      "forms": [
+        {
+          "href": "/properties/temperature",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "humidity": {
+      "type": "number",
+      "title": "Humidity Level",
+      "description": "Current humidity percentage",
+      "minimum": 0,
+      "maximum": 100,
+      "unit": "%",
+      "readOnly": true,
+      "forms": [
+        {
+          "href": "/properties/humidity",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "brightness": {
+      "type": "number",
+      "title": "Light Brightness",
+      "description": "Adjustable light brightness level",
+      "minimum": 0,
+      "maximum": 100,
+      "unit": "%",
+      "forms": [
+        {
+          "href": "/properties/brightness",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "lightSwitch": {
+      "type": "boolean",
+      "title": "Main Light Switch",
+      "description": "Turn main lights on/off",
+      "forms": [
+        {
+          "href": "/properties/lightSwitch",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "fanSpeed": {
+      "type": "integer",
+      "title": "Fan Speed",
+      "description": "Ceiling fan speed setting",
+      "minimum": 0,
+      "maximum": 5,
+      "forms": [
+        {
+          "href": "/properties/fanSpeed",
+          "contentType": "application/json"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "toggleLights": {
+      "title": "Toggle All Lights",
+      "description": "Switch all lights on or off",
+      "forms": [
+        {
+          "href": "/actions/toggleLights",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "setScene": {
+      "title": "Set Room Scene",
+      "description": "Apply a predefined lighting and climate scene",
+      "input": {
+        "type": "string",
+        "enum": ["morning", "evening", "night", "party", "relax"]
+      },
+      "forms": [
+        {
+          "href": "/actions/setScene",
+          "contentType": "application/json"
+        }
+      ]
+    }
+  },
+  "events": {
+    "motionDetected": {
+      "title": "Motion Detected",
+      "description": "Triggered when motion is detected in the room",
+      "data": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          }
+        }
+      },
+      "forms": [
+        {
+          "href": "/events/motionDetected",
+          "contentType": "application/json"
+        }
+      ]
+    }
+  }
+}

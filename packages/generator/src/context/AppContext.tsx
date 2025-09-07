@@ -21,6 +21,8 @@ type AppAction =
   | { type: 'ADD_COMPONENT_TO_GROUP'; payload: { groupId: string; componentId: string } }
   | { type: 'REMOVE_COMPONENT_FROM_GROUP'; payload: { groupId: string; componentId: string } }
   | { type: 'UPDATE_GROUP_INNER_LAYOUT'; payload: { groupId: string; layout: AffordanceGroup['innerLayout'] } }
+  | { type: 'TOGGLE_AUTO_ARRANGE' }
+  | { type: 'SET_AUTO_ARRANGE'; payload: boolean }
   | { type: 'RESET_STATE' };
 
 const initialState: AppState = {
@@ -31,6 +33,7 @@ const initialState: AppState = {
   components: [],
   things: new Map(),
   groups: [],
+  autoArrange: true, // Default to auto-arrange enabled
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -156,6 +159,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
             : group
         )
       };
+
+    case 'TOGGLE_AUTO_ARRANGE':
+      return { ...state, autoArrange: !state.autoArrange };
+
+    case 'SET_AUTO_ARRANGE':
+      return { ...state, autoArrange: action.payload };
 
     case 'RESET_STATE':
       return initialState;

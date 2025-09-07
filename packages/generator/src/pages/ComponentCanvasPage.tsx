@@ -5,6 +5,7 @@ import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import { useAppContext } from '../context/AppContext';
 import { WoTComponent } from '../types';
 import { GroupContainer } from '../components/GroupContainer';
+import { SmartEditPopup } from '../components/SmartEditPopup';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -646,6 +647,20 @@ export function ComponentCanvasPage() {
                 </button>
               </div>
               <div className="flex items-center space-x-2">
+                <label className="text-sm font-heading font-medium text-primary">Auto Arrange:</label>
+                <button
+                  onClick={() => dispatch({ type: 'TOGGLE_AUTO_ARRANGE' })}
+                  aria-pressed={state.autoArrange}
+                  aria-label={state.autoArrange ? 'Disable auto arrange' : 'Enable auto arrange'}
+                  title={state.autoArrange ? 'Disable automatic layout arrangement' : 'Enable automatic layout arrangement'}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+                    state.autoArrange ? 'bg-primary' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${state.autoArrange ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+              <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setShowSaveModal(true)}
                   disabled={state.components.length === 0}
@@ -677,8 +692,8 @@ export function ComponentCanvasPage() {
         </div>
       </div>
 
-      {/* Canvas */}
-      <div className={`w-full min-h-screen ${editingComponent ? 'pr-80 transition-all duration-200' : 'transition-all duration-200'}`}>
+      {/* Canvas - No sidebar padding needed anymore */}
+      <div className="w-full min-h-screen transition-all duration-200">
         <div className="w-full px-4 py-6">
           {state.groups.length > 0 || state.components.some(c => !state.groups.some(g => g.affordanceIds.includes(c.id))) ? (
             <AnyResponsiveGridLayout
@@ -692,8 +707,8 @@ export function ComponentCanvasPage() {
                     minH: 4, 
                     maxW: Infinity,
                     maxH: Infinity,
-                    isResizable: true,
-                    isDraggable: true
+                    isResizable: isEditMode,
+                    isDraggable: isEditMode
                   })),
                   // Standalone component layouts
                   ...state.components
@@ -704,8 +719,8 @@ export function ComponentCanvasPage() {
                       minH: 2, 
                       maxW: Infinity,
                       maxH: Infinity,
-                      isResizable: true,
-                      isDraggable: true
+                      isResizable: isEditMode,
+                      isDraggable: isEditMode
                     }))
                 ],
                 md: [
@@ -715,8 +730,8 @@ export function ComponentCanvasPage() {
                     minH: 4, 
                     maxW: Infinity,
                     maxH: Infinity,
-                    isResizable: true,
-                    isDraggable: true
+                    isResizable: isEditMode,
+                    isDraggable: isEditMode
                   })),
                   ...state.components
                     .filter(c => !state.groups.some(g => g.affordanceIds.includes(c.id)))
@@ -726,8 +741,8 @@ export function ComponentCanvasPage() {
                       minH: 2, 
                       maxW: Infinity,
                       maxH: Infinity,
-                      isResizable: true,
-                      isDraggable: true
+                      isResizable: isEditMode,
+                      isDraggable: isEditMode
                     }))
                 ],
                 sm: [
@@ -737,8 +752,8 @@ export function ComponentCanvasPage() {
                     minH: 4, 
                     maxW: Infinity,
                     maxH: Infinity,
-                    isResizable: true,
-                    isDraggable: true
+                    isResizable: isEditMode,
+                    isDraggable: isEditMode
                   })),
                   ...state.components
                     .filter(c => !state.groups.some(g => g.affordanceIds.includes(c.id)))
@@ -748,8 +763,8 @@ export function ComponentCanvasPage() {
                       minH: 2, 
                       maxW: Infinity,
                       maxH: Infinity,
-                      isResizable: true,
-                      isDraggable: true
+                      isResizable: isEditMode,
+                      isDraggable: isEditMode
                     }))
                 ]
               }}
@@ -761,11 +776,11 @@ export function ComponentCanvasPage() {
               isResizable={isEditMode}
               margin={[16, 16]}
               containerPadding={[16, 16]}
-              compactType={null}
-              preventCollision={false}
-              allowOverlap={true}
+              compactType={state.autoArrange ? 'vertical' : null}
+              preventCollision={!state.autoArrange}
+              allowOverlap={!state.autoArrange}
               draggableHandle={'.group-header, .component-drag-handle'}
-              draggableCancel={'.no-drag, button, input, select, textarea, .edit-controls, .group-options'}
+              draggableCancel={'.no-drag, button, input, select, textarea, .edit-controls, .group-options, .options-panel'}
               resizeHandles={['se', 'sw', 'nw', 'ne', 's', 'n', 'e', 'w']}
             >
               {/* Render Groups */}
@@ -810,220 +825,23 @@ export function ComponentCanvasPage() {
         </div>
       </div>
 
-      {/* Page-level right sidebar */}
-  {editingComponent && isEditMode && (() => {
+      {/* Smart Edit Popup */}
+      {editingComponent && isEditMode && (() => {
         const comp = state.components.find(c => c.id === editingComponent);
         if (!comp) return null;
         const afford = state.availableAffordances.find(a => a.key === comp.affordanceKey);
         return (
-          <div className="fixed top-0 right-0 h-full w-80 bg-white border-l border-primary shadow-xl z-50 overflow-y-auto">
-            <div className="p-4 space-y-4">
-              <div className="flex items-center justify-between border-b border-gray-200 pb-4">
-                <h4 className="font-heading font-medium text-lg text-primary">Component Settings</h4>
-                <button
-                  onClick={() => setEditingComponent(null)}
-                  className="p-1 rounded text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Basic Settings */}
-              <div className="space-y-3">
-                <h5 className="text-sm font-heading font-medium text-primary">Basic</h5>
-                
-                <div>
-                  <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Title</label>
-                  <input
-                    type="text"
-                    value={comp.title}
-                    onChange={e => {
-                      const next = e.target.value;
-                      dispatch({
-                        type: 'UPDATE_COMPONENT',
-                        payload: { id: comp.id, updates: { title: next } }
-                      });
-                      // reflect immediately on element
-                      applyAttributeChange(comp.id, 'label', next);
-                    }}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Variant</label>
-                  <select
-                    value={comp.variant || 'minimal'}
-                    onChange={e => handleVariantChange(comp.id, e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                  >
-                    {afford?.availableVariants.map(variant => (
-                      <option key={variant} value={variant}>
-                        {variant.charAt(0).toUpperCase() + variant.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="flex items-center space-x-2 text-sm font-heading font-medium text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={comp.hideCard || false}
-                      onChange={e => {
-                        dispatch({
-                          type: 'UPDATE_COMPONENT',
-                          payload: { id: comp.id, updates: { hideCard: e.target.checked } }
-                        });
-                      }}
-                      className="w-4 h-4 text-accent border-gray-300 rounded focus:ring-accent focus:ring-2"
-                    />
-                    <span>Hide card wrapper</span>
-                  </label>
-                  <p className="text-xs text-gray-500 mt-1">Show only the component without the card border and header</p>
-                </div>
-
-                {/* Layout */}
-                <div>
-                  <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Width</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="12"
-                    value={comp.layout.w}
-                    onChange={e => dispatch({
-                      type: 'UPDATE_LAYOUT',
-                      payload: {
-                        id: comp.id,
-                        layout: { ...comp.layout, w: parseInt(e.target.value) || 1 }
-                      }
-                    })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Height</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={comp.layout.h}
-                    onChange={e => dispatch({
-                      type: 'UPDATE_LAYOUT',
-                      payload: {
-                        id: comp.id,
-                        layout: { ...comp.layout, h: parseInt(e.target.value) || 1 }
-                      }
-                    })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                  />
-                </div>
-              </div>
-
-              {/* Attributes */}
-              <div className="pt-4 border-t border-gray-200">
-                <h5 className="text-sm font-heading font-medium text-primary mb-3">Attributes</h5>
-                <div className="space-y-3">
-                  {attributesList.length === 0 && (
-                    <div className="text-sm text-primary/70">No editable attributes detected.</div>
-                  )}
-                  {attributesList.map(name => {
-                    const attrType = attributesTypes[name];
-                    const currentValue = attributesValues[name] ?? '';
-                    
-                    return (
-                      <div key={name} className="space-y-1">
-                        <label className="block text-xs font-heading text-primary/80 capitalize">
-                          {name.replace(/([A-Z])/g, ' $1').trim()}
-                        </label>
-                        
-                        {attrType === 'boolean' ? (
-                          // Checkbox for boolean attributes
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              checked={currentValue === 'true'}
-                              onChange={e => applyAttributeChange(comp.id, name, e.target.checked ? 'true' : 'false')}
-                              className="w-4 h-4 text-accent border-gray-300 rounded focus:ring-accent focus:ring-2"
-                            />
-                            <span className="text-xs text-gray-600">
-                              {currentValue === 'true' ? 'Enabled' : 'Disabled'}
-                            </span>
-                          </div>
-                        ) : attrType === 'number' ? (
-                          // Number input for numeric attributes
-                          <input
-                            type="number"
-                            value={currentValue}
-                            onChange={e => applyAttributeChange(comp.id, name, e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                            step={name === 'step' ? '0.01' : '1'}
-                          />
-                        ) : name === 'color' ? (
-                          // Dropdown for color attribute
-                          <select
-                            value={currentValue}
-                            onChange={e => applyAttributeChange(comp.id, name, e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                          >
-                            <option value="primary">Primary</option>
-                            <option value="secondary">Secondary</option>
-                            <option value="neutral">Neutral</option>
-                            <option value="success">Success</option>
-                          </select>
-                        ) : name === 'orientation' ? (
-                          // Dropdown for orientation
-                          <select
-                            value={currentValue}
-                            onChange={e => applyAttributeChange(comp.id, name, e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                          >
-                            <option value="horizontal">Horizontal</option>
-                            <option value="vertical">Vertical</option>
-                          </select>
-                        ) : name === 'thumbShape' ? (
-                          // Dropdown for thumb shape
-                          <select
-                            value={currentValue}
-                            onChange={e => applyAttributeChange(comp.id, name, e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                          >
-                            <option value="circle">Circle</option>
-                            <option value="square">Square</option>
-                            <option value="arrow">Arrow</option>
-                            <option value="triangle">Triangle</option>
-                            <option value="diamond">Diamond</option>
-                          </select>
-                        ) : (
-                          // Text input for string attributes
-                          <input
-                            type="text"
-                            value={currentValue}
-                            onChange={e => applyAttributeChange(comp.id, name, e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-                            placeholder={name === 'placeholder' ? 'Enter placeholder text...' : ''}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => handleComponentClose(comp.id)}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-                >
-                  Remove Component
-                </button>
-              </div>
-            </div>
-          </div>
+          <SmartEditPopup
+            component={comp}
+            affordance={afford}
+            onClose={() => setEditingComponent(null)}
+            attributesList={attributesList}
+            attributesValues={attributesValues}
+            attributesTypes={attributesTypes}
+            onAttributeChange={applyAttributeChange}
+            onVariantChange={handleVariantChange}
+            onComponentClose={handleComponentClose}
+          />
         );
       })()}
 

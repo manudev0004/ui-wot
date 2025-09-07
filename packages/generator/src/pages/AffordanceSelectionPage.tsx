@@ -114,7 +114,9 @@ export function AffordanceSelectionPage() {
             visible: true,
             borderStyle: 'solid' as const,
             backgroundColor: '#f8fafc',
+            headerColor: '#f8fafc',
             collapsed: false,
+            hideWrapper: false,
           },
           affordanceIds: components.map(c => c.id),
           innerLayout: components.map(comp => ({

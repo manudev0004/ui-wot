@@ -70,8 +70,12 @@ export interface AffordanceGroup {
     borderStyle: 'solid' | 'dashed' | 'none';
     /** Background color (hex color or CSS color name) */
     backgroundColor: string;
+    /** Header/heading background color */
+    headerColor: string;
     /** Whether the group is collapsed */
     collapsed: boolean;
+    /** Whether to hide the group wrapper/card */
+    hideWrapper: boolean;
   };
   /** List of component IDs in this group */
   affordanceIds: string[];
@@ -101,4 +105,6 @@ export interface AppState {
   components: WoTComponent[];
   things: Map<string, any>; // WoT thing instances
   groups: AffordanceGroup[]; // Affordance groups for organizing components
+  /** Whether to auto-arrange components when edit mode is disabled */
+  autoArrange: boolean;
 }

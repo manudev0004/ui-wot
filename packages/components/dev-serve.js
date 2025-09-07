@@ -13,7 +13,7 @@ const path = require('path');
 const ROOT = path.join(__dirname);
 const WWW = path.join(ROOT, 'www');
 const SRC = path.join(ROOT, 'src');
-const PORT = process.env.PORT || 3333;
+const PORT = process.env.PORT || 3334;
 
 // Clean stale build output to avoid serving partial/old chunks
 function cleanDir(dir) {
