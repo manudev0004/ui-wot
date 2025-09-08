@@ -121,6 +121,11 @@ export namespace Components {
          */
         "showLastUpdated": boolean;
         /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus": boolean;
+        /**
           * Trigger visual read pulse (brief animation). Provides visual feedback for data refresh or read operations.
           * @returns Promise<void>
           * @example Basic Usage (Easy) ```javascript // Show visual feedback after reading data const button = document.querySelector('ui-button'); await button.triggerReadPulse(); ```
@@ -263,6 +268,11 @@ export namespace Components {
          */
         "showLastUpdated": boolean;
         /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus": boolean;
+        /**
           * Show today button for quick navigation.
           * @default true
          */
@@ -391,6 +401,11 @@ export namespace Components {
           * @default true
          */
         "showLastUpdated": boolean;
+        /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus": boolean;
         /**
           * Trigger a read pulse indicator for readonly mode when data is actually fetched. Note: Checkboxes don't support readonly mode, so this method is kept for API compatibility.
           * @returns Promise<void>
@@ -534,6 +549,11 @@ export namespace Components {
           * @default false
          */
         "showLastUpdated": boolean;
+        /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus": boolean;
         /**
           * Show event timestamps
           * @default true
@@ -774,6 +794,11 @@ export namespace Components {
          */
         "showLastUpdated": boolean;
         /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus": boolean;
+        /**
           * Step increment/decrement amount.
           * @default 1
          */
@@ -932,6 +957,11 @@ export namespace Components {
           * @default false
          */
         "showLastUpdated": boolean;
+        /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus": boolean;
         /**
           * Step increment for the slider.
           * @default 1
@@ -1100,6 +1130,11 @@ export namespace Components {
          */
         "showLineNumbers": boolean;
         /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus": boolean;
+        /**
           * Current text value of the component.
           * @default ''
          */
@@ -1116,7 +1151,30 @@ export namespace Components {
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
-     * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+     * <ui-toggle varia  private handleChange = () => {
+     * if (this.disabled || this.readonly) return;
+     * // Show loading state briefly for visual feedback (only if showStatus is enabled)
+     * if (this.showStatus) {
+     * this.operationStatus = 'loading';
+     * }
+     * const newValue = !this.isActive;
+     * this.isActive = newValue;
+     * this.value = newValue;
+     * // Update timestamp only if showLastUpdated is enabled
+     * if (this.showLastUpdated) {
+     * this.lastUpdatedTs = Date.now();
+     * }
+     * this.emitValueMsg(newValue, !newValue);
+     * // Show success state and auto-clear (only if showStatus is enabled)
+     * if (this.showStatus) {
+     * setTimeout(() => {
+     * this.operationStatus = 'success';
+     * setTimeout(() => {
+     * this.operationStatus = 'idle';
+     * }, 1000);
+     * }, 100);
+     * }
+     * }se" label="Fan"></ui-toggle>
      * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
      * ```
      * @example JavaScript Integration
@@ -1211,6 +1269,11 @@ export namespace Components {
          */
         "showLastUpdated": boolean;
         /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus": boolean;
+        /**
           * Trigger a read pulse indicator for readonly mode whenever data is fetched. Use this method to provide visual feedback when refreshing data from external sources
           * @returns Promise<void>
           * @example Basic Usage (Easy) ```javascript // Show visual pulse when data is refreshed const toggle = document.querySelector('ui-toggle'); await toggle.triggerReadPulse(); ```
@@ -1222,7 +1285,7 @@ export namespace Components {
          */
         "value": boolean;
         /**
-          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
+          * @example Component props  Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
           * @default 'circle'
          */
         "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
@@ -1685,7 +1748,30 @@ declare global {
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
-     * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+     * <ui-toggle varia  private handleChange = () => {
+     * if (this.disabled || this.readonly) return;
+     * // Show loading state briefly for visual feedback (only if showStatus is enabled)
+     * if (this.showStatus) {
+     * this.operationStatus = 'loading';
+     * }
+     * const newValue = !this.isActive;
+     * this.isActive = newValue;
+     * this.value = newValue;
+     * // Update timestamp only if showLastUpdated is enabled
+     * if (this.showLastUpdated) {
+     * this.lastUpdatedTs = Date.now();
+     * }
+     * this.emitValueMsg(newValue, !newValue);
+     * // Show success state and auto-clear (only if showStatus is enabled)
+     * if (this.showStatus) {
+     * setTimeout(() => {
+     * this.operationStatus = 'success';
+     * setTimeout(() => {
+     * this.operationStatus = 'idle';
+     * }, 1000);
+     * }, 100);
+     * }
+     * }se" label="Fan"></ui-toggle>
      * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
      * ```
      * @example JavaScript Integration
@@ -1814,6 +1900,11 @@ declare namespace LocalJSX {
          */
         "showLastUpdated"?: boolean;
         /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus"?: boolean;
+        /**
           * Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button
           * @default 'outlined'
          */
@@ -1935,6 +2026,11 @@ declare namespace LocalJSX {
          */
         "showLastUpdated"?: boolean;
         /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus"?: boolean;
+        /**
           * Show today button for quick navigation.
           * @default true
          */
@@ -2029,6 +2125,11 @@ declare namespace LocalJSX {
           * @default true
          */
         "showLastUpdated"?: boolean;
+        /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus"?: boolean;
         /**
           * Current boolean value of the checkbox.
           * @default false
@@ -2158,6 +2259,11 @@ declare namespace LocalJSX {
           * @default false
          */
         "showLastUpdated"?: boolean;
+        /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus"?: boolean;
         /**
           * Show event timestamps
           * @default true
@@ -2361,6 +2467,11 @@ declare namespace LocalJSX {
          */
         "showLastUpdated"?: boolean;
         /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus"?: boolean;
+        /**
           * Step increment/decrement amount.
           * @default 1
          */
@@ -2475,6 +2586,11 @@ declare namespace LocalJSX {
           * @default false
          */
         "showLastUpdated"?: boolean;
+        /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus"?: boolean;
         /**
           * Step increment for the slider.
           * @default 1
@@ -2605,6 +2721,11 @@ declare namespace LocalJSX {
          */
         "showLineNumbers"?: boolean;
         /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus"?: boolean;
+        /**
           * Current text value of the component.
           * @default ''
          */
@@ -2621,7 +2742,30 @@ declare namespace LocalJSX {
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
-     * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+     * <ui-toggle varia  private handleChange = () => {
+     * if (this.disabled || this.readonly) return;
+     * // Show loading state briefly for visual feedback (only if showStatus is enabled)
+     * if (this.showStatus) {
+     * this.operationStatus = 'loading';
+     * }
+     * const newValue = !this.isActive;
+     * this.isActive = newValue;
+     * this.value = newValue;
+     * // Update timestamp only if showLastUpdated is enabled
+     * if (this.showLastUpdated) {
+     * this.lastUpdatedTs = Date.now();
+     * }
+     * this.emitValueMsg(newValue, !newValue);
+     * // Show success state and auto-clear (only if showStatus is enabled)
+     * if (this.showStatus) {
+     * setTimeout(() => {
+     * this.operationStatus = 'success';
+     * setTimeout(() => {
+     * this.operationStatus = 'idle';
+     * }, 1000);
+     * }, 100);
+     * }
+     * }se" label="Fan"></ui-toggle>
      * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
      * ```
      * @example JavaScript Integration
@@ -2691,12 +2835,17 @@ declare namespace LocalJSX {
          */
         "showLastUpdated"?: boolean;
         /**
+          * Show status badge when true
+          * @default true
+         */
+        "showStatus"?: boolean;
+        /**
           * Current boolean value of the toggle.
           * @default false
          */
         "value"?: boolean;
         /**
-          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
+          * @example Component props  Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
           * @default 'circle'
          */
         "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
@@ -2996,7 +3145,30 @@ declare module "@stencil/core" {
              * @example Basic Usage
              * ```html
              * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
-             * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+             * <ui-toggle varia  private handleChange = () => {
+             * if (this.disabled || this.readonly) return;
+             * // Show loading state briefly for visual feedback (only if showStatus is enabled)
+             * if (this.showStatus) {
+             * this.operationStatus = 'loading';
+             * }
+             * const newValue = !this.isActive;
+             * this.isActive = newValue;
+             * this.value = newValue;
+             * // Update timestamp only if showLastUpdated is enabled
+             * if (this.showLastUpdated) {
+             * this.lastUpdatedTs = Date.now();
+             * }
+             * this.emitValueMsg(newValue, !newValue);
+             * // Show success state and auto-clear (only if showStatus is enabled)
+             * if (this.showStatus) {
+             * setTimeout(() => {
+             * this.operationStatus = 'success';
+             * setTimeout(() => {
+             * this.operationStatus = 'idle';
+             * }, 1000);
+             * }, 100);
+             * }
+             * }se" label="Fan"></ui-toggle>
              * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
              * ```
              * @example JavaScript Integration

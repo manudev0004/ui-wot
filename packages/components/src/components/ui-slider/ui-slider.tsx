@@ -112,6 +112,11 @@ export class UiSlider {
   @Prop() showLastUpdated: boolean = false;
 
   /**
+   * Show status badge when true
+   */
+  @Prop() showStatus: boolean = true;
+
+  /**
    * Minimum value of the slider.
    */
   @Prop() min: number = 0;
@@ -850,13 +855,33 @@ export class UiSlider {
     const newValue = Number(target.value);
     const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
     
+    // Show loading state briefly for visual feedback (only if showStatus is enabled)
+    if (this.showStatus) {
+      this.operationStatus = 'loading';
+    }
+    
     // Simple value change without any operation - for basic slider functionality
-  const prev = this.isActive;
-  this.isActive = clampedValue;
-  this.value = clampedValue;
-  this.manualInputValue = String(clampedValue);
-  this.lastUpdatedTs = Date.now();
-  this.emitValueMsg(clampedValue, prev);
+    const prev = this.isActive;
+    this.isActive = clampedValue;
+    this.value = clampedValue;
+    this.manualInputValue = String(clampedValue);
+    
+    // Update timestamp only if showLastUpdated is enabled
+    if (this.showLastUpdated) {
+      this.lastUpdatedTs = Date.now();
+    }
+    
+    this.emitValueMsg(clampedValue, prev);
+    
+    // Show success state and auto-clear (only if showStatus is enabled)
+    if (this.showStatus) {
+      setTimeout(() => {
+        this.operationStatus = 'success';
+        setTimeout(() => {
+          if (this.operationStatus === 'success') this.operationStatus = 'idle';
+        }, 1200);
+      }, 50);
+    }
   };
 
   /** Handle keyboard navigation */
@@ -1245,9 +1270,11 @@ export class UiSlider {
                   {this.isActive}
                 </div>
                 {/* Status indicator positioned absolutely so it doesn't shift value */}
-                <div class="absolute left-full ml-1 top-0 flex items-center h-full">
-                  {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
-                </div>
+                {this.showStatus && (
+                  <div class="absolute left-full ml-1 top-0 flex items-center h-full">
+                    {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+                  </div>
+                )}
               </div>
             ) : (
               // readonly: don't show the small current value box (main indicator shows value)
@@ -1273,9 +1300,11 @@ export class UiSlider {
                   {this.isActive}
                 </div>
                 {/* Status indicator positioned absolutely so it doesn't shift value */}
-                <div class="absolute left-full ml-2 top-0 flex items-center h-full">
-                  {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
-                </div>
+                {this.showStatus && (
+                  <div class="absolute left-full ml-2 top-0 flex items-center h-full">
+                    {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -1283,7 +1312,7 @@ export class UiSlider {
 
         {/* Last updated timestamp */}
         {this.showLastUpdated && this.lastUpdatedTs && (
-          <div class="flex justify-end mt-2">
+          <div class="flex justify-center mt-2">
             {StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
           </div>
         )}

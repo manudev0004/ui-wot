@@ -45,15 +45,16 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 export class UiToggle {
   @Element() el: HTMLElement;
 
-  /** Component props */
-
   /**
+   * @example Component props
+   * 
    * Visual style variant of the toggle.
    * - circle: Common pill-shaped toggle (default)
    * - square: Rectangular toggle with square thumb
    * - apple: iOS-style switch (bigger size, rounded edges)
    * - cross: Shows × when off, ✓ when on with red background when off and green when on
    * - neon: Glowing effect when active
+   * 
    */
   @Prop() variant: 'circle' | 'square' | 'apple' | 'cross' | 'neon' = 'circle';
 
@@ -98,6 +99,11 @@ export class UiToggle {
    * Show last updated timestamp when true
    */
   @Prop() showLastUpdated: boolean = false;
+
+  /**
+   * Show status badge when true
+   */
+  @Prop() showStatus: boolean = true;
 
   /** Connection state for readonly mode */
   @Prop({ mutable: true }) connected: boolean = true;
@@ -416,6 +422,11 @@ export class UiToggle {
 
   /** Render status badge */
   private renderStatusBadge() {
+    // Only render status badge if showStatus is true
+    if (!this.showStatus) {
+      return null;
+    }
+
     if (this.readonly) {
       if (!this.connected) {
         return StatusIndicator.renderStatusBadge('error', 'light', 'Disconnected', h);
@@ -423,9 +434,14 @@ export class UiToggle {
       if (this.readPulseTs && Date.now() - this.readPulseTs < 1500) {
         return StatusIndicator.renderStatusBadge('success', 'light', 'Data received', h);
       }
-      return null;
+      // Show idle status for readonly when connected
+      return StatusIndicator.renderStatusBadge('idle', 'light', 'Connected', h);
     }
-    return StatusIndicator.renderStatusBadge(this.operationStatus, 'light', this.lastError || '', h);
+    
+    // For interactive mode, show operation status or default idle
+    const status = this.operationStatus || 'idle';
+    const message = this.lastError || (status === 'idle' ? 'Ready' : '');
+    return StatusIndicator.renderStatusBadge(status, 'light', message, h);
   }
 
   /**
@@ -507,26 +523,47 @@ export class UiToggle {
     });
   }
 
-  private handleToggle = () => {
+  private handleChange = () => {
     if (this.disabled || this.readonly) return;
+    
+    // Show loading state briefly for visual feedback (only if showStatus is enabled)
+    if (this.showStatus) {
+      this.operationStatus = 'loading';
+    }
+    
     const newValue = !this.isActive;
     this.isActive = newValue;
     this.value = newValue;
-    this.lastUpdatedTs = Date.now();
+    
+    // Update timestamp only if showLastUpdated is enabled
+    if (this.showLastUpdated) {
+      this.lastUpdatedTs = Date.now();
+    }
+    
     this.emitValueMsg(newValue, !newValue);
-  };
+    
+    // Show success state and auto-clear (only if showStatus is enabled)
+    if (this.showStatus) {
+      setTimeout(() => {
+        this.operationStatus = 'success';
+        setTimeout(() => {
+          this.operationStatus = 'idle';
+        }, 1000);
+      }, 100);
+    }
+  }
 
   private handleKeyDown = (event: KeyboardEvent) => {
     if (this.disabled || this.readonly || !this.keyboard) return;
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
-      this.handleToggle();
+      this.handleChange();
     }
   };
 
   /** Styling helpers */
   private getToggleStyle(): string {
-    const { variant, disabled } = this;
+    const { variant, disabled, isActive, color } = this;
 
     const sizeMap = {
       apple: 'w-11 h-7',
@@ -542,8 +579,20 @@ export class UiToggle {
     const size = sizeMap[variant] || sizeMap.default;
     const shape = shapeMap[variant] || shapeMap.default;
     const disabledClass = disabled ? 'disabled-state' : '';
+    
+    // Add neon glow classes when variant is neon and toggle is active
+    let neonClass = '';
+    if (variant === 'neon' && isActive) {
+      if (color === 'secondary') {
+        neonClass = 'neon-secondary';
+      } else {
+        neonClass = 'neon-primary';
+      }
+    } else if (variant === 'neon' && !isActive) {
+      neonClass = 'neon-red'; // Red glow when neon toggle is off
+    }
 
-    return `relative inline-block cursor-pointer transition-all duration-300 ease-in-out ${size} ${shape} ${disabledClass}`.trim();
+    return `relative inline-block cursor-pointer transition-all duration-300 ease-in-out ${size} ${shape} ${disabledClass} ${neonClass}`.trim();
   }
 
   private getThumbStyle(): string {
@@ -632,7 +681,7 @@ export class UiToggle {
                 class={`select-none mr-2 transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer hover:text-opacity-80'} ${
                   this.dark ? 'text-white' : 'text-gray-900'
                 }`}
-                onClick={() => canInteract && this.handleToggle()}
+                onClick={() => canInteract && this.handleChange()}
                 title={hoverTitle}
                 part="label"
               >
@@ -662,7 +711,7 @@ export class UiToggle {
             <span
               class={`${this.getToggleStyle()} ${canInteract ? 'hover:shadow-md' : ''} transition-all duration-200`}
               style={{ backgroundColor: this.getBackgroundColor() }}
-              onClick={() => canInteract && this.handleToggle()}
+              onClick={() => canInteract && this.handleChange()}
               onKeyDown={this.handleKeyDown}
               tabIndex={canInteract ? 0 : -1}
               title={hoverTitle}

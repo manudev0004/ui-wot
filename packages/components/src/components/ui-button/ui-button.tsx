@@ -111,6 +111,11 @@ export class UiButton {
    */
   @Prop() showLastUpdated: boolean = true;
 
+  /**
+   * Show status badge when true
+   */
+  @Prop() showStatus: boolean = true;
+
   /** Connection state for readonly mode */
   @Prop({ mutable: true }) connected: boolean = true;
 
@@ -672,22 +677,34 @@ export class UiButton {
   }
 
   /** Handle button click */
-  private handleClick = async () => {
+  private handleChange = async () => {
     if (this.disabled || !this.canInteract) return;
 
-    // Show quick feedback
-    this.operationStatus = 'loading';
+    // Show quick feedback (only if showStatus is enabled)
+    if (this.showStatus) {
+      this.operationStatus = 'loading';
+    }
+
+    // Update timestamp only if showLastUpdated is enabled
+    if (this.showLastUpdated) {
+      this.lastUpdatedTs = Date.now();
+    }
 
     // Emit both legacy and unified events
     this.emitClick();
     this.emitValueMsg(this.label);
 
-    // Assume success for local-only action; external handlers can override via attributes/events
-    setTimeout(() => {
-      this.operationStatus = 'success';
-      // Auto clear
-      setTimeout(() => { this.operationStatus = 'idle'; this.lastError = undefined; }, 1200);
-    }, 50);
+    // Assume success for local-only action (only if showStatus is enabled)
+    if (this.showStatus) {
+      setTimeout(() => {
+        this.operationStatus = 'success';
+        // Auto clear
+        setTimeout(() => { 
+          this.operationStatus = 'idle'; 
+          this.lastError = undefined; 
+        }, 1200);
+      }, 50);
+    }
   };
 
   /** Emit click events */
@@ -702,7 +719,7 @@ export class UiButton {
 
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      this.handleClick();
+      this.handleChange();
     }
   };
 
@@ -779,7 +796,7 @@ export class UiButton {
         <div class="inline-flex items-center">
           <button 
             class={this.getButtonStyle()} 
-            onClick={this.handleClick} 
+            onClick={this.handleChange} 
             onKeyDown={this.handleKeyDown} 
             disabled={isDisabled} 
             aria-label={this.label} 
@@ -790,9 +807,11 @@ export class UiButton {
           </button>
 
           {/* Render status as an external sibling to the button so it's outside and vertically centered */}
-          <div class="ml-3 flex items-center self-center" role="status">
-            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
-          </div>
+          {this.showStatus && (
+            <div class="ml-3 flex items-center self-center" role="status">
+              {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+            </div>
+          )}
         </div>
 
         {this.showLastUpdated && (

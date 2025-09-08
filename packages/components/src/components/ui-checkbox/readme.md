@@ -21,6 +21,7 @@ Advanced checkbox component with reactive state management and multiple visual s
 | `keyboard`        | `keyboard`          | Enable keyboard navigation (Space and Enter keys). Default: true                                                                 | `boolean`                               | `true`       |
 | `label`           | `label`             | Text label displayed next to the checkbox.                                                                                       | `string`                                | `undefined`  |
 | `showLastUpdated` | `show-last-updated` | Show last updated timestamp when true                                                                                            | `boolean`                               | `true`       |
+| `showStatus`      | `show-status`       | Show status badge when true                                                                                                      | `boolean`                               | `true`       |
 | `value`           | `value`             | Current boolean value of the checkbox.                                                                                           | `boolean`                               | `false`      |
 | `variant`         | `variant`           | Visual style variant of the checkbox.                                                                                            | `"filled" \| "minimal" \| "outlined"`   | `'outlined'` |
 

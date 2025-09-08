@@ -82,6 +82,11 @@ export class UiEvent {
   @Prop() showLastUpdated: boolean = false;
 
   /**
+   * Show status badge when true
+   */
+  @Prop() showStatus: boolean = true;
+
+  /**
    * Whether component is in readonly mode
    */
   @Prop() readonly: boolean = false;
@@ -413,11 +418,12 @@ export class UiEvent {
     }, 3000 + Math.random() * 2000);
   }
 
-  private async simulateEventPublishing(eventName: string, payload: any): Promise<void> {
+  private async simulateEventPublishing(_eventName: string, _payload: any): Promise<void> {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
 
-    console.log(`Published event "${eventName}":`, payload);
+    // Event published successfully
+    // Parameters prefixed with _ to indicate intentional non-use
   }
 
   private handleReceivedEvent(event: any) {
@@ -479,7 +485,7 @@ export class UiEvent {
   }
 
   private renderStatusBadge() {
-    if (this.operationStatus === 'idle') return null;
+    if (!this.showStatus || this.operationStatus === 'idle') return null;
     return StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError || '', h, { position: 'sibling-right' });
   }
 

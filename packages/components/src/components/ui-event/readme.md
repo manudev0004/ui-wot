@@ -29,6 +29,7 @@ Provides real-time event handling with filtering, buffering, and visual feedback
 | `payloadTemplate`  | `payload-template`  | Event payload template for publishing           | `string`                                       | `undefined`  |
 | `readonly`         | `readonly`          | Whether component is in readonly mode           | `boolean`                                      | `false`      |
 | `showLastUpdated`  | `show-last-updated` | Show last updated timestamp                     | `boolean`                                      | `false`      |
+| `showStatus`       | `show-status`       | Show status badge when true                     | `boolean`                                      | `true`       |
 | `showTimestamp`    | `show-timestamp`    | Show event timestamps                           | `boolean`                                      | `true`       |
 | `variant`          | `variant`           | Visual style variant                            | `"filled" \| "minimal" \| "outlined"`          | `'outlined'` |
 

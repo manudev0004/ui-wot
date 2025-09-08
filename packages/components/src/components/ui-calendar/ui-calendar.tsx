@@ -132,6 +132,11 @@ export class UiCalendar {
   @Prop() showLastUpdated: boolean = false;
 
   /**
+   * Show status badge when true
+   */
+  @Prop() showStatus: boolean = true;
+
+  /**
    * Display calendar inline instead of as dropdown popup.
    * Perfect for always-visible date selection.
    */
@@ -211,6 +216,12 @@ export class UiCalendar {
 
   /** Calendar open state */
   @State() isOpen: boolean = false;
+
+  /** Time picker state */
+  @State() selectedHour: number = 12;
+  @State() selectedMinute: number = 0;
+  @State() isAM: boolean = true;
+  @State() showClockView: boolean = false;
 
   private inputEl?: HTMLInputElement | null;
   private calendarEl?: HTMLElement | null;
@@ -422,6 +433,97 @@ export class UiCalendar {
     });
 
   // Local control only: external integrations should listen to the `dateChange` event.
+  }
+
+  /** Clock interface methods */
+  private updateTimeFromClock() {
+    if (!this.selectedDate) this.selectedDate = new Date();
+    
+    const newDate = new Date(this.selectedDate);
+    let hours = this.selectedHour;
+    
+    if (this.timeFormat === '12') {
+      if (this.selectedHour === 12) {
+        hours = this.isAM ? 0 : 12;
+      } else {
+        hours = this.isAM ? this.selectedHour : this.selectedHour + 12;
+      }
+    }
+    
+    newDate.setHours(hours);
+    newDate.setMinutes(this.selectedMinute);
+    
+    this.selectedDate = newDate;
+    this.value = newDate.toISOString();
+    
+    // Emit standardized event
+    this.valueMsg.emit({
+      payload: this.value,
+      prev: undefined,
+      ts: Date.now(),
+      source: this.el?.id || 'ui-calendar',
+      ok: true,
+      meta: {
+        component: 'ui-calendar',
+        type: 'clockChange',
+        source: 'user'
+      }
+    });
+    
+    this.dateChange.emit({ 
+      value: this.value,
+      date: this.selectedDate,
+      formattedValue: this.getDisplayValue()
+    });
+  }
+
+  private updateClockFromSelectedDate() {
+    if (!this.selectedDate) return;
+    
+    const hours = this.selectedDate.getHours();
+    const minutes = this.selectedDate.getMinutes();
+    
+    if (this.timeFormat === '12') {
+      if (hours === 0) {
+        this.selectedHour = 12;
+        this.isAM = true;
+      } else if (hours === 12) {
+        this.selectedHour = 12;
+        this.isAM = false;
+      } else if (hours > 12) {
+        this.selectedHour = hours - 12;
+        this.isAM = false;
+      } else {
+        this.selectedHour = hours;
+        this.isAM = true;
+      }
+    } else {
+      this.selectedHour = hours;
+    }
+    
+    this.selectedMinute = minutes;
+  }
+
+  private setHour(hour: number) {
+    this.selectedHour = hour;
+    this.updateTimeFromClock();
+  }
+
+  private setMinute(minute: number) {
+    this.selectedMinute = minute;
+    this.updateTimeFromClock();
+  }
+
+  private toggleAMPM() {
+    this.isAM = !this.isAM;
+    this.updateTimeFromClock();
+  }
+
+  private toggleClockView() {
+    this.showClockView = !this.showClockView;
+    if (this.showClockView) {
+      this.updateClockFromSelectedDate();
+    }
   }
 
   /** Navigate month */
@@ -856,18 +958,128 @@ export class UiCalendar {
               ))}
             </div>
 
-            {/* Time Picker */}
+            {/* Enhanced Time Picker with Clock Interface */}
             {this.includeTime && (
               <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                <label class={`block text-sm font-medium mb-2 ${this.dark ? 'text-white' : 'text-gray-900'}`}>Time</label>
-                <input
-                  type="time"
-                  class={`w-full px-3 py-2 text-sm border rounded-md ${
-                    this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                  value={this.selectedDate ? `${String(this.selectedDate.getHours()).padStart(2, '0')}:${String(this.selectedDate.getMinutes()).padStart(2, '0')}` : ''}
-                  onInput={e => this.handleTimeChange(e)}
-                />
+                <div class="flex items-center justify-between mb-3">
+                  <label class={`text-sm font-medium ${this.dark ? 'text-white' : 'text-gray-900'}`}>Time</label>
+                  <button
+                    type="button"
+                    class={`px-2 py-1 text-xs rounded ${
+                      this.showClockView 
+                        ? 'bg-primary text-white' 
+                        : this.dark ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                    onClick={() => this.toggleClockView()}
+                  >
+                    {this.showClockView ? '📝 Input' : '🕐 Clock'}
+                  </button>
+                </div>
+
+                {this.showClockView ? (
+                  /* Visual Clock Interface */
+                  <div class="flex flex-col items-center space-y-4">
+                    {/* Hour Selection */}
+                    <div class="text-center">
+                      <div class={`text-xs mb-2 ${this.dark ? 'text-gray-300' : 'text-gray-600'}`}>Hours</div>
+                      <div class="grid grid-cols-4 gap-1 max-w-48">
+                        {Array.from({ length: this.timeFormat === '12' ? 12 : 24 }, (_, i) => {
+                          const hour = this.timeFormat === '12' ? i + 1 : i;
+                          return (
+                            <button
+                              type="button"
+                              class={`w-8 h-8 text-xs rounded-full transition-all ${
+                                this.selectedHour === hour
+                                  ? 'bg-primary text-white'
+                                  : this.dark 
+                                    ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                              onClick={() => this.setHour(hour)}
+                            >
+                              {hour.toString().padStart(2, '0')}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Minute Selection */}
+                    <div class="text-center">
+                      <div class={`text-xs mb-2 ${this.dark ? 'text-gray-300' : 'text-gray-600'}`}>Minutes</div>
+                      <div class="grid grid-cols-6 gap-1 max-w-48">
+                        {Array.from({ length: 12 }, (_, i) => {
+                          const minute = i * 5;
+                          return (
+                            <button
+                              type="button"
+                              class={`w-8 h-8 text-xs rounded-full transition-all ${
+                                this.selectedMinute === minute
+                                  ? 'bg-primary text-white'
+                                  : this.dark 
+                                    ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                              onClick={() => this.setMinute(minute)}
+                            >
+                              {minute.toString().padStart(2, '0')}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* AM/PM Toggle for 12-hour format */}
+                    {this.timeFormat === '12' && (
+                      <div class="flex space-x-2">
+                        <button
+                          type="button"
+                          class={`px-4 py-2 text-sm rounded transition-all ${
+                            this.isAM
+                              ? 'bg-primary text-white'
+                              : this.dark 
+                                ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                          onClick={() => !this.isAM && this.toggleAMPM()}
+                        >
+                          AM
+                        </button>
+                        <button
+                          type="button"
+                          class={`px-4 py-2 text-sm rounded transition-all ${
+                            !this.isAM
+                              ? 'bg-primary text-white'
+                              : this.dark 
+                                ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                          onClick={() => this.isAM && this.toggleAMPM()}
+                        >
+                          PM
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Selected Time Display */}
+                    <div class={`text-lg font-mono ${this.dark ? 'text-white' : 'text-gray-900'}`}>
+                      {this.timeFormat === '12' 
+                        ? `${this.selectedHour.toString().padStart(2, '0')}:${this.selectedMinute.toString().padStart(2, '0')} ${this.isAM ? 'AM' : 'PM'}`
+                        : `${this.selectedHour.toString().padStart(2, '0')}:${this.selectedMinute.toString().padStart(2, '0')}`
+                      }
+                    </div>
+                  </div>
+                ) : (
+                  /* Traditional Time Input */
+                  <input
+                    type="time"
+                    class={`w-full px-3 py-2 text-sm border rounded-md ${
+                      this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                    }`}
+                    value={this.selectedDate ? `${String(this.selectedDate.getHours()).padStart(2, '0')}:${String(this.selectedDate.getMinutes()).padStart(2, '0')}` : ''}
+                    onInput={e => this.handleTimeChange(e)}
+                  />
+                )}
               </div>
             )}
           </div>
@@ -877,7 +1089,7 @@ export class UiCalendar {
         <div class="flex justify-between items-start mt-2">
           <div class="flex-1"></div>
           <div class="flex flex-col items-end gap-1">
-            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
+            {this.showStatus && StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
             {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
           </div>
         </div>

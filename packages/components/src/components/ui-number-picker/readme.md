@@ -24,6 +24,7 @@ Supports increment/decrement buttons with Thing Description integration for IoT 
 | `min`             | `min`               | Minimum allowed value.                                                                                                                                                      | `number`                                | `0`         |
 | `readonly`        | `readonly`          | Whether the number picker is read-only (displays value but cannot be changed).                                                                                              | `boolean`                               | `false`     |
 | `showLastUpdated` | `show-last-updated` | Show last updated timestamp when true                                                                                                                                       | `boolean`                               | `false`     |
+| `showStatus`      | `show-status`       | Show status badge when true                                                                                                                                                 | `boolean`                               | `true`      |
 | `step`            | `step`              | Step increment/decrement amount.                                                                                                                                            | `number`                                | `1`         |
 | `value`           | `value`             | Current numeric value of the number picker.                                                                                                                                 | `number`                                | `0`         |
 | `variant`         | `variant`           | Visual style variant of the number picker. - minimal: Clean buttons with subtle background (default) - outlined: Buttons with border outline - filled: Solid filled buttons | `"filled" \| "minimal" \| "outlined"`   | `'minimal'` |
@@ -123,6 +124,7 @@ Promise<void>
 | Part                    | Description |
 | ----------------------- | ----------- |
 | `"container"`           |             |
+| `"controls-container"`  |             |
 | `"decrement-button"`    |             |
 | `"increment-button"`    |             |
 | `"interactive-wrapper"` |             |

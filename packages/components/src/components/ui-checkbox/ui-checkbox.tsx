@@ -87,6 +87,11 @@ export class UiCheckbox {
    */
   @Prop() showLastUpdated: boolean = true;
 
+  /**
+   * Show status badge when true
+   */
+  @Prop() showStatus: boolean = true;
+
   /** Connection state for readonly mode */
   @Prop({ mutable: true }) connected: boolean = true;
 
@@ -442,15 +447,35 @@ export class UiCheckbox {
     this.valueMsg.emit(msg);
   }
 
-  /** Handle checkbox click */
-  private handleClick = () => {
+  /** Handle checkbox change */
+  private handleChange = () => {
     if (this.disabled) return;
+
+    // Show loading state briefly for visual feedback (only if showStatus is enabled)
+    if (this.showStatus) {
+      this.operationStatus = 'loading';
+    }
 
     const newValue = !this.isActive;
     this.isActive = newValue;
     this.value = newValue;
-    this.lastUpdatedTs = Date.now();
+    
+    // Update timestamp only if showLastUpdated is enabled
+    if (this.showLastUpdated) {
+      this.lastUpdatedTs = Date.now();
+    }
+    
     this.emitValueMsg(newValue, !newValue);
+
+    // Show success state and auto-clear (only if showStatus is enabled)
+    if (this.showStatus) {
+      setTimeout(() => {
+        this.operationStatus = 'success';
+        setTimeout(() => {
+          this.operationStatus = 'idle';
+        }, 1000);
+      }, 100);
+    }
   };
 
   /** Get checkbox container style classes */
@@ -542,7 +567,7 @@ export class UiCheckbox {
           <div class="relative">
             <div
               class={this.getCheckboxStyles()}
-              onClick={this.handleClick}
+              onClick={this.handleChange}
               role="checkbox"
               aria-checked={this.isActive ? 'true' : 'false'}
               aria-disabled={this.disabled ? 'true' : 'false'}
@@ -551,7 +576,7 @@ export class UiCheckbox {
               onKeyDown={(e) => {
                 if ((e.key === 'Enter' || e.key === ' ') && !this.disabled) {
                   e.preventDefault();
-                  this.handleClick();
+                  this.handleChange();
                 }
               }}
             >
@@ -560,21 +585,23 @@ export class UiCheckbox {
           </div>
           
           {this.label && (
-            <label class={this.getLabelStyles()} onClick={this.handleClick} part="label">
+            <label class={this.getLabelStyles()} onClick={this.handleChange} part="label">
               {this.label}
             </label>
           )}
 
           {/* Status indicator */}
-          <div class="ml-2 flex items-center self-center" role="status">
-            {StatusIndicator.renderStatusBadge(
-              this.operationStatus, 
-              this.dark ? 'dark' : 'light', 
-              this.lastError, 
-              h, 
-              { position: 'sibling-right' }
-            )}
-          </div>
+          {this.showStatus && (
+            <div class="ml-2 flex items-center self-center" role="status">
+              {StatusIndicator.renderStatusBadge(
+                this.operationStatus, 
+                this.dark ? 'dark' : 'light', 
+                this.lastError, 
+                h, 
+                { position: 'sibling-right' }
+              )}
+            </div>
+          )}
         </div>
 
         {/* Timestamp */}

@@ -24,6 +24,7 @@ Advanced slider component with reactive state management and multiple visual sty
 | `orientation`     | `orientation`       | Orientation of the slider.                                                           | `"horizontal" \| "vertical"`                                 | `'horizontal'` |
 | `readonly`        | `readonly`          | Whether the slider is read-only (displays value but cannot be changed).              | `boolean`                                                    | `false`        |
 | `showLastUpdated` | `show-last-updated` | Show last updated timestamp when true                                                | `boolean`                                                    | `false`        |
+| `showStatus`      | `show-status`       | Show status badge when true                                                          | `boolean`                                                    | `true`         |
 | `step`            | `step`              | Step increment for the slider.                                                       | `number`                                                     | `1`            |
 | `thumbShape`      | `thumb-shape`       | Shape of the slider thumb.                                                           | `"arrow" \| "circle" \| "diamond" \| "square" \| "triangle"` | `'circle'`     |
 | `value`           | `value`             | Current numeric value of the slider.                                                 | `number`                                                     | `0`            |

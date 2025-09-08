@@ -123,6 +123,11 @@ export class UiNumberPicker {
    */
   @Prop() showLastUpdated: boolean = false;
 
+  /**
+   * Show status badge when true
+   */
+  @Prop() showStatus: boolean = true;
+
   // TD integration removed: external systems should use events
 
   /**
@@ -554,48 +559,51 @@ export class UiNumberPicker {
   /** Write via MQTT */
   // MQTT helper removed
 
-  /** Handle increment */
-  private handleIncrement = async () => {
+  /** Universal change handler */
+  private handleChange = (delta: number) => {
     if (this.disabled || this.readonly) return;
 
-    // Don't allow interaction in read-only mode
-    if (this.readonly) {
-      return;
+    const newValue = this.isActive + delta;
+    
+    // Check bounds
+    if (this.max !== undefined && newValue > this.max) return;
+    if (this.min !== undefined && newValue < this.min) return;
+
+    // Show loading state briefly for visual feedback (only if showStatus is enabled)
+    if (this.showStatus) {
+      this.operationStatus = 'loading';
     }
 
-    const newValue = this.isActive + this.step;
-    if (this.max !== undefined && newValue > this.max) return;
-
-    // Simple value change without any operation - for basic number picker functionality
+    const prevValue = this.isActive;
     this.isActive = newValue;
     this.value = newValue;
-    this.lastUpdatedTs = Date.now();
-    this.emitValueMsg(newValue, this.isActive - this.step);
-    this.operationStatus = 'success';
-    setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
-    // Local-only change: external device updates should be handled by listeners to `valueChange`.
+    
+    // Update timestamp only if showLastUpdated is enabled
+    if (this.showLastUpdated) {
+      this.lastUpdatedTs = Date.now();
+    }
+    
+    this.emitValueMsg(newValue, prevValue);
+    
+    // Show success state and auto-clear (only if showStatus is enabled)
+    if (this.showStatus) {
+      setTimeout(() => {
+        this.operationStatus = 'success';
+        setTimeout(() => { 
+          this.operationStatus = 'idle'; 
+        }, 1000);
+      }, 100);
+    }
+  };
+
+  /** Handle increment */
+  private handleIncrement = async () => {
+    this.handleChange(this.step);
   };
 
   /** Handle decrement */
   private handleDecrement = async () => {
-    if (this.disabled || this.readonly) return;
-
-    // Don't allow interaction in read-only mode
-    if (this.readonly) {
-      return;
-    }
-
-    const newValue = this.isActive - this.step;
-    if (this.min !== undefined && newValue < this.min) return;
-
-    // Simple value change without any operation - for basic number picker functionality
-    this.isActive = newValue;
-    this.value = newValue;
-    this.lastUpdatedTs = Date.now();
-    this.emitValueMsg(newValue, this.isActive + this.step);
-    this.operationStatus = 'success';
-    setTimeout(() => { this.operationStatus = 'idle'; }, 1000);
-    // Local-only change: external device updates should be handled by listeners to `valueChange`.
+    this.handleChange(-this.step);
   };
 
   /** Handle keyboard input */
@@ -766,7 +774,7 @@ export class UiNumberPicker {
         ) : (
           // Show interactive number picker (wrapped with fragment to allow bottom timestamp)
           <div class="flex flex-col items-center w-full" part="interactive-wrapper">
-            <div class="relative flex items-center justify-center w-full" part="controls-container">
+            <div class={`relative flex items-center justify-center w-full ${this.showStatus ? 'pr-8' : ''}`} part="controls-container">
               <div class="flex items-center gap-3" tabindex={isDisabled ? -1 : 0} onKeyDown={this.handleKeyDown}>
                 {/* Decrement Button */}
                 <button
@@ -794,10 +802,12 @@ export class UiNumberPicker {
                 </button>
               </div>
 
-              {/* Status badge positioned absolutely to the right to prevent layout shift */}
-              <div class="absolute right-0 top-1/2 transform -translate-y-1/2 ml-3" role="status">
-                {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
-              </div>
+              {/* Status badge positioned absolutely to the right with proper spacing */}
+              {this.showStatus && (
+                <div class="absolute right-0 top-1/2 transform -translate-y-1/2" role="status">
+                  {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+                </div>
+              )}
             </div>
 
             {/* Bottom timestamp */}

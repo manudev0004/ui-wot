@@ -95,6 +95,11 @@ export class UiText {
   @Prop() showLastUpdated: boolean = false;
 
   /**
+   * Show status badge when true
+   */
+  @Prop() showStatus: boolean = true;
+
+  /**
    * Current text value of the component.
    */
   @Prop({ mutable: true }) value: string = '';
@@ -487,7 +492,7 @@ export class UiText {
     }
   }
 
-  private handleInput = (event: Event): void => {
+  private handleChange = (event: Event): void => {
     if (this.mode !== 'editable' || this.readonly || this.disabled) return;
 
     const target = event.target as HTMLInputElement | HTMLTextAreaElement;
@@ -504,7 +509,7 @@ export class UiText {
 
   /** Render status badge */
   private renderStatusBadge() {
-    if (this.operationStatus === 'idle') return null;
+    if (!this.showStatus || this.operationStatus === 'idle') return null;
     return StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError || '', h);
   }
 
@@ -644,7 +649,7 @@ export class UiText {
             value={this.value}
             placeholder={this.placeholder}
             disabled={this.disabled || this.readonly}
-            onInput={this.handleInput}
+            onInput={this.handleChange}
             onFocus={this.handleFocus}
             onBlur={this.handleBlur}
             rows={this.minRows}
@@ -660,7 +665,7 @@ export class UiText {
             value={this.value}
             placeholder={this.placeholder}
             disabled={this.disabled || this.readonly}
-            onInput={this.handleInput}
+            onInput={this.handleChange}
             onFocus={this.handleFocus}
             onBlur={this.handleBlur}
             maxLength={this.maxLength}

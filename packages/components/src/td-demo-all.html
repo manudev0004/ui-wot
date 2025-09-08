@@ -106,14 +106,16 @@
 
       <div class="row">
         <div>
-          <h3>Calendar (standalone demo)</h3>
+          <h3>Calendar with Time Picker</h3>
           <ui-calendar
             id="td-calendar"
-            label="Date Picker"
+            label="Date & Time Picker"
             show-last-updated="true"
             variant="outlined"
             color="primary"
-            value="2025-09-08"
+            value="2025-09-08T10:30:00Z"
+            include-time="true"
+            time-format="12"
           ></ui-calendar>
         </div>
       </div>

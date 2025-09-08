@@ -22,6 +22,7 @@ Supports the same variants, colors, and themes as the number picker.
 | `label`           | `label`             | Button text label.                                                                                                                                                | `string`                                | `'Button'`   |
 | `readonly`        | `readonly`          | Whether the component is read-only (displays value but cannot be changed).                                                                                        | `boolean`                               | `false`      |
 | `showLastUpdated` | `show-last-updated` | Show last updated timestamp below the component.                                                                                                                  | `boolean`                               | `true`       |
+| `showStatus`      | `show-status`       | Show status badge when true                                                                                                                                       | `boolean`                               | `true`       |
 | `variant`         | `variant`           | Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button | `"filled" \| "minimal" \| "outlined"`   | `'outlined'` |
 
 

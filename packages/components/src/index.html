@@ -97,7 +97,7 @@
             <div>
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode (Status Display)</h3>
               <div class="flex items-center gap-4">
-                <ui-toggle readonly="true" value="true" label="Sensor Status" show-last-updated="true"></ui-toggle>
+                <ui-toggle readonly="true" value="true" label="Sensor Status" show-last-updated="true" show-status="true"></ui-toggle>
               </div>
               <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-toggle
   readonly="true"
@@ -275,6 +275,7 @@
                 value="75"
                 color="primary"
                 show-last-updated="true"
+                show-status="true"
               >
               </ui-number-picker>
               <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-number-picker
@@ -427,6 +428,7 @@
                 color="primary"
                 label="Smart Dimmer"
                 show-last-updated="true"
+                show-status="true"
               >
               </ui-slider>
               <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-slider
@@ -443,7 +445,7 @@
             <!-- Read-only Slider Example -->
             <div class="space-y-4 max-w-md mt-6">
               <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">Read-only Slider</h4>
-              <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading" show-last-updated="true"></ui-slider>
+              <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading" show-last-updated="true" show-status="true"></ui-slider>
               <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-slider 
   readonly="true" 
   value="75" 
@@ -758,6 +760,31 @@
 
       <!-- Checkbox Content -->
       <div id="checkbox-content" class="tab-content hidden">
+        <!-- Basic Usage Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Checkbox Usage</h2>
+          <div class="max-w-md">
+            <!-- Interactive Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Interactive Mode</h3>
+              <ui-checkbox
+                variant="outlined"
+                color="primary"
+                label="Smart Device"
+                show-last-updated="true"
+                show-status="true"
+              >
+              </ui-checkbox>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-checkbox
+  variant="outlined"
+  color="primary"
+  label="Smart Device"
+  show-last-updated="true"&gt;
+&lt;/ui-checkbox&gt;</pre>
+            </div>
+          </div>
+        </div>
+
         <!-- Checkbox Variants -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Checkbox Variants</h2>
