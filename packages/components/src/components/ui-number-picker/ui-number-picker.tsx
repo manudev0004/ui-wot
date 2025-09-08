@@ -740,13 +740,6 @@ export class UiNumberPicker {
           </slot>
         </div>
 
-        {/* Status badge only in interactive/write mode (readonly shows only pulse) */}
-        {!isReadOnly && (
-          <div class="flex justify-end items-start mt-2">
-            {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
-          </div>
-        )}
-
         {isReadOnly ? (
           // Read-only indicator (no glow/shadow in readonly mode)
           <div
@@ -773,32 +766,40 @@ export class UiNumberPicker {
         ) : (
           // Show interactive number picker (wrapped with fragment to allow bottom timestamp)
           <div class="flex flex-col items-center w-full" part="interactive-wrapper">
-          <div class="relative flex items-center gap-3" tabindex={isDisabled ? -1 : 0} onKeyDown={this.handleKeyDown}>
-            {/* Decrement Button */}
-            <button
-              class={this.getButtonStyle('decrement')}
-              onClick={this.handleDecrement}
-              disabled={isDisabled || (this.min !== undefined && this.isActive <= this.min)}
-              aria-label="Decrease value"
-              part="decrement-button"
-            >
-              −
-            </button>
+            <div class="relative flex items-center justify-center w-full" part="controls-container">
+              <div class="flex items-center gap-3" tabindex={isDisabled ? -1 : 0} onKeyDown={this.handleKeyDown}>
+                {/* Decrement Button */}
+                <button
+                  class={this.getButtonStyle('decrement')}
+                  onClick={this.handleDecrement}
+                  disabled={isDisabled || (this.min !== undefined && this.isActive <= this.min)}
+                  aria-label="Decrease value"
+                  part="decrement-button"
+                >
+                  −
+                </button>
 
-            {/* Value Display */}
-            <div class={this.getValueStyle()} part="value-display">{this.isActive}</div>
+                {/* Value Display */}
+                <div class={this.getValueStyle()} part="value-display">{this.isActive}</div>
 
-            {/* Increment Button */}
-            <button
-              class={this.getButtonStyle('increment')}
-              onClick={this.handleIncrement}
-              disabled={isDisabled || (this.max !== undefined && this.isActive >= this.max)}
-              aria-label="Increase value"
-              part="increment-button"
-            >
-              +
-            </button>
-          </div>
+                {/* Increment Button */}
+                <button
+                  class={this.getButtonStyle('increment')}
+                  onClick={this.handleIncrement}
+                  disabled={isDisabled || (this.max !== undefined && this.isActive >= this.max)}
+                  aria-label="Increase value"
+                  part="increment-button"
+                >
+                  +
+                </button>
+              </div>
+
+              {/* Status badge positioned absolutely to the right to prevent layout shift */}
+              <div class="absolute right-0 top-1/2 transform -translate-y-1/2 ml-3" role="status">
+                {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
+              </div>
+            </div>
+
             {/* Bottom timestamp */}
             {this.showLastUpdated && (
               <div class="w-full flex justify-end mt-2">

@@ -10,13 +10,7 @@
   width: 100%;
 }
 
-/* Base container styling */
-.event-container {
-  position: relative;
-  width: 100%;
-}
-
-/* Event history scrollbar styling */
+/* Custom scrollbar for event history */
 .event-history::-webkit-scrollbar {
   width: 6px;
 }
@@ -43,41 +37,7 @@
   background-color: rgba(75, 85, 99, 0.8);
 }
 
-/* Status indicator animations */
-.status-indicator {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* Button hover effects */
-button {
-  transition: all 0.2s ease-in-out;
-}
-
-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
-}
-
-button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Event item animations */
+/* Event item animation */
 .event-item {
   animation: slideIn 0.3s ease-out;
 }
@@ -91,11 +51,6 @@ button:disabled {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* Connection status indicator */
-.connection-status {
-  position: relative;
 }
 
 .connection-status::before {

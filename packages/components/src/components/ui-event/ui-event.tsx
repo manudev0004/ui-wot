@@ -214,10 +214,21 @@ export class UiEvent {
 
   /** Lifecycle methods */
 
-  componentDidLoad() {
+  componentWillLoad() {
+    // Initialize state before first render to avoid Stencil warnings
     this.isInitialized = true;
+    
+    // If component should auto-start listening, initialize the state
     if (this.mode === 'listener' || this.mode === 'bidirectional') {
-      this.startListening();
+      this.initializeListening();
+    }
+  }
+
+  componentDidLoad() {
+    // Component is now ready - can perform actions that don't change state
+    if (this.mode === 'listener' || this.mode === 'bidirectional') {
+      // Start the actual listening process without changing state
+      this.beginListening();
     }
   }
 
@@ -242,6 +253,37 @@ export class UiEvent {
   }
 
   /** Public methods */
+
+  /**
+   * Initialize listening state without triggering re-renders (for componentWillLoad)
+   */
+  private initializeListening(): void {
+    if (!this.eventName) return;
+    
+    // Set initial state without triggering state changes during load
+    this.operationStatus = 'loading';
+    this.lastError = '';
+    this.isSubscribed = true;
+    this.operationStatus = 'success';
+    this.lastUpdatedTs = Date.now();
+  }
+
+  /**
+   * Begin the actual listening process after component is loaded
+   */
+  private beginListening(): void {
+    if (!this.eventName || !this.isSubscribed) return;
+    
+    try {
+      // In a real implementation, this would connect to the WoT event system
+      // For demo purposes, we'll simulate event listening
+      this.simulateEventListening();
+    } catch (error) {
+      // If there's an error during setup, update state appropriately
+      this.operationStatus = 'error';
+      this.lastError = error instanceof Error ? error.message : String(error);
+    }
+  }
 
   /**
    * Start listening for events
@@ -474,13 +516,27 @@ export class UiEvent {
       return (
         <div class="flex gap-2 mb-3">
           <button
-            class={`px-3 py-1 text-xs rounded ${this.isSubscribed ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}
+            class={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              this.disabled 
+                ? 'bg-gray-400 text-white cursor-not-allowed opacity-50' 
+                : this.isSubscribed 
+                  ? 'bg-danger text-white hover:bg-red-600 focus:ring-danger cursor-pointer' 
+                  : 'bg-success text-white hover:bg-green-600 focus:ring-success cursor-pointer'
+            }`}
             onClick={() => (this.isSubscribed ? this.stopListening() : this.startListening())}
             disabled={this.disabled}
           >
             {this.isSubscribed ? 'Stop' : 'Start'} Listening
           </button>
-          <button class="px-3 py-1 text-xs rounded bg-gray-500 text-white" onClick={() => this.clearEvents()} disabled={this.disabled}>
+          <button 
+            class={`px-3 py-2 rounded-md font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              this.disabled 
+                ? 'bg-gray-400 text-white cursor-not-allowed opacity-50' 
+                : 'bg-neutral text-white hover:bg-neutral-hover focus:ring-neutral cursor-pointer'
+            }`}
+            onClick={() => this.clearEvents()} 
+            disabled={this.disabled}
+          >
             Clear Events
           </button>
         </div>
@@ -490,7 +546,15 @@ export class UiEvent {
     if (this.mode === 'publisher') {
       return (
         <div class="flex gap-2 mb-3">
-          <button class="px-3 py-1 text-xs rounded bg-blue-500 text-white" onClick={() => this.publishTestEvent()} disabled={this.disabled}>
+          <button 
+            class={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              this.disabled 
+                ? 'bg-gray-400 text-white cursor-not-allowed opacity-50' 
+                : `bg-${this.color} text-white hover:bg-${this.color}-hover focus:ring-${this.color} cursor-pointer`
+            }`}
+            onClick={() => this.publishTestEvent()} 
+            disabled={this.disabled}
+          >
             Publish Test Event
           </button>
         </div>

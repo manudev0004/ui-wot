@@ -214,9 +214,40 @@ export class UiNotification {
 
   /** Lifecycle methods */
 
+  componentWillLoad() {
+    // Auto-show on load - initialize state before first render to avoid warnings
+    if (!this.isVisible) {
+      this.isVisible = true;
+      this.isAnimating = true;
+      
+      // Setup auto-dismiss after showing
+      if (this.duration > 0) {
+        this.setupAutoDismiss();
+      }
+      
+      // Schedule animation completion
+      setTimeout(() => {
+        this.isAnimating = false;
+      }, 300);
+    }
+  }
+
   componentDidLoad() {
-    // Auto-show on load
-    this.show();
+    // Emit valueMsg event for consistency with other components (no state changes)
+    if (this.isVisible) {
+      this.valueMsg.emit({
+        payload: true, // true indicates notification is shown
+        prev: false,
+        ts: Date.now(),
+        source: this.el?.id || 'ui-notification',
+        ok: true,
+        meta: {
+          action: 'auto-show',
+          message: this.message,
+          type: this.type
+        }
+      });
+    }
   }
 
   disconnectedCallback() {
