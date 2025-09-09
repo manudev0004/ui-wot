@@ -17,23 +17,17 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
  * ```javascript
  * const toggle = document.getElementById('light-toggle');
  *
- * // Set value with event handling
+ * // Set value directly 
  * await toggle.setValue(true);
  *
- * // Listen for changes
- * toggle.addEventListener('valueMsg', (e) => {
- *   console.log('Toggle changed to:', e.detail.newVal);
- * });
- *
- * // Device communication (IoT)
- * await toggle.setValue(true, {
- *   writeOperation: async () => {
- *     await fetch('/api/devices/light/power', {
- *       method: 'POST',
- *       body: JSON.stringify({ on: true })
- *     });
+ * // Set up with td device with write operation
+ * const initialValue = Boolean(await (await thing.readProperty('bool')).value());
+ * await writeToggle.setValue(initialValue, {
+ *   writeOperation: async value => {
+ *     console.log(`Writing ${value} to real device...`);
+ *     await thing.writeProperty('bool', value);
+ *     console.log(`Wrote : ${value}`);
  *   },
- *   optimistic: true
  * });
  * ```
  */

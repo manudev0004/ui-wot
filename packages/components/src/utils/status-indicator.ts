@@ -1,5 +1,5 @@
 /**
- * Visual feedback Badges for showing operation status in UI components
+ * Visual Badges for feedback, It shows operation status in UI components
  */
 
 export interface StatusIndicatorOptions {
@@ -10,14 +10,14 @@ export interface StatusIndicatorOptions {
 export type OperationStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export class StatusIndicator {
-  
-  /** CSS classes for status indicator with positioning */
+  /** CSS classes for status indicator with proper position */
   static getStatusClasses(status: OperationStatus, options: StatusIndicatorOptions): string {
     const { position = 'right' } = options;
 
-    const baseClasses = position === 'sibling-right'
-      ? 'ml-2 inline-flex items-center justify-center self-center w-5 h-5 min-w-[1.25rem]'
-      : 'w-4 h-4 flex items-center justify-center absolute -right-6 top-1/2 -translate-y-1/2 pointer-events-none';
+    const baseClasses =
+      position === 'sibling-right'
+        ? 'ml-2 inline-flex items-center justify-center self-center w-5 h-5 min-w-[1.25rem]'
+        : 'w-4 h-4 flex items-center justify-center absolute -right-6 top-1/2 -translate-y-1/2 pointer-events-none';
 
     const statusClasses = {
       idle: 'opacity-0',
@@ -32,9 +32,9 @@ export class StatusIndicator {
   /** Apply status with auto-clear timers */
   static applyStatus(target: any, status: OperationStatus, errorMessage?: string) {
     if (!target) return;
-    
+
     target.operationStatus = status;
-    
+
     if (status === 'error') {
       target.lastError = errorMessage;
       setTimeout(() => {
@@ -54,7 +54,7 @@ export class StatusIndicator {
     }
   }
 
-  /** Format timestamp with relative time */
+  /** Format timestamp and relative time for last updated */
   static formatTimestamp(date: Date): { full: string; relative: string } {
     const diffMs = Date.now() - date.getTime();
     const diffMinutes = Math.floor(diffMs / 60000);
@@ -89,14 +89,8 @@ export class StatusIndicator {
     return tooltips[status] || '';
   }
 
-  /** Render complete status badge */
-  static renderStatusBadge(
-    status: OperationStatus,
-    theme: 'light' | 'dark',
-    error?: string,
-    h?: any,
-    options?: Partial<StatusIndicatorOptions>,
-  ): any {
+  /** Complete render of status badge */
+  static renderStatusBadge(status: OperationStatus, theme: 'light' | 'dark', error?: string, h?: any, options?: Partial<StatusIndicatorOptions>): any {
     if (status === 'idle' || !h) return null;
 
     const mergedOptions: StatusIndicatorOptions = { theme, position: 'right', ...options };
@@ -135,35 +129,40 @@ export class StatusIndicator {
     ]);
   }
 
-  // SVG Icons - moved to bottom for better readability
-  
+  // ====================== SVG Icons =====================
+
   /** Success checkmark SVG */
   private static createSuccessSVG(h: any): any {
-    return h('svg', {
-      viewBox: '0 0 16 16',
-      class: 'w-3 h-3',
-      fill: 'none',
-      stroke: 'currentColor',
-      'stroke-width': '3',
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-    }, [h('path', { d: 'M3 8.5l3.5 3.5L13 5' })]);
+    return h(
+      'svg',
+      {
+        'viewBox': '0 0 16 16',
+        'class': 'w-3 h-3',
+        'fill': 'none',
+        'stroke': 'currentColor',
+        'stroke-width': '3',
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round',
+      },
+      [h('path', { d: 'M3 8.5l3.5 3.5L13 5' })],
+    );
   }
 
-  /** Error X mark SVG */
+  /** Error cross mark SVG */
   private static createErrorSVG(h: any): any {
-    return h('svg', {
-      viewBox: '0 0 16 16',
-      class: 'w-3 h-3',
-      fill: 'none',
-      stroke: 'currentColor',
-      'stroke-width': '3',
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-    }, [
-      h('path', { d: 'M4 4l8 8' }),
-      h('path', { d: 'M12 4l-8 8' })
-    ]);
+    return h(
+      'svg',
+      {
+        'viewBox': '0 0 16 16',
+        'class': 'w-3 h-3',
+        'fill': 'none',
+        'stroke': 'currentColor',
+        'stroke-width': '3',
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round',
+      },
+      [h('path', { d: 'M4 4l8 8' }), h('path', { d: 'M12 4l-8 8' })],
+    );
   }
 
   /** Loading spinner SVG */

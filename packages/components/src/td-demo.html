@@ -51,7 +51,7 @@
       <div class="row">
         <div>
           <h3>Error Simulation</h3>
-          <ui-toggle id="error-toggle" label="Error Demo" variant="neon"></ui-toggle>
+          <ui-toggle id="error-toggle" label="Error Demo" variant="neon" show-status></ui-toggle>
         </div>
       </div>
     </div>
@@ -104,7 +104,7 @@
           await readToggle.setStatus('error', 'Device connection failed');
         }
 
-        // ERROR DEMO - setValue with false link
+        // Error DEMO
         await errorToggle.setValue(false, {
           writeOperation: async value => {
             console.log(`Attempting to set error demo to ${value}...`);
