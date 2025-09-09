@@ -343,7 +343,7 @@ export class UiCalendar {
       this.timestampUpdateTimer = window.setInterval(() => {
         // Force re-render to update relative timestamp
         this.timestampCounter++;
-      }, 30000); // Update every 30 seconds
+      }, 60000); // Update every 60 seconds
     }
   }
 
@@ -371,8 +371,8 @@ export class UiCalendar {
   
   // Emit standardized event
   this.valueMsg.emit({
-    payload: this.value,
-    prev: undefined, // Could store previous value if needed
+    newVal: this.value,
+    prevVal: undefined, // Could store previous value if needed
     ts: Date.now(),
     source: this.el?.id || 'ui-calendar',
     ok: true,
@@ -414,8 +414,8 @@ export class UiCalendar {
   
   // Emit standardized event
   this.valueMsg.emit({
-    payload: this.value,
-    prev: undefined,
+    newVal: this.value,
+    prevVal: undefined,
     ts: Date.now(),
     source: this.el?.id || 'ui-calendar',
     ok: true,
@@ -458,8 +458,8 @@ export class UiCalendar {
     
     // Emit standardized event
     this.valueMsg.emit({
-      payload: this.value,
-      prev: undefined,
+      newVal: this.value,
+      prevVal: undefined,
       ts: Date.now(),
       source: this.el?.id || 'ui-calendar',
       ok: true,
@@ -724,8 +724,8 @@ export class UiCalendar {
 
     // Emit standardized event
     this.valueMsg.emit({
-      payload: value,
-      prev: oldValue,
+      newVal: value,
+      prevVal: oldValue,
       ts: Date.now(),
       source: this.el?.id || 'ui-calendar',
       ok: true,
@@ -818,7 +818,7 @@ export class UiCalendar {
     
     // Emit status change event
     this.valueMsg.emit({
-      payload: this.value,
+      newVal: this.value,
       ts: Date.now(),
       source: this.el?.id || 'ui-calendar',
       ok: status !== 'error',
@@ -846,7 +846,7 @@ export class UiCalendar {
     
     // Emit read event
     this.valueMsg.emit({
-      payload: this.value,
+      newVal: this.value,
       ts: Date.now(),
       source: this.el?.id || 'ui-calendar',
       ok: true,

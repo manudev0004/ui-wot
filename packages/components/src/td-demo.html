@@ -32,25 +32,26 @@
   </head>
   <body>
     <div class="card">
-      <h1>Simple UI-toggle Demo</h1>
+      <h1>UI-Toggle Demo</h1>
+
       <div class="row">
         <div>
-          <h3>Controller (readwrite)</h3>
-          <ui-toggle id="readwrite-toggle" td-property="bool" td-url="http://plugfest.thingweb.io/http-data-schema-thing" label="Controller" show-></ui-toggle>
-        </div>
+          <h3>Controller (Read/Write)</h3>
+          <ui-toggle id="readwrite-toggle" label="WoT Device" show-last-updated show-status></ui-toggle>  
+        </div>         
       </div>
 
       <div class="row">
         <div>
           <h3>Monitor (read-only)</h3>
-          <ui-toggle id="readonly-toggle" readonly="true" variant="square" label="Monitor" show-last-updated show-status="false"></ui-toggle>
+          <ui-toggle id="readonly-toggle" readonly="true" variant="square" label="Device Monitor" show-last-updated show-status></ui-toggle>         
         </div>
       </div>
 
       <div class="row">
         <div>
-          <h3>Error Test (false URL)</h3>
-          <ui-toggle id="error-toggle" showLastUpdated="true" td-property="bool" td-url="http://fake-url-that-does-not-exist.com/td" label="Error Demo" variant="neon"></ui-toggle>
+          <h3>Error Simulation</h3>
+          <ui-toggle id="error-toggle" label="Error Demo" variant="neon"></ui-toggle>
         </div>
       </div>
     </div>
@@ -60,106 +61,58 @@
 
     <script>
       document.addEventListener('DOMContentLoaded', async () => {
-        // Get components
-        const toggle = document.getElementById('readwrite-toggle');
-        const toggleRO = document.getElementById('readonly-toggle');
-        const errorToggle = document.getElementById('error-toggle');
-
         await customElements.whenDefined('ui-toggle');
 
-        // Setup working toggles
-        setupToggle(toggle, toggleRO);
+        // Get components by ids
+        const writeToggle = document.getElementById('readwrite-toggle');
+        const readToggle = document.getElementById('readonly-toggle');
+        const errorToggle = document.getElementById('error-toggle');
 
-        // Setup error toggle
-        setupErrorToggle(errorToggle);
-      });
-
-      async function setupToggle(writeToggle, readToggle) {
-        const tdUrl = writeToggle.getAttribute('td-url');
-        const tdProp = writeToggle.getAttribute('td-property');
-
+        // Setup WoT connection for real device interaction
         try {
-          // Wait for WoT and setup servient
           while (!window.WoT) await new Promise(r => setTimeout(r, 100));
           const servient = new window.WoT.Core.Servient();
           servient.addClientFactory(new window.WoT.Http.HttpClientFactory());
           const wot = await servient.start();
-
-          // Consume thing
-          const td = await (await fetch(tdUrl)).json();
+          const td = await (await fetch('http://plugfest.thingweb.io/http-data-schema-thing')).json();
           const thing = await wot.consume(td);
 
-          // Read initial value
-          const initial = Boolean(await (await thing.readProperty(tdProp)).value());
-          await writeToggle.setValueSilent(initial);
-          await readToggle.setValueSilent(initial);
-          // safe polling loop to avoid overlapping reads
-          (async function pollLoop() {
-            while (true) {
-              try {
-                const current = Boolean(await (await thing.readProperty(tdProp)).value());
-                if (typeof readToggle.setValueSilent === 'function') await readToggle.setValueSilent(current);
-                if (typeof readToggle.triggerReadPulse === 'function') await readToggle.triggerReadPulse();
-              } catch (e) {
-                readToggle.connected = false;
-              }
-              await new Promise(r => setTimeout(r, 2000));
-            }
-          })();
-
-          writeToggle.addEventListener('valueMsg', async e => {
-            e.stopPropagation();
-
-            const targetValue = e.detail.payload;
-            console.log('User clicked toggle, attempting to write:', targetValue);
-
-            try {
-              await writeToggle.setStatus('loading');
-              await thing.writeProperty(tdProp, targetValue);
-              await writeToggle.setStatus('success');
-
-              console.log('Write successful:', targetValue);
-            } catch (err) {
-              console.log('Write failed:', err.message);
-
-              // Error - show error and revert
-              await writeToggle.setStatus('error', 'Write failed: ' + err.message);
-              await writeToggle.setValueSilent(!targetValue);
-            }
+          // data-schema-things bool property
+          const initialValue = Boolean(await (await thing.readProperty('bool')).value());
+          await writeToggle.setValue(initialValue, {
+            writeOperation: async value => {
+              console.log(`Writing ${value} to real device...`);
+              await thing.writeProperty('bool', value);
+              console.log(`Wrote : ${value}`);
+            },
           });
+
+          // Read Only with polling and pulse effect
+          setInterval(async () => {
+            try {
+              const currentValue = Boolean(await (await thing.readProperty('bool')).value());
+              await readToggle.setValueSilent(currentValue); // Use silent update to avoid triggering writeOperation
+              await readToggle.triggerReadPulse(); // Visual pulse effect on update
+            } catch (e) {
+              console.log('Polling failed:', e.message);
+              readToggle.connected = false;
+            }
+          }, 10000); // Poll every 10s
         } catch (err) {
-          // Show connection error on both toggles
-          await writeToggle.setStatus('error', 'Connection failed: ' + err.message);
-          await readToggle.setStatus('error', 'Connection failed: ' + err.message);
+          console.error('WoT setup failed:', err);
+          await writeToggle.setStatus('error', 'Device connection failed');
+          await readToggle.setStatus('error', 'Device connection failed');
         }
-      }
 
-      async function setupErrorToggle(toggle) {
-        // Set initial error state to demonstrate error handling
-        await toggle.setStatus('error', 'Connection failed');
-        toggle.connected = false;
-
-        toggle.addEventListener('valueMsg', async e => {
-          e.stopPropagation();
-
-          const targetValue = e.detail.payload;
-          console.log('User clicked error toggle, attempting retry:', targetValue);
-
-          try {
-            // Clear error state and show loading
-            await toggle.setStatus('loading');
-            toggle.connected = true;
-            const response = await fetch('https://invalid.example/td');
-            if (!response.ok) throw new Error('Connection failed');
-            await toggle.setStatus('success');
-          } catch (error) {
-            console.log('Retry failed:', error.message);
-            await toggle.setStatus('error', 'Still unable to connect: ' + error.message);
-            toggle.connected = false;
-            await toggle.setValueSilent(!targetValue);
-          }
+        // ERROR DEMO - setValue with false link
+        await errorToggle.setValue(false, {
+          writeOperation: async value => {
+            console.log(`Attempting to set error demo to ${value}...`);
+            await new Promise(r => setTimeout(r, 800)); // Simulate network delay to show loading state
+            throw new Error(`Simulated failure when setting to ${value}`);
+          },
         });
-      }
+      });
     </script>
   </body>
 </html>

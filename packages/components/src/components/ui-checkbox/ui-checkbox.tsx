@@ -99,7 +99,7 @@ export class UiCheckbox {
   @State() private isActive: boolean = false;
 
   /** Internal state for tracking if component is initialized */
-  @State() private isInitialized: boolean = false;
+  private isInitialized: boolean = false;
 
   /** Flag to prevent event loops when setting values programmatically */
   @State() private suppressEvents: boolean = false;
@@ -370,7 +370,7 @@ export class UiCheckbox {
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
-    StatusIndicator.applyStatus(this, status, { errorMessage });
+    StatusIndicator.applyStatus(this, status, errorMessage);
   }
 
   /**
@@ -438,8 +438,8 @@ export class UiCheckbox {
     
     // Primary unified event
     const msg: UiMsg<boolean> = {
-      payload: value,
-      prev: prevValue,
+      newVal: value,
+      prevVal: prevValue,
       ts: Date.now(),
       source: this.el?.id || 'ui-checkbox',
       ok: true,

@@ -144,8 +144,8 @@ export class UiNotification {
 
     // Emit valueMsg event for consistency with other components
     this.valueMsg.emit({
-      payload: true, // true indicates notification is shown
-      prev: false,
+      newVal: true, // true indicates notification is shown
+      prevVal: false,
       ts: Date.now(),
       source: this.el?.id || 'ui-notification',
       ok: true,
@@ -172,8 +172,8 @@ export class UiNotification {
 
     // Emit valueMsg event for consistency with other components
     this.valueMsg.emit({
-      payload: false, // false indicates notification is dismissed
-      prev: true,
+      newVal: false, // false indicates notification is dismissed
+      prevVal: true,
       ts: Date.now(),
       source: this.el?.id || 'ui-notification',
       ok: true,
@@ -236,8 +236,8 @@ export class UiNotification {
     // Emit valueMsg event for consistency with other components (no state changes)
     if (this.isVisible) {
       this.valueMsg.emit({
-        payload: true, // true indicates notification is shown
-        prev: false,
+        newVal: true, // true indicates notification is shown
+        prevVal: false,
         ts: Date.now(),
         source: this.el?.id || 'ui-notification',
         ok: true,

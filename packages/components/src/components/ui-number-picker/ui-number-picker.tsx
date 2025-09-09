@@ -17,7 +17,15 @@ export interface UiNumberPickerValueChange { value: number; label?: string }
  * ```html
  * <ui-number-picker
  *   td-url="http://device.local/properties/volume"
- *   label="Device Volume"
+ *   label="Dev        {isReadOnly ? (
+          // Read-only indicator (no glow/shadow in readonly mode)
+          <div
+            class={`relative flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg border transition-all duration-300 ${
+              this.getReadonlyBg() }
+            `}
+            title={`${hoverTitle} - Current value: ${this.isActive}`}
+            part="readonly-indicator"
+          >e"
  *   protocol="http"
  *   mode="readwrite"
  *   min="0"
@@ -149,7 +157,7 @@ export class UiNumberPicker {
   @State() private isActive: number = 0;
 
   /** Internal state for tracking if component is initialized */
-  @State() private isInitialized: boolean = false;
+  private isInitialized: boolean = false;
 
   /** Flag to prevent event loops when setting values programmatically */
   @State() private suppressEvents: boolean = false;
@@ -424,7 +432,7 @@ export class UiNumberPicker {
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
-    StatusIndicator.applyStatus(this, status, { errorMessage });
+    StatusIndicator.applyStatus(this, status, errorMessage);
   }
 
   /**
@@ -494,7 +502,7 @@ export class UiNumberPicker {
     this.timestampUpdateTimer = window.setInterval(() => {
       // Force re-render to update relative time by incrementing counter
       this.timestampCounter++;
-    }, 30000); // Update every 30 seconds
+    }, 60000); // Update every 60 seconds
   }
 
   /** Stop auto-updating timestamps */
@@ -531,8 +539,8 @@ export class UiNumberPicker {
     
     // Primary unified event
     const msg: UiMsg<number> = {
-      payload: value,
-      prev: prevValue,
+      newVal: value,
+      prevVal: prevValue,
       ts: Date.now(),
       source: this.el?.id || 'ui-number-picker',
       ok: true,
@@ -751,7 +759,7 @@ export class UiNumberPicker {
         {isReadOnly ? (
           // Read-only indicator (no glow/shadow in readonly mode)
           <div
-            class={`flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg border transition-all duration-300 ${
+            class={`relative flex items-center justify-center min-w-[120px] h-12 px-4 mr-4 rounded-lg border transition-all duration-300 ${
               this.getReadonlyBg() }
             `}
             title={`${hoverTitle} - Current value: ${this.isActive}`}
@@ -763,7 +771,7 @@ export class UiNumberPicker {
               <>
                 <style>{`@keyframes ui-read-pulse { 0% { opacity: 0; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1.2); } }`}</style>
                 <span
-                  class="absolute -right-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400 shadow-md"
+                  class="absolute -right-2 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400 shadow-md z-10"
                   style={{ animation: 'ui-read-pulse 1.4s ease-in-out forwards' } as any}
                   title="Updated"
                   part="readonly-pulse"

@@ -34,7 +34,7 @@
       </div>
     </nav>
 
-    <div class="max-w-6xl mx-auto p-6">
+  <div class="w-full max-w-5xl mx-auto p-6">
       <!-- Tabs -->
       <div class="mb-6">
         <div class="border-b border-gray-200 dark:border-gray-700">
@@ -64,12 +64,36 @@
             >
               UI Checkbox
             </button>
+            <button
+              id="text-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI Text
+            </button>
+            <button
+              id="calendar-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI Calendar
+            </button>
+            <button
+              id="event-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI Event
+            </button>
+            <button
+              id="notification-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI Notification
+            </button>
           </nav>
         </div>
       </div>
 
       <!-- Toggle Content -->
-      <div id="toggle-content" class="tab-content">
+  <div id="toggle-content" class="tab-content">
         <!-- Basic Usage Examples -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Toggle Usage</h2>
@@ -235,7 +259,7 @@
       </div>
 
       <!-- Number Picker Content -->
-      <div id="number-picker-content" class="tab-content hidden">
+  <div id="number-picker-content" class="tab-content hidden">
         <!-- Basic Usage Examples -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Number Picker Usage</h2>
@@ -413,7 +437,7 @@
       </div>
 
       <!-- Slider Content -->
-      <div id="slider-content" class="tab-content hidden">
+  <div id="slider-content" class="tab-content hidden">
         <!-- Slider Examples -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Slider Usage</h2>
@@ -632,7 +656,7 @@
       </div>
 
       <!-- Button Content -->
-      <div id="button-content" class="tab-content hidden">
+  <div id="button-content" class="tab-content hidden">
         <!-- Button Variants -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Button Variants</h2>
@@ -759,7 +783,7 @@
       </div>
 
       <!-- Checkbox Content -->
-      <div id="checkbox-content" class="tab-content hidden">
+  <div id="checkbox-content" class="tab-content hidden">
         <!-- Basic Usage Examples -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
           <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Checkbox Usage</h2>
@@ -931,6 +955,489 @@
         </div>
       </div>
 
+  <!-- Text Content -->
+  <div id="text-content" class="tab-content hidden">
+        <!-- Basic Usage Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Text Usage</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Interactive Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Editable Mode</h3>
+              <ui-text
+                mode="editable"
+                variant="outlined"
+                color="primary"
+                label="Device Name"
+                value="Smart Thermostat"
+                show-last-updated="true"
+                show-status="true"
+              >
+              </ui-text>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-text
+  mode="editable"
+  variant="outlined"
+  color="primary"
+  label="Device Name"
+  value="Smart Thermostat"
+  show-last-updated="true"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Read-Only Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Field Display Mode</h3>
+              <ui-text
+                mode="field"
+                variant="filled"
+                color="primary"
+                label="Device Status"
+                value="Connected - Active"
+                readonly="true"
+                show-last-updated="true"
+                show-status="true"
+              >
+              </ui-text>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-text
+  mode="field"
+  variant="filled"
+  label="Device Status"
+  value="Connected - Active"
+  readonly="true"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Text Modes -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Text Display Modes</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Field Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Field Mode</h3>
+              <ui-text mode="field" variant="outlined" color="primary" label="Device ID" value="sensor-001"></ui-text>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  mode="field"
+  label="Device ID"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Area Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Area Mode</h3>
+              <ui-text mode="area" variant="outlined" color="primary" label="Description" value="This is a multi-line text area for longer content that spans multiple lines."></ui-text>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  mode="area"
+  label="Description"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+
+            <!-- Structured Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Structured Mode</h3>
+              <ui-text mode="structured" variant="filled" color="secondary" label="JSON Data" value='{"temp": 22.5, "humidity": 65}'></ui-text>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-text
+  mode="structured"
+  label="JSON Data"&gt;
+&lt;/ui-text&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Text Variants -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Text Variants & Colors</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Primary Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Primary Color</h3>
+              <div class="space-y-4">
+                <ui-text mode="field" variant="minimal" color="primary" label="Minimal" value="Primary text"></ui-text>
+                <ui-text mode="field" variant="outlined" color="primary" label="Outlined" value="Primary text"></ui-text>
+                <ui-text mode="field" variant="filled" color="primary" label="Filled" value="Primary text"></ui-text>
+              </div>
+            </div>
+
+            <!-- Secondary Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Secondary Color</h3>
+              <div class="space-y-4">
+                <ui-text mode="field" variant="minimal" color="secondary" label="Minimal" value="Secondary text"></ui-text>
+                <ui-text mode="field" variant="outlined" color="secondary" label="Outlined" value="Secondary text"></ui-text>
+                <ui-text mode="field" variant="filled" color="secondary" label="Filled" value="Secondary text"></ui-text>
+              </div>
+            </div>
+
+            <!-- Neutral Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">Neutral Color</h3>
+              <div class="space-y-4">
+                <ui-text mode="field" variant="minimal" color="neutral" label="Minimal" value="Neutral text"></ui-text>
+                <ui-text mode="field" variant="outlined" color="neutral" label="Outlined" value="Neutral text"></ui-text>
+                <ui-text mode="field" variant="filled" color="neutral" label="Filled" value="Neutral text"></ui-text>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+  <!-- Calendar Content -->
+  <div id="calendar-content" class="tab-content hidden">
+        <!-- Basic Usage Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Calendar Usage</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Interactive Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Interactive Calendar</h3>
+              <ui-calendar
+                variant="outlined"
+                color="primary"
+                label="Schedule Date"
+                size="medium"
+                show-last-updated="true"
+                show-status="true"
+              >
+              </ui-calendar>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-calendar
+  variant="outlined"
+  color="primary"
+  label="Schedule Date"
+  size="medium"
+  show-last-updated="true"&gt;
+&lt;/ui-calendar&gt;</pre>
+            </div>
+
+            <!-- Compact Calendar -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Compact Calendar</h3>
+              <ui-calendar
+                variant="filled"
+                color="secondary"
+                label="Event Date"
+                size="small"
+                show-last-updated="true"
+                show-status="true"
+              >
+              </ui-calendar>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-calendar
+  variant="filled"
+  color="secondary"
+  label="Event Date"
+  size="small"&gt;
+&lt;/ui-calendar&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar Variants -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Calendar Variants</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Minimal Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Minimal</h3>
+              <ui-calendar variant="minimal" color="primary" label="Minimal Calendar" size="small"></ui-calendar>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-calendar
+  variant="minimal"
+  label="Minimal Calendar"&gt;
+&lt;/ui-calendar&gt;</pre>
+            </div>
+
+            <!-- Outlined Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Outlined</h3>
+              <ui-calendar variant="outlined" color="primary" label="Outlined Calendar" size="small"></ui-calendar>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-calendar
+  variant="outlined"
+  label="Outlined Calendar"&gt;
+&lt;/ui-calendar&gt;</pre>
+            </div>
+
+            <!-- Filled Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Filled</h3>
+              <ui-calendar variant="filled" color="primary" label="Filled Calendar" size="small"></ui-calendar>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-calendar
+  variant="filled"
+  label="Filled Calendar"&gt;
+&lt;/ui-calendar&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar Sizes -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Calendar Sizes</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Small Size -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Small</h3>
+              <ui-calendar variant="outlined" color="primary" label="Small Calendar" size="small"></ui-calendar>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-calendar
+  size="small"&gt;
+&lt;/ui-calendar&gt;</pre>
+            </div>
+
+            <!-- Medium Size -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Medium</h3>
+              <ui-calendar variant="outlined" color="primary" label="Medium Calendar" size="medium"></ui-calendar>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-calendar
+  size="medium"&gt;
+&lt;/ui-calendar&gt;</pre>
+            </div>
+
+            <!-- Large Size -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">Large</h3>
+              <ui-calendar variant="outlined" color="primary" label="Large Calendar" size="large"></ui-calendar>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-calendar
+  size="large"&gt;
+&lt;/ui-calendar&gt;</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+  <!-- Event Content -->
+  <div id="event-content" class="tab-content hidden">
+        <!-- Basic Usage Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Event Usage</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Event Listener -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Event Listener</h3>
+              <ui-event
+                mode="listener"
+                variant="outlined"
+                color="primary"
+                label="Temperature Events"
+                event-name="temperatureChanged"
+                max-events="5"
+                show-timestamp="true"
+                show-last-updated="true"
+                show-status="true"
+              >
+              </ui-event>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-event
+  mode="listener"
+  variant="outlined"
+  color="primary"
+  label="Temperature Events"
+  event-name="temperatureChanged"
+  max-events="5"
+  show-timestamp="true"&gt;
+&lt;/ui-event&gt;</pre>
+            </div>
+
+            <!-- Event Publisher -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Event Publisher</h3>
+              <ui-event
+                mode="publisher"
+                variant="filled"
+                color="secondary"
+                label="Alert Publisher"
+                event-name="alertTriggered"
+                show-last-updated="true"
+                show-status="true"
+              >
+              </ui-event>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-event
+  mode="publisher"
+  variant="filled"
+  color="secondary"
+  label="Alert Publisher"
+  event-name="alertTriggered"&gt;
+&lt;/ui-event&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Event Variants -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Event Component Variants</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Minimal Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Minimal</h3>
+              <ui-event variant="minimal" color="primary" label="Minimal Event" mode="listener" event-name="test"></ui-event>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-event
+  variant="minimal"
+  mode="listener"&gt;
+&lt;/ui-event&gt;</pre>
+            </div>
+
+            <!-- Outlined Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Outlined</h3>
+              <ui-event variant="outlined" color="primary" label="Outlined Event" mode="listener" event-name="test"></ui-event>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-event
+  variant="outlined"
+  mode="listener"&gt;
+&lt;/ui-event&gt;</pre>
+            </div>
+
+            <!-- Filled Variant -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Filled</h3>
+              <ui-event variant="filled" color="primary" label="Filled Event" mode="listener" event-name="test"></ui-event>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-event
+  variant="filled"
+  mode="listener"&gt;
+&lt;/ui-event&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Event Connection Status -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Connection Status</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Connected State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Connected</h3>
+              <ui-event variant="outlined" color="primary" label="Connected Event" mode="listener" event-name="test" connected="true"></ui-event>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-event
+  connected="true"
+  mode="listener"&gt;
+&lt;/ui-event&gt;</pre>
+            </div>
+
+            <!-- Disconnected State -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Disconnected</h3>
+              <ui-event variant="outlined" color="neutral" label="Disconnected Event" mode="listener" event-name="test" connected="false"></ui-event>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-event
+  connected="false"
+  mode="listener"&gt;
+&lt;/ui-event&gt;</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+  <!-- Notification Content -->
+  <div id="notification-content" class="tab-content hidden">
+        <!-- Basic Usage Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Notification Usage</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Auto-dismiss Notification -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Auto-dismiss (3s)</h3>
+              <ui-notification
+                message="Operation completed successfully!"
+                type="success"
+                duration="3000"
+                show-icon="true"
+                show-close-button="true"
+              >
+              </ui-notification>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-notification
+  message="Operation completed successfully!"
+  type="success"
+  duration="3000"
+  show-icon="true"&gt;
+&lt;/ui-notification&gt;</pre>
+            </div>
+
+            <!-- Manual dismiss Notification -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Manual Dismiss</h3>
+              <ui-notification
+                message="Click the X to dismiss this notification"
+                type="info"
+                duration="0"
+                show-icon="true"
+                show-close-button="true"
+              >
+              </ui-notification>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-notification
+  message="Click the X to dismiss this notification"
+  type="info"
+  duration="0"&gt;
+&lt;/ui-notification&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notification Types -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Notification Types</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Success -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Success</h3>
+              <ui-notification message="Task completed successfully!" type="success" duration="0" show-icon="true"></ui-notification>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-notification
+  message="Task completed!"
+  type="success"&gt;
+&lt;/ui-notification&gt;</pre>
+            </div>
+
+            <!-- Info -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Info</h3>
+              <ui-notification message="New device detected on network" type="info" duration="0" show-icon="true"></ui-notification>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-notification
+  message="New device detected"
+  type="info"&gt;
+&lt;/ui-notification&gt;</pre>
+            </div>
+
+            <!-- Warning -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Warning</h3>
+              <ui-notification message="Battery level is low (15%)" type="warning" duration="0" show-icon="true"></ui-notification>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-notification
+  message="Battery level is low"
+  type="warning"&gt;
+&lt;/ui-notification&gt;</pre>
+            </div>
+
+            <!-- Error -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Error</h3>
+              <ui-notification message="Failed to connect to device" type="error" duration="0" show-icon="true"></ui-notification>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-notification
+  message="Failed to connect"
+  type="error"&gt;
+&lt;/ui-notification&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notification Options -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Notification Options</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- With Icon -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">With Icon & Close Button</h3>
+              <ui-notification message="Notification with all features enabled" type="info" duration="0" show-icon="true" show-close-button="true"></ui-notification>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-notification
+  show-icon="true"
+  show-close-button="true"&gt;
+&lt;/ui-notification&gt;</pre>
+            </div>
+
+            <!-- Minimal -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Minimal (No Icon/Close)</h3>
+              <ui-notification message="Clean minimal notification" type="success" duration="0" show-icon="false" show-close-button="false"></ui-notification>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-notification
+  show-icon="false"
+  show-close-button="false"&gt;
+&lt;/ui-notification&gt;</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <script>
@@ -943,11 +1450,19 @@
       const sliderTab = document.getElementById('slider-tab');
       const buttonTab = document.getElementById('button-tab');
       const checkboxTab = document.getElementById('checkbox-tab');
+      const textTab = document.getElementById('text-tab');
+      const calendarTab = document.getElementById('calendar-tab');
+      const eventTab = document.getElementById('event-tab');
+      const notificationTab = document.getElementById('notification-tab');
       const toggleContent = document.getElementById('toggle-content');
       const numberPickerContent = document.getElementById('number-picker-content');
       const sliderContent = document.getElementById('slider-content');
       const buttonContent = document.getElementById('button-content');
       const checkboxContent = document.getElementById('checkbox-content');
+      const textContent = document.getElementById('text-content');
+      const calendarContent = document.getElementById('calendar-content');
+      const eventContent = document.getElementById('event-content');
+      const notificationContent = document.getElementById('notification-content');
 
       function setTheme(isDark) {
         if (suppressThemeSync) return;
@@ -955,7 +1470,7 @@
         try {
           html.classList.toggle('dark', isDark);
           localStorage.setItem('theme', isDark ? 'dark' : 'light');
-          document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox').forEach(component => {
+          document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox, ui-text, ui-calendar, ui-event, ui-notification').forEach(component => {
             component.dark = isDark;
           });
         } finally {
@@ -989,25 +1504,68 @@
         logEvent('Value Change', event.detail);
       });
 
-      // Tab switching - only for existing tabs
+      // Tab switching - for all components
       toggleTab.addEventListener('click', () => {
-        switchTab(toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent);
+        switchTab(toggleTab, toggleContent, 
+          numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent, 
+          checkboxTab, checkboxContent, textTab, textContent, calendarTab, calendarContent, 
+          eventTab, eventContent, notificationTab, notificationContent);
       });
 
       numberPickerTab.addEventListener('click', () => {
-        switchTab(numberPickerTab, numberPickerContent, toggleTab, toggleContent, sliderTab, sliderContent, buttonTab, buttonContent, checkboxTab, checkboxContent);
+        switchTab(numberPickerTab, numberPickerContent, 
+          toggleTab, toggleContent, sliderTab, sliderContent, buttonTab, buttonContent, 
+          checkboxTab, checkboxContent, textTab, textContent, calendarTab, calendarContent, 
+          eventTab, eventContent, notificationTab, notificationContent);
       });
 
       sliderTab.addEventListener('click', () => {
-        switchTab(sliderTab, sliderContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, buttonTab, buttonContent, checkboxTab, checkboxContent);
+        switchTab(sliderTab, sliderContent, 
+          toggleTab, toggleContent, numberPickerTab, numberPickerContent, buttonTab, buttonContent, 
+          checkboxTab, checkboxContent, textTab, textContent, calendarTab, calendarContent, 
+          eventTab, eventContent, notificationTab, notificationContent);
       });
 
       buttonTab.addEventListener('click', () => {
-        switchTab(buttonTab, buttonContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, checkboxTab, checkboxContent);
+        switchTab(buttonTab, buttonContent, 
+          toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
+          checkboxTab, checkboxContent, textTab, textContent, calendarTab, calendarContent, 
+          eventTab, eventContent, notificationTab, notificationContent);
       });
 
       checkboxTab.addEventListener('click', () => {
-        switchTab(checkboxTab, checkboxContent, toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent);
+        switchTab(checkboxTab, checkboxContent, 
+          toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
+          buttonTab, buttonContent, textTab, textContent, calendarTab, calendarContent, 
+          eventTab, eventContent, notificationTab, notificationContent);
+      });
+
+      textTab.addEventListener('click', () => {
+        switchTab(textTab, textContent, 
+          toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
+          buttonTab, buttonContent, checkboxTab, checkboxContent, calendarTab, calendarContent, 
+          eventTab, eventContent, notificationTab, notificationContent);
+      });
+
+      calendarTab.addEventListener('click', () => {
+        switchTab(calendarTab, calendarContent, 
+          toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
+          buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent, 
+          eventTab, eventContent, notificationTab, notificationContent);
+      });
+
+      eventTab.addEventListener('click', () => {
+        switchTab(eventTab, eventContent, 
+          toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
+          buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent, 
+          calendarTab, calendarContent, notificationTab, notificationContent);
+      });
+
+      notificationTab.addEventListener('click', () => {
+        switchTab(notificationTab, notificationContent, 
+          toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
+          buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent, 
+          calendarTab, calendarContent, eventTab, eventContent);
       });
 
       // Initialize theme
@@ -1031,7 +1589,7 @@
       // Add event listeners for component interaction
       document.addEventListener('DOMContentLoaded', () => {
         // Listen to all valueMsg events from components
-        document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox').forEach(component => {
+        document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox, ui-text, ui-calendar, ui-event, ui-notification').forEach(component => {
           component.addEventListener('valueMsg', (event) => {
             console.log(`Component ${component.tagName} changed:`, event.detail);
           });

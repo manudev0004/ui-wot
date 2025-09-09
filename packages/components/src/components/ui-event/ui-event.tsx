@@ -116,7 +116,7 @@ export class UiEvent {
   /**
    * Maximum number of events to keep in history
    */
-  @Prop() maxEvents: number = 50;
+  @Prop() maxEvents: number = 15;
 
   /**
    * Show event timestamps
@@ -164,11 +164,6 @@ export class UiEvent {
    * Timestamp update timer
    */
   @State() timestampUpdateTimer: number = 0;
-
-  /**
-   * Initialization state
-   */
-  @State() isInitialized: boolean = false;
 
   /**
    * Event suppression flag
@@ -220,9 +215,6 @@ export class UiEvent {
   /** Lifecycle methods */
 
   componentWillLoad() {
-    // Initialize state before first render to avoid Stencil warnings
-    this.isInitialized = true;
-    
     // If component should auto-start listening, initialize the state
     if (this.mode === 'listener' || this.mode === 'bidirectional') {
       this.initializeListening();
@@ -349,7 +341,7 @@ export class UiEvent {
 
       // Emit event published notification
       this.eventPublished.emit({
-        payload: { eventName, payload },
+        newVal: { eventName, payload },
         ts: Date.now(),
         meta: { source: 'ui-event-listener' },
       });
@@ -390,7 +382,7 @@ export class UiEvent {
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
-    StatusIndicator.applyStatus(this, status, { errorMessage });
+    StatusIndicator.applyStatus(this, status, errorMessage);
   }
 
   /** Private methods */
@@ -439,14 +431,14 @@ export class UiEvent {
 
     // Emit event received notification
     this.eventReceived.emit({
-      payload: event.payload,
+      newVal: event.payload,
       ts: event.timestamp,
       meta: { eventId: event.id, source: event.source },
     });
 
     // Also emit as value message for consistency
     this.valueMsg.emit({
-      payload: event.payload,
+      newVal: event.payload,
       ts: event.timestamp,
       meta: { type: 'event', eventName: this.eventName },
     });

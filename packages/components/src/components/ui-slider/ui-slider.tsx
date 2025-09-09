@@ -140,7 +140,7 @@ export class UiSlider {
   @State() private isActive: number = 0;
 
   /** Internal state for tracking if component is initialized */
-  @State() private isInitialized: boolean = false;
+  private isInitialized: boolean = false;
 
   /** Flag to prevent event loops when setting values programmatically */
   @State() private suppressEvents: boolean = false;
@@ -531,8 +531,8 @@ export class UiSlider {
    *   }
    * }
    * 
-   * // Update every 30 seconds
-   * setInterval(updateAllZones, 30000);
+   * // Update every 60 seconds
+   * setInterval(updateAllZones, 60000);
    * ```
    * 
    * @example Data Synchronization (Advanced)
@@ -663,7 +663,7 @@ export class UiSlider {
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
-    StatusIndicator.applyStatus(this, status, { errorMessage });
+    StatusIndicator.applyStatus(this, status, errorMessage);
   }
 
   /**
@@ -800,7 +800,7 @@ export class UiSlider {
     this.timestampUpdateTimer = window.setInterval(() => {
       // Force re-render to update relative time by incrementing counter
       this.timestampCounter++;
-    }, 30000); // Update every 30 seconds
+    }, 60000); // Update every 60 seconds (optimized)
   }
 
   /** Stop auto-updating timestamps */
@@ -838,8 +838,8 @@ export class UiSlider {
     
     // Primary unified event
     const msg: UiMsg<number> = {
-      payload: value,
-      prev: prevValue,
+      newVal: value,
+      prevVal: prevValue,
       ts: Date.now(),
       source: this.el?.id || 'ui-slider',
       ok: true,
@@ -1195,7 +1195,7 @@ export class UiSlider {
         {isReadOnly ? (
           // Read-only indicator (static; no pulse/glow)
           <div
-            class={`flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg border transition-all duration-300 ${
+            class={`relative flex items-center justify-center min-w-[120px] h-12 px-4 mr-20 rounded-lg border transition-all duration-300 ${
               this.getReadonlyBg() }
             `}
             title={`Read-only value: ${this.isActive}`}
@@ -1206,7 +1206,7 @@ export class UiSlider {
                 {this.readPulseTs && (Date.now() - this.readPulseTs < 1500) ? (
                   <>
                     <style>{`@keyframes ui-read-pulse { 0% { opacity: 0; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1.2); } }`}</style>
-                    <span class="absolute -right-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400 shadow-md" style={{ animation: 'ui-read-pulse 1.4s ease-in-out forwards' } as any} title="Updated" part="readonly-pulse"></span>
+                    <span class="absolute -right-1 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400 shadow-md z-10" style={{ animation: 'ui-read-pulse 2s ease-in-out forwards' } as any} title="Updated" part="readonly-pulse"></span>
                   </>
                 ) : null}
           </div>

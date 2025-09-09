@@ -2,10 +2,10 @@
  * Standard message format for all UI components. For consistent data structure across all components.
  */
 export interface UiMsg<T = any> {
-  /** Current value */
-  payload: T;
+  /** Current/new value */
+  newVal: T;
   /** Previous value if known */
-  prev?: T;
+  prevVal?: T;
   /** Timestamp in milliseconds */
   ts: number;
   /** Component source identifier */

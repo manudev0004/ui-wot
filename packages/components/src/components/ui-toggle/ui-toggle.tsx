@@ -22,7 +22,7 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
  *
  * // Listen for changes
  * toggle.addEventListener('valueMsg', (e) => {
- *   console.log('Toggle changed to:', e.detail.payload);
+ *   console.log('Toggle changed to:', e.detail.newVal);
  * });
  *
  * // Device communication (IoT)
@@ -103,7 +103,7 @@ export class UiToggle {
   /**
    * Show status badge when true
    */
-  @Prop() showStatus: boolean = true;
+  @Prop() showStatus: boolean = false;
 
   /** Connection state for readonly mode */
   @Prop({ mutable: true }) connected: boolean = true;
@@ -112,9 +112,9 @@ export class UiToggle {
   @State() private isActive: boolean = false;
 
   /** Internal state for tracking if component is initialized */
-  @State() private isInitialized: boolean = false;
+  private isInitialized: boolean = false;
 
-  /** Flag to prevent varios event loops when setting values programmatically, make it fast but will lack some features*/
+  /** Flag to prevent event loops when setting values programmatically */
   @State() private suppressEvents: boolean = false;
 
   /** Operation status for unified status indicators */
@@ -123,17 +123,45 @@ export class UiToggle {
   /** Last error message (if any) */
   @State() lastError?: string;
 
-  /** Timestamp of last read pulse (for readonly) */
-  @State() readPulseTs?: number;
-
   /** Timestamp of last value update for showLastUpdated feature */
   @State() lastUpdatedTs?: number;
 
-  /** Auto-updating timer for relative timestamps */
-  @State() private timestampUpdateTimer?: number;
+  /** Timestamp of last read pulse (for readonly) */
+  @State() readPulseTs?: number;
 
-  /** Counter to trigger re-renders for timestamp updates - using state change to force re-render */
+  /** Auto-updating timer for relative timestamps */
+  private timestampUpdateTimer?: number;
+
+  /** Counter to trigger re-renders for timestamp updates */
   @State() private timestampCounter: number = 0;
+
+  /** Stored write operation for user clicks */
+  private storedWriteOperation?: (value: boolean) => Promise<any>;
+
+  /** Helper method to update value and timestamps consistently */
+  private updateValue(value: boolean, prevValue?: boolean, emitEvent: boolean = true): void {
+    this.isActive = value;
+    this.value = value;
+    this.lastUpdatedTs = Date.now();
+    
+    if (this.readonly) {
+      this.readPulseTs = Date.now();
+    }
+    
+    if (emitEvent && !this.suppressEvents) {
+      this.emitValueMsg(value, prevValue);
+    }
+  }
+
+  /** Helper method to set status with automatic timeout */
+  private setStatusWithTimeout(status: OperationStatus, duration: number = 1000): void {
+    this.operationStatus = status;
+    if (status !== 'idle') {
+      setTimeout(() => {
+        if (this.operationStatus === status) this.operationStatus = 'idle';
+      }, duration);
+    }
+  }
 
   /**
    * Set the toggle value and it has optional device communication and status management.
@@ -164,134 +192,96 @@ export class UiToggle {
   async setValue(
     value: boolean,
     options?: {
-      /** Automatic write operation - component handles all status transitions */
-      writeOperation?: () => Promise<any>;
-      /** Automatic read operation with pulse indicator */
+      writeOperation?: (value: boolean) => Promise<any>;
       readOperation?: () => Promise<any>;
-      /** Apply change optimistically, revert on failure (default: true) */
       optimistic?: boolean;
-      /** Auto-retry configuration for failed operations */
-      autoRetry?: {
-        attempts: number;
-        delay: number;
-      };
-      /** Manual status override (for advanced uses) */
-      customStatus?: 'loading' | 'success' | 'error';
-      /** Error message for manual error status */
-      errorMessage?: string;
-      /** Internal flag to indicate this is a revert operation */
+      autoRetry?: { attempts: number; delay: number; };
       _isRevert?: boolean;
     },
   ): Promise<boolean> {
     const prevValue = this.isActive;
 
-    // Handle manual status override (backward compatibility)
-    if (options?.customStatus) {
-      if (options.customStatus === 'loading') {
-        this.operationStatus = 'loading';
-        return true;
-      }
-      if (options.customStatus === 'success') {
-        this.operationStatus = 'success';
-        setTimeout(() => {
-          if (this.operationStatus === 'success') this.operationStatus = 'idle';
-        }, 1200);
-        this.isActive = value;
-        this.value = value;
-        this.lastUpdatedTs = Date.now();
-        if (this.readonly) this.readPulseTs = Date.now();
-        this.emitValueMsg(value, prevValue);
-        return true;
-      }
-      if (options.customStatus === 'error') {
-        this.operationStatus = 'error';
-        this.lastError = options.errorMessage || 'Operation failed';
-        return false;
-      }
-    }
-
-    // Auto-clear error state when user tries again (unless this is a revert)
+    // Clear error state on new attempts
     if (this.operationStatus === 'error' && !options?._isRevert) {
       this.operationStatus = 'idle';
       this.lastError = undefined;
       this.connected = true;
     }
 
-    // Optimistic update (default: true)
-    const optimistic = options?.optimistic !== false;
-    if (optimistic && !options?._isRevert) {
-      this.isActive = value;
-      this.value = value;
-      this.lastUpdatedTs = Date.now();
-      if (this.readonly) this.readPulseTs = Date.now();
-      this.emitValueMsg(value, prevValue);
-    }
-
-    // Handle Promise-based operations
-    if (options?.writeOperation || options?.readOperation) {
-      const operation = options.writeOperation || options.readOperation;
-
-      // Show loading state
-      this.operationStatus = 'loading';
-
-      try {
-        await operation();
-
-        // Success - show success state and update value if not optimistic
-        this.operationStatus = 'success';
-        setTimeout(() => {
-          if (this.operationStatus === 'success') this.operationStatus = 'idle';
-        }, 1200);
-
-        // If not optimistic, apply value now
-        if (!optimistic) {
-          this.isActive = value;
-          this.value = value;
-          this.lastUpdatedTs = Date.now();
-          if (this.readonly) this.readPulseTs = Date.now();
-          this.emitValueMsg(value, prevValue);
-        }
-
-        return true;
-      } catch (error) {
-        // Error - show error state and revert if optimistic
-        this.operationStatus = 'error';
-        this.lastError = error?.message || String(error) || 'Operation failed';
-
-        if (optimistic && !options?._isRevert) {
-          // Revert to previous value
-          this.isActive = prevValue;
-          this.value = prevValue;
-        }
-
-        // Auto-retry logic
-        if (options?.autoRetry && options.autoRetry.attempts > 0) {
-          setTimeout(async () => {
-            const retryOptions = {
-              ...options,
-              autoRetry: {
-                attempts: options.autoRetry.attempts - 1,
-                delay: options.autoRetry.delay,
-              },
-            };
-            await this.setValue(value, retryOptions);
-          }, options.autoRetry.delay);
-        }
-
-        return false;
-      }
-    }
-
-    // Simple value setting (no operation)
+    // SIMPLE CASE: Just set value without operations
     if (!options?.writeOperation && !options?.readOperation) {
-      this.isActive = value;
-      this.value = value;
-      this.lastUpdatedTs = Date.now();
-      if (this.readonly) this.readPulseTs = Date.now();
-      this.emitValueMsg(value, prevValue);
+      this.updateValue(value, prevValue);
+      return true;
     }
 
-    return true;
+    // SETUP CASE: Store writeOperation for user clicks
+    if (options.writeOperation && !options._isRevert) {
+      this.storedWriteOperation = options.writeOperation;
+      this.updateValue(value, prevValue, false); // No event for setup
+      return true;
+    }
+
+    // EXECUTION CASE: Execute operations immediately (internal calls)
+    return this.executeOperation(value, prevValue, options);
+  }
+
+  /** Simplified operation execution */
+  private async executeOperation(
+    value: boolean, 
+    prevValue: boolean, 
+    options: any
+  ): Promise<boolean> {
+    const optimistic = options?.optimistic !== false;
+
+    // Optimistic update
+    if (optimistic && !options?._isRevert) {
+      this.updateValue(value, prevValue);
+    }
+
+    this.operationStatus = 'loading';
+
+    try {
+      // Execute the operation
+      if (options.writeOperation) {
+        await options.writeOperation(value);
+      } else if (options.readOperation) {
+        await options.readOperation();
+      }
+
+      // Success
+      this.setStatusWithTimeout('success', 1200);
+
+      // Non-optimistic update
+      if (!optimistic) {
+        this.updateValue(value, prevValue);
+      }
+
+      return true;
+
+    } catch (error) {
+      // Error handling
+      this.operationStatus = 'error';
+      this.lastError = error?.message || String(error) || 'Operation failed';
+
+      // Revert optimistic changes
+      if (optimistic && !options?._isRevert) {
+        this.updateValue(prevValue, value, false);
+      }
+
+      // Auto-retry
+      if (options?.autoRetry && options.autoRetry.attempts > 0) {
+        setTimeout(() => {
+          this.setValue(value, {
+            ...options,
+            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 }
+          });
+        }, options.autoRetry.delay);
+      } else {
+        this.setStatusWithTimeout('idle', 3000); // Clear error after 3s
+      }
+
+      return false;
+    }
   }
 
   /**
@@ -352,13 +342,7 @@ export class UiToggle {
    */
   @Method()
   async setValueSilent(value: boolean): Promise<void> {
-    this.suppressEvents = true;
-    this.isActive = value;
-    this.value = value;
-    this.lastUpdatedTs = Date.now();
-    // Visual cue for readonly components when external updates arrive
-    if (this.readonly) this.readPulseTs = Date.now();
-    this.suppressEvents = false;
+    this.updateValue(value, this.isActive, false); // Use helper with emitEvent=false
   }
 
   /**
@@ -390,7 +374,7 @@ export class UiToggle {
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
-    StatusIndicator.applyStatus(this, status, { errorMessage });
+    StatusIndicator.applyStatus(this, status, errorMessage);
   }
 
   /**
@@ -451,17 +435,17 @@ export class UiToggle {
    * ```javascript
    * toggle.addEventListener('valueMsg', (event) => {
    *   // event.detail contains:
-   *   // - payload: new value (boolean)
-   *   // - prev: previous value
+   *   // - newVal: new value (boolean)
+   *   // - prevVal: previous value
    *   // - source: component id
    *   // - ts: timestamp
    *
-   *   console.log('New value:', event.detail.payload);
+   *   console.log('New value:', event.detail.newVal);
    *
    *   // Example: Send to server
    *   fetch('/api/device/light', {
    *     method: 'POST',
-   *     body: JSON.stringify({ on: event.detail.payload })
+   *     body: JSON.stringify({ on: event.detail.newVal })
    *   });
    * });
    * ```
@@ -488,7 +472,7 @@ export class UiToggle {
   /** Timestamp management */
   private startTimestampUpdater() {
     this.stopTimestampUpdater();
-    this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 30000);
+    this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 60000);
   }
 
   private stopTimestampUpdater() {
@@ -515,41 +499,43 @@ export class UiToggle {
   private emitValueMsg(value: boolean, prevValue?: boolean) {
     if (this.suppressEvents) return;
     this.valueMsg.emit({
-      payload: value,
-      prev: prevValue,
+      newVal: value,
+      prevVal: prevValue,
       ts: Date.now(),
       source: this.el?.id || 'ui-toggle',
       ok: true,
     });
   }
 
-  private handleChange = () => {
+  private handleChange = async () => {
     if (this.disabled || this.readonly) return;
     
-    // Show loading state briefly for visual feedback (only if showStatus is enabled)
-    if (this.showStatus) {
-      this.operationStatus = 'loading';
-    }
-    
     const newValue = !this.isActive;
-    this.isActive = newValue;
-    this.value = newValue;
+    const prevValue = this.isActive;
     
-    // Update timestamp only if showLastUpdated is enabled
-    if (this.showLastUpdated) {
-      this.lastUpdatedTs = Date.now();
-    }
-    
-    this.emitValueMsg(newValue, !newValue);
-    
-    // Show success state and auto-clear (only if showStatus is enabled)
-    if (this.showStatus) {
-      setTimeout(() => {
-        this.operationStatus = 'success';
-        setTimeout(() => {
-          this.operationStatus = 'idle';
-        }, 1000);
-      }, 100);
+    // Execute stored writeOperation if available
+    if (this.storedWriteOperation) {
+      this.operationStatus = 'loading';
+      this.updateValue(newValue, prevValue); // Optimistic update
+      
+      try {
+        await this.storedWriteOperation(newValue);
+        this.setStatusWithTimeout('success');
+      } catch (error) {
+        console.error('Write operation failed:', error);
+        this.operationStatus = 'error';
+        this.lastError = error?.message || 'Operation failed';
+        this.updateValue(prevValue, newValue, false); // Revert, no event
+        this.setStatusWithTimeout('idle', 3000);
+      }
+    } else {
+      // Simple toggle without operations
+      this.updateValue(newValue, prevValue);
+      
+      if (this.showStatus) {
+        this.operationStatus = 'loading';
+        setTimeout(() => this.setStatusWithTimeout('success'), 100);
+      }
     }
   }
 

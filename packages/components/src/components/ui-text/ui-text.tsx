@@ -150,7 +150,7 @@ export class UiText {
   /** Component state */
 
   /** Internal state for tracking if component is initialized */
-  @State() private isInitialized: boolean = false;
+  private isInitialized: boolean = false;
 
   /** Flag to prevent various event loops when setting values programmatically */
   @State() private suppressEvents: boolean = false;
@@ -179,12 +179,12 @@ export class UiText {
    * ```javascript
    * textDisplay.addEventListener('valueMsg', (event) => {
    *   // event.detail contains:
-   *   // - payload: new value (string)
-   *   // - prev: previous value
+   *   // - newVal: new value (string)
+   *   // - prevVal: previous value
    *   // - source: component id
    *   // - ts: timestamp
    *
-   *   console.log('New value:', event.detail.payload);
+   *   console.log('New value:', event.detail.newVal);
    *
    *   // Example: Send to server
    *   fetch('/api/text', {
@@ -440,7 +440,7 @@ export class UiText {
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
-    StatusIndicator.applyStatus(this, status, { errorMessage });
+    StatusIndicator.applyStatus(this, status, errorMessage);
   }
 
   /**
@@ -471,8 +471,8 @@ export class UiText {
   private emitValueMsg(value: string, prevValue?: string) {
     if (this.suppressEvents) return;
     this.valueMsg.emit({
-      payload: value,
-      prev: prevValue,
+      newVal: value,
+      prevVal: prevValue,
       ts: Date.now(),
       source: this.el?.id || 'ui-text',
       ok: true,
@@ -482,7 +482,7 @@ export class UiText {
   /** Timestamp management */
   private startTimestampUpdater() {
     this.stopTimestampUpdater();
-    this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 30000);
+    this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 60000);
   }
 
   private stopTimestampUpdater() {

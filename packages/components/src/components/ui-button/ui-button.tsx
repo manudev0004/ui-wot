@@ -120,7 +120,7 @@ export class UiButton {
   @Prop({ mutable: true }) connected: boolean = true;
 
   /** Internal state for tracking if component is initialized */
-  @State() isInitialized: boolean = false;
+  private isInitialized: boolean = false;
 
   /** Current button value - corresponds to its label */
   @State() isActive: string = '';
@@ -539,7 +539,7 @@ export class UiButton {
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', message?: string): Promise<void> {
-    StatusIndicator.applyStatus(this, status, { errorMessage: message });
+    StatusIndicator.applyStatus(this, status, message);
   }
 
   /**
@@ -613,18 +613,14 @@ export class UiButton {
   }
 
   /** Emit standardized value change event */
-  private emitValueMsg(value: string): void {
+  private emitValueMsg(value: string, success: boolean = true): void {
     if (this.suppressEvents) return;
     
     this.valueMsg.emit({
-      payload: value,
+      newVal: value,
       ts: Date.now(),
       source: this.el?.id || 'ui-button',
-      meta: {
-        label: this.label,
-        variant: this.variant,
-        color: this.color
-      }
+      ok: success,
     });
   }
 
@@ -654,7 +650,7 @@ export class UiButton {
       this.timestampUpdateTimer = window.setInterval(() => {
         // Force re-render to update relative timestamp
         this.timestampCounter++;
-      }, 30000); // Update every 30 seconds
+      }, 60000); // Update every 60 seconds (optimized)
     }
   }
 

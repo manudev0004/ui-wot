@@ -666,7 +666,15 @@ export namespace Components {
      * ```html
      * <ui-number-picker
      * td-url="http://device.local/properties/volume"
-     * label="Device Volume"
+     * label="Dev        {isReadOnly ? (
+     * // Read-only indicator (no glow/shadow in readonly mode)
+     * <div
+     * class={`relative flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg border transition-all duration-300 ${
+     *   this.getReadonlyBg() }
+     * `}
+     * title={`${hoverTitle} - Current value: ${this.isActive}`}
+     * part="readonly-indicator"
+     * >e"
      * protocol="http"
      * mode="readwrite"
      * min="0"
@@ -1151,30 +1159,7 @@ export namespace Components {
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
-     * <ui-toggle varia  private handleChange = () => {
-     * if (this.disabled || this.readonly) return;
-     * // Show loading state briefly for visual feedback (only if showStatus is enabled)
-     * if (this.showStatus) {
-     * this.operationStatus = 'loading';
-     * }
-     * const newValue = !this.isActive;
-     * this.isActive = newValue;
-     * this.value = newValue;
-     * // Update timestamp only if showLastUpdated is enabled
-     * if (this.showLastUpdated) {
-     * this.lastUpdatedTs = Date.now();
-     * }
-     * this.emitValueMsg(newValue, !newValue);
-     * // Show success state and auto-clear (only if showStatus is enabled)
-     * if (this.showStatus) {
-     * setTimeout(() => {
-     * this.operationStatus = 'success';
-     * setTimeout(() => {
-     * this.operationStatus = 'idle';
-     * }, 1000);
-     * }, 100);
-     * }
-     * }se" label="Fan"></ui-toggle>
+     * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
      * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
      * ```
      * @example JavaScript Integration
@@ -1577,7 +1562,15 @@ declare global {
      * ```html
      * <ui-number-picker
      * td-url="http://device.local/properties/volume"
-     * label="Device Volume"
+     * label="Dev        {isReadOnly ? (
+     * // Read-only indicator (no glow/shadow in readonly mode)
+     * <div
+     * class={`relative flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg border transition-all duration-300 ${
+     *   this.getReadonlyBg() }
+     * `}
+     * title={`${hoverTitle} - Current value: ${this.isActive}`}
+     * part="readonly-indicator"
+     * >e"
      * protocol="http"
      * mode="readwrite"
      * min="0"
@@ -1748,30 +1741,7 @@ declare global {
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
-     * <ui-toggle varia  private handleChange = () => {
-     * if (this.disabled || this.readonly) return;
-     * // Show loading state briefly for visual feedback (only if showStatus is enabled)
-     * if (this.showStatus) {
-     * this.operationStatus = 'loading';
-     * }
-     * const newValue = !this.isActive;
-     * this.isActive = newValue;
-     * this.value = newValue;
-     * // Update timestamp only if showLastUpdated is enabled
-     * if (this.showLastUpdated) {
-     * this.lastUpdatedTs = Date.now();
-     * }
-     * this.emitValueMsg(newValue, !newValue);
-     * // Show success state and auto-clear (only if showStatus is enabled)
-     * if (this.showStatus) {
-     * setTimeout(() => {
-     * this.operationStatus = 'success';
-     * setTimeout(() => {
-     * this.operationStatus = 'idle';
-     * }, 1000);
-     * }, 100);
-     * }
-     * }se" label="Fan"></ui-toggle>
+     * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
      * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
      * ```
      * @example JavaScript Integration
@@ -2368,7 +2338,15 @@ declare namespace LocalJSX {
      * ```html
      * <ui-number-picker
      * td-url="http://device.local/properties/volume"
-     * label="Device Volume"
+     * label="Dev        {isReadOnly ? (
+     * // Read-only indicator (no glow/shadow in readonly mode)
+     * <div
+     * class={`relative flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg border transition-all duration-300 ${
+     *   this.getReadonlyBg() }
+     * `}
+     * title={`${hoverTitle} - Current value: ${this.isActive}`}
+     * part="readonly-indicator"
+     * >e"
      * protocol="http"
      * mode="readwrite"
      * min="0"
@@ -2742,30 +2720,7 @@ declare namespace LocalJSX {
      * @example Basic Usage
      * ```html
      * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
-     * <ui-toggle varia  private handleChange = () => {
-     * if (this.disabled || this.readonly) return;
-     * // Show loading state briefly for visual feedback (only if showStatus is enabled)
-     * if (this.showStatus) {
-     * this.operationStatus = 'loading';
-     * }
-     * const newValue = !this.isActive;
-     * this.isActive = newValue;
-     * this.value = newValue;
-     * // Update timestamp only if showLastUpdated is enabled
-     * if (this.showLastUpdated) {
-     * this.lastUpdatedTs = Date.now();
-     * }
-     * this.emitValueMsg(newValue, !newValue);
-     * // Show success state and auto-clear (only if showStatus is enabled)
-     * if (this.showStatus) {
-     * setTimeout(() => {
-     * this.operationStatus = 'success';
-     * setTimeout(() => {
-     * this.operationStatus = 'idle';
-     * }, 1000);
-     * }, 100);
-     * }
-     * }se" label="Fan"></ui-toggle>
+     * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
      * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
      * ```
      * @example JavaScript Integration
@@ -3022,7 +2977,15 @@ declare module "@stencil/core" {
              * ```html
              * <ui-number-picker
              * td-url="http://device.local/properties/volume"
-             * label="Device Volume"
+             * label="Dev        {isReadOnly ? (
+             * // Read-only indicator (no glow/shadow in readonly mode)
+             * <div
+             * class={`relative flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg border transition-all duration-300 ${
+             *   this.getReadonlyBg() }
+             * `}
+             * title={`${hoverTitle} - Current value: ${this.isActive}`}
+             * part="readonly-indicator"
+             * >e"
              * protocol="http"
              * mode="readwrite"
              * min="0"
@@ -3145,30 +3108,7 @@ declare module "@stencil/core" {
              * @example Basic Usage
              * ```html
              * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
-             * <ui-toggle varia  private handleChange = () => {
-             * if (this.disabled || this.readonly) return;
-             * // Show loading state briefly for visual feedback (only if showStatus is enabled)
-             * if (this.showStatus) {
-             * this.operationStatus = 'loading';
-             * }
-             * const newValue = !this.isActive;
-             * this.isActive = newValue;
-             * this.value = newValue;
-             * // Update timestamp only if showLastUpdated is enabled
-             * if (this.showLastUpdated) {
-             * this.lastUpdatedTs = Date.now();
-             * }
-             * this.emitValueMsg(newValue, !newValue);
-             * // Show success state and auto-clear (only if showStatus is enabled)
-             * if (this.showStatus) {
-             * setTimeout(() => {
-             * this.operationStatus = 'success';
-             * setTimeout(() => {
-             * this.operationStatus = 'idle';
-             * }, 1000);
-             * }, 100);
-             * }
-             * }se" label="Fan"></ui-toggle>
+             * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
              * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
              * ```
              * @example JavaScript Integration
