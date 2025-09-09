@@ -317,6 +317,66 @@ export class UiCalendar {
   @State() timestampUpdateTimer?: number;
   @State() private timestampCounter = 0;
 
+  /** Stored write operation for user interaction */
+  private storedWriteOperation?: (value: string) => Promise<any>;
+
+  /** Helper method to update value and timestamps consistently */
+  private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
+    this.value = value;
+    
+    if (value) {
+      this.selectedDate = new Date(value);
+      this.currentMonth = this.selectedDate.getMonth();
+      this.currentYear = this.selectedDate.getFullYear();
+    }
+    
+    this.lastUpdatedTs = Date.now();
+    
+    if (emitEvent) {
+      this.emitValueEvents(value, prevValue);
+    }
+  }
+
+  /** Helper method to set status with automatic timeout */
+  private setStatusWithTimeout(status: 'idle' | 'loading' | 'success' | 'error', duration: number = 1000): void {
+    this.operationStatus = status;
+    if (status !== 'idle') {
+      setTimeout(() => {
+        if (this.operationStatus === status) this.operationStatus = 'idle';
+      }, duration);
+    }
+  }
+
+  /** Helper method to emit all value events consistently */
+  private emitValueEvents(value: string, prevValue?: string): void {
+    // Emit standardized event
+    this.valueMsg.emit({
+      newVal: value,
+      prevVal: prevValue,
+      ts: Date.now(),
+      source: this.el?.id || 'ui-calendar',
+      ok: true,
+      meta: {
+        component: 'ui-calendar',
+        type: 'setValue',
+        source: 'method'
+      }
+    });
+
+    // Emit legacy events for backward compatibility
+    this.dateChange.emit({ 
+      value: value,
+      date: this.selectedDate,
+      formattedValue: this.getDisplayValue()
+    });
+
+    this.valueChange.emit({
+      value: value,
+      date: this.selectedDate,
+      formattedValue: this.getDisplayValue()
+    });
+  }
+
   /** Watch for TD URL changes */
   // TD watcher removed
 
@@ -366,36 +426,25 @@ export class UiCalendar {
       newDate.setMinutes(this.selectedDate.getMinutes());
     }
 
-  this.selectedDate = newDate;
-  this.value = newDate.toISOString();
-  
-  // Emit standardized event
-  this.valueMsg.emit({
-    newVal: this.value,
-    prevVal: undefined, // Could store previous value if needed
-    ts: Date.now(),
-    source: this.el?.id || 'ui-calendar',
-    ok: true,
-    meta: {
-      component: 'ui-calendar',
-      type: 'dateSelect',
-      source: 'user'
-    }
-  });
-  
-  this.dateChange.emit({ 
-    value: this.value,
-    date: this.selectedDate,
-    formattedValue: this.getDisplayValue()
-  });
-  this.valueChange.emit({ 
-    value: this.value,
-    date: this.selectedDate,
-    formattedValue: this.getDisplayValue()
-  });
-    this.isOpen = false;
+    const prevValue = this.value;
+    const newValue = newDate.toISOString();
 
-  // Local control only: external integrations should listen to the `dateChange` event.
+    try {
+      if (this.storedWriteOperation) {
+        this.setStatusWithTimeout('loading');
+        this.updateValue(newValue, prevValue);
+        await this.storedWriteOperation(newValue);
+        this.setStatusWithTimeout('success');
+      } else {
+        this.updateValue(newValue, prevValue);
+      }
+      
+      this.isOpen = false;
+    } catch (error) {
+      console.error('handleDateSelect error for ui-calendar:', error);
+      this.updateValue(prevValue!, newValue, false); // Revert on error
+      this.setStatusWithTimeout('error');
+    }
   }
 
   /** Handle time change */
@@ -547,7 +596,7 @@ export class UiCalendar {
   private getCalendarStyles() {
     const isDisabled = this.disabled;
     const isReadonly = this.readonly;
-    const colors = this.getColorClasses();
+    const colorVars = this.getColorVars();
     
     // Base container styles
     let containerClass = `relative ${this.inline ? 'block' : 'inline-block'}`;
@@ -568,21 +617,29 @@ export class UiCalendar {
       'min-w-72'
     }`;
 
+    // Inline styles for CSS variable colors
+    let inputStyle: any = {};
+
     // Variant-specific styling matching family design
     if (this.variant === 'minimal') {
       inputClass += ` bg-transparent border-0 ${
         this.dark ? 'text-white hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-100'
-      } ${colors.focus}`;
+      }`;
+      inputStyle.boxShadow = `0 0 0 2px ${colorVars.main}`;
     } else if (this.variant === 'outlined') {
-      inputClass += ` border-2 bg-transparent ${colors.border} ${
+      inputClass += ` border-2 bg-transparent ${
         this.dark ? 'text-white hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-50'
-      } ${colors.focus}`;
+      }`;
+      inputStyle.borderColor = colorVars.main;
+      inputStyle.boxShadow = `0 0 0 2px ${colorVars.main}`;
     } else if (this.variant === 'filled') {
-      inputClass += ` ${colors.bg} text-white border-0 ${colors.hover} focus:ring-white`;
+      inputClass += ` text-white border-0 focus:ring-white`;
+      inputStyle.backgroundColor = colorVars.main;
     } else if (this.variant === 'elevated') {
       inputClass += ` bg-white border border-gray-300 shadow-md hover:shadow-lg ${
         this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'text-gray-900'
-      } ${colors.focus}`;
+      }`;
+      inputStyle.boxShadow = `0 0 0 2px ${colorVars.main}`;
     }
 
     // Animation classes
@@ -594,67 +651,59 @@ export class UiCalendar {
       }`;
     }
 
-    return { containerClass, inputClass, calendarClass };
+    return { containerClass, inputClass, calendarClass, inputStyle };
   }
 
-  /** Get concrete color classes for variants */
-  private getColorClasses() {
+  /** Get CSS variable-based colors for components */
+  private getColorVars() {
     switch (this.color) {
       case 'secondary':
         return {
-          border: 'border-green-500',
-          bg: 'bg-green-500',
-          focus: 'focus:ring-green-500',
-          text: 'text-green-500',
-          hover: 'hover:bg-green-600'
+          main: 'var(--color-secondary)',
+          hover: 'var(--color-secondary-hover)',
+          light: 'var(--color-secondary-light)'
         };
       case 'neutral':
         return {
-          border: 'border-gray-500',
-          bg: 'bg-gray-500',
-          focus: 'focus:ring-gray-500',
-          text: 'text-gray-500',
-          hover: 'hover:bg-gray-600'
+          main: 'var(--color-neutral)',
+          hover: 'var(--color-neutral-hover)',
+          light: 'var(--color-neutral-light)'
         };
       case 'success':
         return {
-          border: 'border-green-600',
-          bg: 'bg-green-600',
-          focus: 'focus:ring-green-600',
-          text: 'text-green-600',
-          hover: 'hover:bg-green-700'
+          main: 'var(--color-success)',
+          hover: 'var(--color-success)',
+          light: 'var(--color-success)'
         };
       case 'warning':
         return {
-          border: 'border-orange-500',
-          bg: 'bg-orange-500',
-          focus: 'focus:ring-orange-500',
-          text: 'text-orange-500',
-          hover: 'hover:bg-orange-600'
+          main: 'var(--color-warning)',
+          hover: 'var(--color-warning)',
+          light: 'var(--color-warning)'
         };
       case 'danger':
         return {
-          border: 'border-red-500',
-          bg: 'bg-red-500',
-          focus: 'focus:ring-red-500',
-          text: 'text-red-500',
-          hover: 'hover:bg-red-600'
+          main: 'var(--color-danger)',
+          hover: 'var(--color-danger)',
+          light: 'var(--color-danger)'
         };
       default: // primary
         return {
-          border: 'border-primary',
-          bg: 'bg-primary',
-          focus: 'focus:ring-primary',
-          text: 'text-primary',
-          hover: 'hover:bg-primary'
+          main: 'var(--color-primary)',
+          hover: 'var(--color-primary-hover)',
+          light: 'var(--color-primary-light)'
         };
     }
   }
 
-  /** Get enhanced active color styling */
+  /** Get enhanced active color styling with CSS variables */
   private getActiveColor() {
-    const colors = this.getColorClasses();
-    return `${colors.bg} text-white ${colors.hover} transition-colors`;
+    const colorVars = this.getColorVars();
+    return {
+      backgroundColor: colorVars.main,
+      color: 'white',
+      transition: 'all 0.2s ease-in-out'
+    };
   }
 
   /** Get days in month */
@@ -700,55 +749,39 @@ export class UiCalendar {
   // ========================================
 
   /**
-   * Set the calendar value programmatically and emit events.
-   * @param value - ISO date string to set
-   * @param metadata - Optional metadata to include in the event
-   * @example
-   * ```typescript
-   * await calendar.setValue('2023-12-25');
-   * await calendar.setValue('2023-12-25T10:30:00', { source: 'api' });
-   * ```
+   * Set the value programmatically with automatic operation handling
+   * @param value - The date string value to set (ISO format)
+   * @param writeOperation - Optional write function to call after value update
    */
   @Method()
-  async setValue(value: string, metadata?: Record<string, any>): Promise<void> {
-    const oldValue = this.value;
-    this.value = value;
+  async setValue(
+    value: string,
+    writeOperation?: (value: string) => Promise<any>
+  ): Promise<any> {
+    const prevValue = this.value;
     
-    if (value) {
-      this.selectedDate = new Date(value);
-      this.currentMonth = this.selectedDate.getMonth();
-      this.currentYear = this.selectedDate.getFullYear();
-    }
-
-    this.lastUpdatedTs = Date.now();
-
-    // Emit standardized event
-    this.valueMsg.emit({
-      newVal: value,
-      prevVal: oldValue,
-      ts: Date.now(),
-      source: this.el?.id || 'ui-calendar',
-      ok: true,
-      meta: {
-        component: 'ui-calendar',
-        type: 'setValue',
-        source: 'method',
-        ...metadata
+    // Store operation for potential user interaction
+    this.storedWriteOperation = writeOperation;
+    
+    try {
+      this.setStatusWithTimeout('loading');
+      this.updateValue(value, prevValue);
+      
+      if (writeOperation) {
+        const result = await writeOperation(value);
+        this.setStatusWithTimeout('success');
+        return result;
       }
-    });
-
-    // Emit legacy events for backward compatibility
-    this.dateChange.emit({ 
-      value: value,
-      date: this.selectedDate,
-      formattedValue: this.getDisplayValue()
-    });
-
-    this.valueChange.emit({
-      value: value,
-      date: this.selectedDate,
-      formattedValue: this.getDisplayValue()
-    });
+      
+      this.setStatusWithTimeout('idle');
+    } catch (error) {
+      console.error('setValue error for ui-calendar:', error);
+      this.updateValue(prevValue!, prevValue, false); // Revert on error
+      this.setStatusWithTimeout('error');
+      throw error;
+    } finally {
+      this.storedWriteOperation = undefined;
+    }
   }
 
   /**
@@ -766,24 +799,12 @@ export class UiCalendar {
   }
 
   /**
-   * Set value without emitting events (silent update).
-   * @param value - ISO date string to set
-   * @example
-   * ```typescript
-   * await calendar.setValueSilent('2023-12-25');
-   * ```
+   * Set the value silently without emitting events or status changes
+   * @param value - The date string value to set (ISO format)
    */
   @Method()
   async setValueSilent(value: string): Promise<void> {
-    this.value = value;
-    
-    if (value) {
-      this.selectedDate = new Date(value);
-      this.currentMonth = this.selectedDate.getMonth();
-      this.currentYear = this.selectedDate.getFullYear();
-    }
-
-    this.lastUpdatedTs = Date.now();
+    this.updateValue(value, this.value, false);
   }
 
   /**
@@ -886,6 +907,7 @@ export class UiCalendar {
             disabled={isDisabled}
             value={this.getDisplayValue()}
             class={styles.inputClass}
+            style={styles.inputStyle}
             onClick={() => !isDisabled && this.toggleOpen()}
             placeholder={this.includeTime ? 'Select date and time' : 'Select date'}
             aria-haspopup="dialog"
@@ -940,22 +962,29 @@ export class UiCalendar {
 
             {/* Calendar Grid */}
             <div class="grid grid-cols-7 gap-1">
-              {days.map((day, index) => (
-                <button
-                  key={index}
-                  class={`h-8 text-sm rounded transition-colors ${
-                    day === null
-                      ? ''
-                      : day === this.selectedDate?.getDate() && this.currentMonth === this.selectedDate?.getMonth() && this.currentYear === this.selectedDate?.getFullYear()
-                      ? this.getActiveColor()
-                      : `hover:bg-gray-100 dark:hover:bg-gray-700 ${this.dark ? 'text-white' : 'text-gray-900'}`
-                  }`}
-                  disabled={day === null}
-                  onClick={() => day && this.handleDateSelect(day)}
-                >
-                  {day}
-                </button>
-              ))}
+              {days.map((day, index) => {
+                const isSelected = day === this.selectedDate?.getDate() && 
+                                   this.currentMonth === this.selectedDate?.getMonth() && 
+                                   this.currentYear === this.selectedDate?.getFullYear();
+                
+                return (
+                  <button
+                    key={index}
+                    class={`h-8 text-sm rounded transition-colors ${
+                      day === null
+                        ? ''
+                        : isSelected
+                        ? 'text-white'
+                        : `hover:bg-gray-100 dark:hover:bg-gray-700 ${this.dark ? 'text-white' : 'text-gray-900'}`
+                    }`}
+                    style={day !== null && isSelected ? this.getActiveColor() : {}}
+                    disabled={day === null}
+                    onClick={() => day && this.handleDateSelect(day)}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Enhanced Time Picker with Clock Interface */}

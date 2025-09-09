@@ -170,6 +170,29 @@ export class UiText {
   /** Counter to trigger re-renders for timestamp updates - using state change to force re-render */
   @State() private timestampCounter: number = 0;
 
+  /** Stored write operation for user interaction */
+  private storedWriteOperation?: (value: string) => Promise<any>;
+
+  /** Helper method to update value and timestamps consistently */
+  private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
+    this.value = value;
+    this.lastUpdatedTs = Date.now();
+    
+    if (emitEvent && !this.suppressEvents) {
+      this.emitValueMsg(value, prevValue);
+    }
+  }
+
+  /** Helper method to set status with automatic timeout */
+  private setStatusWithTimeout(status: OperationStatus, duration: number = 1000): void {
+    this.operationStatus = status;
+    if (status !== 'idle') {
+      setTimeout(() => {
+        if (this.operationStatus === status) this.operationStatus = 'idle';
+      }, duration);
+    }
+  }
+
   /** Component events */
 
   /**
@@ -236,120 +259,96 @@ export class UiText {
   async setValue(
     value: string,
     options?: {
-      /** Automatic write operation - component handles all status transitions */
-      writeOperation?: () => Promise<any>;
-      /** Apply change optimistically, revert on failure (default: true) */
+      writeOperation?: (value: string) => Promise<any>;
+      readOperation?: () => Promise<any>;
       optimistic?: boolean;
-      /** Auto-retry configuration for failed operations */
-      autoRetry?: {
-        attempts: number;
-        delay: number;
-      };
-      /** Manual status override (for advanced uses) */
-      customStatus?: 'loading' | 'success' | 'error';
-      /** Error message for manual error status */
-      errorMessage?: string;
-      /** Internal flag to indicate this is a revert operation */
+      autoRetry?: { attempts: number; delay: number; };
       _isRevert?: boolean;
     },
   ): Promise<boolean> {
     const prevValue = this.value;
 
-    // Handle manual status override (backward compatibility)
-    if (options?.customStatus) {
-      if (options.customStatus === 'loading') {
-        this.operationStatus = 'loading';
-        return true;
-      }
-      if (options.customStatus === 'success') {
-        this.operationStatus = 'success';
-        setTimeout(() => {
-          if (this.operationStatus === 'success') this.operationStatus = 'idle';
-        }, 1200);
-        this.value = value;
-        this.lastUpdatedTs = Date.now();
-        this.emitValueMsg(value, prevValue);
-        return true;
-      }
-      if (options.customStatus === 'error') {
-        this.operationStatus = 'error';
-        this.lastError = options.errorMessage || 'Operation failed';
-        return false;
-      }
-    }
-
-    // Auto-clear error state when user tries again (unless this is a revert)
+    // Clear error state on new attempts
     if (this.operationStatus === 'error' && !options?._isRevert) {
       this.operationStatus = 'idle';
       this.lastError = undefined;
+      this.connected = true;
     }
 
-    // Optimistic update (default: true)
+    // SIMPLE CASE: Just set value without operations
+    if (!options?.writeOperation && !options?.readOperation) {
+      this.updateValue(value, prevValue);
+      return true;
+    }
+
+    // SETUP CASE: Store writeOperation for user interaction
+    if (options.writeOperation && !options._isRevert) {
+      this.storedWriteOperation = options.writeOperation;
+      this.updateValue(value, prevValue, false); // No event for setup
+      return true;
+    }
+
+    // EXECUTION CASE: Execute operations immediately (internal calls)
+    return this.executeOperation(value, prevValue, options);
+  }
+
+  /** Simplified operation execution */
+  private async executeOperation(
+    value: string, 
+    prevValue: string, 
+    options: any
+  ): Promise<boolean> {
     const optimistic = options?.optimistic !== false;
+
+    // Optimistic update
     if (optimistic && !options?._isRevert) {
-      this.value = value;
-      this.lastUpdatedTs = Date.now();
-      this.emitValueMsg(value, prevValue);
+      this.updateValue(value, prevValue);
     }
 
-    // Handle Promise-based operations
-    if (options?.writeOperation) {
-      // Show loading state
-      this.operationStatus = 'loading';
+    this.operationStatus = 'loading';
 
-      try {
-        await options.writeOperation();
-
-        // Success - show success state and update value if not optimistic
-        this.operationStatus = 'success';
-        setTimeout(() => {
-          if (this.operationStatus === 'success') this.operationStatus = 'idle';
-        }, 1200);
-
-        // If not optimistic, apply value now
-        if (!optimistic) {
-          this.value = value;
-          this.lastUpdatedTs = Date.now();
-          this.emitValueMsg(value, prevValue);
-        }
-
-        return true;
-      } catch (error) {
-        // Error - show error state and revert if optimistic
-        this.operationStatus = 'error';
-        this.lastError = error?.message || String(error) || 'Operation failed';
-
-        if (optimistic && !options?._isRevert) {
-          // Revert to previous value
-          this.value = prevValue;
-        }
-
-        // Auto-retry logic
-        if (options?.autoRetry && options.autoRetry.attempts > 0) {
-          setTimeout(async () => {
-            const retryOptions = {
-              ...options,
-              autoRetry: {
-                attempts: options.autoRetry.attempts - 1,
-                delay: options.autoRetry.delay,
-              },
-            };
-            await this.setValue(value, retryOptions);
-          }, options.autoRetry.delay);
-        }
-
-        return false;
+    try {
+      // Execute the operation
+      if (options.writeOperation) {
+        await options.writeOperation(value);
+      } else if (options.readOperation) {
+        await options.readOperation();
       }
-    }
 
-    // Simple value setting (no operation)
-    if (!options?.writeOperation) {
-      this.value = value;
-      this.lastUpdatedTs = Date.now();
-      this.emitValueMsg(value, prevValue);
-    }
+      // Success
+      this.setStatusWithTimeout('success', 1200);
 
-    return true;
+      // Non-optimistic update
+      if (!optimistic) {
+        this.updateValue(value, prevValue);
+      }
+
+      return true;
+
+    } catch (error) {
+      // Error handling
+      this.operationStatus = 'error';
+      this.lastError = error?.message || String(error) || 'Operation failed';
+
+      // Revert optimistic changes
+      if (optimistic && !options?._isRevert) {
+        this.updateValue(prevValue, value, false);
+      }
+
+      // Auto-retry
+      if (options?.autoRetry && options.autoRetry.attempts > 0) {
+        setTimeout(() => {
+          this.setValue(value, {
+            ...options,
+            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 }
+          });
+        }, options.autoRetry.delay);
+      } else {
+        this.setStatusWithTimeout('idle', 3000); // Clear error after 3s
+      }
+
+      return false;
+    }
   }
 
   /**
@@ -405,10 +404,7 @@ export class UiText {
    */
   @Method()
   async setValueSilent(value: string): Promise<void> {
-    this.suppressEvents = true;
-    this.value = value;
-    this.lastUpdatedTs = Date.now();
-    this.suppressEvents = false;
+    this.updateValue(value, this.value, false); // Use helper with emitEvent=false
   }
 
   /**
@@ -492,11 +488,37 @@ export class UiText {
     }
   }
 
-  private handleChange = (event: Event): void => {
+  private handleChange = async (event: Event): Promise<void> => {
     if (this.mode !== 'editable' || this.readonly || this.disabled) return;
 
     const target = event.target as HTMLInputElement | HTMLTextAreaElement;
-    this.setValue(target.value);
+    const newValue = target.value;
+    const prevValue = this.value;
+    
+    // Execute stored writeOperation if available
+    if (this.storedWriteOperation) {
+      this.setStatusWithTimeout('loading');
+      this.updateValue(newValue); // Optimistic update
+      
+      try {
+        await this.storedWriteOperation(newValue);
+        this.setStatusWithTimeout('success');
+      } catch (error) {
+        console.error('Write operation failed:', error);
+        this.operationStatus = 'error';
+        this.lastError = error?.message || 'Operation failed';
+        this.updateValue(prevValue!, newValue, false); // Revert, no event
+        this.setStatusWithTimeout('idle', 3000);
+      }
+    } else {
+      // Simple value update without operations
+      this.updateValue(newValue);
+      
+      if (this.showStatus) {
+        this.operationStatus = 'loading';
+        setTimeout(() => this.setStatusWithTimeout('success'), 100);
+      }
+    }
   };
 
   private handleFocus = (): void => {
@@ -526,27 +548,33 @@ export class UiText {
   private getBaseClasses(): string {
     let classes = 'relative w-full transition-all duration-200 font-sans';
 
-    // Variant-specific styling
+    // Variant-specific styling with CSS variables
     switch (this.variant) {
       case 'minimal':
         if (this.dark) {
-          classes += ' border-b-2 border-gray-500 bg-transparent focus-within:border-blue-400';
+          classes += ' border-b-2 border-gray-500 bg-transparent';
+          classes += ` focus-within:border-[${this.getActiveColor()}]`;
         } else {
-          classes += ' border-b-2 border-gray-300 bg-transparent focus-within:border-blue-500';
+          classes += ' border-b-2 border-gray-300 bg-transparent';
+          classes += ` focus-within:border-[${this.getActiveColor()}]`;
         }
         break;
       case 'outlined':
         if (this.dark) {
-          classes += ' border-2 border-gray-600 bg-gray-800 text-white focus-within:border-blue-400 hover:border-gray-500';
+          classes += ' border-2 border-gray-600 bg-gray-800 text-white hover:border-gray-500';
+          classes += ` focus-within:border-[${this.getActiveColor()}]`;
         } else {
-          classes += ' border-2 border-gray-300 bg-white text-gray-900 focus-within:border-blue-500 hover:border-gray-400';
+          classes += ' border-2 border-gray-300 bg-white text-gray-900 hover:border-gray-400';
+          classes += ` focus-within:border-[${this.getActiveColor()}]`;
         }
         break;
       case 'filled':
         if (this.dark) {
-          classes += ' bg-gray-700 text-white border-2 border-gray-600 focus-within:border-blue-400';
+          classes += ' bg-gray-700 text-white border-2 border-gray-600';
+          classes += ` focus-within:border-[${this.getActiveColor()}]`;
         } else {
-          classes += ' bg-gray-100 text-gray-900 border-2 border-gray-200 focus-within:border-blue-500';
+          classes += ' bg-gray-100 text-gray-900 border-2 border-gray-200';
+          classes += ` focus-within:border-[${this.getActiveColor()}]`;
         }
         break;
     }
@@ -579,8 +607,8 @@ export class UiText {
         break;
       case 'editable':
         classes += ' rounded-md px-3 py-2 min-h-10 cursor-text';
-        // Add focus ring for editable
-        classes += ' focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-opacity-50';
+        // Add focus ring for editable with CSS variables
+        classes += ` focus-within:ring-2 focus-within:ring-[${this.getActiveColor()}] focus-within:ring-opacity-50`;
         break;
     }
 
@@ -589,6 +617,18 @@ export class UiText {
     }
 
     return classes;
+  }
+
+  /** Get active color using CSS variables */
+  private getActiveColor(): string {
+    switch (this.color) {
+      case 'secondary':
+        return 'var(--color-secondary)';
+      case 'neutral':
+        return 'var(--color-neutral)';
+      default:
+        return 'var(--color-primary)';
+    }
   }
 
   private getInputClasses(): string {

@@ -162,6 +162,36 @@ export class UiSlider {
   @State() timestampUpdateTimer?: number;
   @State() private timestampCounter = 0;
 
+  /** Stored write operation for user interaction */
+  private storedWriteOperation?: (value: number) => Promise<any>;
+
+  /** Helper method to update value and timestamps consistently */
+  private updateValue(value: number, prevValue?: number, emitEvent: boolean = true): void {
+    // Clamp value to min/max range
+    const clampedValue = Math.max(this.min, Math.min(this.max, value));
+    this.isActive = clampedValue;
+    this.value = clampedValue;
+    this.lastUpdatedTs = Date.now();
+    
+    if (this.readonly) {
+      this.readPulseTs = Date.now();
+    }
+    
+    if (emitEvent && !this.suppressEvents) {
+      this.emitValueMsg(clampedValue, prevValue);
+    }
+  }
+
+  /** Helper method to set status with automatic timeout */
+  private setStatusWithTimeout(status: 'idle' | 'loading' | 'success' | 'error', duration: number = 1000): void {
+    this.operationStatus = status;
+    if (status !== 'idle') {
+      setTimeout(() => {
+        if (this.operationStatus === status) this.operationStatus = 'idle';
+      }, duration);
+    }
+  }
+
   /**
    * Set the slider value with automatic device communication and status management.
    * Values are automatically clamped to the min/max range.
@@ -250,145 +280,105 @@ export class UiSlider {
    * ```
    */
   @Method()
-  async setValue(value: number, options?: {
-    /** Automatic write operation - component handles all status transitions */
-    writeOperation?: () => Promise<any>;
-    /** Automatic read operation with pulse indicator */
-    readOperation?: () => Promise<any>;
-    /** Apply change optimistically, revert on failure (default: true) */
-    optimistic?: boolean;
-    /** Auto-retry configuration for failed operations */
-    autoRetry?: {
-      attempts: number;
-      delay: number;
-    };
-    /** Manual status override (for advanced users) */
-    customStatus?: 'loading' | 'success' | 'error';
-    /** Error message for manual error status */
-    errorMessage?: string;
-    /** Internal flag to indicate this is a revert operation */
-    _isRevert?: boolean;
-  }): Promise<boolean> {
+  async setValue(
+    value: number,
+    options?: {
+      writeOperation?: (value: number) => Promise<any>;
+      readOperation?: () => Promise<any>;
+      optimistic?: boolean;
+      autoRetry?: { attempts: number; delay: number; };
+      _isRevert?: boolean;
+    },
+  ): Promise<boolean> {
     const prevValue = this.isActive;
-    
-    // Clamp value to min/max bounds
     const clampedValue = Math.max(this.min, Math.min(this.max, value));
-    
-    // Handle manual status override (backward compatibility)
-    if (options?.customStatus) {
-      if (options.customStatus === 'loading') {
-        this.operationStatus = 'loading';
-        return true;
-      }
-      if (options.customStatus === 'success') {
-        this.operationStatus = 'success';
-        setTimeout(() => { 
-          if (this.operationStatus === 'success') this.operationStatus = 'idle'; 
-        }, 1200);
-        this.isActive = clampedValue;
-        this.value = clampedValue;
-        this.manualInputValue = String(clampedValue);
-  this.lastUpdatedTs = Date.now();
-  if (this.readonly) this.readPulseTs = Date.now();
-        this.emitValueMsg(clampedValue, prevValue);
-        return true;
-      }
-      if (options.customStatus === 'error') {
-        this.operationStatus = 'error';
-        this.lastError = options.errorMessage || 'Operation failed';
-        return false;
-      }
-    }
-    
-    // Auto-clear error state when user tries again (unless this is a revert)
+
+    // Clear error state on new attempts
     if (this.operationStatus === 'error' && !options?._isRevert) {
       this.operationStatus = 'idle';
       this.lastError = undefined;
       this.connected = true;
     }
-    
-    // Optimistic update (default: true)
-    const optimistic = options?.optimistic !== false;
-    if (optimistic && !options?._isRevert) {
-      this.isActive = clampedValue;
-      this.value = clampedValue;
+
+    // SIMPLE CASE: Just set value without operations
+    if (!options?.writeOperation && !options?.readOperation) {
+      this.updateValue(clampedValue, prevValue);
       this.manualInputValue = String(clampedValue);
-  this.lastUpdatedTs = Date.now();
-  if (this.readonly) this.readPulseTs = Date.now();
-      this.emitValueMsg(clampedValue, prevValue);
-    }
-    
-    // Handle Promise-based operations
-    if (options?.writeOperation || options?.readOperation) {
-      const operation = options.writeOperation || options.readOperation;
-      
-      // Show loading state
-      this.operationStatus = 'loading';
-      
-      try {
-        // Execute the operation
-        await operation();
-        
-        // Success - show success state briefly
-        this.operationStatus = 'success';
-        setTimeout(() => { 
-          if (this.operationStatus === 'success') this.operationStatus = 'idle'; 
-        }, 1200);
-        
-        // If not optimistic, apply value now
-        if (!optimistic) {
-          this.isActive = clampedValue;
-          this.value = clampedValue;
-          this.manualInputValue = String(clampedValue);
-          this.lastUpdatedTs = Date.now();
-          if (this.readonly) this.readPulseTs = Date.now();
-          this.emitValueMsg(clampedValue, prevValue);
-        }
-        
-        return true;
-        
-      } catch (error) {
-        // Error - show error state and revert if optimistic
-        this.operationStatus = 'error';
-        this.lastError = error.message || 'Operation failed';
-        
-        if (optimistic && !options?._isRevert) {
-          // Revert to previous value
-          this.isActive = prevValue;
-          this.value = prevValue;
-          this.manualInputValue = String(prevValue);
-          // Don't emit event for revert to avoid loops
-        }
-        
-        // Auto-retry logic
-        if (options?.autoRetry && options.autoRetry.attempts > 0) {
-          setTimeout(async () => {
-            const retryOptions = {
-              ...options,
-              autoRetry: {
-                attempts: options.autoRetry.attempts - 1,
-                delay: options.autoRetry.delay
-              }
-            };
-            await this.setValue(clampedValue, retryOptions);
-          }, options.autoRetry.delay);
-        }
-        
-        return false;
-      }
-    }
-    
-    // Simple value setting (no operation)
-    if (!options?.writeOperation && !options?.readOperation && !options?._isRevert) {
-      this.isActive = clampedValue;
-      this.value = clampedValue;
-      this.manualInputValue = String(clampedValue);
-  this.lastUpdatedTs = Date.now();
-  if (this.readonly) this.readPulseTs = Date.now();
-      this.emitValueMsg(clampedValue, prevValue);
+      return true;
     }
 
-    return true;
+    // SETUP CASE: Store writeOperation for user interaction
+    if (options.writeOperation && !options._isRevert) {
+      this.storedWriteOperation = options.writeOperation;
+      this.updateValue(clampedValue, prevValue, false); // No event for setup
+      this.manualInputValue = String(clampedValue);
+      return true;
+    }
+
+    // EXECUTION CASE: Execute operations immediately (internal calls)
+    return this.executeOperation(clampedValue, prevValue, options);
+  }
+
+  /** Simplified operation execution */
+  private async executeOperation(
+    value: number, 
+    prevValue: number, 
+    options: any
+  ): Promise<boolean> {
+    const optimistic = options?.optimistic !== false;
+
+    // Optimistic update
+    if (optimistic && !options?._isRevert) {
+      this.updateValue(value, prevValue);
+      this.manualInputValue = String(value);
+    }
+
+    this.operationStatus = 'loading';
+
+    try {
+      // Execute the operation
+      if (options.writeOperation) {
+        await options.writeOperation(value);
+      } else if (options.readOperation) {
+        await options.readOperation();
+      }
+
+      // Success
+      this.setStatusWithTimeout('success', 1200);
+
+      // Non-optimistic update
+      if (!optimistic) {
+        this.updateValue(value, prevValue);
+        this.manualInputValue = String(value);
+      }
+
+      return true;
+
+    } catch (error) {
+      // Error handling
+      this.operationStatus = 'error';
+      this.lastError = error?.message || String(error) || 'Operation failed';
+
+      // Revert optimistic changes
+      if (optimistic && !options?._isRevert) {
+        this.updateValue(prevValue, value, false);
+        this.manualInputValue = String(prevValue);
+      }
+
+      // Auto-retry
+      if (options?.autoRetry && options.autoRetry.attempts > 0) {
+        setTimeout(() => {
+          this.setValue(value, {
+            ...options,
+            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 }
+          });
+        }, options.autoRetry.delay);
+      } else {
+        this.setStatusWithTimeout('idle', 3000); // Clear error after 3s
+      }
+
+      return false;
+    }
   }
 
   /**
@@ -556,13 +546,8 @@ export class UiSlider {
   @Method()
   async setValueSilent(value: number): Promise<void> {
     const clampedValue = Math.max(this.min, Math.min(this.max, value));
-    this.suppressEvents = true;
-    this.isActive = clampedValue;
-    this.value = clampedValue;
+    this.updateValue(clampedValue, this.isActive, false); // Use helper with emitEvent=false
     this.manualInputValue = String(clampedValue);
-    this.lastUpdatedTs = Date.now();
-  if (this.readonly) this.readPulseTs = Date.now();
-    this.suppressEvents = false;
   }
 
   /**
@@ -848,39 +833,37 @@ export class UiSlider {
   }
 
   /** Handle slider value change */
-  private handleChange = (event: Event) => {
+  private handleChange = async (event: Event) => {
     if (this.disabled || this.readonly) return;
 
     const target = event.target as HTMLInputElement;
     const newValue = Number(target.value);
     const clampedValue = Math.max(this.min, Math.min(this.max, newValue));
+    const prevValue = this.isActive;
     
-    // Show loading state briefly for visual feedback (only if showStatus is enabled)
-    if (this.showStatus) {
-      this.operationStatus = 'loading';
-    }
-    
-    // Simple value change without any operation - for basic slider functionality
-    const prev = this.isActive;
-    this.isActive = clampedValue;
-    this.value = clampedValue;
-    this.manualInputValue = String(clampedValue);
-    
-    // Update timestamp only if showLastUpdated is enabled
-    if (this.showLastUpdated) {
-      this.lastUpdatedTs = Date.now();
-    }
-    
-    this.emitValueMsg(clampedValue, prev);
-    
-    // Show success state and auto-clear (only if showStatus is enabled)
-    if (this.showStatus) {
-      setTimeout(() => {
-        this.operationStatus = 'success';
-        setTimeout(() => {
-          if (this.operationStatus === 'success') this.operationStatus = 'idle';
-        }, 1200);
-      }, 50);
+    // Execute stored writeOperation if available
+    if (this.storedWriteOperation) {
+      this.setStatusWithTimeout('loading');
+      this.updateValue(clampedValue, prevValue); // Optimistic update
+      
+      try {
+        await this.storedWriteOperation(clampedValue);
+        this.setStatusWithTimeout('success');
+      } catch (error) {
+        console.error('Write operation failed:', error);
+        this.operationStatus = 'error';
+        this.lastError = error?.message || 'Operation failed';
+        this.updateValue(prevValue, clampedValue, false); // Revert, no event
+        this.setStatusWithTimeout('idle', 3000);
+      }
+    } else {
+      // Simple value change without operations
+      this.updateValue(clampedValue, prevValue);
+      
+      if (this.showStatus) {
+        this.operationStatus = 'loading';
+        setTimeout(() => this.setStatusWithTimeout('success'), 50);
+      }
     }
   };
 
