@@ -1,10 +1,11 @@
 import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
-import { UiMsg } from '../../utils/types';
-import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
+import { UiMsg } from '../../utils/types'; // Standard message format
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator'; // Status indicator utility
 
 /**
- * Toggle switch component with reactive state management and multiple visual styles.
- * Supports IoT device integration with status indicators and error handling.
+ * A versatile toggle switch component designed for IoT device control and monitoring.
+ * It has various features, multiple visual styles, status and last updated timestamps.
+ * Supports both interactive control and read-only monitoring modes.
  *
  * @example Basic Usage
  * ```html
@@ -13,21 +14,15 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
  * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
  * ```
  *
- * @example JavaScript Integration
+ * @example JS integaration with node-wot browser bundle
  * ```javascript
- * const toggle = document.getElementById('light-toggle');
+ * const toggle = document.getElementById('device-toggle');
+ * const initialValue = Boolean(await (await thing.readProperty('power')).value());
  *
- * // Set value directly 
- * await toggle.setValue(true);
- *
- * // Set up with td device with write operation
- * const initialValue = Boolean(await (await thing.readProperty('bool')).value());
- * await writeToggle.setValue(initialValue, {
+ * await toggle.setValue(initialValue, {
  *   writeOperation: async value => {
- *     console.log(`Writing ${value} to real device...`);
- *     await thing.writeProperty('bool', value);
- *     console.log(`Wrote : ${value}`);
- *   },
+ *     await thing.writeProperty('power', value);
+ *   }
  * });
  * ```
  */
@@ -39,145 +34,115 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 export class UiToggle {
   @Element() el: HTMLElement;
 
+  // ============================================= COMPONENT PROPERTIES =============================================
+
   /**
-   * @example Component props
-   * 
    * Visual style variant of the toggle.
    * - circle: Common pill-shaped toggle (default)
    * - square: Rectangular toggle with square thumb
    * - apple: iOS-style switch (bigger size, rounded edges)
    * - cross: Shows × when off, ✓ when on with red background when off and green when on
    * - neon: Glowing effect when active
-   * 
    */
   @Prop() variant: 'circle' | 'square' | 'apple' | 'cross' | 'neon' = 'circle';
 
-  /**
-   * Color theme variant.
-   */
+  /** Color theme for the active state matching to thingsweb theme */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
-  /**
-   * Enable dark theme for the component.
-   * When true, uses light text on dark backgrounds.
-   */
+  /** Enable dark mode theme styling when true */
   @Prop() dark: boolean = false;
 
-  /**
-   * Current boolean value of the toggle.
-   */
+  /** Current boolean value of the toggle */
   @Prop({ mutable: true }) value: boolean = false;
 
-  /**
-   * Whether the toggle is disabled when true, it cannot be interacted with.
-   */
+  /** Disable user interaction when true */
   @Prop() disabled: boolean = false;
 
-  /**
-   * Whether the toggle is read-only (when true displays value but cannot be changed).
-   */
+  /** Read only mode, display value but prevent changes when true. Just to monitor changes*/
   @Prop({ mutable: true }) readonly: boolean = false;
 
-  /**
-   * Text label displayed next to the toggle.
-   */
+  /** Text label displayed left to the toggle (optional) */
   @Prop() label?: string;
 
-  /**
-   * Enable keyboard navigation (Space and Enter keys).
-   * Default: true
-   */
+  /** Enable keyboard navigation so user can toggle using 'Space' and 'Enter' keys) wehn true */
   @Prop() keyboard: boolean = true;
 
-  /**
-   * Show last updated timestamp when true
-   */
+  /** Show last updated timestamp below the component */
   @Prop() showLastUpdated: boolean = false;
 
-  /**
-   * Show status badge when true
-   */
+  /** Show visual operation status indicators (loading, success, failed) right to the component */
   @Prop() showStatus: boolean = false;
 
-  /** Connection state for readonly mode */
+  /** Connection state for read-only monitoring */
   @Prop({ mutable: true }) connected: boolean = true;
 
-  /** Internal state tracking current visual state */
-  @State() private isActive: boolean = false;
+  // =============== COMPONENT STATE ===============
 
-  /** Internal state for tracking if component is initialized */
-  private isInitialized: boolean = false;
-
-  /** Flag to prevent event loops when setting values programmatically */
-  @State() private suppressEvents: boolean = false;
-
-  /** Operation status for unified status indicators */
+  /** Current operation status for visual feedback */
   @State() operationStatus: OperationStatus = 'idle';
 
-  /** Last error message (if any) */
+  /** Error message from failed operations if any (optional) */
   @State() lastError?: string;
 
-  /** Timestamp of last value update for showLastUpdated feature */
+  /** Timestamp when value was last updated (optional) */
   @State() lastUpdatedTs?: number;
 
-  /** Timestamp of last read pulse (for readonly) */
+  /** Timestamp for read-only pulse animation (optional) */
   @State() readPulseTs?: number;
 
-  /** Auto-updating timer for relative timestamps */
-  private timestampUpdateTimer?: number;
+  /** Internal state that controls the visual appearance of the toggle */
+  @State() private isActive: boolean = false;
 
-  /** Counter to trigger re-renders for timestamp updates */
+  /** Internal state counter for timestamp re-rendering */
   @State() private timestampCounter: number = 0;
 
-  /** Stored write operation for user clicks */
+  /** Internal state to prevents infinite event loops while programmatic updates */
+  @State() private suppressEvents: boolean = false;
+
+  // =============== PRIVATE PROPERTIES ===============
+
+  /** Tracks component initialization state to prevent */
+  private isInitialized: boolean = false;
+
+  /** Timer for updating relative timestamps */
+  private timestampUpdateTimer?: number;
+
+  /** Stores API function from first initialization to use further for any user interactions */
   private storedWriteOperation?: (value: boolean) => Promise<any>;
 
-  /** Helper method to update value and timestamps consistently */
-  private updateValue(value: boolean, prevValue?: boolean, emitEvent: boolean = true): void {
-    this.isActive = value;
-    this.value = value;
-    this.lastUpdatedTs = Date.now();
-    
-    if (this.readonly) {
-      this.readPulseTs = Date.now();
-    }
-    
-    if (emitEvent && !this.suppressEvents) {
-      this.emitValueMsg(value, prevValue);
-    }
-  }
-
-  /** Helper method to set status with automatic timeout */
-  private setStatusWithTimeout(status: OperationStatus, duration: number = 1000): void {
-    this.operationStatus = status;
-    if (status !== 'idle') {
-      setTimeout(() => {
-        if (this.operationStatus === status) this.operationStatus = 'idle';
-      }, duration);
-    }
-  }
+  // =============== EVENTS ===============
 
   /**
-   * Set the toggle value and it has optional device communication and status management.
+   * Emitted when toggle value changes through user interaction or setValue calls.
+   * Contains the new value, previous value, timestamp, and source information.
+   */
+  @Event() valueMsg: EventEmitter<UiMsg<boolean>>;
+
+  // =============== PUBLIC METHODS ===============
+
+  /**
+   * Sets the toggle value with optional device communication api and other options.
+   *
+   * This is the primary method for connecting toggles to real devices.
+   * It supports optimistic updates, error handling, and automatic retries.
    *
    * @param value - The boolean value to set (true = on, false = off)
-   * @param options - Configuration options for the operation
-   * @returns Promise<boolean> - true if successful, false if failed
+   * @param options - Configuration for device communication and behavior
+   * @returns Promise resolving to true if successful, false if failed
    *
-   * @example
+   * @example Basic Usage
    * ```javascript
-   * // Basic usage
    * await toggle.setValue(true);
+   * ```
    *
-   * // With device communication
-   * await toggle.setValue(true, {
-   *   writeOperation: async () => {
-   *     const response = await fetch('/api/devices/light', {
-   *       method: 'POST',
-   *       body: JSON.stringify({ on: true })
-   *     });
+   * @example Device Integration
+   *  * ```javascript
+   * const toggle = document.getElementById('device-toggle');
+   * const initialValue = Boolean(await (await thing.readProperty('power')).value());
+   * await toggle.setValue(initialValue, {
+   *   writeOperation: async value => {
+   *     await thing.writeProperty('power', value);
    *   },
-   *   optimistic: true,  // Update UI immediately
    *   autoRetry: { attempts: 3, delay: 1000 }
    * });
    * ```
@@ -189,113 +154,41 @@ export class UiToggle {
       writeOperation?: (value: boolean) => Promise<any>;
       readOperation?: () => Promise<any>;
       optimistic?: boolean;
-      autoRetry?: { attempts: number; delay: number; };
+      autoRetry?: { attempts: number; delay: number };
       _isRevert?: boolean;
     },
   ): Promise<boolean> {
     const prevValue = this.isActive;
 
-    // Clear error state on new attempts
+    // Clear any existing error state
     if (this.operationStatus === 'error' && !options?._isRevert) {
       this.operationStatus = 'idle';
       this.lastError = undefined;
       this.connected = true;
     }
 
-    // SIMPLE CASE: Just set value without operations
+    // Simple value update without other operations
     if (!options?.writeOperation && !options?.readOperation) {
       this.updateValue(value, prevValue);
       return true;
     }
 
-    // SETUP CASE: Store writeOperation for user clicks
+    // If there is writeOperation store operation for future user interactions
     if (options.writeOperation && !options._isRevert) {
       this.storedWriteOperation = options.writeOperation;
-      this.updateValue(value, prevValue, false); // No event for setup
+      this.updateValue(value, prevValue, false); 
       return true;
     }
 
-    // EXECUTION CASE: Execute operations immediately (internal calls)
+    // Execute operation immediately if no options selected 
     return this.executeOperation(value, prevValue, options);
   }
 
-  /** Simplified operation execution */
-  private async executeOperation(
-    value: boolean, 
-    prevValue: boolean, 
-    options: any
-  ): Promise<boolean> {
-    const optimistic = options?.optimistic !== false;
-
-    // Optimistic update
-    if (optimistic && !options?._isRevert) {
-      this.updateValue(value, prevValue);
-    }
-
-    this.operationStatus = 'loading';
-
-    try {
-      // Execute the operation
-      if (options.writeOperation) {
-        await options.writeOperation(value);
-      } else if (options.readOperation) {
-        await options.readOperation();
-      }
-
-      // Success
-      this.setStatusWithTimeout('success', 1200);
-
-      // Non-optimistic update
-      if (!optimistic) {
-        this.updateValue(value, prevValue);
-      }
-
-      return true;
-
-    } catch (error) {
-      // Error handling
-      this.operationStatus = 'error';
-      this.lastError = error?.message || String(error) || 'Operation failed';
-
-      // Revert optimistic changes
-      if (optimistic && !options?._isRevert) {
-        this.updateValue(prevValue, value, false);
-      }
-
-      // Auto-retry
-      if (options?.autoRetry && options.autoRetry.attempts > 0) {
-        setTimeout(() => {
-          this.setValue(value, {
-            ...options,
-            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 }
-          });
-        }, options.autoRetry.delay);
-      } else {
-        this.setStatusWithTimeout('idle', 3000); // Clear error after 3s
-      }
-
-      return false;
-    }
-  }
-
   /**
-   * Get the current toggle value with optional metadata.
+   * Gets the current toggle value with optional metadata.
    *
-   * @param includeMetadata - Whether to include additional metadata (default: false)
-   * @returns Promise<boolean | MetadataResult> - Current value or object with metadata
-   *
-   * @example
-   * ```javascript
-   * // Basic usage
-   * const isOn = await toggle.getValue();
-   * console.log('Toggle is:', isOn ? 'ON' : 'OFF');
-   *
-   * // With metadata
-   * const result = await toggle.getValue(true);
-   * console.log('Value:', result.value);
-   * console.log('Last updated:', new Date(result.lastUpdated));
-   * console.log('Status:', result.status);
-   * ```
+   * @param includeMetadata - Whether to include status, timestamp and other information
+   * @returns Current value or detailed metadata object
    */
   @Method()
   async getValue(includeMetadata: boolean = false): Promise<boolean | { value: boolean; lastUpdated?: number; status: string; error?: string }> {
@@ -311,60 +204,25 @@ export class UiToggle {
   }
 
   /**
-   * Set value without triggering events (for external updates).
-   * Use this method when updating from external data sources to prevent event loops.
+   * This method updates the value silently without triggering events.
+   *
+   * Use this for external data synchronization to prevent event loops.
+   * Perfect for WebSocket updates or polling from remote devices.
    *
    * @param value - The boolean value to set silently
-   * @returns Promise<void>
-   *
-   * @example
-   * ```javascript
-   * // Basic silent update
-   * await toggle.setValueSilent(true);
-   *
-   * // In real-time context (WebSocket)
-   * websocket.onmessage = async (event) => {
-   *   const data = JSON.parse(event.data);
-   *   await toggle.setValueSilent(data.isOn);
-   *
-   *   // Optional visual indicator
-   *   if (toggle.readonly) {
-   *     await toggle.triggerReadPulse();
-   *   }
-   * };
-   * ```
    */
   @Method()
   async setValueSilent(value: boolean): Promise<void> {
-    this.updateValue(value, this.isActive, false); // Use helper with emitEvent=false
+    this.updateValue(value, this.isActive, false);
   }
 
   /**
-   * Set operation status for external status management.
-   * Use this method to manually control the visual status indicators
-   * when managing device communication externally.
+   * (Advance) to manually set the operation status indicator.
    *
-   * @param status - The status to set ('idle', 'loading', 'success', 'error')
-   * @param errorMessage - Optional error message for error status
-   * @returns Promise<void>
+   * Useful when managing device communication externally and you want to show loading/success/error states.
    *
-   * @example
-   * ```javascript
-   * const toggle = document.querySelector('ui-toggle');
-   *
-   * // Show loading indicator
-   * await toggle.setStatus('loading');
-   *
-   * try {
-   *   await deviceOperation();
-   *   await toggle.setStatus('success');
-   * } catch (error) {
-   *   await toggle.setStatus('error', error.message);
-   * }
-   *
-   * // Clear status indicator
-   * await toggle.setStatus('idle');
-   * ```
+   * @param status - The status to display
+   * @param errorMessage - (Optional) error message for error status
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
@@ -372,111 +230,47 @@ export class UiToggle {
   }
 
   /**
-   * Trigger a read pulse indicator for readonly mode whenever data is fetched.
-   * Use this method to provide visual feedback when refreshing data from external sources
-
-   * @returns Promise<void>
+   * This triggers a visual pulse for read-only mode.
    *
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * // Show visual pulse when data is refreshed
-   * const toggle = document.querySelector('ui-toggle');
-   * await toggle.triggerReadPulse();
-   * ```
-   *
+   * Useful to shows users when data has been refreshed from an external source.
+   * The pulse automatically fades after 1.5 seconds.
    */
   @Method()
   async triggerReadPulse(): Promise<void> {
     if (this.readonly) {
       this.readPulseTs = Date.now();
-      // Auto-hide after animation duration
       setTimeout(() => {
-        if (this.readPulseTs && Date.now() - this.readPulseTs >= 1500) {
+        if (this.readPulseTs && Date.now() - this.readPulseTs >= 1500) { // 1.5 seconds
           this.readPulseTs = undefined;
         }
       }, 1500);
     }
   }
 
-  /** Render status badge */
-  private renderStatusBadge() {
-    // Only render status badge if showStatus is true
-    if (!this.showStatus) {
-      return null;
-    }
+  // =============== LIFECYCLE METHODS ===============
 
-    if (this.readonly) {
-      if (!this.connected) {
-        return StatusIndicator.renderStatusBadge('error', 'light', 'Disconnected', h);
-      }
-      if (this.readPulseTs && Date.now() - this.readPulseTs < 1500) {
-        return StatusIndicator.renderStatusBadge('success', 'light', 'Data received', h);
-      }
-      // Show idle status for readonly when connected
-      return StatusIndicator.renderStatusBadge('idle', 'light', 'Connected', h);
-    }
-    
-    // For interactive mode, show operation status or default idle
-    const status = this.operationStatus || 'idle';
-    const message = this.lastError || (status === 'idle' ? 'Ready' : '');
-    return StatusIndicator.renderStatusBadge(status, 'light', message, h);
-  }
-
-  /**
-   * Event emitted when the toggle value changes.
-   *
-   * @example
-   * ```javascript
-   * toggle.addEventListener('valueMsg', (event) => {
-   *   // event.detail contains:
-   *   // - newVal: new value (boolean)
-   *   // - prevVal: previous value
-   *   // - source: component id
-   *   // - ts: timestamp
-   *
-   *   console.log('New value:', event.detail.newVal);
-   *
-   *   // Example: Send to server
-   *   fetch('/api/device/light', {
-   *     method: 'POST',
-   *     body: JSON.stringify({ on: event.detail.newVal })
-   *   });
-   * });
-   * ```
-   */
-  @Event() valueMsg: EventEmitter<UiMsg<boolean>>;
-
-  /** Component lifecycle */
+  /** Initialize component state from props */
   componentWillLoad() {
     this.isActive = Boolean(this.value);
     this.isInitialized = true;
     if (this.showLastUpdated) this.startTimestampUpdater();
   }
 
+  /** Show initial pulse for read-only components */
   componentDidLoad() {
     if (this.readonly) {
       setTimeout(() => (this.readPulseTs = Date.now()), 200);
     }
   }
 
+  /** Clean up timers when component is removed */
   disconnectedCallback() {
     this.stopTimestampUpdater();
   }
 
-  /** Timestamp management */
-  private startTimestampUpdater() {
-    this.stopTimestampUpdater();
-    this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 60000);
-  }
+  // =============== WATCHERS ===============
 
-  private stopTimestampUpdater() {
-    if (this.timestampUpdateTimer) {
-      clearInterval(this.timestampUpdateTimer);
-      this.timestampUpdateTimer = undefined;
-    }
-  }
-
-  /** Watch for value prop changes and update internal state */
+  /** Sync internal state when value prop changes externally */
   @Watch('value')
   watchValue(newVal: boolean) {
     if (!this.isInitialized) return;
@@ -489,7 +283,89 @@ export class UiToggle {
     }
   }
 
-  /** Event handling */
+  // =============== PRIVATE METHODS ===============
+
+  /**
+   * This is the core state update method that handles value changes consistently.
+   * It updates both internal state and external prop and also manages timestamps, and emits events (optional).
+   */
+  private updateValue(value: boolean, prevValue?: boolean, emitEvent: boolean = true): void {
+    this.isActive = value;
+    this.value = value;
+    this.lastUpdatedTs = Date.now();
+
+    if (this.readonly) {
+      this.readPulseTs = Date.now();
+    }
+
+    if (emitEvent && !this.suppressEvents) {
+      this.emitValueMsg(value, prevValue);
+    }
+  }
+
+  /** Sets different operation status with automatic timeout to return to its idle state */
+  private setStatusWithTimeout(status: OperationStatus, duration: number = 1000): void {
+    this.operationStatus = status;
+    if (status !== 'idle') {
+      setTimeout(() => {
+        if (this.operationStatus === status) this.operationStatus = 'idle';
+      }, duration);
+    }
+  }
+
+  /** Executes stored operations with error handling and retry logic */
+  private async executeOperation(value: boolean, prevValue: boolean, options: any): Promise<boolean> {
+    const optimistic = options?.optimistic !== false;
+
+    // Show new value immediately (if optimistic = true)
+    if (optimistic && !options?._isRevert) {
+      this.updateValue(value, prevValue);
+    }
+
+    this.operationStatus = 'loading';
+
+    try {
+      // Execute the API call
+      if (options.writeOperation) {
+        await options.writeOperation(value);
+      } else if (options.readOperation) {
+        await options.readOperation();
+      }
+
+      this.setStatusWithTimeout('success', 1200); // Success status for 1.2 seconds
+
+      // Update value after successful operation, (if optimistic = false)
+      if (!optimistic) {
+        this.updateValue(value, prevValue);
+      }
+
+      return true;
+    } catch (error) {
+      this.operationStatus = 'error';
+      this.lastError = error?.message || String(error) || 'Operation failed';
+
+      // Revert optimistic changes if operation is not successful or has an error
+      if (optimistic && !options?._isRevert) {
+        this.updateValue(prevValue, value, false);
+      }
+
+      // Retry logic
+      if (options?.autoRetry && options.autoRetry.attempts > 0) {
+        setTimeout(() => {
+          this.setValue(value, {
+            ...options,
+            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 },
+          });
+        }, options.autoRetry.delay);
+      } else {
+        this.setStatusWithTimeout('idle', 3000); // Clear error after 3 seconds
+      }
+
+      return false;
+    }
+  }
+
+  /** Emits value change events with consistent UIMsg data structure */
   private emitValueMsg(value: boolean, prevValue?: boolean) {
     if (this.suppressEvents) return;
     this.valueMsg.emit({
@@ -501,17 +377,18 @@ export class UiToggle {
     });
   }
 
+  /** Handles user click interactions */
   private handleChange = async () => {
     if (this.disabled || this.readonly) return;
-    
+
     const newValue = !this.isActive;
     const prevValue = this.isActive;
-    
-    // Execute stored writeOperation if available
+
+    // Execute stored operation if available
     if (this.storedWriteOperation) {
       this.operationStatus = 'loading';
-      this.updateValue(newValue, prevValue); // Optimistic update
-      
+      this.updateValue(newValue, prevValue);
+
       try {
         await this.storedWriteOperation(newValue);
         this.setStatusWithTimeout('success');
@@ -519,20 +396,21 @@ export class UiToggle {
         console.error('Write operation failed:', error);
         this.operationStatus = 'error';
         this.lastError = error?.message || 'Operation failed';
-        this.updateValue(prevValue, newValue, false); // Revert, no event
-        this.setStatusWithTimeout('idle', 3000);
+        this.updateValue(prevValue, newValue, false);
+        this.setStatusWithTimeout('idle', 3000); // Clear error after 3 seconds
       }
     } else {
-      // Simple toggle without operations
+      // Simple toggle without device operations
       this.updateValue(newValue, prevValue);
-      
+
       if (this.showStatus) {
         this.operationStatus = 'loading';
-        setTimeout(() => this.setStatusWithTimeout('success'), 100);
+        setTimeout(() => this.setStatusWithTimeout('success'), 100); // Quick success feedback
       }
     }
-  }
+  };
 
+  /** Handle keyboard 'enter' and 'spacebar' input to toggle switch state */
   private handleKeyDown = (event: KeyboardEvent) => {
     if (this.disabled || this.readonly || !this.keyboard) return;
     if (event.key === ' ' || event.key === 'Enter') {
@@ -541,7 +419,49 @@ export class UiToggle {
     }
   };
 
-  /** Styling helpers */
+  /** Manages timestamp update timer for relative time display */
+  private startTimestampUpdater() {
+    this.stopTimestampUpdater();
+    this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 60000); //  Update every minute
+  }
+
+  /** Stops the timestamp update timer */
+  private stopTimestampUpdater() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+      this.timestampUpdateTimer = undefined;
+    }
+  }
+
+  // =============== RENDERING HELPERS ===============
+
+  /** Renders the status badge according to current operation state */
+  private renderStatusBadge() {
+    if (!this.showStatus) return null;
+
+    if (this.readonly) {
+      if (!this.connected) {
+        return StatusIndicator.renderStatusBadge('error', 'light', 'Disconnected', h);
+      }
+      if (this.readPulseTs && Date.now() - this.readPulseTs < 1500) {
+        return StatusIndicator.renderStatusBadge('success', 'light', 'Data received', h);
+      }
+      return StatusIndicator.renderStatusBadge('idle', 'light', 'Connected', h);
+    }
+
+    const status = this.operationStatus || 'idle';
+    const message = this.lastError || (status === 'idle' ? 'Ready' : '');
+    return StatusIndicator.renderStatusBadge(status, 'light', message, h);
+  }
+
+  /** Renders the last updated timestamp */
+  private renderLastUpdated() {
+    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
+    return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), this.dark ? 'dark' : 'light', h);
+  }
+  // =============== STYLING HELPERS ===============
+
+  /** Generates CSS classes for the toggle container based on variant,color and state */
   private getToggleStyle(): string {
     const { variant, disabled, isActive, color } = this;
 
@@ -559,68 +479,24 @@ export class UiToggle {
     const size = sizeMap[variant] || sizeMap.default;
     const shape = shapeMap[variant] || shapeMap.default;
     const disabledClass = disabled ? 'disabled-state' : '';
+
     
-    // Add neon glow classes when variant is neon and toggle is active
+
+    // Neon glow effects
     let neonClass = '';
     if (variant === 'neon' && isActive) {
-      if (color === 'secondary') {
-        neonClass = 'neon-secondary';
-      } else {
-        neonClass = 'neon-primary';
-      }
+      neonClass = color === 'secondary' ? 'neon-secondary' : 'neon-primary';
     } else if (variant === 'neon' && !isActive) {
-      neonClass = 'neon-red'; // Red glow when neon toggle is off
+      neonClass = 'neon-red';
     }
 
     return `relative inline-block cursor-pointer transition-all duration-300 ease-in-out ${size} ${shape} ${disabledClass} ${neonClass}`.trim();
   }
 
-  private getThumbStyle(): string {
-    const { variant, isActive } = this;
-
-    if (variant === 'apple') {
-      const movement = isActive ? 'translate-x-4' : 'translate-x-0';
-      return `absolute w-6 h-6 bg-white transition-all duration-200 ease-in-out shadow-md rounded-full top-0 left-0 ${movement}`;
-    }
-
-    const shape = variant === 'square' ? 'rounded-sm' : 'rounded-full';
-    const position = variant === 'neon' ? 'top-0.5 left-1' : 'top-1 left-1';
-    const movement = isActive ? 'translate-x-6' : 'translate-x-0';
-
-    return `absolute w-4 h-4 bg-white transition-transform duration-300 ease-in-out shadow-sm ${shape} ${position} ${movement}`;
-  }
-
-  private getBackgroundColor(): string {
-    const { color, variant, isActive } = this;
-
-    if (color === 'neutral') return isActive ? 'var(--color-neutral)' : '#d1d5db';
-    if (variant === 'cross') return isActive ? this.getActiveColor() : 'var(--color-danger)';
-    if (variant === 'apple') return isActive ? 'var(--color-success)' : '#374151';
-    if (variant === 'neon') return isActive ? this.getNeonColor() : 'var(--color-danger)';
-
-    return isActive ? this.getActiveColor() : '#d1d5db';
-  }
-
-  /** Get active color using CSS variables */
-  private getActiveColor(): string {
-    switch (this.color) {
-      case 'secondary':
-        return 'var(--color-secondary)';
-      case 'neutral':
-        return 'var(--color-neutral)';
-      default:
-        return 'var(--color-primary)';
-    }
-  }
-
-  /** Get neon color using CSS variables */
-  private getNeonColor(): string {
-    return this.color === 'secondary' ? 'var(--color-secondary)' : 'var(--color-primary)';
-  }
-
-  /** Render cross/tick icons for cross variant */
+  /** Renders cross/tick icons for the cross variant */
   private renderCrossIcons() {
     if (this.variant !== 'cross') return null;
+
     return (
       <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
         {!this.isActive ? (
@@ -636,13 +512,56 @@ export class UiToggle {
     );
   }
 
-  /** Render last updated timestamp */
-  private renderLastUpdated() {
-    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
-    return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), this.dark ? 'dark' : 'light', h);
+  /** Generates CSS classes for the toggle thumb */
+  private getThumbStyle(): string {
+    const { variant, isActive } = this;
+
+    if (variant === 'apple') {
+      const movement = isActive ? 'translate-x-4' : 'translate-x-0';
+      return `absolute w-6 h-6 bg-white transition-all duration-200 ease-in-out shadow-md rounded-full top-0 left-0 ${movement}`;
+    }
+
+    const shape = variant === 'square' ? 'rounded-sm' : 'rounded-full';
+    const position = variant === 'neon' ? 'top-0.5 left-1' : 'top-1 left-1';
+    const movement = isActive ? 'translate-x-6' : 'translate-x-0';
+
+    return `absolute w-4 h-4 bg-white transition-transform duration-300 ease-in-out shadow-sm ${shape} ${position} ${movement}`;
   }
 
-  /** Render the component */
+  /** Generate the background color based on variant and state */
+  private getBackgroundColor(): string {
+    const { color, variant, isActive } = this;
+
+    if (color === 'neutral') return isActive ? 'var(--color-neutral)' : '#d1d5db';
+    if (variant === 'cross') return isActive ? this.getActiveColor() : 'var(--color-danger)';
+    if (variant === 'apple') return isActive ? 'var(--color-success)' : '#374151';
+    if (variant === 'neon') return isActive ? this.getNeonColor() : 'var(--color-danger)';
+
+    return isActive ? this.getActiveColor() : '#d1d5db';
+  }
+
+  /** Generate the active color using global CSS variables */
+  private getActiveColor(): string {
+    switch (this.color) {
+      case 'secondary':
+        return 'var(--color-secondary)';
+      case 'neutral':
+        return 'var(--color-neutral)';
+      default:
+        return 'var(--color-primary)';
+    }
+  }
+
+  /** Generate the neon color using global CSS variables */
+  private getNeonColor(): string {
+    return this.color === 'secondary' ? 'var(--color-secondary)' : 'var(--color-primary)';
+  }
+
+  // =============== MAIN COMPONENT RENDER METHOD ===============
+
+  /**
+   * Renders the complete toggle component with all features and styles.
+   */
   render() {
     const canInteract = !this.disabled && !this.readonly;
     const hoverTitle = this.readonly
@@ -670,8 +589,9 @@ export class UiToggle {
             )}
           </slot>
 
-          {/* Toggle control */}
+          {/* Toggle Control */}
           {this.readonly ? (
+            // Read-only indicator
             <span
               class={`inline-flex items-center justify-center transition-all duration-300 ${
                 this.variant === 'square' ? 'w-6 h-6 rounded-md' : this.variant === 'apple' ? 'w-7 h-7 rounded-full' : 'w-6 h-6 rounded-full'
@@ -688,6 +608,7 @@ export class UiToggle {
               </span>
             </span>
           ) : (
+            // Interactive toggle
             <span
               class={`${this.getToggleStyle()} ${canInteract ? 'hover:shadow-md' : ''} transition-all duration-200`}
               style={{ backgroundColor: this.getBackgroundColor() }}
@@ -705,7 +626,7 @@ export class UiToggle {
             </span>
           )}
 
-          {/* Read pulse indicator */}
+          {/* Read Pulse Indicator */}
           {this.readonly && this.readPulseTs && Date.now() - this.readPulseTs < 1500 && (
             <span class="ml-1 flex items-center" part="readonly-pulse-sibling">
               <span
@@ -720,11 +641,11 @@ export class UiToggle {
             </span>
           )}
 
-          {/* Status badge */}
+          {/* Status Badge */}
           {this.renderStatusBadge()}
         </div>
 
-        {/* Last updated timestamp */}
+        {/* Last Updated Timestamp */}
         {this.renderLastUpdated()}
       </div>
     );
