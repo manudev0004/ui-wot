@@ -269,9 +269,9 @@
         // Wait for all components to be defined
         const COMPONENT_TAGS = ['ui-toggle', 'ui-slider', 'ui-number-picker', 'ui-button', 'ui-checkbox', 'ui-calendar', 'ui-notification', 'ui-text', 'ui-event'];
         await Promise.all(COMPONENT_TAGS.map(tag => customElements.whenDefined(tag)));
-        console.log('All components ready');
+        console.log('Components ready');
 
-        // Initialize WoT with timeout
+        // Initialize WoT
         if (!window.WoT) {
           console.error('WoT library not loaded');
           return;
@@ -281,11 +281,13 @@
         const servient = new window.WoT.Core.Servient();
         servient.addClientFactory(new window.WoT.Http.HttpClientFactory());
         const wot = await servient.start();
-  console.log('WoT Servient started');
+        console.log('WoT servient started');
 
-        // Fetch and consume TD
+        // Fetch and consume Thing Description
         const tdUrl = 'http://plugfest.thingweb.io/http-data-schema-thing';
         let thing;
+        let serverHealth = 'unknown';
+        
         try {
             console.log('Fetching TD from:', tdUrl);
           const response = await fetch(tdUrl);
@@ -293,8 +295,26 @@
           thing = await wot.consume(tdJson);
           console.log('TD consumed successfully');
           console.log('Available properties:', Object.keys(tdJson.properties || {}));
+          
+          // Test server health by trying a simple read
+          try {
+            await thing.readProperty('bool');
+            serverHealth = 'healthy';
+            console.log('Server health check passed');
+          } catch (healthErr) {
+            serverHealth = 'read-only';
+            console.warn('Server allows TD fetch but read failed:', healthErr.message);
+          }
         } catch (error) {
           console.error('Failed to fetch/consume TD:', error);
+          // Show user-friendly error message
+          document.body.insertAdjacentHTML('beforeend', `
+            <div style="background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 16px; margin: 16px auto; max-width: 900px; color: #c33;">
+              <strong>Demo Server Unavailable</strong><br>
+              The WoT demo server at plugfest.thingweb.io is currently unavailable. 
+              Components are still functional - you can interact with them to see the UI behavior.
+            </div>
+          `);
           return;
         }
 
@@ -306,6 +326,7 @@
         // 3) Listens for the component's `valueMsg` events and writes back to the Thing
         // ----------------------------------------------------------------
 
+        // Define component bindings - these components bind to TD properties
         const bindings = [
           { element: document.getElementById('td-toggle'), property: 'bool' },
           { element: document.getElementById('td-slider'), property: 'num' },
@@ -314,7 +335,7 @@
           { element: document.getElementById('td-text'), property: 'string' }
         ].filter(b => b.element);
 
-        // Special handling for non-TD components (display only, no binding)
+        // Define standalone components - these are display-only without TD binding
         const standaloneComponents = [
           document.getElementById('td-calendar'),
           document.getElementById('td-notification'),
@@ -327,69 +348,106 @@
           document.getElementById('td-text-editable')
         ].filter(el => el);
 
-        // Initialize standalone components
+        // Initialize standalone components (display-only)
         for (const element of standaloneComponents) {
           if (element && typeof element.componentOnReady === 'function') {
             await element.componentOnReady();
           }
         }
-        console.log(`Standalone components ready: ${standaloneComponents.length}`);
+        
+        // Setup button component - connects to TD action instead of property
+        const buttonElement = document.getElementById('td-button');
+        if (buttonElement && thing) {
+          await buttonElement.componentOnReady();
+          
+          // Connect button to void-void action from Thing Description
+          await buttonElement.setAction(async () => {
+            console.log('Invoking void-void action');
+            await thing.invokeAction('void-void');
+            console.log('Action invoked successfully');
+          });
+          
+          console.log('Button connected to void-void action');
+        }
+        
+        console.log('Standalone components ready:', standaloneComponents.length);
+        console.log('Property bindings:', bindings.length);
 
-        console.log(`Bindings: ${bindings.length}`);
+        // Show server status info
+        if (serverHealth === 'read-only') {
+          document.body.insertAdjacentHTML('beforeend', `
+            <div style="background: #fef9e7; border: 1px solid #f7dc6f; border-radius: 8px; padding: 16px; margin: 16px auto; max-width: 900px; color: #b7950b;">
+              <strong>Server Write Issues</strong><br>
+              The demo server appears to have issues with write operations. You may see errors when changing values, but the components are working correctly.
+            </div>
+          `);
+        } else if (serverHealth === 'healthy') {
+          console.log('Server is healthy for read/write operations');
+        }
 
-        // Initial read and simple binding setup
+        // Setup TD property bindings - read initial values and setup write operations
         for (const binding of bindings) {
-          // Ensure the Stencil component is ready
+          // Wait for component to be ready
           if (binding.element && typeof binding.element.componentOnReady === 'function') {
             await binding.element.componentOnReady();
           }
 
           try {
-            // Read the property once and set the component's value
-            const propertyValue = await thing.readProperty(binding.property);
+            // Read initial property value with timeout
+            const readPromise = thing.readProperty(binding.property);
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Read operation timed out')), 3000)
+            );
+            
+            const propertyValue = await Promise.race([readPromise, timeoutPromise]);
             let value = await propertyValue.value();
             
-            // Special handling for different component types
+            // Handle text component - convert non-string values to strings
             if (binding.element.id === 'td-text' && typeof value !== 'string') {
-              // Convert non-string values to string representation
               value = String(value);
             }
             
-            // Call the component's public method so it updates its UI/state
+            // Setup component with value and write operation
             if (typeof binding.element.setValue === 'function') {
-              await binding.element.setValue(value);
+              await binding.element.setValue(value, {
+                writeOperation: async (newValue) => {
+                  console.log('Writing', newValue, 'to', binding.property);
+                  
+                  // Write to Thing Description property with timeout
+                  const writePromise = thing.writeProperty(binding.property, newValue);
+                  const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Write operation timed out')), 5000)
+                  );
+                  
+                  await Promise.race([writePromise, timeoutPromise]);
+                  console.log('Wrote', binding.property + ':', newValue);
+                }
+              });
             }
             if (typeof binding.element.setStatus === 'function') {
               await binding.element.setStatus('success');
             }
-            console.log(`Initial ${binding.property}:`, value);
+            console.log('Initial', binding.property + ':', value);
           } catch (e) {
-            console.error(`Read failed ${binding.property}:`, e.message || e);
+            console.error('Read failed', binding.property + ':', e.message || e);
+            
+            // Set default value and error status when read fails
+            let defaultValue;
+            if (binding.property === 'bool') {
+              defaultValue = false;
+            } else if (binding.property === 'num' || binding.property === 'int') {
+              defaultValue = 0;
+            } else {
+              defaultValue = `Demo (${binding.property})`;
+            }
+            
+            if (typeof binding.element.setValue === 'function') {
+              await binding.element.setValue(defaultValue);
+            }
             if (typeof binding.element.setStatus === 'function') {
-              await binding.element.setStatus('error', e.message || String(e));
+              await binding.element.setStatus('error', 'Server read failed');
             }
           }
-
-          // Write-back: when the component emits a valueMsg, write to the Thing
-          binding.element.addEventListener('valueMsg', async (ev) => {
-            let newValue = ev.detail && (ev.detail.payload ?? ev.detail);
-            
-            try {
-              if (typeof binding.element.setStatus === 'function') {
-                await binding.element.setStatus('loading');
-              }
-              await thing.writeProperty(binding.property, newValue);
-              if (typeof binding.element.setStatus === 'function') {
-                await binding.element.setStatus('success');
-              }
-              console.log(`Wrote ${binding.property}:`, newValue);
-            } catch (err) {
-              console.error(`Write failed ${binding.property}:`, err.message || err);
-              if (typeof binding.element.setStatus === 'function') {
-                await binding.element.setStatus('error', err.message || String(err));
-              }
-            }
-          });
         }
       })();
     </script>

@@ -68,9 +68,6 @@ export class UiCheckbox {
   /** Show visual operation status indicators (loading, success, failed) right to the component */
   @Prop() showStatus: boolean = false;
 
-  /** Connection state for read-only monitoring */
-  @Prop({ mutable: true }) connected: boolean = true;
-
   // ============================== COMPONENT STATE ==============================
 
   /** Current operation status for visual feedback */
@@ -156,7 +153,6 @@ export class UiCheckbox {
     if (this.operationStatus === 'error' && !options?._isRevert) {
       this.operationStatus = 'idle';
       this.lastError = undefined;
-      this.connected = true;
     }
 
     // Simple value update without other operations
@@ -219,19 +215,6 @@ export class UiCheckbox {
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
     StatusIndicator.applyStatus(this, status, errorMessage);
-  }
-
-  /**
-   * This triggers a visual pulse for read-only mode.
-   *
-   * Note: Checkbox doesn't have readonly mode but keeping method for consistency.
-   * Updates the last updated timestamp when called.
-   */
-  @Method()
-  async triggerReadPulse(): Promise<void> {
-    if (this.showLastUpdated) {
-      this.lastUpdatedTs = Date.now();
-    }
   }
 
   // ============================== LIFECYCLE METHODS ==============================

@@ -1,34 +1,24 @@
-import { Component, Prop, State, h, Event, EventEmitter, Element, Watch, Method } from '@stencil/core';
-import { UiMsg } from '../../utils/types';
-import { StatusIndicator } from '../../utils/status-indicator';
-
-export interface UiButtonClick { label: string }
+import { Component, Element, Prop, State, Event, EventEmitter, Method, h } from '@stencil/core';
+import { UiMsg } from '../../utils/types'; // Standard message format
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator'; // Status indicator utility
 
 /**
- * Button component with various visual styles, matching the ui-number-picker design family.
- * Supports the same variants, colors, and themes as the number picker.
+ * A simple button component designed for WoT device actions.
+ *
+ * Features multiple visual styles, status indicators, and Web of Things integration.
+ * Buttons trigger actions rather than managing state values.
  *
  * @example Basic Usage
  * ```html
- * <ui-button variant="minimal" label="Click Me"></ui-button>
+ * <ui-button label="Click Me"></ui-button>
+ * <ui-button variant="filled" label="Submit" show-status="true"></ui-button>
  * ```
  *
- * @example Different Variants
- * ```html
- * <ui-button variant="outlined" color="primary" label="Outlined Button"></ui-button>
- * <ui-button variant="filled" color="secondary" label="Filled Button"></ui-button>
- * ```
- *
- * @example Event Handling
- * ```html
- * <ui-button id="my-button" label="Custom Handler"></ui-button>
- * ```
- *
- * @example JavaScript Event Handling
+ * @example WoT Action Integration
  * ```javascript
- * document.querySelector('#my-button').addEventListener('valueMsg', (event) => {
- *   console.log('Button clicked:', event.detail.payload);
- *   console.log('Button label:', event.detail.source);
+ * const button = document.getElementById('device-button');
+ * await button.setAction(async () => {
+ *   await thing.invokeAction('execute');
  * });
  * ```
  */
@@ -38,783 +28,288 @@ export interface UiButtonClick { label: string }
   shadow: true,
 })
 export class UiButton {
-  @Element() el!: HTMLElement;
+  @Element() el: HTMLElement;
+
+  // ============================================= COMPONENT PROPERTIES =============================================
 
   /**
    * Visual style variant of the button.
-   * - minimal: Clean button with subtle background (default)
-   * - outlined: Button with border outline
-   * - filled: Solid filled button
+   * - minimal: Clean design with transparent background
+   * - outlined: Border-focused design with outline style
+   * - filled: Solid background design
    */
   @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'outlined';
 
-  /**
-   * Whether the component is disabled (cannot be interacted with).
-   * @example
-   * ```html
-   * <ui-button disabled="true" label="Cannot Click"></ui-button>
-   * ```
-   */
-  @Prop() disabled: boolean = false;
-
-  /**
-   * Dark theme variant.
-   * @example
-   * ```html
-   * <ui-button dark="true" label="Dark Button"></ui-button>
-   * ```
-   */
-  @Prop() dark: boolean = false;
-
-  /**
-   * Color scheme to match thingsweb webpage
-   * @example
-   * ```html
-   * <ui-button color="secondary" label="Colored Button"></ui-button>
-   * ```
-   */
+  /** Color theme for the button matching to thingsweb theme */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
-  /**
-   * Button text label.
-   * @example
-   * ```html
-   * <ui-button label="Click Me"></ui-button>
-   * ```
-   */
+  /** Enable dark mode theme styling when true */
+  @Prop() dark: boolean = false;
+
+  /** Text label displayed on the button */
   @Prop() label: string = 'Button';
 
-  /**
-   * Whether the component is read-only (displays value but cannot be changed).
-   * @example
-   * ```html
-   * <ui-button readonly="true" label="Display Only"></ui-button>
-   * ```
-   */
-  @Prop() readonly: boolean = false;
+  /** Disable user interaction when true */
+  @Prop() disabled: boolean = false;
 
-  /**
-   * Enable keyboard navigation.
-   * @example
-   * ```html
-   * <ui-button keyboard="false" label="No Keyboard"></ui-button>
-   * ```
-   */
+  /** Enable keyboard navigation so user can click using 'Space' and 'Enter' keys when true */
   @Prop() keyboard: boolean = true;
 
-  /**
-   * Show last updated timestamp below the component.
-   * @example
-   * ```html
-   * <ui-button showLastUpdated="true" label="With Timestamp"></ui-button>
-   * ```
-   */
-  @Prop() showLastUpdated: boolean = true;
+  /** Show last updated timestamp below the component */
+  @Prop() showLastUpdated: boolean = false;
 
-  /**
-   * Show status badge when true
-   */
-  @Prop() showStatus: boolean = true;
+  /** Show visual operation status indicators (loading, success, failed) right to the component */
+  @Prop() showStatus: boolean = false;
 
-  /** Connection state for readonly mode */
-  @Prop({ mutable: true }) connected: boolean = true;
-
-  /** Internal state for tracking if component is initialized */
-  private isInitialized: boolean = false;
-
-  /** Current button value - corresponds to its label */
-  @State() isActive: string = '';
-
-  /** Prevents infinite event loops during external updates */
-  @State() suppressEvents: boolean = false;
+  // =============== COMPONENT STATE ===============
 
   /** Current operation status for visual feedback */
-  @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
+  @State() operationStatus: OperationStatus = 'idle';
 
-  /** Error message for failed operations */
+  /** Error message from failed operations if any (optional) */
   @State() lastError?: string;
 
-  /** Timestamp of last successful update */
-  @State() lastUpdatedTs?: number;
-  
-  /** Timer for auto-updating timestamps */
-  @State() timestampUpdateTimer?: number;
-  @State() private timestampCounter = 0;
+  /** Timestamp when button was last clicked (optional) */
+  @State() lastClickedTs?: number;
+
+  /** Internal state counter for timestamp re-rendering */
+  @State() private timestampCounter: number = 0;
+
+  // =============== PRIVATE PROPERTIES ===============
+
+  /** Timer for updating relative timestamps */
+  private timestampUpdateTimer?: number;
+
+  /** Stores the action function to execute on click */
+  private storedAction?: () => Promise<any>;
+
+  // =============== EVENTS ===============
 
   /**
-   * Deprecated: string-based handler names are removed.
-   * Use the `buttonClick` DOM event instead:
-   * document.querySelector('ui-button').addEventListener('buttonClick', (e) => { ... })
+   * Emitted when button is clicked through user interaction.
+   * Contains the button label, timestamp, and source information.
    */
+  @Event() clickMsg: EventEmitter<UiMsg<string>>;
+
+  // =============== PUBLIC METHODS ===============
 
   /**
-   * Thing Description URL for action invocation.
-   * When provided, button will trigger an action on the device.
-   * @example "http://device.local/actions/turnOn"
-   */
-  // TD integration removed: use normal clickHandler or events for external integration
-
-  /**
-   * Primary event emitted when the component value changes.
-   * Use this event for all value change handling.
-   * @example
+   * Sets the action to execute when button is clicked.
+   * This is the primary method for connecting button to real devices .
+   *
+   * @param actionFn - The async function to execute on button click
+   * @returns Promise resolving to true if successful, false if failed
+   *
+   * @example Basic Usage
    * ```javascript
-   * document.querySelector('ui-button').addEventListener('valueMsg', (event) => {
-   *   console.log('Button clicked:', event.detail);
+   * await button.setAction(async () => {
+   *   await thing.invokeAction('execute');
    * });
-   * ```
-   */
-  @Event() valueMsg!: EventEmitter<UiMsg<string>>;
-
-  /**
-   * Set the button value (label) with automatic operation management.
-   * This method allows you to change the button text and optionally perform operations.
-   * 
-   * @param value - The string value to set as button label
-   * @param options - Configuration options for the operation
-   * @returns Promise<boolean> - true if successful, false if failed
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * // Simple label change
-   * const button = document.querySelector('ui-button');
-   * await button.setValue('Click Me');
-   * await button.setValue('Save Changes');
-   * ```
-   * 
-   * @example Dynamic Button States (Advanced)
-   * ```javascript
-   * // Button that changes based on state
-   * const saveButton = document.querySelector('#save-button');
-   * 
-   * // Initial state
-   * await saveButton.setValue('Save');
-   * 
-   * // When user makes changes
-   * await saveButton.setValue('Save Changes*');
-   * 
-   * // During save operation
-   * await saveButton.setValue('Saving...', {
-   *   writeOperation: async () => {
-   *     const response = await fetch('/api/save', {
-   *       method: 'POST',
-   *       body: JSON.stringify(formData)
-   *     });
-   *     if (!response.ok) throw new Error('Save failed');
-   *   }
-   * });
-   * 
-   * // After successful save
-   * await saveButton.setValue('Saved ✓');
-   * ```
-   * 
-   * @example API Operation Button (Advanced)
-   * ```javascript
-   * // Button that performs API calls
-   * const deployButton = document.querySelector('#deploy-button');
-   * 
-   * await deployButton.setValue('Deploy', {
-   *   writeOperation: async () => {
-   *     // Start deployment
-   *     const deployResponse = await fetch('/api/deploy', { method: 'POST' });
-   *     if (!deployResponse.ok) throw new Error('Deployment failed');
-   *     
-   *     // Wait for completion
-   *     const { deploymentId } = await deployResponse.json();
-   *     await waitForDeployment(deploymentId);
-   *   },
-   *   autoRetry: {
-   *     attempts: 2,
-   *     delay: 5000
-   *   }
-   * });
-   * ```
-   * 
-   * @example Multi-step Workflow (Advanced)
-   * ```javascript
-   * // Button for complex workflows
-   * const processButton = document.querySelector('#process-button');
-   * 
-   * // Step 1: Validate
-   * await processButton.setValue('Validating...', { customStatus: 'loading' });
-   * await validateData();
-   * 
-   * // Step 2: Process
-   * await processButton.setValue('Processing...', {
-   *   writeOperation: async () => {
-   *     await processData();
-   *     await uploadResults();
-   *   }
-   * });
-   * 
-   * // Step 3: Complete
-   * await processButton.setValue('Completed ✓', { customStatus: 'success' });
    * ```
    */
   @Method()
-  async setValue(value: string, options?: {
-    /** Automatic write operation - component handles all status transitions */
-    writeOperation?: () => Promise<any>;
-    /** Automatic read operation with pulse indicator */
-    readOperation?: () => Promise<any>;
-    /** Apply change optimistically, revert on failure (default: true) */
-    optimistic?: boolean;
-    /** Auto-retry configuration for failed operations */
-    autoRetry?: {
-      attempts: number;
-      delay: number;
-    };
-    /** Manual status override (for advanced users) */
-    customStatus?: 'loading' | 'success' | 'error';
-    /** Error message for manual error status */
-    errorMessage?: string;
-    /** Internal flag to indicate this is a revert operation */
-    _isRevert?: boolean;
-  }): Promise<boolean> {
-    const prevValue = this.isActive;
-    
-    // Handle manual status override (backward compatibility)
-    if (options?.customStatus) {
-      if (options.customStatus === 'loading') {
-        this.operationStatus = 'loading';
-        this.lastError = undefined;
-      } else if (options.customStatus === 'success') {
-        this.operationStatus = 'success';
-        this.lastError = undefined;
-        this.lastUpdatedTs = Date.now();
-        setTimeout(() => { this.operationStatus = 'idle'; }, 1200);
-      } else if (options.customStatus === 'error') {
-        this.operationStatus = 'error';
-        this.lastError = options.errorMessage || 'Operation failed';
-        setTimeout(() => { this.operationStatus = 'idle'; this.lastError = undefined; }, 3000);
-      }
-      return true;
-    }
-
-    // Update the button label
-    this.isActive = value;
-    this.label = value;
-
-    // Emit value change event
-    if (!this.suppressEvents) {
-      this.emitValueMsg(value);
-    }
-
-    // Handle automatic Promise-based operations
-    if (options?.writeOperation || options?.readOperation) {
-      this.operationStatus = 'loading';
-      this.lastError = undefined;
-
-      try {
-        // Perform write operation if provided
-        if (options.writeOperation) {
-          await options.writeOperation();
-        }
-
-        // Perform read operation if provided  
-        if (options.readOperation) {
-          await options.readOperation();
-        }
-
-        // Success state
-        this.operationStatus = 'success';
-        this.lastUpdatedTs = Date.now();
-        setTimeout(() => { this.operationStatus = 'idle'; }, 1200);
-        return true;
-
-      } catch (error) {
-        // Handle failure
-        this.operationStatus = 'error';
-        this.lastError = error instanceof Error ? error.message : 'Operation failed';
-        
-        // Revert optimistic update if enabled
-        if (options?.optimistic !== false && !options?._isRevert) {
-          this.isActive = prevValue;
-          this.label = prevValue;
-        }
-
-        setTimeout(() => { this.operationStatus = 'idle'; this.lastError = undefined; }, 3000);
-        return false;
-      }
-    }
-
+  async setAction(actionFn?: () => Promise<any>): Promise<boolean> {
+    this.storedAction = actionFn;
     return true;
   }
 
   /**
-   * Get current button value (its label).
-   * 
-   * @returns Promise<string> - The current button label/text
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * // Get current button text
-   * const button = document.querySelector('ui-button');
-   * const currentText = await button.getValue();
-   * console.log('Button says:', currentText);
-   * ```
-   * 
-   * @example Dynamic UI Updates (Advanced)
-   * ```javascript
-   * // Check button state and update other elements
-   * const buttons = document.querySelectorAll('ui-button');
-   * 
-   * for (const button of buttons) {
-   *   const text = await button.getValue();
-   *   const status = document.querySelector(`#status-${button.id}`);
-   *   
-   *   if (text.includes('✓')) {
-   *     status.textContent = 'Completed';
-   *     status.className = 'status-success';
-   *   } else if (text.includes('...')) {
-   *     status.textContent = 'In Progress';
-   *     status.className = 'status-loading';
-   *   }
-   * }
-   * ```
-   * 
-   * @example Button State Management (Advanced)
-   * ```javascript
-   * // Store and restore button states
-   * const buttons = document.querySelectorAll('ui-button');
-   * const buttonStates = new Map();
-   * 
-   * // Save current states
-   * for (const button of buttons) {
-   *   const value = await button.getValue();
-   *   buttonStates.set(button.id, value);
-   * }
-   * 
-   * // Later restore states
-   * for (const [buttonId, savedValue] of buttonStates) {
-   *   const button = document.querySelector(`#${buttonId}`);
-   *   await button.setValue(savedValue);
-   * }
-   * ```
+   * (Advance) to manually set the operation status indicator.
+   * Useful when managing device communication externally and you want to show loading/success/error states.
+   *
+   * @param status - The status to display
+   * @param errorMessage - (Optional) error message for error status
    */
   @Method()
-  async getValue(): Promise<string> {
-    return this.isActive || this.label;
+  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
+    StatusIndicator.applyStatus(this, status, errorMessage);
   }
 
-  /**
-   * Set value silently without triggering events or status changes.
-   * Use this for external updates that shouldn't trigger event listeners.
-   * 
-   * @param value - The string value to set as button label
-   * @returns Promise<boolean> - Always returns true
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * // Update button text without triggering events
-   * const button = document.querySelector('ui-button');
-   * await button.setValueSilent('Updated Text');
-   * ```
-   * 
-   * @example External Data Sync (Advanced)
-   * ```javascript
-   * // Sync button states from server without events
-   * const response = await fetch('/api/ui-state');
-   * const uiState = await response.json();
-   * 
-   * for (const [buttonId, label] of Object.entries(uiState.buttons)) {
-   *   const button = document.querySelector(`#${buttonId}`);
-   *   if (button) {
-   *     await button.setValueSilent(label);
-   *   }
-   * }
-   * ```
-   * 
-   * @example Real-time Collaboration (Advanced)
-   * ```javascript
-   * // Update UI from other users' actions
-   * websocket.addEventListener('message', async (event) => {
-   *   const { type, buttonId, newLabel } = JSON.parse(event.data);
-   *   
-   *   if (type === 'button-update') {
-   *     const button = document.querySelector(`#${buttonId}`);
-   *     if (button) {
-   *       // Silent update to prevent event loops
-   *       await button.setValueSilent(newLabel);
-   *     }
-   *   }
-   * });
-   * ```
-   */
-  @Method()
-  async setValueSilent(value: string): Promise<boolean> {
-    this.suppressEvents = true;
-    this.isActive = value;
-    this.label = value;
-    this.suppressEvents = false;
-    return true;
+  // =============== LIFECYCLE METHODS ===============
+
+  /** Initialize component state from props */
+  componentWillLoad() {
+    if (this.showLastUpdated) this.startTimestampUpdater();
   }
 
-  /**
-   * Manually set operation status for external status management.
-   * 
-   * @param status - The status to set ('idle', 'loading', 'success', 'error')
-   * @param message - Optional error message for error status
-   * @returns Promise<void>
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * const button = document.querySelector('ui-button');
-   * 
-   * // Show loading
-   * await button.setStatus('loading');
-   * 
-   * // Show success
-   * await button.setStatus('success');
-   * 
-   * // Show error
-   * await button.setStatus('error', 'Operation failed');
-   * 
-   * // Clear status
-   * await button.setStatus('idle');
-   * ```
-   * 
-   * @example Form Submission (Advanced)
-   * ```javascript
-   * // Form submission with status feedback
-   * const submitButton = document.querySelector('#submit-form');
-   * const form = document.querySelector('#my-form');
-   * 
-   * form.addEventListener('submit', async (e) => {
-   *   e.preventDefault();
-   *   
-   *   try {
-   *     await submitButton.setStatus('loading');
-   *     
-   *     const formData = new FormData(form);
-   *     const response = await fetch('/api/submit', {
-   *       method: 'POST',
-   *       body: formData
-   *     });
-   *     
-   *     if (!response.ok) {
-   *       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-   *     }
-   *     
-   *     await submitButton.setStatus('success');
-   *     form.reset();
-   *     
-   *   } catch (error) {
-   *     await submitButton.setStatus('error', error.message);
-   *   }
-   * });
-   * ```
-   * 
-   * @example Multi-Button Workflow (Advanced)
-   * ```javascript
-   * // Coordinate status across multiple buttons
-   * const buttons = document.querySelectorAll('.workflow-button');
-   * 
-   * async function runWorkflow() {
-   *   for (let i = 0; i < buttons.length; i++) {
-   *     const button = buttons[i];
-   *     
-   *     try {
-   *       // Set current button to loading
-   *       await button.setStatus('loading');
-   *       
-   *       // Set previous buttons to success
-   *       for (let j = 0; j < i; j++) {
-   *         await buttons[j].setStatus('success');
-   *       }
-   *       
-   *       // Perform step
-   *       await performWorkflowStep(i);
-   *       
-   *       // Set to success
-   *       await button.setStatus('success');
-   *       
-   *     } catch (error) {
-   *       await button.setStatus('error', `Step ${i + 1} failed`);
-   *       break;
-   *     }
-   *   }
-   * }
-   * ```
-   */
-  @Method()
-  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', message?: string): Promise<void> {
-    StatusIndicator.applyStatus(this, status, message);
+  /** Clean up timers when component is removed */
+  disconnectedCallback() {
+    this.stopTimestampUpdater();
   }
 
-  /**
-   * Trigger visual read pulse (brief animation).
-   * Provides visual feedback for data refresh or read operations.
-   * 
-   * @returns Promise<void>
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * // Show visual feedback after reading data
-   * const button = document.querySelector('ui-button');
-   * await button.triggerReadPulse();
-   * ```
-   * 
-   * @example Data Refresh Indicator (Advanced)
-   * ```javascript
-   * // Show pulse when refreshing button data
-   * const refreshButton = document.querySelector('#refresh-data');
-   * 
-   * setInterval(async () => {
-   *   try {
-   *     const response = await fetch('/api/status');
-   *     const data = await response.json();
-   *     
-   *     // Update button text silently
-   *     await refreshButton.setValueSilent(`Status: ${data.status}`);
-   *     
-   *     // Show pulse to indicate refresh
-   *     await refreshButton.triggerReadPulse();
-   *     
-   *   } catch (error) {
-   *     console.error('Failed to refresh:', error);
-   *   }
-   * }, 30000); // Every 30 seconds
-   * ```
-   * 
-   * @example User Action Feedback (Advanced)
-   * ```javascript
-   * // Provide feedback for quick actions
-   * const copyButton = document.querySelector('#copy-button');
-   * 
-   * copyButton.addEventListener('click', async () => {
-   *   try {
-   *     await navigator.clipboard.writeText('copied content');
-   *     
-   *     // Brief feedback
-   *     await copyButton.setValue('Copied!');
-   *     await copyButton.triggerReadPulse();
-   *     
-   *     // Reset after delay
-   *     setTimeout(async () => {
-   *       await copyButton.setValue('Copy');
-   *     }, 2000);
-   *     
-   *   } catch (error) {
-   *     await copyButton.setStatus('error', 'Copy failed');
-   *   }
-   * });
-   * ```
-   */
-  @Method()
-  async triggerReadPulse(): Promise<void> {
-    // For buttons, read pulse could highlight the button briefly
-    this.operationStatus = 'loading';
-    setTimeout(() => {
-      this.operationStatus = 'success';
-      this.lastUpdatedTs = Date.now();
-      setTimeout(() => { this.operationStatus = 'idle'; }, 800);
-    }, 200);
+  // =============== PRIVATE METHODS ===============
+
+  /** Sets different operation status with automatic timeout to return to its idle state */
+  private setStatusWithTimeout(status: OperationStatus, duration: number = 1000): void {
+    this.operationStatus = status;
+    if (status !== 'idle') {
+      setTimeout(() => {
+        if (this.operationStatus === status) this.operationStatus = 'idle';
+      }, duration);
+    }
   }
 
-  /** Emit standardized value change event */
-  private emitValueMsg(value: string, success: boolean = true): void {
-    if (this.suppressEvents) return;
-    
-    this.valueMsg.emit({
-      newVal: value,
+  /** Emits click events with consistent UIMsg data structure */
+  private emitClickMsg() {
+    this.clickMsg.emit({
+      newVal: this.label,
+      prevVal: undefined,
       ts: Date.now(),
       source: this.el?.id || 'ui-button',
-      ok: success,
+      ok: true,
     });
   }
 
-  /** Check if component can be interacted with */
-  private get canInteract(): boolean {
-    return !this.disabled && !this.readonly;
-  }
+  /** Handles user click interactions */
+  private handleClick = async () => {
+    if (this.disabled) return;
 
-  /** Watch for label changes and update internal state */
-  @Watch('label')
-  watchLabel(newValue: string): void {
-    if (this.isInitialized) {
-      this.isActive = newValue;
+    this.lastClickedTs = Date.now();
+    this.emitClickMsg();
+
+    // Execute stored action if available
+    if (this.storedAction) {
+      this.operationStatus = 'loading';
+
+      try {
+        await this.storedAction();
+        this.setStatusWithTimeout('success');
+      } catch (error) {
+        console.error('Button action failed:', error);
+        this.operationStatus = 'error';
+        this.lastError = error?.message || 'Action failed';
+        this.setStatusWithTimeout('idle', 3000); // Clear error after 3 seconds
+      }
+    } else {
+      // Simple button without actions
+      if (this.showStatus) {
+        this.operationStatus = 'loading';
+        setTimeout(() => this.setStatusWithTimeout('success'), 100); // Quick success feedback
+      }
     }
-  }
+  };
 
-  /** Initialize component */
-  componentWillLoad() {
-    // Initialize state
-    this.isActive = this.label;
-    this.isInitialized = true;
-    
-    // Initialize timestamp auto-update timer if showLastUpdated is enabled
-    if (this.showLastUpdated) {
-  // Ensure we show an initial "last updated" when enabled so the UI always reserves space
-  if (!this.lastUpdatedTs) this.lastUpdatedTs = Date.now();
-      this.timestampUpdateTimer = window.setInterval(() => {
-        // Force re-render to update relative timestamp
-        this.timestampCounter++;
-      }, 60000); // Update every 60 seconds (optimized)
+  /** Handle keyboard 'enter' and 'spacebar' input to click button */
+  private handleKeyDown = (event: KeyboardEvent) => {
+    if (this.disabled || !this.keyboard) return;
+    if (event.key === ' ' || event.key === 'Enter') {
+      event.preventDefault();
+      this.handleClick();
     }
+  };
+
+  /** Manages timestamp update timer for relative time display */
+  private startTimestampUpdater() {
+    this.stopTimestampUpdater();
+    this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 60000); // Update every minute
   }
 
-  /** Cleanup component */
-  disconnectedCallback() {
+  /** Stops the timestamp update timer */
+  private stopTimestampUpdater() {
     if (this.timestampUpdateTimer) {
       clearInterval(this.timestampUpdateTimer);
+      this.timestampUpdateTimer = undefined;
     }
   }
 
-  /** Watch for mode prop changes and update readonly state */
-  @Watch('disabled')
-  protected watchDisabled(newValue: boolean) {
-    // Update interaction state when disabled prop changes
-    if (newValue && this.operationStatus === 'idle') {
-      this.operationStatus = 'error';
-      this.lastError = 'Component is disabled';
-      setTimeout(() => { this.operationStatus = 'idle'; this.lastError = undefined; }, 1000);
-    }
+  // =============== RENDERING HELPERS ===============
+
+  /** Renders the status badge according to current operation state */
+  private renderStatusBadge() {
+    if (!this.showStatus) return null;
+
+    const status = this.operationStatus || 'idle';
+    const message = this.lastError || (status === 'idle' ? 'Ready' : '');
+    return StatusIndicator.renderStatusBadge(status, 'light', message, h);
   }
 
-  /** Handle button click */
-  private handleChange = async () => {
-    if (this.disabled || !this.canInteract) return;
-
-    // Show quick feedback (only if showStatus is enabled)
-    if (this.showStatus) {
-      this.operationStatus = 'loading';
-    }
-
-    // Update timestamp only if showLastUpdated is enabled
-    if (this.showLastUpdated) {
-      this.lastUpdatedTs = Date.now();
-    }
-
-    // Emit both legacy and unified events
-    this.emitClick();
-    this.emitValueMsg(this.label);
-
-    // Assume success for local-only action (only if showStatus is enabled)
-    if (this.showStatus) {
-      setTimeout(() => {
-        this.operationStatus = 'success';
-        // Auto clear
-        setTimeout(() => { 
-          this.operationStatus = 'idle'; 
-          this.lastError = undefined; 
-        }, 1200);
-      }, 50);
-    }
-  };
-
-  /** Emit click events */
-  private emitClick() {
-    // Emit unified valueMsg event instead of separate buttonClick
-    this.emitValueMsg(this.label);
+  /** Renders the last updated timestamp */
+  private renderLastUpdated() {
+    if (!this.showLastUpdated || !this.lastClickedTs) return null;
+    return StatusIndicator.renderTimestamp(new Date(this.lastClickedTs), this.dark ? 'dark' : 'light', h);
   }
 
-  /** Handle keyboard input */
-  private handleKeyDown = (event: KeyboardEvent) => {
-    if (this.disabled || !this.canInteract || !this.keyboard) return;
+  // =============== STYLING HELPERS ===============
 
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      this.handleChange();
-    }
-  };
-
-  /** Get button style classes */
-  private getButtonStyle(): string {
+  /** Generates CSS classes and styles for the button based on variant and color */
+  private getButtonStyle(): { classes: string; style: { [key: string]: string } } {
     const isDisabled = this.disabled;
 
-    let baseClasses = 'px-6 h-12 flex items-center justify-center text-base font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg';
+    let baseClasses =
+      'px-4 py-2 rounded border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 font-medium cursor-pointer inline-flex items-center justify-center';
+    let style: { [key: string]: string } = {};
 
     if (isDisabled) {
       baseClasses += ' opacity-50 cursor-not-allowed';
     } else {
-      baseClasses += ' cursor-pointer hover:scale-105 active:scale-95';
+      baseClasses += ' hover:scale-105 active:scale-95';
     }
 
-    // Variant-specific styling with explicit color control
+    // Variant-specific styling with CSS variables
     if (this.variant === 'minimal') {
-      // Minimal: No background, no border, just text
-      if (isDisabled) {
-        baseClasses += ' text-gray-400';
-      } else {
-        // Clear color specification based on theme
-        if (this.dark) {
-          baseClasses += ' bg-transparent text-white-dark hover:bg-gray-800';
-        } else {
-          baseClasses += ' bg-transparent text-black-force hover:bg-gray-100';
-        }
+      style.backgroundColor = 'transparent';
+      style.borderColor = 'transparent';
+      if (!isDisabled) {
+        baseClasses += ' hover:bg-gray-100';
       }
     } else if (this.variant === 'outlined') {
-      // Outlined: Border with user's chosen color, no background
-      if (isDisabled) {
-        baseClasses += ' border-2 border-gray-300 text-gray-400 bg-transparent';
-      } else {
-        const borderColor = `border-${this.getColorName()}`;
-        const hoverBg = `hover:bg-${this.getColorName()}`;
-
-        if (this.dark) {
-          baseClasses += ` border-2 ${borderColor} bg-transparent text-white-dark ${hoverBg} hover:text-white-force`;
-        } else {
-          baseClasses += ` border-2 ${borderColor} bg-transparent text-black-force ${hoverBg} hover:text-white-force`;
-        }
-      }
+      style.backgroundColor = 'transparent';
+      style.borderColor = this.getActiveColor();
+      style.color = this.getActiveColor();
     } else if (this.variant === 'filled') {
-      // Filled: Background with user's chosen color, text color matches theme
-      if (isDisabled) {
-        baseClasses += ' bg-gray-400 text-white-force';
-      } else {
-        // Filled buttons: black text in light theme, white text in dark theme
-        if (this.dark) {
-          baseClasses += ` bg-${this.getColorName()} text-white-force hover:bg-${this.getColorName()}-dark`;
-        } else {
-          baseClasses += ` bg-${this.getColorName()} text-black-force hover:bg-${this.getColorName()}-dark`;
-        }
-      }
+      style.backgroundColor = this.getActiveColor();
+      style.borderColor = this.getActiveColor();
+      style.color = 'white';
     }
 
-    // Focus ring color matches component color
-    baseClasses += ` focus:ring-${this.getColorName()}`;
-
-    return baseClasses;
+    return { classes: baseClasses, style };
   }
 
-  /** Get color name for CSS classes */
-  private getColorName(): string {
-    return this.color === 'primary' ? 'primary' : this.color === 'secondary' ? 'secondary' : 'neutral';
+  /** Generate the active color using global CSS variables */
+  private getActiveColor(): string {
+    switch (this.color) {
+      case 'secondary':
+        return 'var(--color-secondary)';
+      case 'neutral':
+        return 'var(--color-neutral)';
+      default:
+        return 'var(--color-primary)';
+    }
   }
 
-  /** Render component */
+  // =============== MAIN COMPONENT RENDER METHOD ===============
+
+  /**
+   * Renders the complete button component with all features and styles.
+   */
   render() {
-    const isDisabled = this.disabled;
+    const canInteract = !this.disabled;
+    const hoverTitle = this.disabled ? 'Button is disabled' : `Click ${this.label}`;
 
     return (
-  <div class="relative inline-block" part="container" role="group" aria-label={this.label || 'Button'}>
-        <div class="inline-flex items-center">
-          <button 
-            class={this.getButtonStyle()} 
-            onClick={this.handleChange} 
-            onKeyDown={this.handleKeyDown} 
-            disabled={isDisabled} 
-            aria-label={this.label} 
-            part="button" 
-            aria-pressed={isDisabled ? 'false' : undefined}
+      <div class="inline-block" part="container" role="group" aria-label={this.label}>
+        <div class="inline-flex items-center space-x-3 relative">
+          {/* Button Control */}
+          <button
+            class={this.getButtonStyle().classes}
+            style={this.getButtonStyle().style}
+            onClick={() => canInteract && this.handleClick()}
+            onKeyDown={this.handleKeyDown}
+            tabIndex={canInteract ? 0 : -1}
+            title={hoverTitle}
+            part="control"
+            disabled={this.disabled}
+            aria-disabled={this.disabled ? 'true' : 'false'}
           >
-            <span part="label">{this.label}</span>
+            {this.label}
           </button>
 
-          {/* Render status as an external sibling to the button so it's outside and vertically centered */}
-          {this.showStatus && (
-            <div class="ml-3 flex items-center self-center" role="status">
-              {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
-            </div>
-          )}
+          {/* Status Badge */}
+          {this.renderStatusBadge()}
         </div>
 
-        {this.showLastUpdated && (
-          <div class="flex justify-end mt-2">
-            {StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
-          </div>
-        )}
+        {/* Last Updated Timestamp */}
+        {this.renderLastUpdated()}
       </div>
     );
   }
