@@ -1,31 +1,29 @@
 import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
-import { UiMsg } from '../../utils/types';
-import { StatusIndicator } from '../../utils/status-indicator';
+import { UiMsg } from '../../utils/types'; // Standard message format
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator'; // Status indicator utility
 
 /**
- * Advanced checkbox component with reactive state management and multiple visual styles.
+ * A versatile checkbox component designed for WoT device control.
+ *
+ * It has various features, multiple visual styles, status and last updated timestamps.
  *
  * @example Basic Usage
  * ```html
  * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+ * <ui-checkbox variant="minimal" value="false" label="Enable Notifications"></ui-checkbox>
+ * <ui-checkbox variant="filled" label="Device Status" show-last-updated="true"></ui-checkbox>
  * ```
  *
- * @example Different Variants
- * ```html
- * <ui-checkbox variant="minimal" value="false" label="Minimal Style"></ui-checkbox>
- * <ui-checkbox variant="outlined" value="true" label="Outlined Style"></ui-checkbox>
- * <ui-checkbox variant="filled" value="false" label="Filled Style"></ui-checkbox>
- * ```
- *
- * @example JavaScript Integration
+ * @example JS integaration with node-wot browser bundle
  * ```javascript
- * const checkbox = document.querySelector('#terms-checkbox');
- * checkbox.addEventListener('valueMsg', (e) => {
- *   console.log('Checkbox value:', e.detail.payload);
+ * const checkbox = document.getElementById('device-checkbox');
+ * const initialValue = Boolean(await (await thing.readProperty('enabled')).value());
+ *
+ * await checkbox.setValue(initialValue, {
+ *   writeOperation: async value => {
+ *     await thing.writeProperty('enabled', value);
+ *   }
  * });
- * 
- * // Set value programmatically
- * await checkbox.setValue(true);
  * ```
  */
 @Component({
@@ -36,280 +34,153 @@ import { StatusIndicator } from '../../utils/status-indicator';
 export class UiCheckbox {
   @Element() el: HTMLElement;
 
-  /** Component props */
+  // ============================== COMPONENT PROPERTIES ==============================
 
   /**
    * Visual style variant of the checkbox.
+   * - minimal: Clean design with transparent background
+   * - outlined: Border-focused design with outline style
+   * - filled: Solid background when checked
    */
   @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'outlined';
 
-  /**
-   * Current boolean value of the checkbox.
-   */
-  @Prop({ mutable: true }) value: boolean = false;
-  /**
-   * Backwards-compatible `checked` attribute alias for `value`.
-   * Accepts attribute usage like `checked` or `checked="true"` in demos.
-   */
-  @Prop({ mutable: true, reflect: true }) checked?: boolean;
-
-  /**
-   * Whether the checkbox is disabled (cannot be interacted with).
-   */
-  @Prop() disabled: boolean = false;
-
-  // Note: checkbox does not support readonly mode
-
-  /**
-   * Text label displayed next to the checkbox.
-   */
-  @Prop() label?: string;
-
-  /**
-   * Color theme variant.
-   */
+  /** Color theme for the active state matching to thingsweb theme */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
-  /**
-   * Enable dark theme for the component.
-   * When true, uses light text on dark backgrounds.
-   */
+  /** Enable dark mode theme styling when true */
   @Prop() dark: boolean = false;
 
-  /**
-   * Enable keyboard navigation (Space and Enter keys).
-   * Default: true
-   */
+  /** Current boolean value of the checkbox */
+  @Prop({ mutable: true }) value: boolean = false;
+
+  /** Disable user interaction when true */
+  @Prop() disabled: boolean = false;
+
+  /** Text label displayed right to the checkbox (optional) */
+  @Prop() label?: string;
+
+  /** Enable keyboard navigation so user can toggle using 'Space' and 'Enter' keys) when true */
   @Prop() keyboard: boolean = true;
 
-  /**
-   * Show last updated timestamp when true
-   */
-  @Prop() showLastUpdated: boolean = true;
+  /** Show last updated timestamp below the component */
+  @Prop() showLastUpdated: boolean = false;
 
-  /**
-   * Show status badge when true
-   */
-  @Prop() showStatus: boolean = true;
+  /** Show visual operation status indicators (loading, success, failed) right to the component */
+  @Prop() showStatus: boolean = false;
 
-  /** Connection state for readonly mode */
+  /** Connection state for read-only monitoring */
   @Prop({ mutable: true }) connected: boolean = true;
 
-  /** Internal state tracking current visual state */
+  // ============================== COMPONENT STATE ==============================
+
+  /** Current operation status for visual feedback */
+  @State() operationStatus: OperationStatus = 'idle';
+
+  /** Error message from failed operations if any (optional) */
+  @State() lastError?: string;
+
+  /** Timestamp when value was last updated (optional) */
+  @State() lastUpdatedTs?: number;
+
+  /** Internal state that controls the visual appearance of the checkbox */
   @State() private isActive: boolean = false;
 
-  /** Internal state for tracking if component is initialized */
-  private isInitialized: boolean = false;
+  /** Internal state counter for timestamp re-rendering */
+  @State() private timestampCounter: number = 0;
 
-  /** Flag to prevent event loops when setting values programmatically */
+  /** Internal state to prevents infinite event loops while programmatic updates */
   @State() private suppressEvents: boolean = false;
 
-  // Keep internal sync between `value` and `checked` for attribute compatibility
-  @Watch('checked')
-  protected onCheckedChanged(newVal: boolean) {
-    if (this.suppressEvents) return;
-    this.suppressEvents = true;
-    try {
-      // Coerce undefined to false when attribute not present
-      this.value = !!newVal;
-    } finally {
-      this.suppressEvents = false;
-    }
-  }
+  // ============================== PRIVATE PROPERTIES ==============================
 
-  @Watch('value')
-  protected onValueChanged(newVal: boolean) {
-    if (this.suppressEvents) return;
-    this.suppressEvents = true;
-    try {
-      this.checked = !!newVal;
-    } finally {
-      this.suppressEvents = false;
-    }
-  }
+  /** Tracks component initialization state to prevent early watchers */
+  private isInitialized: boolean = false;
 
-  /** Operation status for write mode indicators */
-  @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
-  @State() lastError?: string;
-  /** Timestamp of last value update for showLastUpdated feature */
-  @State() lastUpdatedTs?: number;
-  
-  /** Timer for auto-updating timestamps */
-  @State() timestampUpdateTimer?: number;
-  @State() private timestampCounter = 0;
+  /** Timer for updating relative timestamps */
+  private timestampUpdateTimer?: number;
+
+  /** Stores API function from first initialization to use further for any user interactions */
+  private storedWriteOperation?: (value: boolean) => Promise<any>;
+
+  // ============================== EVENTS ==============================
 
   /**
-   * Set the checkbox value with automatic device communication and status management.
-   * 
+   * Emitted when checkbox value changes through user interaction or setValue calls.
+   * Contains the new value, previous value, timestamp, and source information.
+   */
+  @Event() valueMsg: EventEmitter<UiMsg<boolean>>;
+
+  // ============================== PUBLIC METHODS ==============================
+
+  /**
+   * Sets the checkbox value with optional device communication api and other options.
+   *
+   * This is the primary method for connecting checkboxes to real devices.
+   * It supports optimistic updates, error handling, and automatic retries.
+   *
    * @param value - The boolean value to set (true = checked, false = unchecked)
-   * @param options - Configuration options for the operation
-   * @returns Promise<boolean> - true if successful, false if failed
-   * 
-   * @example Basic Usage (Easy)
+   * @param options - Configuration for device communication and behavior
+   * @returns Promise resolving to true if successful, false if failed
+   *
+   * @example Basic Usage
    * ```javascript
-   * const checkbox = document.querySelector('ui-checkbox');
-   * await checkbox.setValue(true);   // Check
-   * await checkbox.setValue(false);  // Uncheck
+   * await checkbox.setValue(true);
    * ```
-   * 
-   * @example IoT Device Control (Advanced)
-   * ```javascript
-   * const securityCheckbox = document.querySelector('#security-system');
-   * await securityCheckbox.setValue(true, {
-   *   writeOperation: async () => {
-   *     await fetch('/api/security/arm', { method: 'POST' });
+   *
+   * @example JS integaration with node-wot browser bundle
+   *  * ```javascript
+   * const checkbox = document.getElementById('device-checkbox');
+   * const initialValue = Boolean(await (await thing.readProperty('enabled')).value());
+   * await checkbox.setValue(initialValue, {
+   *   writeOperation: async value => {
+   *     await thing.writeProperty('enabled', value);
    *   },
-   *   autoRetry: { attempts: 3, delay: 2000 }
+   *   autoRetry: { attempts: 3, delay: 1000 }
    * });
    * ```
    */
   @Method()
-  async setValue(value: boolean, options?: {
-    /** Automatic write operation - component handles all status transitions */
-    writeOperation?: () => Promise<any>;
-    /** Automatic read operation with pulse indicator */
-    readOperation?: () => Promise<any>;
-    /** Apply change optimistically, revert on failure (default: true) */
-    optimistic?: boolean;
-    /** Auto-retry configuration for failed operations */
-    autoRetry?: {
-      attempts: number;
-      delay: number;
-    };
-    /** Manual status override (for advanced users) */
-    customStatus?: 'loading' | 'success' | 'error';
-    /** Error message for manual error status */
-    errorMessage?: string;
-    /** Internal flag to indicate this is a revert operation */
-    _isRevert?: boolean;
-  }): Promise<boolean> {
+  async setValue(
+    value: boolean,
+    options?: {
+      writeOperation?: (value: boolean) => Promise<any>;
+      readOperation?: () => Promise<any>;
+      optimistic?: boolean;
+      autoRetry?: { attempts: number; delay: number };
+      _isRevert?: boolean;
+    },
+  ): Promise<boolean> {
     const prevValue = this.isActive;
-    
-    // Handle manual status override (backward compatibility)
-    if (options?.customStatus) {
-      if (options.customStatus === 'loading') {
-        this.operationStatus = 'loading';
-        return true;
-      }
-      if (options.customStatus === 'success') {
-        this.operationStatus = 'success';
-        setTimeout(() => { 
-          if (this.operationStatus === 'success') this.operationStatus = 'idle'; 
-        }, 1200);
-        this.isActive = value;
-        this.value = value;
-        this.lastUpdatedTs = Date.now();
-        this.emitValueMsg(value, prevValue);
-        return true;
-      }
-      if (options.customStatus === 'error') {
-        this.operationStatus = 'error';
-        this.lastError = options.errorMessage || 'Operation failed';
-        return false;
-      }
-    }
-    
-    // Auto-clear error state when user tries again (unless this is a revert)
+
+    // Clear any existing error state
     if (this.operationStatus === 'error' && !options?._isRevert) {
       this.operationStatus = 'idle';
       this.lastError = undefined;
-    }
-    
-    // Optimistic update (default: true)
-    const optimistic = options?.optimistic !== false;
-    if (optimistic && !options?._isRevert) {
-      this.isActive = value;
-      this.value = value;
-      this.lastUpdatedTs = Date.now();
-      this.emitValueMsg(value, prevValue);
-    }
-    
-    // Handle Promise-based operations
-    if (options?.writeOperation || options?.readOperation) {
-      const operation = options.writeOperation || options.readOperation;
-      
-      // Show loading state
-      this.operationStatus = 'loading';
-      
-      try {
-        // Execute the operation
-        await operation();
-        
-        // Success - show success state briefly
-        this.operationStatus = 'success';
-        setTimeout(() => { 
-          if (this.operationStatus === 'success') this.operationStatus = 'idle'; 
-        }, 1200);
-        
-        // If not optimistic, apply value now
-        if (!optimistic) {
-          this.isActive = value;
-          this.value = value;
-          this.lastUpdatedTs = Date.now();
-          this.emitValueMsg(value, prevValue);
-        }
-        
-        return true;
-        
-      } catch (error) {
-        // Error - show error state and revert if optimistic
-        this.operationStatus = 'error';
-        this.lastError = error.message || 'Operation failed';
-        
-        if (optimistic && !options?._isRevert) {
-          // Revert to previous value
-          this.isActive = prevValue;
-          this.value = prevValue;
-          // Don't emit event for revert to avoid loops
-        }
-        
-        // Auto-retry logic
-        if (options?.autoRetry && options.autoRetry.attempts > 0) {
-          setTimeout(async () => {
-            const retryOptions = {
-              ...options,
-              autoRetry: {
-                attempts: options.autoRetry.attempts - 1,
-                delay: options.autoRetry.delay
-              }
-            };
-            await this.setValue(value, retryOptions);
-          }, options.autoRetry.delay);
-        }
-        
-        return false;
-      }
-    }
-    
-    // Simple value setting (no operation)
-    if (!options?.writeOperation && !options?.readOperation && !options?._isRevert) {
-      this.isActive = value;
-      this.value = value;
-      this.lastUpdatedTs = Date.now();
-      this.emitValueMsg(value, prevValue);
+      this.connected = true;
     }
 
-    return true;
+    // Simple value update without other operations
+    if (!options?.writeOperation && !options?.readOperation) {
+      this.updateValue(value, prevValue);
+      return true;
+    }
+
+    // If there is writeOperation store operation for future user interactions
+    if (options.writeOperation && !options._isRevert) {
+      this.storedWriteOperation = options.writeOperation;
+      this.updateValue(value, prevValue, false);
+      return true;
+    }
+
+    // Execute operation immediately if no options selected
+    return this.executeOperation(value, prevValue, options);
   }
 
   /**
-   * Get the current checkbox value with optional metadata.
-   * 
-   * @param includeMetadata - Include last updated timestamp and status
-   * @returns Promise that resolves to the current value or value with metadata
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * const checkbox = document.querySelector('ui-checkbox');
-   * const isChecked = await checkbox.getValue();
-   * console.log('Checkbox is:', isChecked ? 'checked' : 'unchecked');
-   * ```
-   * 
-   * @example With Metadata (Advanced)
-   * ```javascript
-   * const result = await checkbox.getValue(true);
-   * console.log('Value:', result.value, 'Status:', result.status);
-   * ```
+   * Gets the current checkbox value with optional metadata.
+   *
+   * @param includeMetadata - Whether to include status, timestamp and other information
+   * @returns Current value or detailed metadata object
    */
   @Method()
   async getValue(includeMetadata: boolean = false): Promise<boolean | { value: boolean; lastUpdated?: number; status: string; error?: string }> {
@@ -318,55 +189,32 @@ export class UiCheckbox {
         value: this.isActive,
         lastUpdated: this.lastUpdatedTs,
         status: this.operationStatus,
-        error: this.lastError
+        error: this.lastError,
       };
     }
     return this.isActive;
   }
 
   /**
-   * Set value programmatically without triggering events (for external updates).
-   * 
+   * This method updates the value silently without triggering events.
+   *
+   * Use this for external data synchronization to prevent event loops.
+   * Perfect for WebSocket updates or polling from remote devices.
+   *
    * @param value - The boolean value to set silently
-   * @returns Promise<void>
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * const checkbox = document.querySelector('ui-checkbox');
-   * await checkbox.setValueSilent(true);
-   * ```
-   * 
-   * @example External Sync (Advanced)
-   * ```javascript
-   * // Sync from external system without events
-   * const response = await fetch('/api/settings');
-   * const settings = await response.json();
-   * await checkbox.setValueSilent(settings.notifications);
-   * ```
    */
   @Method()
   async setValueSilent(value: boolean): Promise<void> {
-    this.suppressEvents = true;
-    this.isActive = value;
-    this.value = value;
-    this.lastUpdatedTs = Date.now();
-    this.suppressEvents = false;
+    this.updateValue(value, this.isActive, false);
   }
 
   /**
-   * Set operation status for external status management.
-   * 
-   * @param status - The status to set ('idle', 'loading', 'success', 'error')
-   * @param errorMessage - Optional error message for error status
-   * @returns Promise<void>
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * const checkbox = document.querySelector('ui-checkbox');
-   * await checkbox.setStatus('loading');
-   * await checkbox.setStatus('success');
-   * await checkbox.setStatus('error', 'Permission denied');
-   * ```
+   * (Advance) to manually set the operation status indicator.
+   *
+   * Useful when managing device communication externally and you want to show loading/success/error states.
+   *
+   * @param status - The status to display
+   * @param errorMessage - (Optional) error message for error status
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
@@ -374,52 +222,35 @@ export class UiCheckbox {
   }
 
   /**
-   * Trigger a read pulse indicator for readonly mode when data is actually fetched.
-   * Note: Checkboxes don't support readonly mode, so this method is kept for API compatibility.
-   * 
-   * @returns Promise<void>
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * const checkbox = document.querySelector('ui-checkbox');
-   * await checkbox.triggerReadPulse(); // No visual effect for checkboxes
-   * ```
+   * This triggers a visual pulse for read-only mode.
+   *
+   * Note: Checkbox doesn't have readonly mode but keeping method for consistency.
+   * Updates the last updated timestamp when called.
    */
   @Method()
   async triggerReadPulse(): Promise<void> {
-  // checkbox does not support readonly/read-pulse; no-op kept for API compatibility
-  return;
+    if (this.showLastUpdated) {
+      this.lastUpdatedTs = Date.now();
+    }
   }
 
-  /**
-   * Primary event emitted when the checkbox value changes.
-   */
-  @Event() valueMsg: EventEmitter<UiMsg<boolean>>;
+  // ============================== LIFECYCLE METHODS ==============================
 
   /** Initialize component state from props */
   componentWillLoad() {
     this.isActive = Boolean(this.value);
     this.isInitialized = true;
-    
-    // Initialize timestamp auto-update timer if showLastUpdated is enabled
-    if (this.showLastUpdated) {
-  // Seed initial timestamp so the timestamp area is present when enabled
-  if (!this.lastUpdatedTs) this.lastUpdatedTs = Date.now();
-      this.timestampUpdateTimer = window.setInterval(() => {
-        // Force re-render to update relative timestamp
-        this.timestampCounter++;
-      }, 30000); // Update every 30 seconds
-    }
+    if (this.showLastUpdated) this.startTimestampUpdater();
   }
 
-  /** Cleanup component */
+  /** Clean up timers when component is removed */
   disconnectedCallback() {
-    if (this.timestampUpdateTimer) {
-      clearInterval(this.timestampUpdateTimer);
-    }
+    this.stopTimestampUpdater();
   }
 
-  /** Watch for value prop changes and update internal state */
+  // ============================== WATCHERS ==============================
+
+  /** Sync internal state when value prop changes externally */
   @Watch('value')
   watchValue(newVal: boolean) {
     if (!this.isInitialized) return;
@@ -431,189 +262,286 @@ export class UiCheckbox {
     }
   }
 
-  /** Emit the unified UiMsg event */
+  // ============================== PRIVATE METHODS ==============================
+
+  /**
+   * This is the core state update method that handles value changes consistently.
+   * It updates both internal state and external prop and also manages timestamps, and emits events (optional).
+   */
+  private updateValue(value: boolean, prevValue?: boolean, emitEvent: boolean = true): void {
+    this.isActive = value;
+    this.value = value;
+    this.lastUpdatedTs = Date.now();
+
+    if (emitEvent && !this.suppressEvents) {
+      this.emitValueMsg(value, prevValue);
+    }
+  }
+
+  /** Sets different operation status with automatic timeout to return to its idle state */
+  private setStatusWithTimeout(status: OperationStatus, duration: number = 1000): void {
+    this.operationStatus = status;
+    if (status !== 'idle') {
+      setTimeout(() => {
+        if (this.operationStatus === status) this.operationStatus = 'idle';
+      }, duration);
+    }
+  }
+
+  /** Executes stored operations with error handling and retry logic */
+  private async executeOperation(value: boolean, prevValue: boolean, options: any): Promise<boolean> {
+    const optimistic = options?.optimistic !== false;
+
+    // Show new value immediately (if optimistic = true)
+    if (optimistic && !options?._isRevert) {
+      this.updateValue(value, prevValue);
+    }
+
+    this.operationStatus = 'loading';
+
+    try {
+      // Execute the API call
+      if (options.writeOperation) {
+        await options.writeOperation(value);
+      } else if (options.readOperation) {
+        await options.readOperation();
+      }
+
+      this.setStatusWithTimeout('success', 1200); // Success status for 1.2 seconds
+
+      // Update value after successful operation, (if optimistic = false)
+      if (!optimistic) {
+        this.updateValue(value, prevValue);
+      }
+
+      return true;
+    } catch (error) {
+      this.operationStatus = 'error';
+      this.lastError = error?.message || String(error) || 'Operation failed';
+
+      // Revert optimistic changes if operation is not successful or has an error
+      if (optimistic && !options?._isRevert) {
+        this.updateValue(prevValue, value, false);
+      }
+
+      // Retry logic
+      if (options?.autoRetry && options.autoRetry.attempts > 0) {
+        setTimeout(() => {
+          this.setValue(value, {
+            ...options,
+            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 },
+          });
+        }, options.autoRetry.delay);
+      } else {
+        this.setStatusWithTimeout('idle', 3000); // Clear error after 3 seconds
+      }
+
+      return false;
+    }
+  }
+
+  /** Emits value change events with consistent UIMsg data structure */
   private emitValueMsg(value: boolean, prevValue?: boolean) {
-    // Don't emit events if suppressed (to prevent loops)
     if (this.suppressEvents) return;
-    
-    // Primary unified event
-    const msg: UiMsg<boolean> = {
+    this.valueMsg.emit({
       newVal: value,
       prevVal: prevValue,
       ts: Date.now(),
       source: this.el?.id || 'ui-checkbox',
       ok: true,
-    };
-    this.valueMsg.emit(msg);
+    });
   }
 
-  /** Handle checkbox change */
-  private handleChange = () => {
+  /** Handles user click interactions */
+  private handleChange = async () => {
     if (this.disabled) return;
 
-    // Show loading state briefly for visual feedback (only if showStatus is enabled)
-    if (this.showStatus) {
-      this.operationStatus = 'loading';
-    }
-
     const newValue = !this.isActive;
-    this.isActive = newValue;
-    this.value = newValue;
-    
-    // Update timestamp only if showLastUpdated is enabled
-    if (this.showLastUpdated) {
-      this.lastUpdatedTs = Date.now();
-    }
-    
-    this.emitValueMsg(newValue, !newValue);
+    const prevValue = this.isActive;
 
-    // Show success state and auto-clear (only if showStatus is enabled)
-    if (this.showStatus) {
-      setTimeout(() => {
-        this.operationStatus = 'success';
-        setTimeout(() => {
-          this.operationStatus = 'idle';
-        }, 1000);
-      }, 100);
+    // Execute stored operation if available
+    if (this.storedWriteOperation) {
+      this.operationStatus = 'loading';
+      this.updateValue(newValue, prevValue);
+
+      try {
+        await this.storedWriteOperation(newValue);
+        this.setStatusWithTimeout('success');
+      } catch (error) {
+        console.error('Write operation failed:', error);
+        this.operationStatus = 'error';
+        this.lastError = error?.message || 'Operation failed';
+        this.updateValue(prevValue, newValue, false);
+        this.setStatusWithTimeout('idle', 3000); // Clear error after 3 seconds
+      }
+    } else {
+      // Simple checkbox without device operations
+      this.updateValue(newValue, prevValue);
+
+      if (this.showStatus) {
+        this.operationStatus = 'loading';
+        setTimeout(() => this.setStatusWithTimeout('success'), 100); // Quick success feedback
+      }
     }
   };
 
-  /** Get checkbox container style classes */
-  private getCheckboxStyles() {
-    const { disabled, variant, color, dark, isActive } = this;
-    
-    let classes = 'transition-all duration-300 flex items-center justify-center';
-    
-    // Base cursor and opacity
-    classes += disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer';
-    
-    // Variant-specific styling
-    switch (variant) {
-      case 'minimal':
-        classes += ' w-4 h-4 rounded-full border-2';
-        if (isActive) {
-          const colorClass = color === 'primary' ? 'primary' : color === 'secondary' ? 'secondary' : 'neutral';
-          classes += ` bg-${colorClass} border-${colorClass} text-white scale-110`;
-        } else {
-          classes += dark ? ' border-gray-500 bg-transparent hover:border-gray-400' : 
-                           ' border-gray-400 bg-transparent hover:border-gray-600';
-        }
-        break;
-        
-      case 'outlined':
-        classes += ' w-5 h-5 rounded border-2';
-        if (isActive) {
-          const colorClass = color === 'primary' ? 'primary' : color === 'secondary' ? 'secondary' : 'neutral';
-          classes += ` border-${colorClass} bg-white text-${colorClass} shadow-md`;
-        } else {
-          classes += dark ? ' border-gray-600 bg-gray-800 hover:border-gray-500' : 
-                           ' border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm';
-        }
-        break;
-        
-      default: // filled
-        classes += ' w-5 h-5 rounded';
-        if (isActive) {
-          const colorClass = color === 'primary' ? 'primary' : color === 'secondary' ? 'secondary' : 'neutral';
-          classes += ` bg-${colorClass} text-white border border-${colorClass}`;
-        } else {
-          classes += dark ? ' bg-gray-700 border border-gray-600 hover:bg-gray-600' : 
-                           ' bg-gray-50 border border-gray-300 hover:bg-gray-100';
-        }
-        break;
+  /** Handle keyboard 'enter' and 'spacebar' input to toggle checkbox state */
+  private handleKeyDown = (event: KeyboardEvent) => {
+    if (this.disabled || !this.keyboard) return;
+    if (event.key === ' ' || event.key === 'Enter') {
+      event.preventDefault();
+      this.handleChange();
+    }
+  };
+
+  /** Manages timestamp update timer for relative time display */
+  private startTimestampUpdater() {
+    this.stopTimestampUpdater();
+    this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 60000); //  Update every minute
+  }
+
+  /** Stops the timestamp update timer */
+  private stopTimestampUpdater() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+      this.timestampUpdateTimer = undefined;
+    }
+  }
+
+  // ============================== RENDERING HELPERS ==============================
+
+  /** Renders the status badge according to current operation state */
+  private renderStatusBadge() {
+    if (!this.showStatus) return null;
+
+    const status = this.operationStatus || 'idle';
+    const message = this.lastError || (status === 'idle' ? 'Ready' : '');
+    return StatusIndicator.renderStatusBadge(status, 'light', message, h);
+  }
+
+  /** Renders the last updated timestamp */
+  private renderLastUpdated() {
+    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
+    return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), this.dark ? 'dark' : 'light', h);
+  }
+
+  // ============================== STYLING HELPERS ==============================
+
+  /** Generates CSS classes and styles for the checkbox based on variant,color and state */
+  private getCheckboxStyle(): { classes: string; style: { [key: string]: string } } {
+    const isDisabled = this.disabled;
+
+    let baseClasses = 'w-5 h-5 rounded border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center cursor-pointer';
+    let style: { [key: string]: string } = {};
+
+    if (isDisabled) {
+      baseClasses += ' opacity-50 cursor-not-allowed';
+    } else {
+      baseClasses += ' hover:scale-105 active:scale-95';
     }
 
-    return classes;
-  }
-
-  private getLabelStyles() {
-    const { disabled, dark } = this;
-    
-    let classes = 'ml-3 text-sm font-medium';
-    classes += disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer';
-    classes += dark ? ' text-white' : ' text-gray-900';
-
-    return classes;
-  }
-
-  /** Render checkmark icon */
-  private renderCheckmark() {
+    // Variant-specific styling with CSS variables
     if (this.variant === 'minimal') {
-      return <div class="w-2 h-2 rounded-full bg-current"></div>;
+      if (this.isActive) {
+        style.backgroundColor = this.getActiveColor();
+        style.borderColor = this.getActiveColor();
+      } else {
+        baseClasses += ` bg-transparent border-gray-300 ${this.dark ? 'border-gray-600' : ''}`;
+      }
+    } else if (this.variant === 'outlined') {
+      if (this.isActive) {
+        baseClasses += ' bg-transparent border-2';
+        style.borderColor = this.getActiveColor();
+      } else {
+        baseClasses += ` bg-transparent border-gray-300 ${this.dark ? 'border-gray-600' : ''}`;
+      }
+    } else if (this.variant === 'filled') {
+      if (this.isActive) {
+        style.backgroundColor = this.getActiveColor();
+        style.borderColor = this.getActiveColor();
+      } else {
+        baseClasses += ` bg-gray-100 border-gray-300 ${this.dark ? 'bg-gray-800 border-gray-600' : ''}`;
+      }
     }
-    
-    // Both outlined and filled variants use the same checkmark SVG
-    return (
-      <svg
-        class="w-3 h-3"
-        fill="currentColor"
-        viewBox="0 0 20 20"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          fill-rule="evenodd"
-          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-          clip-rule="evenodd"
-        />
-      </svg>
-    );
+
+    return { classes: baseClasses, style };
   }
 
-  /** Render the component */
+  /** Generate the active color using global CSS variables */
+  private getActiveColor(): string {
+    switch (this.color) {
+      case 'secondary':
+        return 'var(--color-secondary)';
+      case 'neutral':
+        return 'var(--color-neutral)';
+      default:
+        return 'var(--color-primary)';
+    }
+  }
+
+  // ============================== MAIN COMPONENT RENDER METHOD ==============================
+
+  /**
+   * Renders the complete checkbox component with all features and styles.
+   */
   render() {
+    const canInteract = !this.disabled;
+    const hoverTitle = this.disabled ? 'Checkbox is disabled' : `Click to ${this.isActive ? 'uncheck' : 'check'}${this.label ? ` ${this.label}` : ''}`;
+
     return (
       <div class="inline-block" part="container" role="group" aria-label={this.label || 'Checkbox'}>
-        <div class="flex items-center gap-2">
-          <div class="relative">
-            <div
-              class={this.getCheckboxStyles()}
-              onClick={this.handleChange}
-              role="checkbox"
-              aria-checked={this.isActive ? 'true' : 'false'}
-              aria-disabled={this.disabled ? 'true' : 'false'}
-              tabIndex={this.disabled ? -1 : 0}
-              part="checkbox"
-              onKeyDown={(e) => {
-                if ((e.key === 'Enter' || e.key === ' ') && !this.disabled) {
-                  e.preventDefault();
-                  this.handleChange();
-                }
-              }}
-            >
-              {this.isActive && this.renderCheckmark()}
-            </div>
-          </div>
-          
-          {this.label && (
-            <label class={this.getLabelStyles()} onClick={this.handleChange} part="label">
-              {this.label}
-            </label>
-          )}
-
-          {/* Status indicator */}
-          {this.showStatus && (
-            <div class="ml-2 flex items-center self-center" role="status">
-              {StatusIndicator.renderStatusBadge(
-                this.operationStatus, 
-                this.dark ? 'dark' : 'light', 
-                this.lastError, 
-                h, 
-                { position: 'sibling-right' }
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Timestamp */}
-        {this.showLastUpdated && (
-          <div class="mt-1 text-xs text-gray-500">
-            {StatusIndicator.renderTimestamp(
-              this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, 
-              this.dark ? 'dark' : 'light', 
-              h
+        <div class="inline-flex items-center gap-3 relative">
+          {/* Checkbox Control */}
+          <div
+            class={this.getCheckboxStyle().classes}
+            style={this.getCheckboxStyle().style}
+            onClick={() => canInteract && this.handleChange()}
+            onKeyDown={this.handleKeyDown}
+            tabIndex={canInteract ? 0 : -1}
+            title={hoverTitle}
+            part="control"
+            role="checkbox"
+            aria-checked={this.isActive ? 'true' : 'false'}
+            aria-disabled={this.disabled ? 'true' : 'false'}
+          >
+            {this.isActive && (
+              <svg
+                class={`w-3 h-3 ${this.variant === 'outlined' ? 'text-current' : 'text-white'}`}
+                style={this.variant === 'outlined' ? { color: this.getActiveColor() } : {}}
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
             )}
           </div>
-        )}
+
+          {/* Label */}
+          <slot name="label">
+            {this.label && (
+              <label
+                class={`select-none transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer hover:text-opacity-80'} ${
+                  this.dark ? 'text-white' : 'text-gray-900'
+                }`}
+                onClick={() => canInteract && this.handleChange()}
+                title={hoverTitle}
+                part="label"
+              >
+                {this.label}
+              </label>
+            )}
+          </slot>
+
+          {/* Status Badge */}
+          {this.renderStatusBadge()}
+        </div>
+
+        {/* Last Updated Timestamp */}
+        {this.renderLastUpdated()}
       </div>
     );
   }

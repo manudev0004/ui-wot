@@ -3,7 +3,8 @@ import { UiMsg } from '../../utils/types'; // Standard message format
 import { StatusIndicator, OperationStatus } from '../../utils/status-indicator'; // Status indicator utility
 
 /**
- * A versatile toggle switch component designed for IoT device control and monitoring.
+ * A versatile toggle switch component designed for WoT device control and monitoring.
+ * 
  * It has various features, multiple visual styles, status and last updated timestamps.
  * Supports both interactive control and read-only monitoring modes.
  *
@@ -34,7 +35,7 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 export class UiToggle {
   @Element() el: HTMLElement;
 
-  // ============================================= COMPONENT PROPERTIES =============================================
+  // ============================== COMPONENT PROPERTIES ==============================
 
   /**
    * Visual style variant of the toggle.
@@ -64,7 +65,7 @@ export class UiToggle {
   /** Text label displayed left to the toggle (optional) */
   @Prop() label?: string;
 
-  /** Enable keyboard navigation so user can toggle using 'Space' and 'Enter' keys) wehn true */
+  /** Enable keyboard navigation so user can toggle using 'Space' and 'Enter' keys) when true */
   @Prop() keyboard: boolean = true;
 
   /** Show last updated timestamp below the component */
@@ -76,7 +77,7 @@ export class UiToggle {
   /** Connection state for read-only monitoring */
   @Prop({ mutable: true }) connected: boolean = true;
 
-  // =============== COMPONENT STATE ===============
+  // ============================== COMPONENT STATE ==============================
 
   /** Current operation status for visual feedback */
   @State() operationStatus: OperationStatus = 'idle';
@@ -99,9 +100,9 @@ export class UiToggle {
   /** Internal state to prevents infinite event loops while programmatic updates */
   @State() private suppressEvents: boolean = false;
 
-  // =============== PRIVATE PROPERTIES ===============
+  // ============================== PRIVATE PROPERTIES ==============================
 
-  /** Tracks component initialization state to prevent */
+  /** Tracks component initialization state to prevent early watchers*/
   private isInitialized: boolean = false;
 
   /** Timer for updating relative timestamps */
@@ -110,7 +111,7 @@ export class UiToggle {
   /** Stores API function from first initialization to use further for any user interactions */
   private storedWriteOperation?: (value: boolean) => Promise<any>;
 
-  // =============== EVENTS ===============
+  // ============================== EVENTS ==============================
 
   /**
    * Emitted when toggle value changes through user interaction or setValue calls.
@@ -118,7 +119,7 @@ export class UiToggle {
    */
   @Event() valueMsg: EventEmitter<UiMsg<boolean>>;
 
-  // =============== PUBLIC METHODS ===============
+  // ============================== PUBLIC METHODS ==============================
 
   /**
    * Sets the toggle value with optional device communication api and other options.
@@ -135,7 +136,7 @@ export class UiToggle {
    * await toggle.setValue(true);
    * ```
    *
-   * @example Device Integration
+   * @example JS integaration with node-wot browser bundle
    *  * ```javascript
    * const toggle = document.getElementById('device-toggle');
    * const initialValue = Boolean(await (await thing.readProperty('power')).value());
@@ -247,7 +248,7 @@ export class UiToggle {
     }
   }
 
-  // =============== LIFECYCLE METHODS ===============
+  // ============================== LIFECYCLE METHODS ==============================
 
   /** Initialize component state from props */
   componentWillLoad() {
@@ -268,7 +269,7 @@ export class UiToggle {
     this.stopTimestampUpdater();
   }
 
-  // =============== WATCHERS ===============
+  // ============================== WATCHERS ==============================
 
   /** Sync internal state when value prop changes externally */
   @Watch('value')
@@ -283,7 +284,7 @@ export class UiToggle {
     }
   }
 
-  // =============== PRIVATE METHODS ===============
+  // ============================== PRIVATE METHODS ==============================
 
   /**
    * This is the core state update method that handles value changes consistently.
@@ -433,7 +434,7 @@ export class UiToggle {
     }
   }
 
-  // =============== RENDERING HELPERS ===============
+  // ============================== RENDERING HELPERS ==============================
 
   /** Renders the status badge according to current operation state */
   private renderStatusBadge() {
@@ -459,7 +460,7 @@ export class UiToggle {
     if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
     return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), this.dark ? 'dark' : 'light', h);
   }
-  // =============== STYLING HELPERS ===============
+  // ============================== STYLING HELPERS ==============================
 
   /** Generates CSS classes for the toggle container based on variant,color and state */
   private getToggleStyle(): string {
@@ -557,7 +558,7 @@ export class UiToggle {
     return this.color === 'secondary' ? 'var(--color-secondary)' : 'var(--color-primary)';
   }
 
-  // =============== MAIN COMPONENT RENDER METHOD ===============
+  // ============================== MAIN COMPONENT RENDER METHOD ==============================
 
   /**
    * Renders the complete toggle component with all features and styles.
