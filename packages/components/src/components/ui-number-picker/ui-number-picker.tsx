@@ -143,8 +143,8 @@ export class UiNumberPicker {
    * await numberPicker.setValue(50);
    * ```
    *
-   * @example JS integaration with node-wot browser bundle
-   *  * ```javascript
+   * @example JS integration with node-wot browser bundle
+   * ```javascript
    * const numberPicker = document.getElementById('device-volume');
    * const initialValue = Number(await (await thing.readProperty('volume')).value());
    * await numberPicker.setValue(initialValue, {

@@ -10,17 +10,19 @@
 }
 
 .app-header h1 {
+  font-family: 'Bebas Neue', cursive;
   font-size: 3rem;
   margin-bottom: 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #067362 0%, #08967f 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .app-header p {
+  font-family: 'Josefin Sans', sans-serif;
   font-size: 1.2rem;
-  color: #666;
+  color: #067362;
 }
 
 .showcase-container {
@@ -29,25 +31,27 @@
 }
 
 .demo-section {
-  background: #f8f9fa;
+  background: #E4E6E6; /* Neutral Light */
   padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(6, 115, 98, 0.1);
 }
 
 .demo-section h2 {
-  color: #333;
+  font-family: 'Josefin Sans', sans-serif;
+  color: #067362; /* Primary Base */
   margin-bottom: 1rem;
 }
 
 .demo-section p {
-  color: #666;
+  font-family: 'Josefin Sans', sans-serif;
+  color: #067362;
   margin-bottom: 1.5rem;
 }
 
 .component-container {
   background: white;
-  border: 2px dashed #ddd;
+  border: 2px dashed #E4E6E6; /* Neutral Light */
   border-radius: 8px;
   padding: 2rem;
   margin: 1rem 0;
@@ -58,11 +62,12 @@
 }
 
 .demo-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #067362 0%, #08967f 100%);
   color: white;
   border: none;
   padding: 12px 24px;
   border-radius: 6px;
+  font-family: 'Josefin Sans', sans-serif;
   font-size: 1rem;
   cursor: pointer;
   transition: transform 0.2s;
@@ -71,11 +76,12 @@
 
 .demo-button:hover {
   transform: translateY(-2px);
+  background: linear-gradient(135deg, #08967f 0%, #33b8a4 100%);
 }
 
 .code-example {
-  background: #2d3748;
-  color: #e2e8f0;
+  background: #067362; /* Primary Base */
+  color: #E4E6E6; /* Neutral Light */
   padding: 1.5rem;
   border-radius: 8px;
   text-align: left;
@@ -83,7 +89,8 @@
 }
 
 .code-example h3 {
-  color: #48bb78;
+  color: #33b8a4; /* Accent Highlight */
+  font-family: 'Josefin Sans', sans-serif;
   margin-bottom: 1rem;
 }
 
@@ -100,11 +107,11 @@
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
+    color: #067362; /* Primary Base */
     background-color: #ffffff;
   }
   
   .demo-section {
-    background: #f8f9fa;
+    background: #E4E6E6; /* Neutral Light */
   }
 }

@@ -136,8 +136,8 @@ export class UiToggle {
    * await toggle.setValue(true);
    * ```
    *
-   * @example JS integaration with node-wot browser bundle
-   *  * ```javascript
+   * @example JS integration with node-wot browser bundle
+   * ```javascript
    * const toggle = document.getElementById('device-toggle');
    * const initialValue = Boolean(await (await thing.readProperty('power')).value());
    * await toggle.setValue(initialValue, {

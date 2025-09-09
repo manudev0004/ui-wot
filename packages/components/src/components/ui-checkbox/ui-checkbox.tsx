@@ -124,8 +124,8 @@ export class UiCheckbox {
    * await checkbox.setValue(true);
    * ```
    *
-   * @example JS integaration with node-wot browser bundle
-   *  * ```javascript
+   * @example JS integration with node-wot browser bundle
+   * ```javascript
    * const checkbox = document.getElementById('device-checkbox');
    * const initialValue = Boolean(await (await thing.readProperty('enabled')).value());
    * await checkbox.setValue(initialValue, {
