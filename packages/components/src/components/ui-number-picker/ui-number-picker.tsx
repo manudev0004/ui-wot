@@ -1,76 +1,30 @@
-import { Component, Element, Prop, State, h, Watch, Event, EventEmitter, Method } from '@stencil/core';
-import { UiMsg } from '../../utils/types';
-import { StatusIndicator } from '../../utils/status-indicator';
-
-export interface UiNumberPickerValueChange { value: number; label?: string }
+import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
+import { UiMsg } from '../../utils/types'; // Standard message format
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator'; // Status indicator utility
 
 /**
- * Number picker component with various visual styles, TD integration and customizable range.
- * Supports increment/decrement buttons with Thing Description integration for IoT devices.
+ * A versatile number picker component designed for WoT device control and monitoring.
+ *
+ * It has increment/decrement buttons, multiple visual styles, status and last updated timestamps.
+ * Supports both interactive control and read-only monitoring modes with customizable ranges.
  *
  * @example Basic Usage
  * ```html
  * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+ * <ui-number-picker variant="filled" value="50" min="0" max="100"></ui-number-picker>
+ * <ui-number-picker readonly="true" label="Sensor" show-last-updated="true"></ui-number-picker>
  * ```
  *
- * @example TD Integration with HTTP
- * ```html
- * <ui-number-picker
- *   td-url="http://device.local/properties/volume"
- *   label="Dev        {isReadOnly ? (
-          // Read-only indicator (no glow/shadow in readonly mode)
-          <div
-            class={`relative flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg border transition-all duration-300 ${
-              this.getReadonlyBg() }
-            `}
-            title={`${hoverTitle} - Current value: ${this.isActive}`}
-            part="readonly-indicator"
-          >e"
- *   protocol="http"
- *   mode="readwrite"
- *   min="0"
- *   max="100">
- * </ui-number-picker>
- * ```
- *
- * @example TD Integration with MQTT
- * ```html
- * <ui-number-picker
- *   td-url="mqtt://device"
- *   mqtt-host="localhost:1883"
- *   mqtt-topic="device/volume"
- *   label="MQTT Volume"
- *   protocol="mqtt"
- *   mode="readwrite">
- * </ui-number-picker>
- * ```
- *
- * @example TD Device Read-Only (shows value only)
- * ```html
- * <ui-number-picker
- *   td-url="http://sensor.local/temperature"
- *   label="Temperature Sensor"
- *   mode="read">
- * </ui-number-picker>
- * ```
- *
- * @example Local Control with Custom Handler
- * ```html
- * <ui-number-picker
- *   value="3"
- *   on-change="handleNumberChange"
- *   variant="filled"
- *   label="Custom Counter">
- * </ui-number-picker>
- * ```
- *
- * @example Event Handling
+ * @example JS integaration with node-wot browser bundle
  * ```javascript
- * window.handleNumberChange = function(data) {
- *   console.log('Number changed:', data.value);
- *   console.log('Label:', data.label);
- *   // Your custom logic here
- * };
+ * const numberPicker = document.getElementById('device-volume');
+ * const initialValue = Number(await (await thing.readProperty('volume')).value());
+ *
+ * await numberPicker.setValue(initialValue, {
+ *   writeOperation: async value => {
+ *     await thing.writeProperty('volume', value);
+ *   }
+ * });
  * ```
  */
 @Component({
@@ -81,6 +35,8 @@ export interface UiNumberPickerValueChange { value: number; label?: string }
 export class UiNumberPicker {
   @Element() el: HTMLElement;
 
+  // ============================== COMPONENT PROPERTIES ==============================
+
   /**
    * Visual style variant of the number picker.
    * - minimal: Clean buttons with subtle background (default)
@@ -89,283 +45,158 @@ export class UiNumberPicker {
    */
   @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'minimal';
 
-  /**
-   * Current numeric value of the number picker.
-   */
-  @Prop({ mutable: true }) value: number = 0;
-
-  /**
-   * Whether the number picker is disabled (cannot be interacted with).
-   */
-  @Prop() disabled: boolean = false;
-
-  /**
-   * Whether the number picker is read-only (displays value but cannot be changed).
-   */
-  @Prop({ mutable: true }) readonly: boolean = false;
-
-  /**
-   * Text label displayed above the number picker.
-   */
-  @Prop() label?: string;
-
-  /**
-   * Color theme variant.
-   */
+  /** Color theme for the active state matching to thingsweb theme */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
-  /**
-   * Enable dark theme for the component.
-   * When true, uses light text on dark backgrounds.
-   */
+  /** Enable dark mode theme styling when true */
   @Prop() dark: boolean = false;
 
-  /**
-   * Enable keyboard navigation (Arrow keys).
-   * Default: true
-   */
+  /** Current numeric value of the number picker */
+  @Prop({ mutable: true }) value: number = 0;
+
+  /** Disable user interaction when true */
+  @Prop() disabled: boolean = false;
+
+  /** Read only mode, display value but prevent changes when true. Just to monitor changes*/
+  @Prop({ mutable: true }) readonly: boolean = false;
+
+  /** Text label displayed above the number picker (optional) */
+  @Prop() label?: string;
+
+  /** Enable keyboard navigation so user can change value using 'Arrow Up' and 'Arrow Down' keys) when true */
   @Prop() keyboard: boolean = true;
 
-  /**
-   * Show last updated timestamp when true
-   */
+  /** Show last updated timestamp below the component */
   @Prop() showLastUpdated: boolean = false;
 
-  /**
-   * Show status badge when true
-   */
-  @Prop() showStatus: boolean = true;
+  /** Show visual operation status indicators (loading, success, failed) right to the component */
+  @Prop() showStatus: boolean = false;
 
-  // TD integration removed: external systems should use events
+  /** Connection state for read-only monitoring */
+  @Prop({ mutable: true }) connected: boolean = true;
 
-  /**
-   * Minimum allowed value.
-   */
+  /** Minimum allowed value (optional) */
   @Prop() min?: number = 0;
 
-  /**
-   * Maximum allowed value.
-   */
+  /** Maximum allowed value (optional) */
   @Prop() max?: number = 100;
 
-  /**
-   * Step increment/decrement amount.
-   */
-  @Prop() step: number = 1;
+  /** Step increment/decrement amount (optional) */
+  @Prop() step?: number = 1;
 
-  /** Internal state tracking current visual state */
+  // ============================== COMPONENT STATE ==============================
+
+  /** Current operation status for visual feedback */
+  @State() operationStatus: OperationStatus = 'idle';
+
+  /** Error message from failed operations if any (optional) */
+  @State() lastError?: string;
+
+  /** Timestamp when value was last updated (optional) */
+  @State() lastUpdatedTs?: number;
+
+  /** Timestamp for read-only pulse animation (optional) */
+  @State() readPulseTs?: number;
+
+  /** Internal state that controls the visual appearance of the number picker */
   @State() private isActive: number = 0;
 
-  /** Internal state for tracking if component is initialized */
-  private isInitialized: boolean = false;
+  /** Internal state counter for timestamp re-rendering */
+  @State() private timestampCounter: number = 0;
 
-  /** Flag to prevent event loops when setting values programmatically */
+  /** Internal state to prevents infinite event loops while programmatic updates */
   @State() private suppressEvents: boolean = false;
 
-  /** Operation status for write mode indicators */
-  @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
-  @State() lastError?: string;
-  /** Timestamp of last read pulse (readonly updates) */
-  @State() readPulseTs?: number;
-  /** Connection state for readonly mode */
-  @Prop({ mutable: true }) connected: boolean = true;
-  /** Timestamp of last value update for showLastUpdated feature */
-  @State() lastUpdatedTs?: number;
-  
-  /** Timer for auto-updating timestamps */
-  @State() timestampUpdateTimer?: number;
-  @State() private timestampCounter = 0;
+  // ============================== PRIVATE PROPERTIES ==============================
+
+  /** Tracks component initialization state to prevent early watchers*/
+  private isInitialized: boolean = false;
+
+  /** Timer for updating relative timestamps */
+  private timestampUpdateTimer?: number;
+
+  /** Stores API function from first initialization to use further for any user interactions */
+  private storedWriteOperation?: (value: number) => Promise<any>;
+
+  // ============================== EVENTS ==============================
 
   /**
-   * Set the number picker value with automatic device communication and status management.
-   * Values are automatically clamped to the min/max range and adjusted to step increments.
-   * 
-   * @param value - The numeric value to set (will be clamped and stepped)
-   * @param options - Configuration options for the operation
-   * @returns Promise<boolean> - true if successful, false if failed
-   * 
-   * @example Basic Usage (Easy)
+   * Emitted when number picker value changes through user interaction or setValue calls.
+   * Contains the new value, previous value, timestamp, and source information.
+   */
+  @Event() valueMsg: EventEmitter<UiMsg<number>>;
+
+  // ============================== PUBLIC METHODS ==============================
+
+  /**
+   * Sets the number picker value with optional device communication api and other options.
+   *
+   * This is the primary method for connecting number pickers to real devices.
+   * It supports optimistic updates, error handling, and automatic retries.
+   *
+   * @param value - The numeric value to set
+   * @param options - Configuration for device communication and behavior
+   * @returns Promise resolving to true if successful, false if failed
+   *
+   * @example Basic Usage
    * ```javascript
-   * const picker = document.querySelector('ui-number-picker');
-   * await picker.setValue(42);     // Set to 42
-   * await picker.setValue(99.5);   // Set to 99.5 (if step allows decimals)
+   * await numberPicker.setValue(50);
    * ```
-   * 
-   * @example Device Configuration (Advanced)
-   * ```javascript
-   * const devicePicker = document.querySelector('#device-setting');
-   * await devicePicker.setValue(100, {
-   *   writeOperation: async () => {
-   *     await fetch('/api/device/config', {
-   *       method: 'POST',
-   *       body: JSON.stringify({ setting: 100 })
-   *     });
+   *
+   * @example JS integaration with node-wot browser bundle
+   *  * ```javascript
+   * const numberPicker = document.getElementById('device-volume');
+   * const initialValue = Number(await (await thing.readProperty('volume')).value());
+   * await numberPicker.setValue(initialValue, {
+   *   writeOperation: async value => {
+   *     await thing.writeProperty('volume', value);
    *   },
    *   autoRetry: { attempts: 3, delay: 1000 }
    * });
    * ```
    */
   @Method()
-  async setValue(value: number, options?: {
-    /** Automatic write operation - component handles all status transitions */
-    writeOperation?: () => Promise<any>;
-    /** Automatic read operation with pulse indicator */
-    readOperation?: () => Promise<any>;
-    /** Apply change optimistically, revert on failure (default: true) */
-    optimistic?: boolean;
-    /** Auto-retry configuration for failed operations */
-    autoRetry?: {
-      attempts: number;
-      delay: number;
-    };
-    /** Manual status override (for advanced users) */
-    customStatus?: 'loading' | 'success' | 'error';
-    /** Error message for manual error status */
-    errorMessage?: string;
-    /** Internal flag to indicate this is a revert operation */
-    _isRevert?: boolean;
-  }): Promise<boolean> {
+  async setValue(
+    value: number,
+    options?: {
+      writeOperation?: (value: number) => Promise<any>;
+      readOperation?: () => Promise<any>;
+      optimistic?: boolean;
+      autoRetry?: { attempts: number; delay: number };
+      _isRevert?: boolean;
+    },
+  ): Promise<boolean> {
     const prevValue = this.isActive;
 
-    // Clamp value to min/max bounds
-    const clampedValue = this.min !== undefined && this.max !== undefined
-      ? Math.max(this.min, Math.min(this.max, value))
-      : value;
-
-    // Handle manual status override
-    if (options?.customStatus) {
-      if (options.customStatus === 'loading') {
-        this.operationStatus = 'loading';
-        return true;
-      }
-      if (options.customStatus === 'success') {
-        this.operationStatus = 'success';
-        setTimeout(() => {
-          if (this.operationStatus === 'success') this.operationStatus = 'idle';
-        }, 1200);
-        this.isActive = clampedValue;
-        this.value = clampedValue;
-        this.lastUpdatedTs = Date.now();
-        if (this.readonly) this.readPulseTs = Date.now();
-        this.emitValueMsg(clampedValue, prevValue);
-        return true;
-      }
-      if (options.customStatus === 'error') {
-        this.operationStatus = 'error';
-        this.lastError = options.errorMessage || 'Operation failed';
-        return false;
-      }
-    }
-
-    // Auto-clear error state when user tries again (unless this is a revert)
+    // Clear any existing error state
     if (this.operationStatus === 'error' && !options?._isRevert) {
       this.operationStatus = 'idle';
       this.lastError = undefined;
       this.connected = true;
     }
 
-    // Optimistic update (default: true)
-    const optimistic = options?.optimistic !== false;
-    if (optimistic && !options?._isRevert) {
-      this.isActive = clampedValue;
-      this.value = clampedValue;
-      this.lastUpdatedTs = Date.now();
-      if (this.readonly) this.readPulseTs = Date.now();
-      this.emitValueMsg(clampedValue, prevValue);
+    // Simple value update without other operations
+    if (!options?.writeOperation && !options?.readOperation) {
+      this.updateValue(value, prevValue);
+      return true;
     }
 
-    // Handle Promise-based operations
-    if (options?.writeOperation || options?.readOperation) {
-      const operation = options.writeOperation || options.readOperation;
-
-      // Show loading state
-      this.operationStatus = 'loading';
-
-      try {
-        await operation();
-
-        // Success - show success state briefly
-        this.operationStatus = 'success';
-        setTimeout(() => {
-          if (this.operationStatus === 'success') this.operationStatus = 'idle';
-        }, 1200);
-
-        // If not optimistic, apply value now
-        if (!optimistic) {
-          this.isActive = clampedValue;
-          this.value = clampedValue;
-          this.lastUpdatedTs = Date.now();
-          if (this.readonly) this.readPulseTs = Date.now();
-          this.emitValueMsg(clampedValue, prevValue);
-        }
-
-        return true;
-      } catch (error) {
-        this.operationStatus = 'error';
-        this.lastError = error?.message || String(error) || 'Operation failed';
-
-        if (optimistic && !options?._isRevert) {
-          // Revert to previous value
-          this.isActive = prevValue;
-          this.value = prevValue;
-        }
-
-        // Auto-retry logic
-        if (options?.autoRetry && options.autoRetry.attempts > 0) {
-          setTimeout(async () => {
-            const retryOptions = {
-              ...options,
-              autoRetry: {
-                attempts: options.autoRetry.attempts - 1,
-                delay: options.autoRetry.delay
-              }
-            };
-            await this.setValue(clampedValue, retryOptions);
-          }, options.autoRetry.delay);
-        }
-
-        return false;
-      }
+    // If there is writeOperation store operation for future user interactions
+    if (options.writeOperation && !options._isRevert) {
+      this.storedWriteOperation = options.writeOperation;
+      this.updateValue(value, prevValue, false);
+      return true;
     }
 
-    // Simple value setting (no operation)
-    if (!options?.writeOperation && !options?.readOperation && !options?._isRevert) {
-      this.isActive = clampedValue;
-      this.value = clampedValue;
-      this.lastUpdatedTs = Date.now();
-      if (this.readonly) {
-        this.readPulseTs = Date.now();
-        // Auto-hide pulse after duration
-        setTimeout(() => {
-          if (this.readPulseTs && (Date.now() - this.readPulseTs >= 1500)) {
-            this.readPulseTs = undefined;
-          }
-        }, 1500);
-      }
-      this.emitValueMsg(clampedValue, prevValue);
-    }
-
-    return true;
+    // Execute operation immediately if no options selected
+    return this.executeOperation(value, prevValue, options);
   }
 
   /**
-   * Get the current number picker value with optional metadata.
-   * 
-   * @param includeMetadata - Include last updated timestamp and status
-   * @returns Promise that resolves to the current value or value with metadata
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * const picker = document.querySelector('ui-number-picker');
-   * const currentValue = await picker.getValue();
-   * console.log('Current number:', currentValue);
-   * ```
-   * 
-   * @example With Metadata (Advanced)
-   * ```javascript
-   * const result = await picker.getValue(true);
-   * console.log('Value:', result.value, 'Status:', result.status);
-   * ```
+   * Gets the current number picker value with optional metadata.
+   *
+   * @param includeMetadata - Whether to include status, timestamp and other information
+   * @returns Current value or detailed metadata object
    */
   @Method()
   async getValue(includeMetadata: boolean = false): Promise<number | { value: number; lastUpdated?: number; status: string; error?: string }> {
@@ -374,61 +205,32 @@ export class UiNumberPicker {
         value: this.isActive,
         lastUpdated: this.lastUpdatedTs,
         status: this.operationStatus,
-        error: this.lastError
+        error: this.lastError,
       };
     }
     return this.isActive;
   }
 
   /**
-   * Set value programmatically without triggering events (for external updates).
-   * Values are automatically clamped to the min/max range.
-   * 
+   * This method updates the value silently without triggering events.
+   *
+   * Use this for external data synchronization to prevent event loops.
+   * Perfect for WebSocket updates or polling from remote devices.
+   *
    * @param value - The numeric value to set silently
-   * @returns Promise<void>
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * const picker = document.querySelector('ui-number-picker');
-   * await picker.setValueSilent(50);
-   * ```
-   * 
-   * @example External Data Sync (Advanced)
-   * ```javascript
-   * // Sync from API without triggering events
-   * const response = await fetch('/api/device/current-value');
-   * const data = await response.json();
-   * await picker.setValueSilent(data.value);
-   * ```
    */
   @Method()
   async setValueSilent(value: number): Promise<void> {
-    const clampedValue = this.min !== undefined && this.max !== undefined 
-      ? Math.max(this.min, Math.min(this.max, value))
-      : value;
-    this.suppressEvents = true;
-    this.isActive = clampedValue;
-    this.value = clampedValue;
-    this.lastUpdatedTs = Date.now();
-  // Visual cue for readonly components when external updates arrive
-  if (this.readonly) this.readPulseTs = Date.now();
-    this.suppressEvents = false;
+    this.updateValue(value, this.isActive, false);
   }
 
   /**
-   * Set operation status for external status management.
-   * 
-   * @param status - The status to set ('idle', 'loading', 'success', 'error')
-   * @param errorMessage - Optional error message for error status
-   * @returns Promise<void>
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * const picker = document.querySelector('ui-number-picker');
-   * await picker.setStatus('loading');
-   * await picker.setStatus('success');
-   * await picker.setStatus('error', 'Value out of range');
-   * ```
+   * (Advance) to manually set the operation status indicator.
+   *
+   * Useful when managing device communication externally and you want to show loading/success/error states.
+   *
+   * @param status - The status to display
+   * @param errorMessage - (Optional) error message for error status
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
@@ -436,89 +238,48 @@ export class UiNumberPicker {
   }
 
   /**
-   * Trigger a read pulse indicator for readonly mode when data is actually fetched.
-   * Shows a visual pulse animation to indicate fresh data.
-   * 
-   * @returns Promise<void>
-   * 
-   * @example Basic Usage (Easy)
-   * ```javascript
-   * const picker = document.querySelector('ui-number-picker');
-   * await picker.triggerReadPulse();
-   * ```
-   * 
-   * @example Sensor Data Refresh (Advanced)
-   * ```javascript
-   * // Show pulse when refreshing sensor values
-   * const sensorPicker = document.querySelector('#sensor-value');
-   * const response = await fetch('/api/sensors/current');
-   * const data = await response.json();
-   * await sensorPicker.setValueSilent(data.value);
-   * await sensorPicker.triggerReadPulse();
-   * ```
+   * This triggers a visual pulse for read-only mode.
+   *
+   * Useful to shows users when data has been refreshed from an external source.
+   * The pulse automatically fades after 1.5 seconds.
    */
   @Method()
   async triggerReadPulse(): Promise<void> {
     if (this.readonly) {
       this.readPulseTs = Date.now();
-      // Force re-render to show pulse, then auto-hide after duration
       setTimeout(() => {
-        if (this.readPulseTs && (Date.now() - this.readPulseTs >= 1500)) {
-          this.readPulseTs = undefined; // Force re-render to hide pulse
+        if (this.readPulseTs && Date.now() - this.readPulseTs >= 1500) {
+          // 1.5 seconds
+          this.readPulseTs = undefined;
         }
       }, 1500);
     }
   }
 
-  /**
-   * Primary event emitted when the number picker value changes.
-   */
-  @Event() valueMsg: EventEmitter<UiMsg<number>>;
+  // ============================== LIFECYCLE METHODS ==============================
 
   /** Initialize component state from props */
   componentWillLoad() {
     this.isActive = this.value || 0;
     this.isInitialized = true;
-    
-    // Start auto-updating timestamp timer if showLastUpdated is enabled
-    if (this.showLastUpdated) {
-      this.startTimestampUpdater();
-    }
+    if (this.showLastUpdated) this.startTimestampUpdater();
   }
 
+  /** Show initial pulse for read-only components */
   componentDidLoad() {
-    // Trigger a one-time read pulse on initial load for readonly components
     if (this.readonly) {
-      // small delay so styles are applied before animation
-      setTimeout(() => {
-        this.readPulseTs = Date.now();
-      }, 200);
+      setTimeout(() => (this.readPulseTs = Date.now()), 200);
     }
   }
 
-  /** Start auto-updating relative timestamps */
-  private startTimestampUpdater() {
-    this.stopTimestampUpdater(); // Ensure no duplicate timers
-    this.timestampUpdateTimer = window.setInterval(() => {
-      // Force re-render to update relative time by incrementing counter
-      this.timestampCounter++;
-    }, 60000); // Update every 60 seconds
-  }
-
-  /** Stop auto-updating timestamps */
-  private stopTimestampUpdater() {
-    if (this.timestampUpdateTimer) {
-      clearInterval(this.timestampUpdateTimer);
-      this.timestampUpdateTimer = undefined;
-    }
-  }
-
-  /** Cleanup component */
+  /** Clean up timers when component is removed */
   disconnectedCallback() {
     this.stopTimestampUpdater();
   }
 
-  /** Watch for value prop changes and update internal state */
+  // ============================== WATCHERS ==============================
+
+  /** Sync internal state when value prop changes externally */
   @Watch('value')
   watchValue(newVal: number) {
     if (!this.isInitialized) return;
@@ -526,81 +287,144 @@ export class UiNumberPicker {
     if (this.isActive !== newVal) {
       const prevValue = this.isActive;
       this.isActive = newVal;
-  this.emitValueMsg(newVal, prevValue);
-  // Trigger read pulse when readonly and value changed externally
-  if (this.readonly) this.readPulseTs = Date.now();
+      this.emitValueMsg(newVal, prevValue);
+      if (this.readonly) this.readPulseTs = Date.now();
     }
   }
 
-  /** Emit the unified UiMsg event */
+  // ============================== PRIVATE METHODS ==============================
+
+  /**
+   * This is the core state update method that handles value changes consistently.
+   * It updates both internal state and external prop and also manages timestamps, and emits events (optional).
+   */
+  private updateValue(value: number, prevValue?: number, emitEvent: boolean = true): void {
+    // Clamp and step the value for number picker specific logic
+    const clampedValue = Math.max(this.min || 0, Math.min(this.max || 100, value));
+    const steppedValue = Math.round(clampedValue / this.step) * this.step;
+
+    this.isActive = steppedValue;
+    this.value = steppedValue;
+    this.lastUpdatedTs = Date.now();
+
+    if (this.readonly) {
+      this.readPulseTs = Date.now();
+    }
+
+    if (emitEvent && !this.suppressEvents) {
+      this.emitValueMsg(steppedValue, prevValue);
+    }
+  }
+
+  /** Sets different operation status with automatic timeout to return to its idle state */
+  private setStatusWithTimeout(status: 'idle' | 'loading' | 'success' | 'error', duration: number = 1000): void {
+    this.operationStatus = status;
+    if (status !== 'idle') {
+      setTimeout(() => {
+        if (this.operationStatus === status) this.operationStatus = 'idle';
+      }, duration);
+    }
+  }
+
+  /** Executes stored operations with error handling and retry logic */
+  private async executeOperation(value: number, prevValue: number, options: any): Promise<boolean> {
+    const optimistic = options?.optimistic !== false;
+
+    // Show new value immediately (if optimistic = true)
+    if (optimistic && !options?._isRevert) {
+      this.updateValue(value, prevValue);
+    }
+
+    this.operationStatus = 'loading';
+
+    try {
+      // Execute the API call
+      if (options.writeOperation) {
+        await options.writeOperation(value);
+      } else if (options.readOperation) {
+        await options.readOperation();
+      }
+
+      this.setStatusWithTimeout('success', 1200); // Success status for 1.2 seconds
+
+      // Update value after successful operation, (if optimistic = false)
+      if (!optimistic) {
+        this.updateValue(value, prevValue);
+      }
+
+      return true;
+    } catch (error) {
+      this.operationStatus = 'error';
+      this.lastError = error?.message || String(error) || 'Operation failed';
+
+      // Revert optimistic changes if operation is not successful or has an error
+      if (optimistic && !options?._isRevert) {
+        this.updateValue(prevValue, value, false);
+      }
+
+      // Retry logic
+      if (options?.autoRetry && options.autoRetry.attempts > 0) {
+        setTimeout(() => {
+          this.setValue(value, {
+            ...options,
+            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 },
+          });
+        }, options.autoRetry.delay);
+      } else {
+        this.setStatusWithTimeout('idle', 3000); // Clear error after 3 seconds
+      }
+
+      return false;
+    }
+  }
+
+  /** Emits value change events with consistent UIMsg data structure */
   private emitValueMsg(value: number, prevValue?: number) {
-    // Don't emit events if suppressed (to prevent loops)
     if (this.suppressEvents) return;
-    
-    // Primary unified event
-    const msg: UiMsg<number> = {
+    this.valueMsg.emit({
       newVal: value,
       prevVal: prevValue,
       ts: Date.now(),
       source: this.el?.id || 'ui-number-picker',
       ok: true,
-    };
-    this.valueMsg.emit(msg);
+    });
   }
-  
-  // helper intentionally removed; timestamp updates are inlined where needed
 
-  // Device read logic removed
-
-  /** Read via CoAP */
-  // CoAP helper removed
-
-  /** Read via MQTT */
-  // MQTT helper removed
-
-  /** Write new state to TD device */
-  // Device write logic removed
-
-  /** Write via CoAP */
-  // CoAP helper removed
-
-  /** Write via MQTT */
-  // MQTT helper removed
-
-  /** Universal change handler */
-  private handleChange = (delta: number) => {
+  /** Handles user increment/decrement interactions */
+  private handleChange = async (delta: number) => {
     if (this.disabled || this.readonly) return;
 
     const newValue = this.isActive + delta;
-    
+
     // Check bounds
     if (this.max !== undefined && newValue > this.max) return;
     if (this.min !== undefined && newValue < this.min) return;
 
-    // Show loading state briefly for visual feedback (only if showStatus is enabled)
-    if (this.showStatus) {
-      this.operationStatus = 'loading';
-    }
-
     const prevValue = this.isActive;
-    this.isActive = newValue;
-    this.value = newValue;
-    
-    // Update timestamp only if showLastUpdated is enabled
-    if (this.showLastUpdated) {
-      this.lastUpdatedTs = Date.now();
-    }
-    
-    this.emitValueMsg(newValue, prevValue);
-    
-    // Show success state and auto-clear (only if showStatus is enabled)
-    if (this.showStatus) {
-      setTimeout(() => {
-        this.operationStatus = 'success';
-        setTimeout(() => { 
-          this.operationStatus = 'idle'; 
-        }, 1000);
-      }, 100);
+
+    // Execute stored operation if available
+    if (this.storedWriteOperation) {
+      this.operationStatus = 'loading';
+      this.updateValue(newValue, prevValue);
+
+      try {
+        await this.storedWriteOperation(newValue);
+        this.setStatusWithTimeout('success');
+      } catch (error) {
+        console.error('Write operation failed:', error);
+        this.operationStatus = 'error';
+        this.lastError = error?.message || 'Operation failed';
+        this.updateValue(prevValue, newValue, false);
+        this.setStatusWithTimeout('idle', 3000); // Clear error after 3 seconds
+      }
+    } else {
+      // Simple increment/decrement without device operations
+      this.updateValue(newValue, prevValue);
+
+      if (this.showStatus) {
+        this.operationStatus = 'loading';
+        setTimeout(() => this.setStatusWithTimeout('success'), 100); // Quick success feedback
+      }
     }
   };
 
@@ -614,10 +438,9 @@ export class UiNumberPicker {
     this.handleChange(-this.step);
   };
 
-  /** Handle keyboard input */
+  /** Handle keyboard 'Arrow Up' and 'Arrow Down' input to change number value */
   private handleKeyDown = (event: KeyboardEvent) => {
     if (this.disabled || this.readonly || !this.keyboard) return;
-
     if (event.key === 'ArrowUp') {
       event.preventDefault();
       this.handleIncrement();
@@ -627,7 +450,50 @@ export class UiNumberPicker {
     }
   };
 
-  /** Get button style classes */
+  /** Manages timestamp update timer for relative time display */
+  private startTimestampUpdater() {
+    this.stopTimestampUpdater();
+    this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 60000); //  Update every minute
+  }
+
+  /** Stops the timestamp update timer */
+  private stopTimestampUpdater() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+      this.timestampUpdateTimer = undefined;
+    }
+  }
+
+  // ============================== RENDERING HELPERS ==============================
+
+  /** Renders the status badge according to current operation state */
+  private renderStatusBadge() {
+    if (!this.showStatus) return null;
+
+    if (this.readonly) {
+      if (!this.connected) {
+        return StatusIndicator.renderStatusBadge('error', 'light', 'Disconnected', h);
+      }
+      if (this.readPulseTs && Date.now() - this.readPulseTs < 1500) {
+        return StatusIndicator.renderStatusBadge('success', 'light', 'Data received', h);
+      }
+      return StatusIndicator.renderStatusBadge('idle', 'light', 'Connected', h);
+    }
+
+    const status = this.operationStatus || 'idle';
+    const message = this.lastError || (status === 'idle' ? 'Ready' : '');
+    return StatusIndicator.renderStatusBadge(status, 'light', message, h);
+  }
+
+  /** Renders the last updated timestamp */
+  private renderLastUpdated() {
+    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
+    return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), this.dark ? 'dark' : 'light', h);
+  }
+
+  // ============================== STYLING HELPERS ==============================
+
+  /** Get button style classes for increment/decrement buttons */
   private getButtonStyle(type: 'increment' | 'decrement'): string {
     const isDisabled = this.disabled;
     const isAtMax = this.max !== undefined && this.isActive >= this.max && type === 'increment';
@@ -642,49 +508,38 @@ export class UiNumberPicker {
       baseClasses += ' cursor-pointer hover:scale-105 active:scale-95';
     }
 
-    // Variant-specific styling with explicit color control
+    // Variant-specific styling
     if (this.variant === 'minimal') {
-      // Minimal: No background, no border, just text
       if (disabled) {
         baseClasses += ' text-gray-400';
       } else {
-        // Clear color specification based on theme
         if (this.dark) {
-          baseClasses += ' bg-transparent text-white-dark hover:bg-gray-800';
+          baseClasses += ' bg-transparent text-white hover:bg-gray-800';
         } else {
-          baseClasses += ' bg-transparent text-black-force hover:bg-gray-100';
+          baseClasses += ' bg-transparent text-black hover:bg-gray-100';
         }
       }
     } else if (this.variant === 'outlined') {
-      // Outlined: Border with user's chosen color, no background
       if (disabled) {
         baseClasses += ' border-2 border-gray-300 text-gray-400 bg-transparent';
       } else {
-        const borderColor = `border-${this.getColorName()}`;
-        const hoverBg = `hover:bg-${this.getColorName()}`;
-
         if (this.dark) {
-          baseClasses += ` border-2 ${borderColor} bg-transparent text-white-dark ${hoverBg} hover:text-white-force`;
+          baseClasses += ` border-2 bg-transparent text-white hover:text-white`;
         } else {
-          baseClasses += ` border-2 ${borderColor} bg-transparent text-black-force ${hoverBg} hover:text-white-force`;
+          baseClasses += ` border-2 bg-transparent text-black hover:text-white`;
         }
       }
     } else if (this.variant === 'filled') {
-      // Filled: Background with user's chosen color, text color matches theme
       if (disabled) {
-        baseClasses += ' bg-gray-400 text-white-force';
+        baseClasses += ' bg-gray-400 text-white';
       } else {
-        // Filled buttons: black text in light theme, white text in dark theme
         if (this.dark) {
-          baseClasses += ` bg-${this.getColorName()} text-white-force hover:bg-${this.getColorName()}-dark`;
+          baseClasses += ` text-white hover:opacity-90`;
         } else {
-          baseClasses += ` bg-${this.getColorName()} text-black-force hover:bg-${this.getColorName()}-dark`;
+          baseClasses += ` text-white hover:opacity-90`;
         }
       }
     }
-
-    // Focus ring color matches component color
-    baseClasses += ` focus:ring-${this.getColorName()}`;
 
     return baseClasses;
   }
@@ -693,142 +548,181 @@ export class UiNumberPicker {
   private getValueStyle(): string {
     const isDisabled = this.disabled;
 
-    let classes = 'min-w-[60px] h-12 flex items-center justify-center text-lg font-semibold rounded-lg border-2 number-display';
+    let classes = 'min-w-[60px] h-12 flex items-center justify-center text-lg font-semibold rounded-lg border-2';
 
     if (isDisabled) {
-      // Disabled state
-      classes += ' bg-gray-100 text-gray-400 border-gray-300 dark:bg-gray-800 dark:text-gray-600 dark:border-gray-600';
+      classes += ' bg-gray-100 text-gray-400 border-gray-300';
+      if (this.dark) classes += ' dark:bg-gray-800 dark:text-gray-600 dark:border-gray-600';
     } else {
-      // Center box: white background with primary color text and border
-      classes += ` bg-white text-${this.getColorName()} border-${this.getColorName()} dark:bg-white dark:text-${this.getColorName()} dark:border-${this.getColorName()}`;
+      classes += ` bg-white`;
+      if (this.dark) classes += ` dark:bg-white`;
     }
 
     return classes;
   }
 
-  /** Get color name for CSS classes */
-  private getColorName(): string {
-    return this.color === 'primary' ? 'primary' : this.color === 'secondary' ? 'secondary' : 'neutral';
+  /** Generate the active color using global CSS variables */
+  private getActiveColor(): string {
+    switch (this.color) {
+      case 'secondary':
+        return 'var(--color-secondary)';
+      case 'neutral':
+        return 'var(--color-neutral)';
+      default:
+        return 'var(--color-primary)';
+    }
   }
 
-  /** Readonly background classes derived from color and theme */
+  /** Readonly background classes */
   private getReadonlyBg(): string {
     if (this.dark) {
-      // darker backgrounds for dark mode but keep colored borders/text
-      if (this.color === 'primary') return 'bg-gray-800 border-primary text-white';
-      if (this.color === 'secondary') return 'bg-gray-800 border-secondary text-white';
-      return 'bg-gray-800 border-gray-600 text-white';
+      return 'bg-gray-800 border-2 text-white';
     }
-
-    // Light mode: use colored borders and light backgrounds
-    if (this.color === 'primary') return 'bg-white border-primary text-primary';
-    if (this.color === 'secondary') return 'bg-white border-secondary text-secondary';
-    return 'bg-white border-gray-300 text-gray-900';
+    return 'bg-white border-2 text-gray-900';
   }
 
-  /** Readonly text color classes derived from color */
-  private getReadonlyText(): string {
-    if (this.dark) return 'text-white';
-    if (this.color === 'primary') return 'text-primary';
-    if (this.color === 'secondary') return 'text-secondary';
-    return 'text-gray-900';
-  }
+  // ============================== MAIN COMPONENT RENDER METHOD ==============================
 
-  /** Render component */
+  /**
+   * Renders the complete number picker component with all features and styles.
+   */
   render() {
-    const isDisabled = this.disabled;
-    const isReadOnly = this.readonly;
-    const hoverTitle = isReadOnly ? 'Value cannot be changed (Read-only mode)' : '';
-  // IMPORTANT: add 'relative' so absolutely positioned status/timestamp badges render correctly
-  const containerClasses = `relative flex flex-col items-center gap-3 ${isDisabled ? 'opacity-75' : ''}`;
+    const canInteract = !this.disabled && !this.readonly;
+    const hoverTitle = this.readonly
+      ? 'Read-only mode - Value reflects external state'
+      : this.disabled
+      ? 'Number picker is disabled'
+      : `Use buttons or arrow keys to ${this.label ? `change ${this.label}` : 'change value'}`;
 
     return (
-      <div class={containerClasses} part="container" role="group" aria-label={this.label || 'Number picker'}>
-        <div class="flex items-center">
-          {/* Label slot or prop */}
+      <div class="inline-block" part="container" role="group" aria-label={this.label || 'Number picker'}>
+        <div class="inline-flex flex-col items-center space-y-2 relative">
+          {/* Label */}
           <slot name="label">
             {this.label && (
-              <label class={`text-sm font-medium ${this.dark ? 'text-white' : 'text-gray-900'}`} title={hoverTitle} part="label">
+              <label
+                class={`select-none text-sm font-medium transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed text-gray-400' : 'cursor-default'} ${
+                  this.dark ? 'text-white' : 'text-gray-900'
+                }`}
+                title={hoverTitle}
+                part="label"
+              >
                 {this.label}
-                {isReadOnly && <span class="ml-1 text-xs text-blue-500 dark:text-blue-400">(Read-only)</span>}
+                {this.readonly && (
+                  <span 
+                    class="ml-1 text-xs" 
+                    style={{ color: 'var(--color-info)' }}
+                  >
+                    (Read-only)
+                  </span>
+                )}
               </label>
             )}
           </slot>
-        </div>
 
-        {isReadOnly ? (
-          // Read-only indicator (no glow/shadow in readonly mode)
-          <div
-            class={`relative flex items-center justify-center min-w-[120px] h-12 px-4 mr-4 rounded-lg border transition-all duration-300 ${
-              this.getReadonlyBg() }
-            `}
-            title={`${hoverTitle} - Current value: ${this.isActive}`}
-            part="readonly-indicator"
-          >
-            <span class={`text-lg font-medium ${this.getReadonlyText()}`}>{this.isActive}</span>
-            {/* transient read-pulse dot (appears briefly after triggerReadPulse()) */}
-            {this.readPulseTs && (Date.now() - this.readPulseTs < 1500) ? (
-              <>
-                <style>{`@keyframes ui-read-pulse { 0% { opacity: 0; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1.2); } }`}</style>
-                <span
-                  class="absolute -right-2 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400 shadow-md z-10"
-                  style={{ animation: 'ui-read-pulse 1.4s ease-in-out forwards' } as any}
-                  title="Updated"
-                  part="readonly-pulse"
-                />
-              </>
-            ) : null}
-          </div>
-        ) : (
-          // Show interactive number picker (wrapped with fragment to allow bottom timestamp)
-          <div class="flex flex-col items-center w-full" part="interactive-wrapper">
-            <div class={`relative flex items-center justify-center w-full ${this.showStatus ? 'pr-8' : ''}`} part="controls-container">
-              <div class="flex items-center gap-3" tabindex={isDisabled ? -1 : 0} onKeyDown={this.handleKeyDown}>
+          {/* Number Picker Control */}
+          {this.readonly ? (
+            // Read-only indicator
+            <span
+              class={`inline-flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg transition-all duration-300 ${this.getReadonlyBg()}`}
+              style={{
+                borderColor: this.getActiveColor(),
+                color: this.dark ? 'white' : this.getActiveColor()
+              }}
+              title={`${hoverTitle} - Current value: ${this.isActive}`}
+              part="readonly-indicator"
+            >
+              <span class={`text-lg font-medium`} style={{ color: this.dark ? 'white' : this.getActiveColor() }}>
+                {this.isActive}
+              </span>
+
+              {/* Read Pulse Indicator */}
+              {this.readPulseTs && Date.now() - this.readPulseTs < 1500 && (
+                <span class="ml-2 flex items-center" part="readonly-pulse-sibling">
+                  <span
+                    class="w-3 h-3 rounded-full shadow-md"
+                    title="Updated"
+                    aria-hidden="true"
+                    style={{
+                      backgroundColor: 'var(--color-info)',
+                      animation: 'ui-read-pulse 1.4s ease-in-out forwards',
+                    }}
+                  ></span>
+                </span>
+              )}
+            </span>
+          ) : (
+            // Interactive number picker
+            <div class="flex items-center gap-3 relative">
+              <div class="flex items-center gap-3" tabIndex={canInteract ? 0 : -1} onKeyDown={this.handleKeyDown} part="controls">
                 {/* Decrement Button */}
                 <button
                   class={this.getButtonStyle('decrement')}
+                  style={
+                    !this.disabled && 
+                    !(this.min !== undefined && this.isActive <= this.min) && 
+                    this.variant === 'outlined' 
+                      ? { borderColor: this.getActiveColor() } 
+                      : this.variant === 'filled' && !this.disabled
+                      ? { backgroundColor: this.getActiveColor() }
+                      : {}
+                  }
                   onClick={this.handleDecrement}
-                  disabled={isDisabled || (this.min !== undefined && this.isActive <= this.min)}
+                  disabled={this.disabled || (this.min !== undefined && this.isActive <= this.min)}
                   aria-label="Decrease value"
+                  title={canInteract ? `Decrease by ${this.step}` : hoverTitle}
                   part="decrement-button"
                 >
                   −
                 </button>
 
                 {/* Value Display */}
-                <div class={this.getValueStyle()} part="value-display">{this.isActive}</div>
+                <div 
+                  class={this.getValueStyle()} 
+                  style={
+                    !this.disabled 
+                      ? { 
+                          borderColor: this.getActiveColor(),
+                          color: this.getActiveColor()
+                        } 
+                      : {}
+                  }
+                  part="value-display" 
+                  title={`Current value: ${this.isActive}`}
+                >
+                  {this.isActive}
+                </div>
 
                 {/* Increment Button */}
                 <button
                   class={this.getButtonStyle('increment')}
+                  style={
+                    !this.disabled && 
+                    !(this.max !== undefined && this.isActive >= this.max) && 
+                    this.variant === 'outlined' 
+                      ? { borderColor: this.getActiveColor() } 
+                      : this.variant === 'filled' && !this.disabled
+                      ? { backgroundColor: this.getActiveColor() }
+                      : {}
+                  }
                   onClick={this.handleIncrement}
-                  disabled={isDisabled || (this.max !== undefined && this.isActive >= this.max)}
+                  disabled={this.disabled || (this.max !== undefined && this.isActive >= this.max)}
                   aria-label="Increase value"
+                  title={canInteract ? `Increase by ${this.step}` : hoverTitle}
                   part="increment-button"
                 >
                   +
                 </button>
               </div>
 
-              {/* Status badge positioned absolutely to the right with proper spacing */}
-              {this.showStatus && (
-                <div class="absolute right-0 top-1/2 transform -translate-y-1/2" role="status">
-                  {StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h, { position: 'sibling-right' })}
-                </div>
-              )}
+              {/* Status Badge */}
+              {this.renderStatusBadge()}
             </div>
+          )}
 
-            {/* Bottom timestamp */}
-            {this.showLastUpdated && (
-              <div class="w-full flex justify-end mt-2">
-                {StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Error Message (optional) */}
-        {this.lastError && <div class="text-red-500 text-sm mt-2 px-2">{this.lastError}</div>}
+          {/* Last Updated Timestamp */}
+          {this.renderLastUpdated()}
+        </div>
       </div>
     );
   }

@@ -318,19 +318,75 @@
           return;
         }
 
-        // --- Simplified demo binding ---------------------------------
-        // This demo shows the minimal pattern to bind a UI component to
-        // a Thing Description (TD) property. It does three things:
-        // 1) Waits for the component to be ready
-        // 2) Reads the current value from the Thing and calls component.setValue(value)
-        // 3) Listens for the component's `valueMsg` events and writes back to the Thing
+        // --- Component TD Integration Pattern ---------------------------------
+        // This demo shows the new unified pattern for connecting UI components to
+        // Thing Description (TD) properties using the new setValue method:
+        // 1) Wait for component to be ready (componentOnReady)
+        // 2) Read initial value from TD and call setValue(value, { writeOperation })
+        // 3) Components automatically handle user interactions and call writeOperation
         // ----------------------------------------------------------------
 
-        // Define component bindings - these components bind to TD properties
-        const bindings = [
-          { element: document.getElementById('td-toggle'), property: 'bool' },
+        // Toggle component - connects to TD bool property
+        const toggleElement = document.getElementById('td-toggle');
+        if (toggleElement && thing) {
+          await toggleElement.componentOnReady();
+          
+          try {
+            const initialValue = Boolean(await (await thing.readProperty('bool')).value());
+            await toggleElement.setValue(initialValue, {
+              writeOperation: async (value) => {
+                console.log('Writing toggle value:', value, 'to bool property');
+                await thing.writeProperty('bool', value);
+                console.log('Toggle write successful');
+              }
+            });
+            console.log('Toggle connected to bool property, initial value:', initialValue);
+          } catch (error) {
+            console.error('Toggle connection failed:', error);
+            await toggleElement.setValue(false);
+            await toggleElement.setStatus('error', 'Connection failed');
+          }
+        }
+
+        // Number picker component - connects to TD int property  
+        const numberElement = document.getElementById('td-number');
+        if (numberElement && thing) {
+          await numberElement.componentOnReady();
+          
+          try {
+            const initialValue = Number(await (await thing.readProperty('int')).value());
+            await numberElement.setValue(initialValue, {
+              writeOperation: async (value) => {
+                console.log('Writing number value:', value, 'to int property');
+                await thing.writeProperty('int', value);
+                console.log('Number picker write successful');
+              }
+            });
+            console.log('Number picker connected to int property, initial value:', initialValue);
+          } catch (error) {
+            console.error('Number picker connection failed:', error);
+            await numberElement.setValue(0);
+            await numberElement.setStatus('error', 'Connection failed');
+          }
+        }
+
+        // Button component - connects to TD action instead of property
+        const buttonElement = document.getElementById('td-button');
+        if (buttonElement && thing) {
+          await buttonElement.componentOnReady();
+          
+          await buttonElement.setAction(async () => {
+            console.log('Invoking void-void action');
+            await thing.invokeAction('void-void');
+            console.log('Action invoked successfully');
+          });
+          
+          console.log('Button connected to void-void action');
+        }
+
+        // Define remaining component bindings for other components
+        const otherBindings = [
           { element: document.getElementById('td-slider'), property: 'num' },
-          { element: document.getElementById('td-number'), property: 'int' },
           { element: document.getElementById('td-checkbox'), property: 'bool' },
           { element: document.getElementById('td-text'), property: 'string' }
         ].filter(b => b.element);
@@ -355,23 +411,8 @@
           }
         }
         
-        // Setup button component - connects to TD action instead of property
-        const buttonElement = document.getElementById('td-button');
-        if (buttonElement && thing) {
-          await buttonElement.componentOnReady();
-          
-          // Connect button to void-void action from Thing Description
-          await buttonElement.setAction(async () => {
-            console.log('Invoking void-void action');
-            await thing.invokeAction('void-void');
-            console.log('Action invoked successfully');
-          });
-          
-          console.log('Button connected to void-void action');
-        }
-        
         console.log('Standalone components ready:', standaloneComponents.length);
-        console.log('Property bindings:', bindings.length);
+        console.log('Property bindings:', otherBindings.length);
 
         // Show server status info
         if (serverHealth === 'read-only') {
@@ -386,7 +427,7 @@
         }
 
         // Setup TD property bindings - read initial values and setup write operations
-        for (const binding of bindings) {
+        for (const binding of otherBindings) {
           // Wait for component to be ready
           if (binding.element && typeof binding.element.componentOnReady === 'function') {
             await binding.element.componentOnReady();
