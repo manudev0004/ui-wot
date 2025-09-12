@@ -73,3 +73,6 @@ $RECYCLE.BIN/
 Thumbs.db
 UserInterfaceState.xcuserstate
 .env
+# Ignore Stencil build artifacts
+packages/components/.stencil/
+packages/components/www/build/

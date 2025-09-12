@@ -6,34 +6,17 @@
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
-    interface UiHeading {
-        "text": string;
-    }
 }
 declare global {
-    interface HTMLUiHeadingElement extends Components.UiHeading, HTMLStencilElement {
-    }
-    var HTMLUiHeadingElement: {
-        prototype: HTMLUiHeadingElement;
-        new (): HTMLUiHeadingElement;
-    };
-    interface HTMLElementTagNameMap {
-        "ui-heading": HTMLUiHeadingElement;
-    }
 }
 declare namespace LocalJSX {
-    interface UiHeading {
-        "text"?: string;
-    }
     interface IntrinsicElements {
-        "ui-heading": UiHeading;
     }
 }
 export { LocalJSX as JSX };
 declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
-            "ui-heading": LocalJSX.UiHeading & JSXBase.HTMLAttributes<HTMLUiHeadingElement>;
         }
     }
 }
