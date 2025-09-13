@@ -1,0 +1,10 @@
+/* Import single global CSS with everything */
+@import '../../global.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host { 
+  display: inline-block;
+}
