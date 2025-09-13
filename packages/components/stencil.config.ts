@@ -1,7 +1,19 @@
 import { Config } from '@stencil/core';
+import { postcss } from '@stencil-community/postcss';
+import autoprefixer from 'autoprefixer';
 
 export const config: Config = {
   namespace: 'ui-wot-components',
+  globalStyle: 'src/global.css',
+  plugins: [
+    postcss({
+      plugins: [
+        require("postcss-import"),
+        require("tailwindcss")("./tailwind.config.js"),
+        autoprefixer()
+      ]
+    })
+  ],
   outputTargets: [
     {
       type: 'dist',
