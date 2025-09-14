@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Combined WoT Demo - Properties & Events</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 1200px;
+        margin: 28px auto;
+        padding: 18px;
+        background: #f8fafc;
+      }
+      .container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        margin-bottom: 20px;
+      }
+      .row {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        margin: 14px 0;
+      }
+      h1 {
+        margin: 0 0 12px;
+        grid-column: 1 / -1;
+        text-align: center;
+      }
+      h2 {
+        margin: 0 0 16px;
+        color: #374151;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 8px;
+      }
+      .meta {
+        color: #6b7280;
+        font-size: 12px;
+      }
+      .status {
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        margin: 8px 0;
+      }
+      .status.connected {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .status.disconnected {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .status.connecting {
+        background: #fef3c7;
+        color: #92400e;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header spanning both columns -->
+      <h1>Combined WoT Demo - Properties & Events</h1>
+
+      <!-- Left Column: Properties & Actions -->
+      <div class="left-column">
+        <div class="card">
+          <h2>WoT Properties & Actions</h2>
+          <p class="meta">Real-time property binding and action invocation</p>
+
+          <div id="connection-status-left" class="status disconnected">Disconnected - Loading...</div>
+
+          <div class="row">
+            <div>
+              <h3>Toggle (bool)</h3>
+              <ui-toggle id="td-toggle" label="TD Toggle" variant="neon" show-last-updated="true" show-status="true"></ui-toggle>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <h3>Slider (num)</h3>
+              <ui-slider id="td-slider" min="0" max="100" label="TD Slider" orientation="horizontal" show-last-updated="true" show-status="true"></ui-slider>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <h3>Number Picker (int)</h3>
+              <ui-number-picker id="td-number" min="0" max="100" label="TD Number" show-last-updated="true" show-status="true"></ui-number-picker>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <h3>Button Action</h3>
+              <ui-button id="td-button" label="TD Button" show-last-updated="true" show-status="true"></ui-button>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <h3>Checkbox (bool)</h3>
+              <ui-checkbox id="td-checkbox" label="TD Checkbox" show-last-updated="true" show-status="true"></ui-checkbox>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <h3>Text Display (string)</h3>
+              <ui-text id="td-text" mode="editable" variant="filled" value="Thing Description Data" label="TD Connected (string property)" show-last-updated="true"></ui-text>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Events -->
+      <div class="right-column">
+        <div class="card">
+          <h2>WoT Events</h2>
+          <p class="meta">Real-time event subscription and monitoring</p>
+
+          <div id="connection-status-right" class="status disconnected">Disconnected - Loading...</div>
+
+          <div class="row">
+            <div style="width: 100%">
+              <h3>Boolean Property Change Events</h3>
+              <p class="meta">Shows events when the 'bool' property value changes</p>
+              <ui-event id="event-listener" label="WoT Bool Property Changes" event-name="on-bool" max-events="8" show-timestamp="true" show-last-updated="true" show-status="true">
+              </ui-event>
+            </div>
+          </div>
+
+          <div class="row">
+            <div style="width: 100%">
+              <h3>All Events Monitor</h3>
+              <p class="meta">Displays all events from the WoT Thing</p>
+              <ui-event id="all-events-listener" label="All WoT Events" event-name="all-events" max-events="5" show-timestamp="true" variant="filled"> </ui-event>
+            </div>
+          </div>
+
+          <div class="row">
+            <div style="width: 100%">
+              <h3>Manual Event Testing</h3>
+              <p class="meta">Test the event components manually</p>
+
+              <button id="add-sample-event" style="margin: 4px; padding: 8px 16px; border: none; background: #3b82f6; color: white; border-radius: 4px; cursor: pointer">
+                Add Sample Event
+              </button>
+
+              <button id="clear-events" style="margin: 4px; padding: 8px 16px; border: none; background: #6b7280; color: white; border-radius: 4px; cursor: pointer">
+                Clear All Events
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
+    <script type="module" src="./build/ui-wot-components.esm.js"></script>
+
+    <script>
+      // Single WoT servient and thing instance shared across both sides
+      let sharedWoTInstance = null;
+      let sharedThingInstance = null;
+      let eventSubscriptions = [];
+
+      document.addEventListener('DOMContentLoaded', async () => {
+        // Wait for all components to be defined
+        const COMPONENT_TAGS = ['ui-toggle', 'ui-slider', 'ui-number-picker', 'ui-button', 'ui-checkbox', 'ui-text', 'ui-event'];
+        await Promise.all(COMPONENT_TAGS.map(tag => customElements.whenDefined(tag)));
+        console.log('All components ready');
+
+        // Get status elements
+        const statusLeft = document.getElementById('connection-status-left');
+        const statusRight = document.getElementById('connection-status-right');
+
+        // Get component references
+        const eventListener = document.getElementById('event-listener');
+        const allEventsListener = document.getElementById('all-events-listener');
+
+        // Manual event buttons
+        const addSampleBtn = document.getElementById('add-sample-event');
+        const clearBtn = document.getElementById('clear-events');
+
+        // Wait for event components to be ready
+        if (eventListener && typeof eventListener.componentOnReady === 'function') {
+          await eventListener.componentOnReady();
+        }
+        if (allEventsListener && typeof allEventsListener.componentOnReady === 'function') {
+          await allEventsListener.componentOnReady();
+        }
+
+        // Manual event testing
+        addSampleBtn.addEventListener('click', async () => {
+          const sampleEvent = {
+            message: 'Manual test event',
+            timestamp: new Date().toISOString(),
+            value: Math.random() * 100,
+            source: 'manual',
+          };
+          await eventListener.addEvent(sampleEvent);
+          await allEventsListener.addEvent(sampleEvent);
+        });
+
+        clearBtn.addEventListener('click', async () => {
+          await eventListener.clearEvents();
+          await allEventsListener.clearEvents();
+        });
+
+        // Initialize single WoT servient
+        try {
+          statusLeft.textContent = 'Connecting to WoT...';
+          statusLeft.className = 'status connecting';
+          statusRight.textContent = 'Connecting to WoT...';
+          statusRight.className = 'status connecting';
+
+          // Wait for WoT library
+          if (!window.WoT) {
+            console.error('WoT library not loaded');
+            throw new Error('WoT library not available');
+          }
+
+          // Create single servient instance
+          console.log('Creating WoT servient...');
+          const servient = new window.WoT.Core.Servient();
+          servient.addClientFactory(new window.WoT.Http.HttpClientFactory());
+          sharedWoTInstance = await servient.start();
+          console.log('WoT servient started successfully');
+
+          // Fetch and consume Thing Description
+          const tdUrl = 'http://plugfest.thingweb.io/http-data-schema-thing';
+          console.log('Fetching TD from:', tdUrl);
+
+          try {
+            const response = await fetch(tdUrl);
+            const tdJson = await response.json();
+            sharedThingInstance = await sharedWoTInstance.consume(tdJson);
+            console.log('TD consumed successfully');
+            console.log('Available properties:', Object.keys(tdJson.properties || {}));
+            console.log('Available events:', Object.keys(tdJson.events || {}));
+
+            statusLeft.textContent = 'Connected to WoT Thing';
+            statusLeft.className = 'status connected';
+            statusRight.textContent = 'Connected to WoT Thing';
+            statusRight.className = 'status connected';
+
+            // Test connection
+            try {
+              await sharedThingInstance.readProperty('bool');
+              console.log('Connection test passed');
+            } catch (testError) {
+              console.warn('Connection test failed:', testError);
+            }
+          } catch (fetchError) {
+            throw new Error(`Failed to fetch/consume TD: ${fetchError.message}`);
+          }
+
+          // Initialize properties (left side)
+          await initializeProperties();
+
+          // Initialize events (right side)
+          await initializeEvents();
+        } catch (error) {
+          console.error('WoT initialization failed:', error);
+          statusLeft.textContent = `Connection failed: ${error.message}`;
+          statusLeft.className = 'status disconnected';
+          statusRight.textContent = `Connection failed: ${error.message}`;
+          statusRight.className = 'status disconnected';
+
+          // Show user-friendly error
+          document.body.insertAdjacentHTML(
+            'beforeend',
+            `
+            <div style="background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 16px; margin: 16px auto; max-width: 1200px; color: #c33;">
+              <strong>Connection Failed</strong><br>
+              Could not connect to the WoT demo server. This may be due to CORS restrictions or server unavailability.<br>
+              <strong>Try:</strong> Opening in incognito mode, or components will still work for UI testing.<br>
+              <em>Error: ${error.message}</em>
+            </div>
+          `,
+          );
+        }
+
+        // Initialize Properties
+        async function initializeProperties() {
+          if (!sharedThingInstance) return;
+
+          console.log('Initializing property bindings...');
+
+          // Property bindings
+          const propertyBindings = [
+            { element: document.getElementById('td-toggle'), property: 'bool' },
+            { element: document.getElementById('td-slider'), property: 'num' },
+            { element: document.getElementById('td-number'), property: 'int' },
+            { element: document.getElementById('td-checkbox'), property: 'bool' },
+            { element: document.getElementById('td-text'), property: 'string' },
+          ].filter(b => b.element);
+
+          // Button (action binding)
+          const buttonElement = document.getElementById('td-button');
+          if (buttonElement) {
+            await buttonElement.componentOnReady();
+            await buttonElement.setAction(async () => {
+              console.log('Invoking void-void action');
+              try {
+                await sharedThingInstance.invokeAction('void-void');
+                console.log('Action invoked successfully');
+              } catch (error) {
+                console.error('Action invocation failed:', error);
+                throw error;
+              }
+            });
+            console.log('Button connected to void-void action');
+          }
+
+          // Setup property bindings
+          for (const binding of propertyBindings) {
+            if (binding.element && typeof binding.element.componentOnReady === 'function') {
+              await binding.element.componentOnReady();
+            }
+
+            try {
+              // Read initial value
+              const propertyValue = await sharedThingInstance.readProperty(binding.property);
+              let value = await propertyValue.value();
+
+              // Handle text component: ensure display value is a string
+              if (binding.element.id === 'td-text' && typeof value !== 'string') {
+                value = String(value);
+              }
+
+              // Setup with write operation
+              if (typeof binding.element.setValue === 'function') {
+                await binding.element.setValue(value, {
+                  writeOperation: async newValue => {
+                    // Coerce UI value to TD type before sending
+                    const coerce = (prop, v) => {
+                      switch (prop) {
+                        case 'bool':
+                          if (typeof v === 'string') return v === 'true' || v === '1';
+                          return Boolean(v);
+                        case 'num': {
+                          const n = Number(v);
+                          return Number.isFinite(n) ? n : 0;
+                        }
+                        case 'int': {
+                          const n = Number(v);
+                          return Number.isFinite(n) ? Math.trunc(n) : 0;
+                        }
+                        case 'string':
+                          return Number(v);
+                        default:
+                          return v;
+                      }
+                    };
+
+                    const coerced = coerce(binding.property, newValue);
+                    console.log('Writing', coerced, 'to', binding.property);
+                    await sharedThingInstance.writeProperty(binding.property, coerced);
+                    console.log('Write successful:', binding.property, '=', coerced);
+                  },
+                });
+              }
+
+              if (typeof binding.element.setStatus === 'function') {
+                await binding.element.setStatus('success');
+              }
+
+              console.log('Initialized', binding.property + ':', value);
+            } catch (e) {
+              console.error('Failed to initialize', binding.property + ':', e);
+
+              // Set default value and error status
+              let defaultValue = binding.property === 'bool' ? false : binding.property === 'num' || binding.property === 'int' ? 0 : `Demo (${binding.property})`;
+
+              if (typeof binding.element.setValue === 'function') {
+                await binding.element.setValue(defaultValue);
+              }
+              if (typeof binding.element.setStatus === 'function') {
+                await binding.element.setStatus('error', 'Read failed');
+              }
+            }
+          }
+        }
+
+        // Initialize Events
+        async function initializeEvents() {
+          if (!sharedThingInstance) return;
+
+          console.log('Initializing event subscriptions...');
+
+          // Start event listeners using component APIs
+          await eventListener.startListening();
+          await allEventsListener.startListening();
+
+          // Helper: normalize WoT event payload to plain value
+          const getWoTValue = async data => {
+            try {
+              if (data && typeof data.value === 'function') {
+                return await data.value();
+              }
+              if (data && data.value !== undefined) return data.value;
+              return data;
+            } catch (e) {
+              console.warn('Failed to extract WoT event value:', e);
+              return data;
+            }
+          };
+
+          // Helper: subscribe to an event and pipe to ui-event(s)
+          const pipeEvent = async (eventName, primaryTarget) => {
+            try {
+              console.log(`Subscribing to ${eventName}...`);
+              const sub = await sharedThingInstance.subscribeEvent(eventName, async raw => {
+                const value = await getWoTValue(raw);
+                const eventMessage = {
+                  event: eventName,
+                  value,
+                  timestamp: new Date().toISOString(),
+                  source: 'wot-event',
+                };
+
+                // Feed component(s) using their built-in method
+                if (primaryTarget) await primaryTarget.addEvent(eventMessage);
+                await allEventsListener.addEvent(eventMessage);
+              });
+              eventSubscriptions.push(sub);
+              console.log(`Subscribed to ${eventName}`);
+              return true;
+            } catch (err) {
+              console.log(`Subscription failed for ${eventName}:`, err?.message || err);
+              return false;
+            }
+          };
+
+          // Discover events from TD
+          const tdEvents = Object.keys(sharedThingInstance.getThingDescription().events || {});
+          console.log('TD events:', tdEvents);
+
+          // Prefer on-bool for the dedicated listener if available; otherwise pick first available
+          let primaryEvent = 'on-bool';
+          if (!tdEvents.includes(primaryEvent) && tdEvents.length > 0) {
+            primaryEvent = tdEvents[0];
+            console.log(`'on-bool' not found; using '${primaryEvent}' for primary listener`);
+          }
+
+          await pipeEvent(primaryEvent, eventListener);
+
+          // Investigate and subscribe to string-related event if present
+          const stringEventCandidate = tdEvents.find(e => e.toLowerCase().includes('string'));
+          if (stringEventCandidate) {
+            await pipeEvent(stringEventCandidate);
+          } else {
+            console.warn("No 'on-string' event exposed by TD; skipping subscription");
+            // Surface a quick hint in the UI for clarity
+            await allEventsListener.addEvent({
+              event: 'info',
+              value: "TD has no 'on-string' event; verify server TD",
+              timestamp: new Date().toISOString(),
+              source: 'diagnostic',
+            });
+          }
+
+          // Optionally subscribe to a small set of common events if available
+          const common = ['on-int', 'on-num', 'on-array', 'on-object'];
+          for (const name of common) {
+            if (tdEvents.includes(name)) {
+              await pipeEvent(name);
+            }
+          }
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+          console.log('Cleaning up subscriptions...');
+          eventSubscriptions.forEach(sub => {
+            try {
+              if (sub && typeof sub.unsubscribe === 'function') {
+                sub.unsubscribe();
+              } else if (sub && typeof sub.stop === 'function') {
+                sub.stop();
+              }
+            } catch (e) {
+              console.log('Error stopping subscription:', e);
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

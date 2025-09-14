@@ -7,48 +7,6 @@
 
 :host { 
   display: inline-block;
-  /* Add right padding to avoid clipped right-aligned indicators */
-  padding-right: 1.5rem;
-  transition: all var(--transition-base);
-}
-
-/* Component-specific gradients */
-.bg-gradient-to-r.from-primary.to-primary-hover {
-  background: linear-gradient(to right, var(--color-primary), var(--color-primary-hover));
-}
-
-.bg-gradient-to-r.from-secondary.to-pink-600 {
-  background: linear-gradient(to right, var(--color-secondary), #db2777);
-}
-
-.bg-gradient-to-r.from-neutral.to-gray-600 {
-  background: linear-gradient(to right, var(--color-neutral), #4b5563);
-}
-
-/* Hover gradients */
-.hover\:from-gray-600.hover\:to-gray-500:hover {
-  background: linear-gradient(to right, #4b5563, #6b7280);
-}
-
-.hover\:from-gray-200.hover\:to-gray-300:hover {
-  background: linear-gradient(to right, #e5e7eb, #d1d5db);
-}
-
-/* Focus and hover effects */
-:host(:focus-within) {
-  outline: none;
-}
-
-:host(:not([state="disabled"])) .cursor-pointer:hover {
-  transform: translateY(-1px);
-}
-
-/* Indicator positioning */
-.indicator-right-offset {
-  position: absolute;
-  right: -1.5rem;
-  top: 50%;
-  transform: translateY(-50%);
 }
 
 /* Custom checkbox appearance reset */

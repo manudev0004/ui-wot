@@ -2,13 +2,13 @@ import { Component, Prop, State, h, Watch, Event, EventEmitter, Method, Element 
 import { UiMsg } from '../../utils/types';
 import { StatusIndicator } from '../../utils/status-indicator';
 
-export interface UiCalendarDateChange { 
+export interface UiCalendarDateChange {
   value: string;
   date: Date;
   formattedValue: string;
 }
 
-export interface UiCalendarValueChange { 
+export interface UiCalendarValueChange {
   value: string;
   date: Date;
   formattedValue: string;
@@ -87,7 +87,7 @@ export class UiCalendar {
   /**
    * Color scheme matching the component family palette.
    * - primary: Main brand color (blue tones)
-   * - secondary: Accent color (green/teal tones)  
+   * - secondary: Accent color (green/teal tones)
    * - neutral: Grayscale for subtle integration
    * - success: Green for positive actions
    * - warning: Orange for caution
@@ -179,7 +179,7 @@ export class UiCalendar {
    * Animation style for transitions.
    * - none: No animations
    * - slide: Slide transitions between months
-   * - fade: Fade transitions  
+   * - fade: Fade transitions
    * - bounce: Playful bounce effects
    */
   @Prop() animation: 'none' | 'slide' | 'fade' | 'bounce' = 'slide';
@@ -239,7 +239,9 @@ export class UiCalendar {
       // trap focus inside the calendar when open
       const container = this.calendarEl;
       if (!container) return;
-      const focusable = Array.from(container.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => !el.hasAttribute('disabled'));
+      const focusable = Array.from(container.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(
+        el => !el.hasAttribute('disabled'),
+      );
       if (focusable.length === 0) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -275,14 +277,23 @@ export class UiCalendar {
     this.isOpen = false;
     document.removeEventListener('keydown', this.onDocumentKeyDown);
     if (this.previouslyFocused && (this.previouslyFocused as HTMLElement).focus) {
-      try { (this.previouslyFocused as HTMLElement).focus(); } catch (e) { /* ignore */ }
+      try {
+        (this.previouslyFocused as HTMLElement).focus();
+      } catch (e) {
+        /* ignore */
+      }
     } else if (this.inputEl) {
-      try { this.inputEl.focus(); } catch (e) { /* ignore */ }
+      try {
+        this.inputEl.focus();
+      } catch (e) {
+        /* ignore */
+      }
     }
   }
 
   private toggleOpen = () => {
-    if (this.isOpen) this.closeCalendar(); else this.openCalendar();
+    if (this.isOpen) this.closeCalendar();
+    else this.openCalendar();
   };
 
   /** Success feedback state */
@@ -323,15 +334,15 @@ export class UiCalendar {
   /** Helper method to update value and timestamps consistently */
   private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
     this.value = value;
-    
+
     if (value) {
       this.selectedDate = new Date(value);
       this.currentMonth = this.selectedDate.getMonth();
       this.currentYear = this.selectedDate.getFullYear();
     }
-    
+
     this.lastUpdatedTs = Date.now();
-    
+
     if (emitEvent) {
       this.emitValueEvents(value, prevValue);
     }
@@ -359,21 +370,21 @@ export class UiCalendar {
       meta: {
         component: 'ui-calendar',
         type: 'setValue',
-        source: 'method'
-      }
+        source: 'method',
+      },
     });
 
     // Emit legacy events for backward compatibility
-    this.dateChange.emit({ 
+    this.dateChange.emit({
       value: value,
       date: this.selectedDate,
-      formattedValue: this.getDisplayValue()
+      formattedValue: this.getDisplayValue(),
     });
 
     this.valueChange.emit({
       value: value,
       date: this.selectedDate,
-      formattedValue: this.getDisplayValue()
+      formattedValue: this.getDisplayValue(),
     });
   }
 
@@ -397,7 +408,7 @@ export class UiCalendar {
       this.currentMonth = this.selectedDate.getMonth();
       this.currentYear = this.selectedDate.getFullYear();
     }
-    
+
     // Initialize timestamp auto-update timer if showLastUpdated is enabled
     if (this.showLastUpdated && this.lastUpdatedTs) {
       this.timestampUpdateTimer = window.setInterval(() => {
@@ -438,7 +449,7 @@ export class UiCalendar {
       } else {
         this.updateValue(newValue, prevValue);
       }
-      
+
       this.isOpen = false;
     } catch (error) {
       console.error('handleDateSelect error for ui-calendar:', error);
@@ -458,39 +469,39 @@ export class UiCalendar {
     newDate.setHours(hours);
     newDate.setMinutes(minutes);
 
-  this.selectedDate = newDate;
-  this.value = newDate.toISOString();
-  
-  // Emit standardized event
-  this.valueMsg.emit({
-    newVal: this.value,
-    prevVal: undefined,
-    ts: Date.now(),
-    source: this.el?.id || 'ui-calendar',
-    ok: true,
-    meta: {
-      component: 'ui-calendar',
-      type: 'timeChange',
-      source: 'user'
-    }
-  });
-  
-    this.dateChange.emit({ 
-      value: this.value,
-      date: this.selectedDate,
-      formattedValue: this.getDisplayValue()
+    this.selectedDate = newDate;
+    this.value = newDate.toISOString();
+
+    // Emit standardized event
+    this.valueMsg.emit({
+      newVal: this.value,
+      prevVal: undefined,
+      ts: Date.now(),
+      source: this.el?.id || 'ui-calendar',
+      ok: true,
+      meta: {
+        component: 'ui-calendar',
+        type: 'timeChange',
+        source: 'user',
+      },
     });
 
-  // Local control only: external integrations should listen to the `dateChange` event.
+    this.dateChange.emit({
+      value: this.value,
+      date: this.selectedDate,
+      formattedValue: this.getDisplayValue(),
+    });
+
+    // Local control only: external integrations should listen to the `dateChange` event.
   }
 
   /** Clock interface methods */
   private updateTimeFromClock() {
     if (!this.selectedDate) this.selectedDate = new Date();
-    
+
     const newDate = new Date(this.selectedDate);
     let hours = this.selectedHour;
-    
+
     if (this.timeFormat === '12') {
       if (this.selectedHour === 12) {
         hours = this.isAM ? 0 : 12;
@@ -498,13 +509,13 @@ export class UiCalendar {
         hours = this.isAM ? this.selectedHour : this.selectedHour + 12;
       }
     }
-    
+
     newDate.setHours(hours);
     newDate.setMinutes(this.selectedMinute);
-    
+
     this.selectedDate = newDate;
     this.value = newDate.toISOString();
-    
+
     // Emit standardized event
     this.valueMsg.emit({
       newVal: this.value,
@@ -515,23 +526,23 @@ export class UiCalendar {
       meta: {
         component: 'ui-calendar',
         type: 'clockChange',
-        source: 'user'
-      }
+        source: 'user',
+      },
     });
-    
-    this.dateChange.emit({ 
+
+    this.dateChange.emit({
       value: this.value,
       date: this.selectedDate,
-      formattedValue: this.getDisplayValue()
+      formattedValue: this.getDisplayValue(),
     });
   }
 
   private updateClockFromSelectedDate() {
     if (!this.selectedDate) return;
-    
+
     const hours = this.selectedDate.getHours();
     const minutes = this.selectedDate.getMinutes();
-    
+
     if (this.timeFormat === '12') {
       if (hours === 0) {
         this.selectedHour = 12;
@@ -549,7 +560,7 @@ export class UiCalendar {
     } else {
       this.selectedHour = hours;
     }
-    
+
     this.selectedMinute = minutes;
   }
 
@@ -597,58 +608,42 @@ export class UiCalendar {
     const isDisabled = this.disabled;
     const isReadonly = this.readonly;
     const colorVars = this.getColorVars();
-    
+
     // Base container styles
     let containerClass = `relative ${this.inline ? 'block' : 'inline-block'}`;
-    
+
     // Enhanced input styles with family consistency
     let inputClass = `w-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-      this.size === 'small' ? 'px-2 py-1 text-xs' : 
-      this.size === 'large' ? 'px-4 py-3 text-base' : 
-      'px-3 py-2 text-sm'
+      this.size === 'small' ? 'px-2 py-1 text-xs' : this.size === 'large' ? 'px-4 py-3 text-base' : 'px-3 py-2 text-sm'
     } ${isDisabled || isReadonly ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`;
 
     // Calendar popup/inline styles with enhanced design
     let calendarClass = `${this.inline ? 'relative' : 'absolute top-full left-0 mt-1 z-50'} ${
       this.dark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
-    } border rounded-lg shadow-lg p-4 ${
-      this.size === 'small' ? 'min-w-64' : 
-      this.size === 'large' ? 'min-w-80' : 
-      'min-w-72'
-    }`;
+    } border rounded-lg shadow-lg p-4 ${this.size === 'small' ? 'min-w-64' : this.size === 'large' ? 'min-w-80' : 'min-w-72'}`;
 
     // Inline styles for CSS variable colors
     let inputStyle: any = {};
 
     // Variant-specific styling matching family design
     if (this.variant === 'minimal') {
-      inputClass += ` bg-transparent border-0 ${
-        this.dark ? 'text-white hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-100'
-      }`;
+      inputClass += ` bg-transparent border-0 ${this.dark ? 'text-white hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-100'}`;
       inputStyle.boxShadow = `0 0 0 2px ${colorVars.main}`;
     } else if (this.variant === 'outlined') {
-      inputClass += ` border-2 bg-transparent ${
-        this.dark ? 'text-white hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-50'
-      }`;
+      inputClass += ` border-2 bg-transparent ${this.dark ? 'text-white hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-50'}`;
       inputStyle.borderColor = colorVars.main;
       inputStyle.boxShadow = `0 0 0 2px ${colorVars.main}`;
     } else if (this.variant === 'filled') {
       inputClass += ` text-white border-0 focus:ring-white`;
       inputStyle.backgroundColor = colorVars.main;
     } else if (this.variant === 'elevated') {
-      inputClass += ` bg-white border border-gray-300 shadow-md hover:shadow-lg ${
-        this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'text-gray-900'
-      }`;
+      inputClass += ` bg-white border border-gray-300 shadow-md hover:shadow-lg ${this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'text-gray-900'}`;
       inputStyle.boxShadow = `0 0 0 2px ${colorVars.main}`;
     }
 
     // Animation classes
     if (this.animation !== 'none') {
-      calendarClass += ` ${
-        this.animation === 'slide' ? 'transform transition-transform' :
-        this.animation === 'fade' ? 'transition-opacity' :
-        'transition-all transform'
-      }`;
+      calendarClass += ` ${this.animation === 'slide' ? 'transform transition-transform' : this.animation === 'fade' ? 'transition-opacity' : 'transition-all transform'}`;
     }
 
     return { containerClass, inputClass, calendarClass, inputStyle };
@@ -661,37 +656,37 @@ export class UiCalendar {
         return {
           main: 'var(--color-secondary)',
           hover: 'var(--color-secondary-hover)',
-          light: 'var(--color-secondary-light)'
+          light: 'var(--color-secondary-light)',
         };
       case 'neutral':
         return {
           main: 'var(--color-neutral)',
           hover: 'var(--color-neutral-hover)',
-          light: 'var(--color-neutral-light)'
+          light: 'var(--color-neutral-light)',
         };
       case 'success':
         return {
           main: 'var(--color-success)',
           hover: 'var(--color-success)',
-          light: 'var(--color-success)'
+          light: 'var(--color-success)',
         };
       case 'warning':
         return {
           main: 'var(--color-warning)',
           hover: 'var(--color-warning)',
-          light: 'var(--color-warning)'
+          light: 'var(--color-warning)',
         };
       case 'danger':
         return {
           main: 'var(--color-danger)',
           hover: 'var(--color-danger)',
-          light: 'var(--color-danger)'
+          light: 'var(--color-danger)',
         };
       default: // primary
         return {
           main: 'var(--color-primary)',
           hover: 'var(--color-primary-hover)',
-          light: 'var(--color-primary-light)'
+          light: 'var(--color-primary-light)',
         };
     }
   }
@@ -702,7 +697,7 @@ export class UiCalendar {
     return {
       backgroundColor: colorVars.main,
       color: 'white',
-      transition: 'all 0.2s ease-in-out'
+      transition: 'all 0.2s ease-in-out',
     };
   }
 
@@ -754,25 +749,22 @@ export class UiCalendar {
    * @param writeOperation - Optional write function to call after value update
    */
   @Method()
-  async setValue(
-    value: string,
-    writeOperation?: (value: string) => Promise<any>
-  ): Promise<any> {
+  async setValue(value: string, writeOperation?: (value: string) => Promise<any>): Promise<any> {
     const prevValue = this.value;
-    
+
     // Store operation for potential user interaction
     this.storedWriteOperation = writeOperation;
-    
+
     try {
       this.setStatusWithTimeout('loading');
       this.updateValue(value, prevValue);
-      
+
       if (writeOperation) {
         const result = await writeOperation(value);
         this.setStatusWithTimeout('success');
         return result;
       }
-      
+
       this.setStatusWithTimeout('idle');
     } catch (error) {
       console.error('setValue error for ui-calendar:', error);
@@ -826,7 +818,7 @@ export class UiCalendar {
     } else if (status !== 'error') {
       this.lastError = undefined;
     }
-    
+
     if (status === 'success') {
       this.lastUpdatedTs = Date.now();
       // Auto-clear success status after short delay
@@ -836,7 +828,7 @@ export class UiCalendar {
         }
       }, 1200);
     }
-    
+
     // Emit status change event
     this.valueMsg.emit({
       newVal: this.value,
@@ -848,8 +840,8 @@ export class UiCalendar {
         type: 'statusChange',
         status,
         message,
-        source: 'method'
-      }
+        source: 'method',
+      },
     });
   }
 
@@ -864,7 +856,7 @@ export class UiCalendar {
   async triggerReadPulse(): Promise<void> {
     // Add pulse class temporarily
     this.el.classList.add('read-pulse');
-    
+
     // Emit read event
     this.valueMsg.emit({
       newVal: this.value,
@@ -874,8 +866,8 @@ export class UiCalendar {
       meta: {
         component: 'ui-calendar',
         type: 'read',
-        source: 'method'
-      }
+        source: 'method',
+      },
     });
 
     // Remove pulse class after animation
@@ -894,9 +886,7 @@ export class UiCalendar {
     return (
       <div class={styles.containerClass}>
         {/* Label */}
-        {this.label && (
-          <label class={`block text-sm font-medium mb-2 ${isDisabled ? 'text-gray-400' : ''} ${this.dark ? 'text-white' : 'text-gray-900'}`}>{this.label}</label>
-        )}
+        {this.label && <label class={`block text-sm font-medium mb-2 ${isDisabled ? 'text-gray-400' : ''} ${this.dark ? 'text-white' : 'text-gray-900'}`}>{this.label}</label>}
 
         {/* Input Field */}
         <div class="relative">
@@ -932,7 +922,7 @@ export class UiCalendar {
         </div>
 
         {/* Calendar Dropdown */}
-          {this.isOpen && (
+        {this.isOpen && (
           <div ref={el => (this.calendarEl = el as HTMLElement)} class={styles.calendarClass} role="dialog" aria-modal="true">
             {/* Header */}
             <div class="flex items-center justify-between mb-4">
@@ -963,19 +953,14 @@ export class UiCalendar {
             {/* Calendar Grid */}
             <div class="grid grid-cols-7 gap-1">
               {days.map((day, index) => {
-                const isSelected = day === this.selectedDate?.getDate() && 
-                                   this.currentMonth === this.selectedDate?.getMonth() && 
-                                   this.currentYear === this.selectedDate?.getFullYear();
-                
+                const isSelected =
+                  day === this.selectedDate?.getDate() && this.currentMonth === this.selectedDate?.getMonth() && this.currentYear === this.selectedDate?.getFullYear();
+
                 return (
                   <button
                     key={index}
                     class={`h-8 text-sm rounded transition-colors ${
-                      day === null
-                        ? ''
-                        : isSelected
-                        ? 'text-white'
-                        : `hover:bg-gray-100 dark:hover:bg-gray-700 ${this.dark ? 'text-white' : 'text-gray-900'}`
+                      day === null ? '' : isSelected ? 'text-white' : `hover:bg-gray-100 dark:hover:bg-gray-700 ${this.dark ? 'text-white' : 'text-gray-900'}`
                     }`}
                     style={day !== null && isSelected ? this.getActiveColor() : {}}
                     disabled={day === null}
@@ -995,9 +980,7 @@ export class UiCalendar {
                   <button
                     type="button"
                     class={`px-2 py-1 text-xs rounded ${
-                      this.showClockView 
-                        ? 'bg-primary text-white' 
-                        : this.dark ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      this.showClockView ? 'bg-primary text-white' : this.dark ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                     onClick={() => this.toggleClockView()}
                   >
@@ -1020,9 +1003,9 @@ export class UiCalendar {
                               class={`w-8 h-8 text-xs rounded-full transition-all ${
                                 this.selectedHour === hour
                                   ? 'bg-primary text-white'
-                                  : this.dark 
-                                    ? 'bg-gray-700 text-white hover:bg-gray-600' 
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  : this.dark
+                                  ? 'bg-gray-700 text-white hover:bg-gray-600'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                               }`}
                               onClick={() => this.setHour(hour)}
                             >
@@ -1045,9 +1028,9 @@ export class UiCalendar {
                               class={`w-8 h-8 text-xs rounded-full transition-all ${
                                 this.selectedMinute === minute
                                   ? 'bg-primary text-white'
-                                  : this.dark 
-                                    ? 'bg-gray-700 text-white hover:bg-gray-600' 
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  : this.dark
+                                  ? 'bg-gray-700 text-white hover:bg-gray-600'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                               }`}
                               onClick={() => this.setMinute(minute)}
                             >
@@ -1064,11 +1047,7 @@ export class UiCalendar {
                         <button
                           type="button"
                           class={`px-4 py-2 text-sm rounded transition-all ${
-                            this.isAM
-                              ? 'bg-primary text-white'
-                              : this.dark 
-                                ? 'bg-gray-700 text-white hover:bg-gray-600' 
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            this.isAM ? 'bg-primary text-white' : this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                           }`}
                           onClick={() => !this.isAM && this.toggleAMPM()}
                         >
@@ -1077,11 +1056,7 @@ export class UiCalendar {
                         <button
                           type="button"
                           class={`px-4 py-2 text-sm rounded transition-all ${
-                            !this.isAM
-                              ? 'bg-primary text-white'
-                              : this.dark 
-                                ? 'bg-gray-700 text-white hover:bg-gray-600' 
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            !this.isAM ? 'bg-primary text-white' : this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                           }`}
                           onClick={() => this.isAM && this.toggleAMPM()}
                         >
@@ -1092,19 +1067,16 @@ export class UiCalendar {
 
                     {/* Selected Time Display */}
                     <div class={`text-lg font-mono ${this.dark ? 'text-white' : 'text-gray-900'}`}>
-                      {this.timeFormat === '12' 
+                      {this.timeFormat === '12'
                         ? `${this.selectedHour.toString().padStart(2, '0')}:${this.selectedMinute.toString().padStart(2, '0')} ${this.isAM ? 'AM' : 'PM'}`
-                        : `${this.selectedHour.toString().padStart(2, '0')}:${this.selectedMinute.toString().padStart(2, '0')}`
-                      }
+                        : `${this.selectedHour.toString().padStart(2, '0')}:${this.selectedMinute.toString().padStart(2, '0')}`}
                     </div>
                   </div>
                 ) : (
                   /* Traditional Time Input */
                   <input
                     type="time"
-                    class={`w-full px-3 py-2 text-sm border rounded-md ${
-                      this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`}
+                    class={`w-full px-3 py-2 text-sm border rounded-md ${this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                     value={this.selectedDate ? `${String(this.selectedDate.getHours()).padStart(2, '0')}:${String(this.selectedDate.getMinutes()).padStart(2, '0')}` : ''}
                     onInput={e => this.handleTimeChange(e)}
                   />
@@ -1118,7 +1090,7 @@ export class UiCalendar {
         <div class="flex justify-between items-start mt-2">
           <div class="flex-1"></div>
           <div class="flex flex-col items-end gap-1">
-            {this.showStatus && StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError, h)}
+            {this.showStatus && StatusIndicator.renderStatusBadge(this.operationStatus, this.lastError, h)}
             {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
           </div>
         </div>

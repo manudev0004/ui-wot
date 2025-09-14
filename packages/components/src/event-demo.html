@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ui-event Demo</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 780px;
+        margin: 32px auto;
+        padding: 16px;
+        background: #f8fafc;
+      }
+      .card {
+        background: #fff;
+        padding: 18px 20px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        margin-bottom: 20px;
+      }
+      .row {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        margin: 12px 0;
+      }
+      .meta {
+        color: #6b7280;
+        font-size: 12px;
+      }
+      .status {
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        margin: 8px 0;
+      }
+      .status.connected {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .status.disconnected {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .status.connecting {
+        background: #fef3c7;
+        color: #92400e;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>UI-Event WoT Demo</h1>
+      <p class="meta">Connects to: <strong>http://plugfest.thingweb.io/http-data-schema-thing</strong></p>
+
+      <div id="connection-status" class="status disconnected">Disconnected - Loading...</div>
+
+      <div class="row">
+        <div style="flex: 1">
+          <h3>Boolean Property Change Events</h3>
+          <p class="meta">Subscribed to 'on-bool' (emitted when 'bool' is written)</p>
+          <ui-event id="event-listener" label="WoT Bool Property Changes" event-name="on-bool" max-events="8" show-timestamp="true" show-last-updated="true" show-status="true">
+          </ui-event>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex: 1">
+          <h3>Filtered Events (temperature > 22)</h3>
+          <p class="meta">Only shows temperature events above 22°C (use "Add Temperature Event" button to test)</p>
+          <ui-event id="filtered-listener" label="High Temperature Events" event-name="temperatureAlert" max-events="5" show-timestamp="true" variant="filled"> </ui-event>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex: 1">
+          <h3>All TD Events</h3>
+          <p class="meta">Optional: subscribe to every event in the TD (can open many HTTP long-poll connections)</p>
+          <div style="margin: 8px 0; display:flex; gap:8px; flex-wrap: wrap;">
+            <button id="btn-subscribe-all" style="padding:6px 12px; border:none; background:#0369a1; color:white; border-radius:6px; cursor:pointer;">Subscribe ALL Events</button>
+            <button id="btn-unsubscribe-all" style="padding:6px 12px; border:none; background:#7f1d1d; color:white; border-radius:6px; cursor:pointer;">Unsubscribe ALL</button>
+          </div>
+          <div id="td-events-container" style="display: grid; grid-template-columns: 1fr; gap: 12px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Manual Event Testing</h3>
+      <p class="meta">Use these buttons to manually add events. Change the boolean property on the WoT Thing to see real change events.</p>
+
+      <button id="add-sample-event" style="margin: 4px; padding: 8px 16px; border: none; background: #3b82f6; color: white; border-radius: 4px; cursor: pointer">
+        Add Sample Event
+      </button>
+
+      <button id="add-temp-event" style="margin: 4px; padding: 8px 16px; border: none; background: #10b981; color: white; border-radius: 4px; cursor: pointer">
+        Add Temperature Event
+      </button>
+
+      <button id="clear-events" style="margin: 4px; padding: 8px 16px; border: none; background: #6b7280; color: white; border-radius: 4px; cursor: pointer">
+        Clear All Events
+      </button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
+    <!-- Load WoT Manager for singleton servient management -->
+    <script src="./wot-manager.js"></script>
+    <!-- Load Stencil components bundle so <ui-event> is defined -->
+    <script type="module" src="./build/ui-wot-components.esm.js"></script>
+    <script>
+      let thingInstance = null;
+      const managedSubscriptions = new Map(); // our tracking on top of WoTManager
+
+      document.addEventListener('DOMContentLoaded', async () => {
+        // Force cleanup any stale state first
+        if (window.WoTManager) {
+          await window.WoTManager.forceCleanup();
+        }
+
+        // Avoid indefinite wait if the component bundle fails to load
+        const definedOrTimeout = Promise.race([
+          customElements.whenDefined('ui-event'),
+          new Promise(resolve => setTimeout(resolve, 5000)),
+        ]);
+        await definedOrTimeout;
+
+        // Get components by ids
+        const eventListener = document.getElementById('event-listener');
+        const filteredListener = document.getElementById('filtered-listener');
+        const statusDiv = document.getElementById('connection-status');
+
+        // Ensure Stencil components are ready before invoking methods
+        if (eventListener && typeof eventListener.componentOnReady === 'function') {
+          await eventListener.componentOnReady();
+        }
+        if (filteredListener && typeof filteredListener.componentOnReady === 'function') {
+          await filteredListener.componentOnReady();
+        }
+
+        // Manual event test buttons
+        const addSampleBtn = document.getElementById('add-sample-event');
+        const addTempBtn = document.getElementById('add-temp-event');
+        const clearBtn = document.getElementById('clear-events');
+
+        // Manual event buttons
+        addSampleBtn.addEventListener('click', async () => {
+          const sampleEvent = {
+            message: 'Manual test event',
+            timestamp: new Date().toISOString(),
+            value: Math.random() * 100,
+            source: 'manual',
+          };
+          await eventListener.addEvent(sampleEvent);
+        });
+
+        addTempBtn.addEventListener('click', async () => {
+          const tempEvent = {
+            temperature: Math.round(18 + Math.random() * 12), // 18-30°C
+            humidity: Math.round(40 + Math.random() * 40), // 40-80%
+            location: 'test-sensor',
+            timestamp: new Date().toISOString(),
+          };
+          await eventListener.addEvent(tempEvent);
+          await filteredListener.addEvent(tempEvent); // Will be filtered automatically
+        });
+
+        clearBtn.addEventListener('click', async () => {
+          await eventListener.clearEvents();
+          await filteredListener.clearEvents();
+        });
+
+        // Listen for events from components
+        eventListener.addEventListener('eventReceived', e => {
+          console.log('Event received in main listener:', e.detail);
+        });
+
+        filteredListener.addEventListener('eventReceived', e => {
+          console.log('Filtered event received:', e.detail);
+        });
+
+        // Setup WoT connection using global manager
+        try {
+          statusDiv.textContent = 'Connecting to WoT Thing...';
+          statusDiv.className = 'status connecting';
+
+          // Use WoTManager to get Thing instance (handles servient creation internally)
+          const tdUrl = 'http://plugfest.thingweb.io/http-data-schema-thing';
+          thingInstance = await window.WoTManager.getThing(tdUrl, {
+            timeout: 10000,
+            forceRefresh: true // Always get fresh instance
+          });
+
+          statusDiv.textContent = 'Connected to WoT Thing';
+          statusDiv.className = 'status connected';
+
+          console.log('[Demo] Connected to Thing via WoTManager');
+          console.log('[Demo] WoTManager status:', window.WoTManager.getStatus());
+
+          // Start the event listeners (guard functions)
+          if (eventListener && typeof eventListener.startListening === 'function') {
+            await eventListener.startListening();
+          }
+          if (filteredListener && typeof filteredListener.startListening === 'function') {
+            await filteredListener.startListening();
+          }
+
+          // Set up event filter for the filtered listener (after readiness)
+          if (filteredListener && typeof filteredListener.setEventFilter === 'function') {
+            await filteredListener.setEventFilter(event => event.data.temperature && event.data.temperature > 22);
+          }
+
+          // Helper parsers for robust event payload handling
+          const normalizeEventData = async (data) => {
+            try {
+              if (data && typeof data.value === 'function') {
+                return await data.value();
+              }
+              if (data && typeof data.value !== 'undefined' && typeof data.value !== 'function') {
+                return data.value;
+              }
+              if (data && typeof data.data !== 'undefined') {
+                return data.data;
+              }
+              if (typeof data === 'string') {
+                const s = data.trim();
+                try {
+                  // Try JSON parse for cases like '"true"' or 'false'
+                  return JSON.parse(s);
+                } catch (_) {
+                  return s;
+                }
+              }
+              return data;
+            } catch (_) {
+              return data;
+            }
+          };
+
+          const coerceBooleanLike = (val) => {
+            // Exact boolean stays as-is
+            if (typeof val === 'boolean') return val;
+            // Node-WoT may give strings for JSON bodies
+            if (typeof val === 'string') {
+              const s = val.trim();
+              if (s === 'true' || s === '"true"') return true;
+              if (s === 'false' || s === '"false"') return false;
+              // Try JSON.parse for quoted literals
+              try {
+                const parsed = JSON.parse(s);
+                if (typeof parsed === 'boolean') return parsed;
+                if (typeof parsed === 'number') return parsed !== 0;
+              } catch (_) {}
+              return s.length > 0; // non-empty string defaults to true
+            }
+            // Numbers: 0=false, others=true
+            if (typeof val === 'number') return val !== 0;
+            // Objects: try common wrappers
+            if (val && typeof val === 'object') {
+              if ('value' in val) return coerceBooleanLike(val.value);
+              if ('data' in val) return coerceBooleanLike(val.data);
+            }
+            return Boolean(val);
+          };
+
+          const eventsContainer = document.getElementById('td-events-container');
+          const btnSubAll = document.getElementById('btn-subscribe-all');
+          const btnUnsubAll = document.getElementById('btn-unsubscribe-all');
+
+          async function subscribeOnBool() {
+            try {
+              if (managedSubscriptions.has('on-bool')) return; // already subscribed
+
+              const evEl = document.createElement('ui-event');
+              evEl.setAttribute('label', 'Event: on-bool');
+              evEl.setAttribute('event-name', 'on-bool');
+              evEl.setAttribute('max-events', '8');
+              evEl.setAttribute('show-timestamp', 'true');
+              evEl.setAttribute('variant', 'outlined');
+              eventsContainer.appendChild(evEl);
+
+              if (typeof evEl.componentOnReady === 'function') await evEl.componentOnReady();
+              if (typeof evEl.startListening === 'function') await evEl.startListening();
+
+              // Use WoTManager for subscription management
+              const managedSub = await window.WoTManager.subscribeToEvent(
+                thingInstance, 
+                'on-bool', 
+                async (eventData) => {
+                  let payload = await normalizeEventData(eventData);
+                  payload = coerceBooleanLike(payload);
+                  const msg = { 
+                    event: 'on-bool', 
+                    value: payload, 
+                    timestamp: new Date().toISOString(), 
+                    source: 'wot-event' 
+                  };
+                  await evEl.addEvent(msg);
+                  await eventListener.addEvent(msg);
+                }
+              );
+              
+              managedSubscriptions.set('on-bool', { managedSub, element: evEl });
+              console.log('[Demo] Subscribed to event: on-bool');
+            } catch (e) {
+              console.warn('[Demo] Failed subscribing to on-bool:', e?.message || e);
+            }
+          }
+
+          async function subscribeAllEvents() {
+            // Check current status to avoid exceeding limits
+            const status = window.WoTManager.getStatus();
+            console.log('[Demo] Current WoTManager status:', status);
+            
+            if (status.activeSubscriptions >= status.maxSubscriptions) {
+              alert(`Cannot subscribe to more events. Maximum ${status.maxSubscriptions} concurrent subscriptions reached. Unsubscribe some events first.`);
+              return;
+            }
+
+            try {
+              // Get fresh TD to check available events
+              const freshThing = await window.WoTManager.getThing(
+                'http://plugfest.thingweb.io/http-data-schema-thing',
+                { forceRefresh: true }
+              );
+              
+              // For demo purposes, we'll simulate TD events since we need the actual TD structure
+              const mockEvents = ['on-bool', 'on-string', 'on-number']; // Common event names
+              
+              console.log('[Demo] Subscribing to events:', mockEvents);
+              
+              for (const evName of mockEvents) {
+                if (managedSubscriptions.has(evName)) continue; // avoid duplicate
+                
+                // Check if we're approaching the limit
+                const currentStatus = window.WoTManager.getStatus();
+                if (currentStatus.activeSubscriptions >= currentStatus.maxSubscriptions) {
+                  console.warn(`[Demo] Reached subscription limit at ${evName}`);
+                  break;
+                }
+                
+                const evEl = document.createElement('ui-event');
+                evEl.setAttribute('label', `Event: ${evName}`);
+                evEl.setAttribute('event-name', evName);
+                evEl.setAttribute('max-events', '5');
+                evEl.setAttribute('show-timestamp', 'true');
+                evEl.setAttribute('variant', 'outlined');
+                eventsContainer.appendChild(evEl);
+
+                if (typeof evEl.componentOnReady === 'function') await evEl.componentOnReady();
+                if (typeof evEl.startListening === 'function') await evEl.startListening();
+
+                try {
+                  const managedSub = await window.WoTManager.subscribeToEvent(
+                    freshThing, 
+                    evName, 
+                    async (eventData) => {
+                      let payload = await normalizeEventData(eventData);
+                      if (evName === 'on-bool') payload = coerceBooleanLike(payload);
+                      await evEl.addEvent({ 
+                        event: evName, 
+                        value: payload, 
+                        timestamp: new Date().toISOString(), 
+                        source: 'wot-event' 
+                      });
+                    }
+                  );
+                  
+                  managedSubscriptions.set(evName, { managedSub, element: evEl });
+                  console.log(`[Demo] Subscribed to event: ${evName}`);
+                  
+                  // Small delay to avoid overwhelming the server
+                  await new Promise(r => setTimeout(r, 200));
+                } catch (e) {
+                  console.warn(`[Demo] Failed subscribing to ${evName}:`, e?.message || e);
+                  // Remove the element if subscription failed
+                  evEl.remove();
+                }
+              }
+            } catch (e) {
+              console.error('[Demo] Subscribe all failed:', e?.message || e);
+            }
+          }
+
+          async function unsubscribeAllEvents() {
+            console.log('[Demo] Unsubscribing all managed subscriptions');
+            
+            for (const [name, data] of managedSubscriptions.entries()) {
+              try {
+                // Unsubscribe via WoTManager
+                if (data.managedSub && data.managedSub.unsubscribe) {
+                  data.managedSub.unsubscribe();
+                }
+                
+                // Remove UI element
+                if (data.element && data.element.remove) {
+                  data.element.remove();
+                }
+              } catch (e) {
+                console.log('[Demo] Error unsubscribing', name, e);
+              }
+            }
+            
+            managedSubscriptions.clear();
+            eventsContainer.innerHTML = '';
+            
+            console.log('[Demo] All subscriptions cleared');
+            console.log('[Demo] WoTManager status:', window.WoTManager.getStatus());
+          }
+
+          btnSubAll.addEventListener('click', subscribeAllEvents);
+          btnUnsubAll.addEventListener('click', unsubscribeAllEvents);
+
+          // Default safe subscription
+          await subscribeOnBool();
+        } catch (err) {
+          console.error('[Demo] WoT setup failed:', err);
+          statusDiv.textContent = `Connection failed: ${err.message}`;
+          statusDiv.className = 'status disconnected';
+
+          if (eventListener && typeof eventListener.setStatus === 'function') {
+            await eventListener.setStatus('error', 'WoT connection failed');
+          }
+          if (filteredListener && typeof filteredListener.setStatus === 'function') {
+            await filteredListener.setStatus('error', 'WoT connection failed');
+          }
+        }
+
+        // Cleanup on page unload - use WoTManager
+        window.addEventListener('beforeunload', () => {
+          console.log('[Demo] Page unload - cleaning up via WoTManager');
+          if (window.WoTManager) {
+            window.WoTManager.shutdown();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

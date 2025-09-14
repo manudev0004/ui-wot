@@ -5,44 +5,20 @@
 @tailwind components;
 @tailwind utilities;
 
-:host { 
+:host {
   display: inline-block;
 }
 
-/* Component-specific styles only */
-/* Extra specificity for filled variant buttons */
-:host(.ui-button) button.text-white-force {
-  color: white !important;
+/* Thingweb-inspired button hover effects */
+button.hover\:bg-opacity-10:hover {
+  background-color: color-mix(in srgb, var(--hover-bg) 10%, transparent) !important;
 }
 
-/* Button animations */
-.hover\:scale-105:hover {
-  transform: scale(1.05);
+button:hover {
+  background-color: var(--hover-bg, inherit);
 }
 
-.active\:scale-95:active {
-  transform: scale(0.95);
-}
-
-/* Disabled state */
-button:disabled {
-  cursor: not-allowed !important;
-  transform: none !important;
-}
-
-button:disabled:hover {
-  transform: none !important;
-}
-
-/* Smooth transitions */
-button {
-  transition: all var(--transition-base);
-}
-
-/* Focus styles */
-button:focus {
-  outline: none;
-  --tw-ring-width: 2px;
-  --tw-ring-offset-width: 2px;
-  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+/* Active scale effect */
+.active\:scale-98:active {
+  transform: scale(0.98);
 }

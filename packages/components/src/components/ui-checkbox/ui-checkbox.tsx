@@ -399,13 +399,16 @@ export class UiCheckbox {
 
     const status = this.operationStatus || 'idle';
     const message = this.lastError || (status === 'idle' ? 'Ready' : '');
-    return StatusIndicator.renderStatusBadge(status, 'light', message, h);
+    return StatusIndicator.renderStatusBadge(status, message, h);
   }
 
   /** Renders the last updated timestamp */
   private renderLastUpdated() {
-    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
-    return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), this.dark ? 'dark' : 'light', h);
+    if (!this.showLastUpdated) return null;
+
+    // render an invisible placeholder when lastUpdatedTs is missing.
+    const lastUpdatedDate = this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null;
+    return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
 
   // ============================== STYLING HELPERS ==============================

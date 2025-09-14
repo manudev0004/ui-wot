@@ -2,31 +2,19 @@
  * Visual Badges for feedback, It shows operation status in UI components
  */
 
-export interface StatusIndicatorOptions {
-  theme: 'light' | 'dark';
-  position?: 'right' | 'sibling-right';
-}
-
 export type OperationStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export class StatusIndicator {
-  /** CSS classes for status indicator with proper position */
-  static getStatusClasses(status: OperationStatus, options: StatusIndicatorOptions): string {
-    const { position = 'right' } = options;
+  /** CSS classes for status indicator with fixed position to reserves space */
+  static getStatusClasses(status: OperationStatus): string {
+    const base = 'ml-2 inline-flex items-center justify-center self-center w-5 h-5 min-w-[1.25rem] transition-all duration-300';
 
-    const baseClasses =
-      position === 'sibling-right'
-        ? 'ml-2 inline-flex items-center justify-center self-center w-5 h-5 min-w-[1.25rem]'
-        : 'w-4 h-4 flex items-center justify-center absolute -right-6 top-1/2 -translate-y-1/2 pointer-events-none';
+    if (status === 'idle') return `${base} opacity-0`;
+    if (status === 'loading') return `${base} opacity-100`;
+    if (status === 'success') return `${base} opacity-100 rounded-full bg-green-500 text-white`;
+    if (status === 'error') return `${base} opacity-100 rounded-full bg-red-500 text-white`;
 
-    const statusClasses = {
-      idle: 'opacity-0',
-      loading: 'opacity-100',
-      success: 'opacity-100 rounded-full bg-green-500 text-white',
-      error: 'opacity-100 rounded-full bg-red-500 text-white',
-    };
-
-    return `${baseClasses} transition-all duration-300 ${statusClasses[status] || 'opacity-0'}`;
+    return `${base} opacity-0`;
   }
 
   /** Apply status with auto-clear timers */
@@ -73,66 +61,48 @@ export class StatusIndicator {
     return { full, relative };
   }
 
-  /** Get CSS classes for timestamp display */
-  static getTimestampClasses(theme: 'light' | 'dark'): string {
-    return `mt-2 text-xs font-mono ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`;
-  }
-
-  /** Get tooltip text for status */
-  static getStatusTooltip(status: OperationStatus, error?: string): string {
-    const tooltips = {
-      success: 'Operation completed successfully',
-      error: error || 'Operation failed',
-      loading: 'Operation in progress...',
-      idle: '',
-    };
-    return tooltips[status] || '';
-  }
-
   /** Complete render of status badge */
-  static renderStatusBadge(status: OperationStatus, theme: 'light' | 'dark', error?: string, h?: any, options?: Partial<StatusIndicatorOptions>): any {
-    if (status === 'idle' || !h) return null;
-
-    const mergedOptions: StatusIndicatorOptions = { theme, position: 'right', ...options };
-    const classes = this.getStatusClasses(status, mergedOptions);
-    const tooltip = this.getStatusTooltip(status, error);
+  static renderStatusBadge(status: OperationStatus, error?: string, h?: any): any {
+    if (!h) return null;
+    const classes = this.getStatusClasses(status);
 
     if (status === 'loading') {
-      return h('span', {
-        class: classes,
-        title: tooltip,
-        innerHTML: this.getLoadingSpinnerSVG(),
-      });
+      return h('span', { class: classes, title: 'Operation in progress...', innerHTML: this.loadingSVG() });
     }
 
-    let content: any = null;
     if (status === 'success') {
-      content = this.createSuccessSVG(h);
-    } else if (status === 'error') {
-      content = this.createErrorSVG(h);
+      return h('span', { class: classes, title: 'Operation completed successfully' }, this.successSVG(h));
     }
 
-    return h('span', { class: classes, title: tooltip }, content);
+    if (status === 'error') {
+      return h('span', { class: classes, title: error || 'Operation failed' }, this.errorSVG(h));
+    }
+    // Return empty span to reserve space and prevent layout shift
+    return h('span', { class: classes, title: '' });
   }
 
   /** Render timestamp with auto-updating relative time */
   static renderTimestamp(lastUpdated: Date | null, theme: 'light' | 'dark', h?: any): any {
-    if (!lastUpdated || !h) return null;
+    if (!h) return null;
 
-    const { full, relative } = this.formatTimestamp(lastUpdated);
-    const timestampClasses = this.getTimestampClasses(theme);
-    const monoStyle = { 'font-family': 'var(--font-mono)' };
+    const classes = `mt-2 text-xs font-mono ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`;
 
-    return h('div', { class: `${timestampClasses} timestamp space-y-1`, style: monoStyle }, [
-      h('div', { class: 'last-updated', style: monoStyle }, full),
-      h('div', { class: 'relative-time italic opacity-75', style: monoStyle }, relative),
+    if (lastUpdated) {
+      const { full, relative } = this.formatTimestamp(lastUpdated);
+      return h('div', { class: `${classes} timestamp space-y-1` }, [h('div', { class: 'last-updated' }, full), h('div', { class: 'relative-time italic opacity-75' }, relative)]);
+    }
+    // No timestamp: render invisible placeholders to reserve space and prevent layout shift
+    const sample = this.formatTimestamp(new Date());
+    return h('div', { class: `${classes} timestamp space-y-1` }, [
+      h('div', { 'class': 'last-updated opacity-0', 'aria-hidden': 'true' }, sample.full),
+      h('div', { 'class': 'relative-time italic opacity-0', 'aria-hidden': 'true' }, sample.relative),
     ]);
   }
 
   // ====================== SVG Icons =====================
 
   /** Success checkmark SVG */
-  private static createSuccessSVG(h: any): any {
+  private static successSVG(h: any): any {
     return h(
       'svg',
       {
@@ -149,7 +119,7 @@ export class StatusIndicator {
   }
 
   /** Error cross mark SVG */
-  private static createErrorSVG(h: any): any {
+  private static errorSVG(h: any): any {
     return h(
       'svg',
       {
@@ -166,7 +136,7 @@ export class StatusIndicator {
   }
 
   /** Loading spinner SVG */
-  static getLoadingSpinnerSVG(): string {
+  private static loadingSVG(): string {
     return `<svg class="w-4 h-4 text-blue-500" viewBox="0 0 24 24" style="animation: spin 1s linear infinite;">
       <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25" />
       <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor" />

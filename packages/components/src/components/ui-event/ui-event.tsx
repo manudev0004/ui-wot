@@ -3,10 +3,10 @@ import { UiMsg } from '../../utils/types';
 import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 
 /**
- * Event listener component for subscribing to and publishing WoT events.
- * Provides real-time event handling with filtering, buffering, and visual feedback.
+ * Event listener component for displaying and managing event data streams.
+ * Designed to connect with external data sources via JavaScript at the HTML level.
  *
- * @example Basic Event Subscription
+ * @example Basic Event Display
  * ```html
  * <ui-event
  *   label="Temperature Events"
@@ -16,28 +16,30 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
  * </ui-event>
  * ```
  *
- * @example Event Publishing
- * ```html
- * <ui-event
- *   label="Alert Publisher"
- *   mode="publisher"
- *   event-name="alertTriggered"
- *   auto-publish="true">
- * </ui-event>
+ * @example External Data Connection
+ * ```javascript
+ * const eventComponent = document.getElementById('event-listener');
+ *
+ * // Add events programmatically from external sources
+ * await eventComponent.addEvent({
+ *   temperature: 23.5,
+ *   humidity: 65,
+ *   timestamp: Date.now()
+ * });
+ *
+ * // Listen for UI events
+ * eventComponent.addEventListener('eventReceived', (e) => {
+ *   console.log('New event displayed:', e.detail);
+ * });
  * ```
  *
- * @example Advanced Filtering
+ * @example Event Filtering
  * ```javascript
  * const listener = document.getElementById('event-listener');
  *
- * // Set custom filter
+ * // Set custom filter for event data
  * await listener.setEventFilter((event) => {
- *   return event.payload.temperature > 25;
- * });
- *
- * // Subscribe to events
- * listener.addEventListener('eventReceived', (e) => {
- *   console.log('Filtered event:', e.detail);
+ *   return event.data.temperature > 25;
  * });
  * ```
  */
@@ -96,7 +98,7 @@ export class UiEvent {
    */
   @Prop() connected: boolean = false;
 
-  /** Event listener specific props */
+  /** WoT TD Integration props */
 
   /**
    * Display label for the component
@@ -104,14 +106,11 @@ export class UiEvent {
   @Prop() label?: string;
 
   /**
-   * Component mode: listener or publisher
-   */
-  @Prop() mode: 'listener' | 'publisher' | 'bidirectional' = 'listener';
-
-  /**
-   * Event name to subscribe to or publish
+   * Event name to subscribe to (for identification/display purposes)
    */
   @Prop() eventName?: string;
+
+  /** Event display and management props */
 
   /**
    * Maximum number of events to keep in history
@@ -122,16 +121,6 @@ export class UiEvent {
    * Show event timestamps
    */
   @Prop() showTimestamp: boolean = true;
-
-  /**
-   * Auto-publish mode for publishers
-   */
-  @Prop() autoPublish: boolean = false;
-
-  /**
-   * Event payload template for publishing
-   */
-  @Prop() payloadTemplate?: string;
 
   /**
    * Enable event filtering
@@ -176,7 +165,7 @@ export class UiEvent {
   @State() eventHistory: Array<{
     id: string;
     timestamp: number;
-    payload: any;
+    data: any;
     source?: string;
   }> = [];
 
@@ -198,39 +187,18 @@ export class UiEvent {
   /** Component events */
 
   /**
-   * Emitted when an event is received (listener mode)
+   * Emitted when an event is received from the Thing
    */
   @Event() eventReceived: EventEmitter<UiMsg<any>>;
 
   /**
-   * Emitted when an event is published (publisher mode)
-   */
-  @Event() eventPublished: EventEmitter<UiMsg<any>>;
-
-  /**
-   * Standard value message event
+   * Standard value message event for consistency with other components
    */
   @Event() valueMsg: EventEmitter<UiMsg<any>>;
 
   /** Lifecycle methods */
 
-  componentWillLoad() {
-    // If component should auto-start listening, initialize the state
-    if (this.mode === 'listener' || this.mode === 'bidirectional') {
-      this.initializeListening();
-    }
-  }
-
-  componentDidLoad() {
-    // Component is now ready - can perform actions that don't change state
-    if (this.mode === 'listener' || this.mode === 'bidirectional') {
-      // Start the actual listening process without changing state
-      this.beginListening();
-    }
-  }
-
   disconnectedCallback() {
-    this.stopListening();
     this.clearTimestampTimer();
   }
 
@@ -252,12 +220,12 @@ export class UiEvent {
   /** Public methods */
 
   /**
-   * Initialize listening state without triggering re-renders (for componentWillLoad)
+   * Start listening for events (enables the component)
    */
-  private initializeListening(): void {
-    if (!this.eventName) return;
-    
-    // Set initial state without triggering state changes during load
+  @Method()
+  async startListening(): Promise<void> {
+    if (this.isSubscribed) return;
+
     this.operationStatus = 'loading';
     this.lastError = '';
     this.isSubscribed = true;
@@ -266,48 +234,7 @@ export class UiEvent {
   }
 
   /**
-   * Begin the actual listening process after component is loaded
-   */
-  private beginListening(): void {
-    if (!this.eventName || !this.isSubscribed) return;
-    
-    try {
-      // In a real implementation, this would connect to the WoT event system
-      // For demo purposes, we'll simulate event listening
-      this.simulateEventListening();
-    } catch (error) {
-      // If there's an error during setup, update state appropriately
-      this.operationStatus = 'error';
-      this.lastError = error instanceof Error ? error.message : String(error);
-    }
-  }
-
-  /**
-   * Start listening for events
-   */
-  @Method()
-  async startListening(): Promise<void> {
-    if (!this.eventName || this.isSubscribed) return;
-
-    try {
-      this.operationStatus = 'loading';
-      this.lastError = '';
-
-      // In a real implementation, this would connect to the WoT event system
-      // For demo purposes, we'll simulate event listening
-      this.simulateEventListening();
-
-      this.isSubscribed = true;
-      this.operationStatus = 'success';
-      this.lastUpdatedTs = Date.now();
-    } catch (error) {
-      this.operationStatus = 'error';
-      this.lastError = error instanceof Error ? error.message : String(error);
-    }
-  }
-
-  /**
-   * Stop listening for events
+   * Stop listening for events (disables the component)
    */
   @Method()
   async stopListening(): Promise<void> {
@@ -316,40 +243,18 @@ export class UiEvent {
   }
 
   /**
-   * Publish an event
+   * Add an event programmatically from external sources
    */
   @Method()
-  async publishEvent(payload: any, options?: { eventName?: string }): Promise<void> {
-    if (this.mode === 'listener') {
-      throw new Error('Component is in listener mode - cannot publish events');
-    }
+  async addEvent(eventData: any, eventId?: string): Promise<void> {
+    const event = {
+      id: eventId || `event-${Date.now()}`,
+      timestamp: Date.now(),
+      data: eventData,
+      source: this.eventName,
+    };
 
-    try {
-      this.operationStatus = 'loading';
-      this.lastError = '';
-
-      const eventName = options?.eventName || this.eventName;
-      if (!eventName) {
-        throw new Error('Event name is required for publishing');
-      }
-
-      // In a real implementation, this would publish to the WoT event system
-      await this.simulateEventPublishing(eventName, payload);
-
-      this.operationStatus = 'success';
-      this.lastUpdatedTs = Date.now();
-
-      // Emit event published notification
-      this.eventPublished.emit({
-        newVal: { eventName, payload },
-        ts: Date.now(),
-        meta: { source: 'ui-event-listener' },
-      });
-    } catch (error) {
-      this.operationStatus = 'error';
-      this.lastError = error instanceof Error ? error.message : String(error);
-      throw error;
-    }
+    this.handleReceivedEvent(event);
   }
 
   /**
@@ -387,37 +292,6 @@ export class UiEvent {
 
   /** Private methods */
 
-  private simulateEventListening() {
-    // Simulate receiving events every 3-5 seconds
-    const interval = setInterval(() => {
-      if (!this.isSubscribed) {
-        clearInterval(interval);
-        return;
-      }
-
-      const simulatedEvent = {
-        id: `event-${Date.now()}`,
-        timestamp: Date.now(),
-        payload: {
-          temperature: Math.round(20 + Math.random() * 15),
-          humidity: Math.round(40 + Math.random() * 30),
-          location: 'sensor-01',
-        },
-        source: this.eventName,
-      };
-
-      this.handleReceivedEvent(simulatedEvent);
-    }, 3000 + Math.random() * 2000);
-  }
-
-  private async simulateEventPublishing(_eventName: string, _payload: any): Promise<void> {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
-
-    // Event published successfully
-    // Parameters prefixed with _ to indicate intentional non-use
-  }
-
   private handleReceivedEvent(event: any) {
     // Apply filter if set
     if (this.eventFilter && !this.eventFilter(event)) {
@@ -431,14 +305,14 @@ export class UiEvent {
 
     // Emit event received notification
     this.eventReceived.emit({
-      newVal: event.payload,
+      newVal: event.data,
       ts: event.timestamp,
       meta: { eventId: event.id, source: event.source },
     });
 
     // Also emit as value message for consistency
     this.valueMsg.emit({
-      newVal: event.payload,
+      newVal: event.data,
       ts: event.timestamp,
       meta: { type: 'event', eventName: this.eventName },
     });
@@ -478,14 +352,15 @@ export class UiEvent {
 
   private renderStatusBadge() {
     if (!this.showStatus || this.operationStatus === 'idle') return null;
-    return StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError || '', h, { position: 'sibling-right' });
+    return StatusIndicator.renderStatusBadge(this.operationStatus, this.lastError || '', h);
   }
 
   private renderLastUpdated() {
-    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
+    if (!this.showLastUpdated) return null;
 
-    const theme = this.dark ? 'dark' : 'light';
-    return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), theme, h);
+    // render an invisible placeholder when lastUpdatedTs is missing.
+    const lastUpdatedDate = this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null;
+    return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
 
   private renderEventHistory() {
@@ -501,7 +376,7 @@ export class UiEvent {
       <div key={event.id} class={`border-b last:border-b-0 py-2 ${this.dark ? 'border-gray-600' : 'border-gray-200'}`}>
         <div class="flex justify-between items-start">
           <div class="flex-1">
-            <pre class={`text-xs font-mono ${this.dark ? 'text-gray-300' : 'text-gray-700'}`}>{JSON.stringify(event.payload, null, 2)}</pre>
+            <pre class={`text-xs font-mono ${this.dark ? 'text-gray-300' : 'text-gray-700'}`}>{JSON.stringify(event.data, null, 2)}</pre>
           </div>
           {this.showTimestamp && <div class={`text-xs ml-2 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{new Date(event.timestamp).toLocaleTimeString()}</div>}
         </div>
@@ -510,62 +385,32 @@ export class UiEvent {
   }
 
   private renderControls() {
-    if (this.mode === 'listener') {
-      return (
-        <div class="flex gap-2 mb-3">
-          <button
-            class={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              this.disabled 
-                ? 'bg-gray-400 text-white cursor-not-allowed opacity-50' 
-                : this.isSubscribed 
-                  ? 'bg-danger text-white hover:bg-red-600 focus:ring-danger cursor-pointer' 
-                  : 'bg-success text-white hover:bg-green-600 focus:ring-success cursor-pointer'
-            }`}
-            onClick={() => (this.isSubscribed ? this.stopListening() : this.startListening())}
-            disabled={this.disabled}
-          >
-            {this.isSubscribed ? 'Stop' : 'Start'} Listening
-          </button>
-          <button 
-            class={`px-3 py-2 rounded-md font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              this.disabled 
-                ? 'bg-gray-400 text-white cursor-not-allowed opacity-50' 
-                : 'bg-neutral text-white hover:bg-neutral-hover focus:ring-neutral cursor-pointer'
-            }`}
-            onClick={() => this.clearEvents()} 
-            disabled={this.disabled}
-          >
-            Clear Events
-          </button>
-        </div>
-      );
-    }
-
-    if (this.mode === 'publisher') {
-      return (
-        <div class="flex gap-2 mb-3">
-          <button 
-            class={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              this.disabled 
-                ? 'bg-gray-400 text-white cursor-not-allowed opacity-50' 
-                : `bg-${this.color} text-white hover:bg-${this.color}-hover focus:ring-${this.color} cursor-pointer`
-            }`}
-            onClick={() => this.publishTestEvent()} 
-            disabled={this.disabled}
-          >
-            Publish Test Event
-          </button>
-        </div>
-      );
-    }
-
-    return null;
-  }
-
-  private async publishTestEvent() {
-    const testPayload = this.payloadTemplate ? JSON.parse(this.payloadTemplate) : { message: 'Test event', timestamp: Date.now() };
-
-    await this.publishEvent(testPayload);
+    return (
+      <div class="flex gap-2 mb-3">
+        <button
+          class={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            this.disabled
+              ? 'bg-gray-400 text-white cursor-not-allowed opacity-50'
+              : this.isSubscribed
+              ? 'bg-danger text-white hover:bg-red-600 focus:ring-danger cursor-pointer'
+              : 'bg-success text-white hover:bg-green-600 focus:ring-success cursor-pointer'
+          }`}
+          onClick={() => (this.isSubscribed ? this.stopListening() : this.startListening())}
+          disabled={this.disabled}
+        >
+          {this.isSubscribed ? 'Stop' : 'Start'} Listening
+        </button>
+        <button
+          class={`px-3 py-2 rounded-md font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            this.disabled ? 'bg-gray-400 text-white cursor-not-allowed opacity-50' : 'bg-neutral text-white hover:bg-neutral-hover focus:ring-neutral cursor-pointer'
+          }`}
+          onClick={() => this.clearEvents()}
+          disabled={this.disabled}
+        >
+          Clear Events
+        </button>
+      </div>
+    );
   }
 
   render() {
@@ -579,44 +424,23 @@ export class UiEvent {
         {/* Main container with status badge */}
         <div class="relative inline-flex items-start w-full">
           <div class={`${containerClasses} p-4 w-full`}>
-            {/* Header with mode and status */}
+            {/* Header with event info and status */}
             <div class="flex justify-between items-center mb-3">
               <div class="flex items-center gap-2">
-                <span class={`text-sm font-medium ${this.dark ? 'text-gray-200' : 'text-gray-800'}`}>
-                  {this.mode === 'listener' ? '📥' : this.mode === 'publisher' ? '📤' : '🔄'}
-                  {this.mode.charAt(0).toUpperCase() + this.mode.slice(1)}
-                </span>
+                <span class={`text-sm font-medium ${this.dark ? 'text-gray-200' : 'text-gray-800'}`}>📥 Event Listener</span>
                 {this.eventName && <span class={`text-xs px-2 py-1 rounded ${this.dark ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'}`}>{this.eventName}</span>}
               </div>
-              {this.mode === 'listener' && (
-                <div class="flex items-center gap-1">
-                  <span class={`w-2 h-2 rounded-full ${this.isSubscribed ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                  <span class={`text-xs ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{this.eventCount} events</span>
-                </div>
-              )}
+              <div class="flex items-center gap-1">
+                <span class={`w-2 h-2 rounded-full ${this.isSubscribed ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                <span class={`text-xs ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{this.eventCount} events</span>
+              </div>
             </div>
 
             {/* Controls */}
             {this.renderControls()}
 
             {/* Event history */}
-            {this.mode !== 'publisher' && (
-              <div class={`border rounded max-h-48 overflow-y-auto ${this.dark ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-50'}`}>{this.renderEventHistory()}</div>
-            )}
-
-            {/* Publisher payload input */}
-            {this.mode === 'publisher' && (
-              <div class="space-y-2">
-                <label class={`text-xs ${this.dark ? 'text-gray-300' : 'text-gray-600'}`}>Event Payload (JSON):</label>
-                <textarea
-                  class={`w-full p-2 text-xs font-mono border rounded ${this.dark ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-white border-gray-300'}`}
-                  rows={4}
-                  value={this.payloadTemplate || '{\n  "message": "Hello World",\n  "timestamp": "' + new Date().toISOString() + '"\n}'}
-                  onInput={e => (this.payloadTemplate = (e.target as HTMLTextAreaElement).value)}
-                  disabled={this.disabled}
-                />
-              </div>
-            )}
+            <div class={`border rounded max-h-48 overflow-y-auto ${this.dark ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-50'}`}>{this.renderEventHistory()}</div>
           </div>
 
           {/* Status badge */}

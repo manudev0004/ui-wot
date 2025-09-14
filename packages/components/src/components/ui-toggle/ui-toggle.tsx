@@ -4,7 +4,7 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 
 /**
  * A versatile toggle switch component designed for WoT device control and monitoring.
- * 
+ *
  * It has various features, multiple visual styles, status and last updated timestamps.
  * Supports both interactive control and read-only monitoring modes.
  *
@@ -42,7 +42,7 @@ export class UiToggle {
    * - circle: Common pill-shaped toggle (default)
    * - square: Rectangular toggle with square thumb
    * - apple: iOS-style switch (bigger size, rounded edges)
-   * - cross: Shows × when off, ✓ when on with red background when off and green when on
+   * - cross: Shows cross when off, tick when on with red background when off and green when on
    * - neon: Glowing effect when active
    */
   @Prop() variant: 'circle' | 'square' | 'apple' | 'cross' | 'neon' = 'circle';
@@ -177,11 +177,11 @@ export class UiToggle {
     // If there is writeOperation store operation for future user interactions
     if (options.writeOperation && !options._isRevert) {
       this.storedWriteOperation = options.writeOperation;
-      this.updateValue(value, prevValue, false); 
+      this.updateValue(value, prevValue, false);
       return true;
     }
 
-    // Execute operation immediately if no options selected 
+    // Execute operation immediately if no options selected
     return this.executeOperation(value, prevValue, options);
   }
 
@@ -241,7 +241,8 @@ export class UiToggle {
     if (this.readonly) {
       this.readPulseTs = Date.now();
       setTimeout(() => {
-        if (this.readPulseTs && Date.now() - this.readPulseTs >= 1500) { // 1.5 seconds
+        if (this.readPulseTs && Date.now() - this.readPulseTs >= 1500) {
+          // 1.5 seconds
           this.readPulseTs = undefined;
         }
       }, 1500);
@@ -442,23 +443,26 @@ export class UiToggle {
 
     if (this.readonly) {
       if (!this.connected) {
-        return StatusIndicator.renderStatusBadge('error', 'light', 'Disconnected', h);
+        return StatusIndicator.renderStatusBadge('error', 'Disconnected', h);
       }
       if (this.readPulseTs && Date.now() - this.readPulseTs < 1500) {
-        return StatusIndicator.renderStatusBadge('success', 'light', 'Data received', h);
+        return StatusIndicator.renderStatusBadge('success', 'Data received', h);
       }
-      return StatusIndicator.renderStatusBadge('idle', 'light', 'Connected', h);
+      return StatusIndicator.renderStatusBadge('idle', 'Connected', h);
     }
 
     const status = this.operationStatus || 'idle';
     const message = this.lastError || (status === 'idle' ? 'Ready' : '');
-    return StatusIndicator.renderStatusBadge(status, 'light', message, h);
+    return StatusIndicator.renderStatusBadge(status, message, h);
   }
 
   /** Renders the last updated timestamp */
   private renderLastUpdated() {
-    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
-    return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), this.dark ? 'dark' : 'light', h);
+    if (!this.showLastUpdated) return null;
+
+    // render an invisible placeholder when lastUpdatedTs is missing.
+    const lastUpdatedDate = this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null;
+    return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
   // ============================== STYLING HELPERS ==============================
 
@@ -480,8 +484,6 @@ export class UiToggle {
     const size = sizeMap[variant] || sizeMap.default;
     const shape = shapeMap[variant] || shapeMap.default;
     const disabledClass = disabled ? 'disabled-state' : '';
-
-    
 
     // Neon glow effects
     let neonClass = '';

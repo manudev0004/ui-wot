@@ -44,7 +44,7 @@
       <div class="row">
         <div>
           <h3>Monitor (read-only)</h3>
-          <ui-toggle id="readonly-toggle" readonly="true" variant="square" label="Device Monitor" show-last-updated show-status></ui-toggle>         
+          <ui-toggle id="readonly-toggle" readonly="true" variant="square" label="Device Monitor" show-last-updated></ui-toggle>         
         </div>
       </div>
 
@@ -108,7 +108,7 @@
         await errorToggle.setValue(false, {
           writeOperation: async value => {
             console.log(`Attempting to set error demo to ${value}...`);
-            await new Promise(r => setTimeout(r, 800)); // Simulate network delay to show loading state
+            await new Promise(r => setTimeout(r, 1000)); // Simulate network delay to show loading state
             throw new Error(`Simulated failure when setting to ${value}`);
           },
         });

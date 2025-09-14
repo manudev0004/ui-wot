@@ -29,12 +29,12 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
  * @example JavaScript Integration
  * ```javascript
  * const textDisplay = document.querySelector('#notes-field');
- * 
+ *
  * // Listen for value changes in editable mode
  * textDisplay.addEventListener('valueMsg', (e) => {
  *   console.log('Text changed to:', e.detail.payload);
  * });
- * 
+ *
  * // Set value programmatically
  * await textDisplay.setValue('New content');
  * ```
@@ -177,7 +177,7 @@ export class UiText {
   private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
     this.value = value;
     this.lastUpdatedTs = Date.now();
-    
+
     if (emitEvent && !this.suppressEvents) {
       this.emitValueMsg(value, prevValue);
     }
@@ -262,7 +262,7 @@ export class UiText {
       writeOperation?: (value: string) => Promise<any>;
       readOperation?: () => Promise<any>;
       optimistic?: boolean;
-      autoRetry?: { attempts: number; delay: number; };
+      autoRetry?: { attempts: number; delay: number };
       _isRevert?: boolean;
     },
   ): Promise<boolean> {
@@ -293,11 +293,7 @@ export class UiText {
   }
 
   /** Simplified operation execution */
-  private async executeOperation(
-    value: string, 
-    prevValue: string, 
-    options: any
-  ): Promise<boolean> {
+  private async executeOperation(value: string, prevValue: string, options: any): Promise<boolean> {
     const optimistic = options?.optimistic !== false;
 
     // Optimistic update
@@ -324,7 +320,6 @@ export class UiText {
       }
 
       return true;
-
     } catch (error) {
       // Error handling
       this.operationStatus = 'error';
@@ -340,7 +335,7 @@ export class UiText {
         setTimeout(() => {
           this.setValue(value, {
             ...options,
-            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 }
+            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 },
           });
         }, options.autoRetry.delay);
       } else {
@@ -494,12 +489,12 @@ export class UiText {
     const target = event.target as HTMLInputElement | HTMLTextAreaElement;
     const newValue = target.value;
     const prevValue = this.value;
-    
+
     // Execute stored writeOperation if available
     if (this.storedWriteOperation) {
       this.setStatusWithTimeout('loading');
       this.updateValue(newValue); // Optimistic update
-      
+
       try {
         await this.storedWriteOperation(newValue);
         this.setStatusWithTimeout('success');
@@ -513,7 +508,7 @@ export class UiText {
     } else {
       // Simple value update without operations
       this.updateValue(newValue);
-      
+
       if (this.showStatus) {
         this.operationStatus = 'loading';
         setTimeout(() => this.setStatusWithTimeout('success'), 100);
@@ -532,16 +527,16 @@ export class UiText {
   /** Render status badge */
   private renderStatusBadge() {
     if (!this.showStatus || this.operationStatus === 'idle') return null;
-    return StatusIndicator.renderStatusBadge(this.operationStatus, this.dark ? 'dark' : 'light', this.lastError || '', h);
+    return StatusIndicator.renderStatusBadge(this.operationStatus, this.lastError || '', h);
   }
 
   /** Render last updated timestamp */
   private renderLastUpdated() {
-    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
-    
-    const theme = this.dark ? 'dark' : 'light';
-    
-    return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), theme, h);
+    if (!this.showLastUpdated) return null;
+
+    // render an invisible placeholder when lastUpdatedTs is missing.
+    const lastUpdatedDate = this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null;
+    return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
 
   /** Styling helpers */
@@ -633,7 +628,7 @@ export class UiText {
 
   private getInputClasses(): string {
     let classes = 'w-full bg-transparent border-0 outline-none resize-none font-inherit';
-    
+
     if (this.mode === 'structured') {
       classes += ' font-mono text-sm';
     }
@@ -652,7 +647,7 @@ export class UiText {
 
     const lines = content.split('\n');
     const lineNumberWidth = Math.max(2, String(lines.length).length);
-    
+
     return (
       <div class="flex">
         {/* Line numbers column */}
@@ -680,8 +675,8 @@ export class UiText {
 
     // For editable mode, determine if we need single line or multi-line
     if (this.mode === 'editable') {
-      const isMultiline = this.value.includes('\n') || (this.value.length > 60);
-      
+      const isMultiline = this.value.includes('\n') || this.value.length > 60;
+
       if (isMultiline) {
         return (
           <textarea
@@ -721,39 +716,19 @@ export class UiText {
 
       case 'area':
         if (this.showLineNumbers) {
-          return (
-            <div class="whitespace-pre-wrap break-words">
-              {this.renderWithLineNumbers(this.value || this.placeholder || '')}
-            </div>
-          );
+          return <div class="whitespace-pre-wrap break-words">{this.renderWithLineNumbers(this.value || this.placeholder || '')}</div>;
         }
-        return (
-          <div class="whitespace-pre-wrap break-words">
-            {this.value || this.placeholder}
-          </div>
-        );
+        return <div class="whitespace-pre-wrap break-words">{this.value || this.placeholder}</div>;
 
       case 'structured':
         if (this.showLineNumbers) {
-          return (
-            <pre class="whitespace-pre-wrap break-words font-mono text-sm m-0">
-              {this.renderWithLineNumbers(this.value || this.placeholder || '', true)}
-            </pre>
-          );
+          return <pre class="whitespace-pre-wrap break-words font-mono text-sm m-0">{this.renderWithLineNumbers(this.value || this.placeholder || '', true)}</pre>;
         }
-        return (
-          <pre class="whitespace-pre-wrap break-words font-mono text-sm m-0">
-            {this.value || this.placeholder}
-          </pre>
-        );
+        return <pre class="whitespace-pre-wrap break-words font-mono text-sm m-0">{this.value || this.placeholder}</pre>;
 
       case 'unstructured':
       default:
-        return (
-          <div class="whitespace-pre-wrap break-words">
-            {this.value || this.placeholder}
-          </div>
-        );
+        return <div class="whitespace-pre-wrap break-words">{this.value || this.placeholder}</div>;
     }
   }
 
@@ -763,22 +738,14 @@ export class UiText {
     return (
       <div class="w-full">
         {/* Label */}
-        {this.label && (
-          <label class={`block text-sm font-medium mb-2 ${this.dark ? 'text-gray-200' : 'text-gray-700'}`}>
-            {this.label}
-          </label>
-        )}
+        {this.label && <label class={`block text-sm font-medium mb-2 ${this.dark ? 'text-gray-200' : 'text-gray-700'}`}>{this.label}</label>}
 
         {/* Main container with status badge positioning similar to ui-toggle */}
         <div class="relative inline-flex items-center">
-          <div class={baseClasses}>
-            {this.renderContent()}
-          </div>
+          <div class={baseClasses}>{this.renderContent()}</div>
 
           {/* Status badge - positioned to the right center after the text border, similar to other components */}
-          <div class="ml-2 flex-shrink-0">
-            {this.renderStatusBadge()}
-          </div>
+          <div class="ml-2 flex-shrink-0">{this.renderStatusBadge()}</div>
         </div>
 
         {/* Character count */}
@@ -793,11 +760,7 @@ export class UiText {
         {this.renderLastUpdated()}
 
         {/* Error message */}
-        {this.lastError && (
-          <div class="text-xs mt-1 text-red-500">
-            {this.lastError}
-          </div>
-        )}
+        {this.lastError && <div class="text-xs mt-1 text-red-500">{this.lastError}</div>}
       </div>
     );
   }

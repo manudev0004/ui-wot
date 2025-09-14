@@ -36,6 +36,13 @@
   --color-danger: #dc2626;
   --color-info: #2563eb;
 
+  /* Thingweb-compatible variables */
+  --ifm-color-primary: #067362;
+  --neutral-clr-50: #ffffff;
+  --neutral-clr-900: #111827;
+  --fw-medium: 500;
+  --fs-body: 1rem;
+  --ff-secondary: 'Josefin Sans', sans-serif;
 
   
   /* Fonts */
@@ -53,6 +60,8 @@
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
+  --radius-xl: 0.625rem;
+  --radius-2xl: 10px;
   --radius-full: 9999px;
   
   /* Shadows */

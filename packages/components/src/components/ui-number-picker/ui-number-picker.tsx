@@ -472,23 +472,26 @@ export class UiNumberPicker {
 
     if (this.readonly) {
       if (!this.connected) {
-        return StatusIndicator.renderStatusBadge('error', 'light', 'Disconnected', h);
+        return StatusIndicator.renderStatusBadge('error', 'Disconnected', h);
       }
       if (this.readPulseTs && Date.now() - this.readPulseTs < 1500) {
-        return StatusIndicator.renderStatusBadge('success', 'light', 'Data received', h);
+        return StatusIndicator.renderStatusBadge('success', 'Data received', h);
       }
-      return StatusIndicator.renderStatusBadge('idle', 'light', 'Connected', h);
+      return StatusIndicator.renderStatusBadge('idle', 'Connected', h);
     }
 
     const status = this.operationStatus || 'idle';
     const message = this.lastError || (status === 'idle' ? 'Ready' : '');
-    return StatusIndicator.renderStatusBadge(status, 'light', message, h);
+    return StatusIndicator.renderStatusBadge(status, message, h);
   }
 
   /** Renders the last updated timestamp */
   private renderLastUpdated() {
-    if (!this.showLastUpdated || !this.lastUpdatedTs) return null;
-    return StatusIndicator.renderTimestamp(new Date(this.lastUpdatedTs), this.dark ? 'dark' : 'light', h);
+    if (!this.showLastUpdated) return null;
+
+    // render an invisible placeholder when lastUpdatedTs is missing.
+    const lastUpdatedDate = this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null;
+    return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
 
   // ============================== STYLING HELPERS ==============================
@@ -609,10 +612,7 @@ export class UiNumberPicker {
               >
                 {this.label}
                 {this.readonly && (
-                  <span 
-                    class="ml-1 text-xs" 
-                    style={{ color: 'var(--color-info)' }}
-                  >
+                  <span class="ml-1 text-xs" style={{ color: 'var(--color-info)' }}>
                     (Read-only)
                   </span>
                 )}
@@ -627,7 +627,7 @@ export class UiNumberPicker {
               class={`inline-flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg transition-all duration-300 ${this.getReadonlyBg()}`}
               style={{
                 borderColor: this.getActiveColor(),
-                color: this.dark ? 'white' : this.getActiveColor()
+                color: this.dark ? 'white' : this.getActiveColor(),
               }}
               title={`${hoverTitle} - Current value: ${this.isActive}`}
               part="readonly-indicator"
@@ -659,10 +659,8 @@ export class UiNumberPicker {
                 <button
                   class={this.getButtonStyle('decrement')}
                   style={
-                    !this.disabled && 
-                    !(this.min !== undefined && this.isActive <= this.min) && 
-                    this.variant === 'outlined' 
-                      ? { borderColor: this.getActiveColor() } 
+                    !this.disabled && !(this.min !== undefined && this.isActive <= this.min) && this.variant === 'outlined'
+                      ? { borderColor: this.getActiveColor() }
                       : this.variant === 'filled' && !this.disabled
                       ? { backgroundColor: this.getActiveColor() }
                       : {}
@@ -677,17 +675,17 @@ export class UiNumberPicker {
                 </button>
 
                 {/* Value Display */}
-                <div 
-                  class={this.getValueStyle()} 
+                <div
+                  class={this.getValueStyle()}
                   style={
-                    !this.disabled 
-                      ? { 
+                    !this.disabled
+                      ? {
                           borderColor: this.getActiveColor(),
-                          color: this.getActiveColor()
-                        } 
+                          color: this.getActiveColor(),
+                        }
                       : {}
                   }
-                  part="value-display" 
+                  part="value-display"
                   title={`Current value: ${this.isActive}`}
                 >
                   {this.isActive}
@@ -697,10 +695,8 @@ export class UiNumberPicker {
                 <button
                   class={this.getButtonStyle('increment')}
                   style={
-                    !this.disabled && 
-                    !(this.max !== undefined && this.isActive >= this.max) && 
-                    this.variant === 'outlined' 
-                      ? { borderColor: this.getActiveColor() } 
+                    !this.disabled && !(this.max !== undefined && this.isActive >= this.max) && this.variant === 'outlined'
+                      ? { borderColor: this.getActiveColor() }
                       : this.variant === 'filled' && !this.disabled
                       ? { backgroundColor: this.getActiveColor() }
                       : {}

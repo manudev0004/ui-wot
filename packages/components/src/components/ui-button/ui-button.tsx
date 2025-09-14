@@ -220,13 +220,16 @@ export class UiButton {
 
     const status = this.operationStatus || 'idle';
     const message = this.lastError || (status === 'idle' ? 'Ready' : '');
-    return StatusIndicator.renderStatusBadge(status, 'light', message, h);
+    return StatusIndicator.renderStatusBadge(status, message, h);
   }
 
   /** Renders the last updated timestamp */
   private renderLastUpdated() {
-    if (!this.showLastUpdated || !this.lastClickedTs) return null;
-    return StatusIndicator.renderTimestamp(new Date(this.lastClickedTs), this.dark ? 'dark' : 'light', h);
+    if (!this.showLastUpdated) return null;
+
+    // render an invisible placeholder when lastClickedTs is missing.
+    const lastUpdatedDate = this.lastClickedTs ? new Date(this.lastClickedTs) : null;
+    return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
 
   // =============== STYLING HELPERS ===============
@@ -235,32 +238,41 @@ export class UiButton {
   private getButtonStyle(): { classes: string; style: { [key: string]: string } } {
     const isDisabled = this.disabled;
 
+    // Thingweb-inspired button styling with Fira Mono font
     let baseClasses =
-      'px-4 py-2 rounded border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 font-medium cursor-pointer inline-flex items-center justify-center';
+      'inline-flex items-center justify-center gap-4 font-mono font-medium cursor-pointer transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-[10px] border px-5 py-3';
     let style: { [key: string]: string } = {};
+
+    // Apply Fira Mono font
+    style.fontFamily = 'var(--font-mono)';
+    style.fontSize = 'var(--fs-body, 1rem)';
+    style.fontWeight = 'var(--fw-medium, 500)';
+    style.lineHeight = 'normal';
 
     if (isDisabled) {
       baseClasses += ' opacity-50 cursor-not-allowed';
     } else {
-      baseClasses += ' hover:scale-105 active:scale-95';
+      baseClasses += ' hover:opacity-90 active:scale-[0.98] hover:scale-105';
     }
 
-    // Variant-specific styling with CSS variables
+    // Variant-specific styling matching Thingweb patterns
     if (this.variant === 'minimal') {
-      style.backgroundColor = 'transparent';
-      style.borderColor = 'transparent';
-      if (!isDisabled) {
-        baseClasses += ' hover:bg-gray-100';
-      }
+      baseClasses += ' bg-transparent border-transparent hover:bg-gray-100 dark:hover:bg-gray-800';
+      style.color = this.getActiveColor();
     } else if (this.variant === 'outlined') {
-      style.backgroundColor = 'transparent';
+      baseClasses += ' bg-transparent hover:bg-opacity-10';
       style.borderColor = this.getActiveColor();
       style.color = this.getActiveColor();
+      style['--hover-bg'] = this.getActiveColor();
     } else if (this.variant === 'filled') {
+      baseClasses += ' text-white';
       style.backgroundColor = this.getActiveColor();
       style.borderColor = this.getActiveColor();
-      style.color = 'white';
+      style['--hover-bg'] = this.getHoverColor();
     }
+
+    // Focus ring color
+    style['--tw-ring-color'] = this.getActiveColor();
 
     return { classes: baseClasses, style };
   }
@@ -273,7 +285,19 @@ export class UiButton {
       case 'neutral':
         return 'var(--color-neutral)';
       default:
-        return 'var(--color-primary)';
+        return 'var(--ifm-color-primary)';
+    }
+  }
+
+  /** Generate the hover color using global CSS variables */
+  private getHoverColor(): string {
+    switch (this.color) {
+      case 'secondary':
+        return 'var(--color-secondary-hover)';
+      case 'neutral':
+        return 'var(--color-neutral-hover)';
+      default:
+        return 'var(--color-primary-hover)';
     }
   }
 
