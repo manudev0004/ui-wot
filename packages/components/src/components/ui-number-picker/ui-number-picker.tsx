@@ -170,9 +170,7 @@ export class UiNumberPicker {
 
     // Clear any existing error state
     if (this.operationStatus === 'error' && !options?._isRevert) {
-      this.operationStatus = 'idle';
-      this.lastError = undefined;
-      this.connected = true;
+      StatusIndicator.applyStatus(this, 'idle');
     }
 
     // Simple value update without other operations
@@ -316,16 +314,6 @@ export class UiNumberPicker {
     }
   }
 
-  /** Sets different operation status with automatic timeout to return to its idle state */
-  private setStatusWithTimeout(status: 'idle' | 'loading' | 'success' | 'error', duration: number = 1000): void {
-    this.operationStatus = status;
-    if (status !== 'idle') {
-      setTimeout(() => {
-        if (this.operationStatus === status) this.operationStatus = 'idle';
-      }, duration);
-    }
-  }
-
   /** Executes stored operations with error handling and retry logic */
   private async executeOperation(value: number, prevValue: number, options: any): Promise<boolean> {
     const optimistic = options?.optimistic !== false;
@@ -335,7 +323,7 @@ export class UiNumberPicker {
       this.updateValue(value, prevValue);
     }
 
-    this.operationStatus = 'loading';
+    StatusIndicator.applyStatus(this, 'loading');
 
     try {
       // Execute the API call
@@ -345,7 +333,7 @@ export class UiNumberPicker {
         await options.readOperation();
       }
 
-      this.setStatusWithTimeout('success', 1200); // Success status for 1.2 seconds
+      StatusIndicator.applyStatus(this, 'success');
 
       // Update value after successful operation, (if optimistic = false)
       if (!optimistic) {
@@ -354,8 +342,7 @@ export class UiNumberPicker {
 
       return true;
     } catch (error) {
-      this.operationStatus = 'error';
-      this.lastError = error?.message || String(error) || 'Operation failed';
+      StatusIndicator.applyStatus(this, 'error', error?.message || String(error) || 'Operation failed');
 
       // Revert optimistic changes if operation is not successful or has an error
       if (optimistic && !options?._isRevert) {
@@ -370,8 +357,6 @@ export class UiNumberPicker {
             autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 },
           });
         }, options.autoRetry.delay);
-      } else {
-        this.setStatusWithTimeout('idle', 3000); // Clear error after 3 seconds
       }
 
       return false;
@@ -404,26 +389,24 @@ export class UiNumberPicker {
 
     // Execute stored operation if available
     if (this.storedWriteOperation) {
-      this.operationStatus = 'loading';
+      StatusIndicator.applyStatus(this, 'loading');
       this.updateValue(newValue, prevValue);
 
       try {
         await this.storedWriteOperation(newValue);
-        this.setStatusWithTimeout('success');
+        StatusIndicator.applyStatus(this, 'success');
       } catch (error) {
         console.error('Write operation failed:', error);
-        this.operationStatus = 'error';
-        this.lastError = error?.message || 'Operation failed';
+        StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
         this.updateValue(prevValue, newValue, false);
-        this.setStatusWithTimeout('idle', 3000); // Clear error after 3 seconds
       }
     } else {
       // Simple increment/decrement without device operations
       this.updateValue(newValue, prevValue);
 
       if (this.showStatus) {
-        this.operationStatus = 'loading';
-        setTimeout(() => this.setStatusWithTimeout('success'), 100); // Quick success feedback
+        StatusIndicator.applyStatus(this, 'loading');
+        setTimeout(() => StatusIndicator.applyStatus(this, 'success'), 100); // Quick success feedback
       }
     }
   };

@@ -182,16 +182,6 @@ export class UiSlider {
     }
   }
 
-  /** Helper method to set status with automatic timeout */
-  private setStatusWithTimeout(status: 'idle' | 'loading' | 'success' | 'error', duration: number = 1000): void {
-    this.operationStatus = status;
-    if (status !== 'idle') {
-      setTimeout(() => {
-        if (this.operationStatus === status) this.operationStatus = 'idle';
-      }, duration);
-    }
-  }
-
   /**
    * Set the slider value with automatic device communication and status management.
    * Values are automatically clamped to the min/max range.
@@ -295,9 +285,7 @@ export class UiSlider {
 
     // Clear error state on new attempts
     if (this.operationStatus === 'error' && !options?._isRevert) {
-      this.operationStatus = 'idle';
-      this.lastError = undefined;
-      this.connected = true;
+      StatusIndicator.applyStatus(this, 'idle');
     }
 
     // SIMPLE CASE: Just set value without operations
@@ -329,7 +317,7 @@ export class UiSlider {
       this.manualInputValue = String(value);
     }
 
-    this.operationStatus = 'loading';
+    StatusIndicator.applyStatus(this, 'loading');
 
     try {
       // Execute the operation
@@ -340,7 +328,7 @@ export class UiSlider {
       }
 
       // Success
-      this.setStatusWithTimeout('success', 1200);
+      StatusIndicator.applyStatus(this, 'success');
 
       // Non-optimistic update
       if (!optimistic) {
@@ -351,8 +339,7 @@ export class UiSlider {
       return true;
     } catch (error) {
       // Error handling
-      this.operationStatus = 'error';
-      this.lastError = error?.message || String(error) || 'Operation failed';
+      StatusIndicator.applyStatus(this, 'error', error?.message || String(error) || 'Operation failed');
 
       // Revert optimistic changes
       if (optimistic && !options?._isRevert) {
@@ -368,8 +355,6 @@ export class UiSlider {
             autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 },
           });
         }, options.autoRetry.delay);
-      } else {
-        this.setStatusWithTimeout('idle', 3000); // Clear error after 3s
       }
 
       return false;
@@ -840,26 +825,24 @@ export class UiSlider {
 
     // Execute stored writeOperation if available
     if (this.storedWriteOperation) {
-      this.setStatusWithTimeout('loading');
+      StatusIndicator.applyStatus(this, 'loading');
       this.updateValue(clampedValue, prevValue); // Optimistic update
 
       try {
         await this.storedWriteOperation(clampedValue);
-        this.setStatusWithTimeout('success');
+        StatusIndicator.applyStatus(this, 'success');
       } catch (error) {
         console.error('Write operation failed:', error);
-        this.operationStatus = 'error';
-        this.lastError = error?.message || 'Operation failed';
+        StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
         this.updateValue(prevValue, clampedValue, false); // Revert, no event
-        this.setStatusWithTimeout('idle', 3000);
       }
     } else {
       // Simple value change without operations
       this.updateValue(clampedValue, prevValue);
 
       if (this.showStatus) {
-        this.operationStatus = 'loading';
-        setTimeout(() => this.setStatusWithTimeout('success'), 50);
+        StatusIndicator.applyStatus(this, 'loading');
+        setTimeout(() => StatusIndicator.applyStatus(this, 'success'), 50);
       }
     }
   };

@@ -348,16 +348,6 @@ export class UiCalendar {
     }
   }
 
-  /** Helper method to set status with automatic timeout */
-  private setStatusWithTimeout(status: 'idle' | 'loading' | 'success' | 'error', duration: number = 1000): void {
-    this.operationStatus = status;
-    if (status !== 'idle') {
-      setTimeout(() => {
-        if (this.operationStatus === status) this.operationStatus = 'idle';
-      }, duration);
-    }
-  }
-
   /** Helper method to emit all value events consistently */
   private emitValueEvents(value: string, prevValue?: string): void {
     // Emit standardized event
@@ -442,10 +432,10 @@ export class UiCalendar {
 
     try {
       if (this.storedWriteOperation) {
-        this.setStatusWithTimeout('loading');
+        StatusIndicator.applyStatus(this, 'loading');
         this.updateValue(newValue, prevValue);
         await this.storedWriteOperation(newValue);
-        this.setStatusWithTimeout('success');
+        StatusIndicator.applyStatus(this, 'success');
       } else {
         this.updateValue(newValue, prevValue);
       }
@@ -454,7 +444,7 @@ export class UiCalendar {
     } catch (error) {
       console.error('handleDateSelect error for ui-calendar:', error);
       this.updateValue(prevValue!, newValue, false); // Revert on error
-      this.setStatusWithTimeout('error');
+      StatusIndicator.applyStatus(this, 'error', 'Operation failed');
     }
   }
 
@@ -756,20 +746,20 @@ export class UiCalendar {
     this.storedWriteOperation = writeOperation;
 
     try {
-      this.setStatusWithTimeout('loading');
+      StatusIndicator.applyStatus(this, 'loading');
       this.updateValue(value, prevValue);
 
       if (writeOperation) {
         const result = await writeOperation(value);
-        this.setStatusWithTimeout('success');
+        StatusIndicator.applyStatus(this, 'success');
         return result;
       }
 
-      this.setStatusWithTimeout('idle');
+      StatusIndicator.applyStatus(this, 'idle');
     } catch (error) {
       console.error('setValue error for ui-calendar:', error);
       this.updateValue(prevValue!, prevValue, false); // Revert on error
-      this.setStatusWithTimeout('error');
+      StatusIndicator.applyStatus(this, 'error', 'Operation failed');
       throw error;
     } finally {
       this.storedWriteOperation = undefined;

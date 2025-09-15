@@ -183,16 +183,6 @@ export class UiText {
     }
   }
 
-  /** Helper method to set status with automatic timeout */
-  private setStatusWithTimeout(status: OperationStatus, duration: number = 1000): void {
-    this.operationStatus = status;
-    if (status !== 'idle') {
-      setTimeout(() => {
-        if (this.operationStatus === status) this.operationStatus = 'idle';
-      }, duration);
-    }
-  }
-
   /** Component events */
 
   /**
@@ -270,9 +260,7 @@ export class UiText {
 
     // Clear error state on new attempts
     if (this.operationStatus === 'error' && !options?._isRevert) {
-      this.operationStatus = 'idle';
-      this.lastError = undefined;
-      this.connected = true;
+      StatusIndicator.applyStatus(this, 'idle');
     }
 
     // SIMPLE CASE: Just set value without operations
@@ -301,7 +289,7 @@ export class UiText {
       this.updateValue(value, prevValue);
     }
 
-    this.operationStatus = 'loading';
+    StatusIndicator.applyStatus(this, 'loading');
 
     try {
       // Execute the operation
@@ -312,7 +300,7 @@ export class UiText {
       }
 
       // Success
-      this.setStatusWithTimeout('success', 1200);
+      StatusIndicator.applyStatus(this, 'success');
 
       // Non-optimistic update
       if (!optimistic) {
@@ -322,8 +310,7 @@ export class UiText {
       return true;
     } catch (error) {
       // Error handling
-      this.operationStatus = 'error';
-      this.lastError = error?.message || String(error) || 'Operation failed';
+      StatusIndicator.applyStatus(this, 'error', error?.message || String(error) || 'Operation failed');
 
       // Revert optimistic changes
       if (optimistic && !options?._isRevert) {
@@ -338,8 +325,6 @@ export class UiText {
             autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 },
           });
         }, options.autoRetry.delay);
-      } else {
-        this.setStatusWithTimeout('idle', 3000); // Clear error after 3s
       }
 
       return false;
@@ -492,26 +477,24 @@ export class UiText {
 
     // Execute stored writeOperation if available
     if (this.storedWriteOperation) {
-      this.setStatusWithTimeout('loading');
+      StatusIndicator.applyStatus(this, 'loading');
       this.updateValue(newValue); // Optimistic update
 
       try {
         await this.storedWriteOperation(newValue);
-        this.setStatusWithTimeout('success');
+        StatusIndicator.applyStatus(this, 'success');
       } catch (error) {
         console.error('Write operation failed:', error);
-        this.operationStatus = 'error';
-        this.lastError = error?.message || 'Operation failed';
+        StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
         this.updateValue(prevValue!, newValue, false); // Revert, no event
-        this.setStatusWithTimeout('idle', 3000);
       }
     } else {
       // Simple value update without operations
       this.updateValue(newValue);
 
       if (this.showStatus) {
-        this.operationStatus = 'loading';
-        setTimeout(() => this.setStatusWithTimeout('success'), 100);
+        StatusIndicator.applyStatus(this, 'loading');
+        setTimeout(() => StatusIndicator.applyStatus(this, 'success'), 100);
       }
     }
   };
