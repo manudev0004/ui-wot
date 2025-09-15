@@ -74,6 +74,7 @@ export class UiText {
 
   /**
    * Color theme variant.
+   * TODO: Review - may be irrelevant for text components, consider removal
    */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
@@ -86,8 +87,9 @@ export class UiText {
   /**
    * Enable keyboard navigation for editable mode.
    * Default: true
+   * TODO: Review - may be irrelevant since text inputs have native keyboard support
    */
-  @Prop() keyboard: boolean = true;
+  // @Prop() keyboard: boolean = true;
 
   /**
    * Show last updated timestamp.
@@ -144,6 +146,23 @@ export class UiText {
    */
   @Prop() showLineNumbers: boolean = false;
 
+  /**
+   * Enable text area resizing (area and editable modes).
+   */
+  @Prop() resizable: boolean = true;
+
+  /**
+   * Debounce delay in milliseconds for editable mode updates (0 = disabled).
+   * When enabled, reduces API calls by only sending updates after user stops typing.
+   */
+  @Prop() debounceMs: number = 0;
+
+  /**
+   * Show save button for explicit updates (editable mode only).
+   * When true, changes are not sent until user clicks save.
+   */
+  @Prop() showSaveButton: boolean = false;
+
   /** Connection state for readonly mode */
   @Prop({ mutable: true }) connected: boolean = true;
 
@@ -170,8 +189,23 @@ export class UiText {
   /** Counter to trigger re-renders for timestamp updates - using state change to force re-render */
   @State() private timestampCounter: number = 0;
 
+  /** Temporary value for debounced editing */
+  @State() private tempValue: string = '';
+
+  /** Flag to track if there are unsaved changes */
+  @State() private hasUnsavedChanges: boolean = false;
+
   /** Stored write operation for user interaction */
   private storedWriteOperation?: (value: string) => Promise<any>;
+
+  /** Debounce timer reference */
+  private debounceTimer?: number;
+
+  /** ResizeObserver for dynamic line calculation */
+  private resizeObserver?: ResizeObserver;
+
+  /** Reference to the container element for dynamic sizing */
+  private containerRef?: HTMLElement;
 
   /** Helper method to update value and timestamps consistently */
   private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
@@ -434,11 +468,18 @@ export class UiText {
 
   componentWillLoad() {
     this.isInitialized = true;
+    this.tempValue = this.value;
     if (this.showLastUpdated) this.startTimestampUpdater();
+  }
+
+  componentDidLoad() {
+    this.setupResizeObserver();
   }
 
   disconnectedCallback() {
     this.stopTimestampUpdater();
+    this.cleanupDebounceTimer();
+    this.cleanupResizeObserver();
   }
 
   /** Private methods */
@@ -468,35 +509,115 @@ export class UiText {
     }
   }
 
-  private handleChange = async (event: Event): Promise<void> => {
-    if (this.mode !== 'editable' || this.readonly || this.disabled) return;
+  /** Dynamic line calculation based on container size */
+  private calculateDynamicLines(): number {
+    if (!this.containerRef) return this.minRows;
+    
+    const containerHeight = this.containerRef.clientHeight;
+    const lineHeight = 24; // ~1.5rem in pixels
+    const padding = 24; // Top and bottom padding
+    const availableHeight = Math.max(containerHeight - padding, lineHeight);
+    const calculatedLines = Math.floor(availableHeight / lineHeight);
+    
+    return Math.max(this.minRows, Math.min(calculatedLines, this.maxRows));
+  }
 
-    const target = event.target as HTMLInputElement | HTMLTextAreaElement;
-    const newValue = target.value;
+  /** Setup ResizeObserver for dynamic line calculation */
+  private setupResizeObserver() {
+    if (!window.ResizeObserver || this.mode !== 'area') return;
+    
+    this.resizeObserver = new ResizeObserver(() => {
+      // Force re-render by updating a state variable
+      this.timestampCounter = Date.now();
+    });
+    
+    if (this.containerRef) {
+      this.resizeObserver.observe(this.containerRef);
+    }
+  }
+
+  /** Cleanup ResizeObserver */
+  private cleanupResizeObserver() {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = undefined;
+    }
+  }
+
+  /** Debounce helper methods */
+  private cleanupDebounceTimer() {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = undefined;
+    }
+  }
+
+  private debouncedUpdate(value: string) {
+    this.cleanupDebounceTimer();
+    
+    this.debounceTimer = window.setTimeout(() => {
+      this.handleValueUpdate(value);
+    }, this.debounceMs);
+  }
+
+  private async handleValueUpdate(value: string) {
     const prevValue = this.value;
-
+    
     // Execute stored writeOperation if available
     if (this.storedWriteOperation) {
       StatusIndicator.applyStatus(this, 'loading');
-      this.updateValue(newValue); // Optimistic update
+      this.updateValue(value); // Optimistic update
 
       try {
-        await this.storedWriteOperation(newValue);
+        await this.storedWriteOperation(value);
         StatusIndicator.applyStatus(this, 'success');
+        this.hasUnsavedChanges = false;
       } catch (error) {
         console.error('Write operation failed:', error);
         StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
-        this.updateValue(prevValue!, newValue, false); // Revert, no event
+        this.updateValue(prevValue!, value, false); // Revert, no event
       }
     } else {
       // Simple value update without operations
-      this.updateValue(newValue);
+      this.updateValue(value);
+      this.hasUnsavedChanges = false;
 
       if (this.showStatus) {
         StatusIndicator.applyStatus(this, 'loading');
         setTimeout(() => StatusIndicator.applyStatus(this, 'success'), 100);
       }
     }
+  }
+
+  private handleChange = async (event: Event): Promise<void> => {
+    if (this.mode !== 'editable' || this.readonly || this.disabled) return;
+
+    const target = event.target as HTMLInputElement | HTMLTextAreaElement;
+    const newValue = target.value;
+    
+    // Update temp value immediately for UI responsiveness
+    this.tempValue = newValue;
+    this.hasUnsavedChanges = this.value !== newValue;
+
+    // Handle save button mode - don't auto-save
+    if (this.showSaveButton) {
+      return;
+    }
+
+    // Handle debounced updates
+    if (this.debounceMs > 0) {
+      this.debouncedUpdate(newValue);
+      return;
+    }
+
+    // Immediate update (original behavior)
+    await this.handleValueUpdate(newValue);
+  };
+
+  /** Handle save button click */
+  private handleSave = async (): Promise<void> => {
+    if (!this.hasUnsavedChanges) return;
+    await this.handleValueUpdate(this.tempValue);
   };
 
   private handleFocus = (): void => {
@@ -524,35 +645,31 @@ export class UiText {
 
   /** Styling helpers */
   private getBaseClasses(): string {
-    let classes = 'relative w-full transition-all duration-200 font-sans';
+    // Use inline-block for area+resizable so horizontal resize can change width
+    const widthClass = this.mode === 'area' && this.resizable ? 'inline-block' : 'w-full';
+    let classes = `relative ${widthClass} transition-all duration-200 font-sans`;
 
     // Variant-specific styling with CSS variables
     switch (this.variant) {
       case 'minimal':
         if (this.dark) {
           classes += ' border-b-2 border-gray-500 bg-transparent';
-          classes += ` focus-within:border-[${this.getActiveColor()}]`;
         } else {
           classes += ' border-b-2 border-gray-300 bg-transparent';
-          classes += ` focus-within:border-[${this.getActiveColor()}]`;
         }
         break;
       case 'outlined':
         if (this.dark) {
           classes += ' border-2 border-gray-600 bg-gray-800 text-white hover:border-gray-500';
-          classes += ` focus-within:border-[${this.getActiveColor()}]`;
         } else {
           classes += ' border-2 border-gray-300 bg-white text-gray-900 hover:border-gray-400';
-          classes += ` focus-within:border-[${this.getActiveColor()}]`;
         }
         break;
       case 'filled':
         if (this.dark) {
           classes += ' bg-gray-700 text-white border-2 border-gray-600';
-          classes += ` focus-within:border-[${this.getActiveColor()}]`;
         } else {
           classes += ' bg-gray-100 text-gray-900 border-2 border-gray-200';
-          classes += ` focus-within:border-[${this.getActiveColor()}]`;
         }
         break;
     }
@@ -567,26 +684,16 @@ export class UiText {
         break;
       case 'structured':
         classes += ' rounded-lg px-4 py-3 font-mono text-sm';
-        // Override background for structured mode to show it's code-like
-        if (this.dark) {
-          classes += ' !bg-gray-900 !border-gray-500';
-        } else {
-          classes += ' !bg-gray-50 !border-gray-400';
-        }
+        // Gentle code-like background (non-important so color prop can override border)
+        classes += this.dark ? ' bg-gray-900 border-gray-500' : ' bg-gray-50 border-gray-300';
         break;
       case 'unstructured':
         classes += ' rounded px-3 py-2 min-h-16';
-        // Simpler styling for unstructured
-        if (this.dark) {
-          classes += ' !bg-transparent !border-gray-700';
-        } else {
-          classes += ' !bg-transparent !border-gray-200';
-        }
+        // Simpler styling for unstructured (non-important)
+        classes += this.dark ? ' bg-transparent border-gray-700' : ' bg-transparent border-gray-200';
         break;
       case 'editable':
         classes += ' rounded-md px-3 py-2 min-h-10 cursor-text';
-        // Add focus ring for editable with CSS variables
-        classes += ` focus-within:ring-2 focus-within:ring-[${this.getActiveColor()}] focus-within:ring-opacity-50`;
         break;
     }
 
@@ -597,20 +704,20 @@ export class UiText {
     return classes;
   }
 
-  /** Get active color using CSS variables */
-  private getActiveColor(): string {
-    switch (this.color) {
-      case 'secondary':
-        return 'var(--color-secondary)';
-      case 'neutral':
-        return 'var(--color-neutral)';
-      default:
-        return 'var(--color-primary)';
-    }
+  // Removed getActiveColor (no longer used after moving to static Tailwind tokens)
+
+  /** Resolve color tokens from global CSS variables */
+  private getColorTokens() {
+    const map: Record<string, { base: string; light: string }> = {
+      primary: { base: 'var(--color-primary)', light: 'var(--color-primary-light)' },
+      secondary: { base: 'var(--color-secondary)', light: 'var(--color-secondary-light)' },
+      neutral: { base: 'var(--color-neutral)', light: 'var(--color-neutral-light)' },
+    };
+    return map[this.color] || map.primary;
   }
 
   private getInputClasses(): string {
-    let classes = 'w-full bg-transparent border-0 outline-none resize-none font-inherit';
+    let classes = 'w-full bg-transparent border-0 outline-none resize-none';
 
     if (this.mode === 'structured') {
       classes += ' font-mono text-sm';
@@ -630,11 +737,14 @@ export class UiText {
 
     const lines = content.split('\n');
     const lineNumberWidth = Math.max(2, String(lines.length).length);
+    const lineHeight = '1.5';
+    const numberFontClasses = isMonospace ? 'font-mono' : '';
+    const contentFontClasses = isMonospace ? 'font-mono text-sm' : '';
 
     return (
-      <div class="flex">
+      <div class="flex" style={{ lineHeight }}>
         {/* Line numbers column */}
-        <div class={`select-none border-r border-gray-300 pr-2 mr-3 text-xs ${isMonospace ? 'font-mono' : ''} ${this.dark ? 'text-gray-400 border-gray-600' : 'text-gray-500'}`}>
+        <div class={`select-none border-r border-gray-300 pr-2 mr-3 ${numberFontClasses} ${this.dark ? 'text-gray-400 border-gray-600' : 'text-gray-500'}`} style={{ lineHeight }}>
           {lines.map((_, index) => (
             <div key={index} class="text-right" style={{ minWidth: `${lineNumberWidth}ch` }}>
               {index + 1}
@@ -642,7 +752,7 @@ export class UiText {
           ))}
         </div>
         {/* Content column */}
-        <div class="flex-1">
+        <div class={`flex-1 ${contentFontClasses}`} style={{ whiteSpace: 'pre-wrap', lineHeight }}>
           {lines.map((line, index) => (
             <div key={index}>
               {line || '\u00A0'} {/* Non-breaking space for empty lines */}
@@ -655,24 +765,28 @@ export class UiText {
 
   private renderContent(): any {
     const inputClasses = this.getInputClasses();
+    const dynamicRows = this.mode === 'area' ? this.calculateDynamicLines() : this.minRows;
+    const currentValue = this.showSaveButton ? this.tempValue : this.value;
 
     // For editable mode, determine if we need single line or multi-line
     if (this.mode === 'editable') {
-      const isMultiline = this.value.includes('\n') || this.value.length > 60;
+      const isMultiline = currentValue.includes('\n') || currentValue.length > 60;
 
       if (isMultiline) {
         return (
           <textarea
             class={inputClasses}
-            value={this.value}
+            value={currentValue}
             placeholder={this.placeholder}
             disabled={this.disabled || this.readonly}
             onInput={this.handleChange}
             onFocus={this.handleFocus}
             onBlur={this.handleBlur}
-            rows={this.minRows}
+            rows={dynamicRows}
             maxLength={this.maxLength}
-            style={{ minHeight: `${this.minRows * 1.5}rem`, maxHeight: `${this.maxRows * 1.5}rem` }}
+            style={{ 
+              height: '100%'
+            }}
           ></textarea>
         );
       } else {
@@ -680,7 +794,7 @@ export class UiText {
           <input
             type="text"
             class={inputClasses}
-            value={this.value}
+            value={currentValue}
             placeholder={this.placeholder}
             disabled={this.disabled || this.readonly}
             onInput={this.handleChange}
@@ -698,10 +812,17 @@ export class UiText {
         return <span class="block">{this.value || this.placeholder}</span>;
 
       case 'area':
-        if (this.showLineNumbers) {
-          return <div class="whitespace-pre-wrap break-words">{this.renderWithLineNumbers(this.value || this.placeholder || '')}</div>;
-        }
-        return <div class="whitespace-pre-wrap break-words">{this.value || this.placeholder}</div>;
+        return (
+          <div 
+            class="whitespace-pre-wrap break-words"
+            style={{ height: '100%' }}
+          >
+            {this.showLineNumbers ? 
+              this.renderWithLineNumbers(this.value || this.placeholder || '') : 
+              (this.value || this.placeholder)
+            }
+          </div>
+        );
 
       case 'structured':
         if (this.showLineNumbers) {
@@ -717,6 +838,27 @@ export class UiText {
 
   render() {
     const baseClasses = this.getBaseClasses();
+    // Apply resizable behavior to the bordered container so the whole box (including border) resizes
+    const containerStyle: any = {};
+    if (this.mode === 'area' && this.resizable) {
+      containerStyle.resize = 'both';
+      containerStyle.overflow = 'auto';
+      containerStyle.minHeight = `${this.minRows * 1.5}rem`;
+      containerStyle.maxHeight = `${this.maxRows * 1.5}rem`;
+      containerStyle.minWidth = '240px';
+      containerStyle.maxWidth = '100%';
+    }
+
+    // Apply color tokens to border/background based on variant
+    const { base, light } = this.getColorTokens();
+    // Expose a CSS variable for focus styles
+    (containerStyle as any)['--ui-accent'] = base;
+    if (this.variant === 'outlined' || this.variant === 'minimal') {
+      containerStyle.borderColor = base;
+    } else if (this.variant === 'filled') {
+      containerStyle.backgroundColor = light;
+      containerStyle.borderColor = base;
+    }
 
     return (
       <div class="w-full">
@@ -724,17 +866,43 @@ export class UiText {
         {this.label && <label class={`block text-sm font-medium mb-2 ${this.dark ? 'text-gray-200' : 'text-gray-700'}`}>{this.label}</label>}
 
         {/* Main container with status badge positioning similar to ui-toggle */}
-        <div class="relative inline-flex items-center">
-          <div class={baseClasses}>{this.renderContent()}</div>
+        <div class="relative inline-flex items-center w-full">
+          <div 
+            class={`ui-text-container ${baseClasses}`}
+            style={containerStyle}
+            ref={(el) => this.containerRef = el}
+          >
+            {this.renderContent()}
+          </div>
 
           {/* Status badge - positioned to the right center after the text border, similar to other components */}
           <div class="ml-2 flex-shrink-0">{this.renderStatusBadge()}</div>
         </div>
 
+        {/* Save button for explicit save mode */}
+        {this.mode === 'editable' && this.showSaveButton && (
+          <div class="mt-2 flex gap-2">
+            <button
+              class={`px-3 py-1 text-sm rounded transition-colors ${
+                this.hasUnsavedChanges 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+              disabled={!this.hasUnsavedChanges}
+              onClick={this.handleSave}
+            >
+              Save
+            </button>
+            {this.hasUnsavedChanges && (
+              <span class="text-xs text-orange-500 self-center">Unsaved changes</span>
+            )}
+          </div>
+        )}
+
         {/* Character count */}
         {this.mode === 'editable' && this.showCharCount && (
           <div class={`text-xs mt-1 text-right ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>
-            {this.value.length}
+            {(this.showSaveButton ? this.tempValue : this.value).length}
             {this.maxLength && ` / ${this.maxLength}`}
           </div>
         )}
