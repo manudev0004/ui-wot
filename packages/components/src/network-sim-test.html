@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ui-toggle</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 780px;
+        margin: 32px auto;
+        padding: 16px;
+        background: #f8fafc;
+      }
+      .card {
+        background: #fff;
+        padding: 18px 20px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      }
+      .row {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        margin: 12px 0;
+      }
+      .meta {
+        color: #6b7280;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>UI-Toggle Demo with Network Recovery Test</h1>
+
+      <div class="row">
+        <div>
+          <h3>🚀 Initial Setup Choice</h3>
+          <div id="initial-choice" style="background: #e0f2fe; padding: 16px; border-radius: 8px; margin: 8px 0; border-left: 4px solid #0284c7;">
+            <p style="margin: 0 0 12px 0; font-weight: 600; color: #0c4a6e;">Choose your test scenario before component initialization:</p>
+            <button id="start-working-setup" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-right: 12px; cursor: pointer; font-weight: 600;">✅ Start with Working Setup</button>
+            <button id="start-broken-setup" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">❌ Start with Broken Setup</button>
+            <div style="margin-top: 10px; font-size: 13px; color: #475569;">
+              <strong>Working:</strong> TD fetch succeeds, writeOperation stored, normal network testing.<br>
+              <strong>Broken:</strong> TD fetch fails, but writeOperation still stored for retries.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" id="toggle-section" style="display: none;">
+        <div>
+          <h3>Controller (Read/Write)</h3>
+          <ui-toggle id="readwrite-toggle" label="WoT Device" show-last-updated show-status></ui-toggle>
+        </div>
+      </div>
+
+      <div class="row" style="display: none;" id="controls-section">
+        <div>
+          <h3>Network Recovery Test</h3>
+          <div style="background: #f3f4f6; padding: 12px; border-radius: 8px; margin: 8px 0;">
+            <div style="margin-bottom: 12px;">
+              <strong>Setup Test Controls:</strong><br>
+              <button id="simulate-td-success" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin-right: 8px; cursor: pointer;">✅ Normal Setup (TD fetch succeeds)</button>
+              <button id="simulate-td-failure" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">❌ Broken Setup (TD fetch fails)</button>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <strong>Write Operation Test Controls:</strong><br>
+              <button id="reset-failures" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin-right: 8px; cursor: pointer;">Reset Failure Count</button>
+              <button id="force-success" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin-right: 8px; cursor: pointer;">Force Next Success</button>
+              <button id="force-failure" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Force Next Failure</button>
+            </div>
+            <div style="margin-top: 8px; font-size: 14px;">
+              <strong>Setup Status:</strong> <span id="setup-status">Ready to test</span><br>
+              <strong>Network Test Status:</strong> <span id="test-status">First 2 writes will fail, 3rd will succeed</span><br>
+              <strong>Failure Count:</strong> <span id="failure-count">0</span> / 2
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h3>Error Simulation</h3>
+          <!-- <ui-toggle id="error-toggle" label="Error Demo" variant="neon" show-status></ui-toggle> -->
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
+    <script type="module" src="./build/ui-wot-components.esm.js"></script>
+
+    <script>
+      // Network test state
+      let networkFailureCount = 0;
+      let forceNextResult = null; // 'success' | 'failure' | null
+      let originalThing = null; // Store the actual thing for real operations
+      let simulateTdFailure = false; // New: simulate TD fetch failure
+
+      function updateSetupStatus(message, color = '#000') {
+        const statusEl = document.getElementById('setup-status');
+        statusEl.textContent = message;
+        statusEl.style.color = color;
+      }
+
+      function updateTestStatus() {
+        document.getElementById('failure-count').textContent = networkFailureCount;
+        const statusEl = document.getElementById('test-status');
+        
+        if (forceNextResult === 'success') {
+          statusEl.textContent = 'Next operation forced to succeed';
+          statusEl.style.color = '#10b981';
+        } else if (forceNextResult === 'failure') {
+          statusEl.textContent = 'Next operation forced to fail';
+          statusEl.style.color = '#ef4444';
+        } else if (networkFailureCount < 2) {
+          statusEl.textContent = `Next ${2 - networkFailureCount} writes will fail, then succeed`;
+          statusEl.style.color = '#ef4444';
+        } else {
+          statusEl.textContent = 'Network recovered - operations will succeed';
+          statusEl.style.color = '#10b981';
+        }
+      }
+
+      // Enhanced write operation that simulates network failures
+      async function testableWriteOperation(value) {
+        console.log(`🧪 Network Test: Write attempt ${networkFailureCount + 1}, trying to set ${value}`);
+        
+        // Check for forced result
+        if (forceNextResult === 'success') {
+          forceNextResult = null;
+          updateTestStatus();
+          console.log(`✅ Forced success: Writing ${value} to real device...`);
+          if (originalThing) {
+            await originalThing.writeProperty('bool', value);
+            console.log(`✅ Real device write successful: ${value}`);
+          }
+          return;
+        }
+        
+        if (forceNextResult === 'failure') {
+          forceNextResult = null;
+          networkFailureCount++;
+          updateTestStatus();
+          console.log(`❌ Forced failure: Write ${value} failed`);
+          throw new Error('Forced network failure');
+        }
+        
+        // Normal test logic - fail first 2 attempts
+        if (networkFailureCount < 2) {
+          networkFailureCount++;
+          updateTestStatus();
+          console.log(`❌ Simulated network failure ${networkFailureCount}/2`);
+          throw new Error(`Network timeout (attempt ${networkFailureCount})`);
+        } else {
+          console.log(`✅ Network recovered: Writing ${value} to real device...`);
+          if (originalThing) {
+            await originalThing.writeProperty('bool', value);
+            console.log(`✅ Real device write successful: ${value}`);
+          } else {
+            console.log(`✅ Simulated write successful: ${value} (no real device)`);
+          }
+          return;
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', async () => {
+        await customElements.whenDefined('ui-toggle');
+
+        // Get components by ids
+        const writeToggle = document.getElementById('readwrite-toggle');
+        const readToggle = document.getElementById('readonly-toggle');
+        const errorToggle = document.getElementById('error-toggle');
+
+        // Initial setup choice handlers
+        document.getElementById('start-working-setup').addEventListener('click', async () => {
+          console.log('🚀 User chose: Working Setup');
+          simulateTdFailure = false;
+          await initializeWithChoice();
+        });
+        
+        document.getElementById('start-broken-setup').addEventListener('click', async () => {
+          console.log('🚀 User chose: Broken Setup');
+          simulateTdFailure = true;
+          await initializeWithChoice();
+        });
+
+        async function initializeWithChoice() {
+          // Hide choice section and show the toggle and controls
+          document.getElementById('initial-choice').style.display = 'none';
+          document.getElementById('toggle-section').style.display = 'block';
+          document.getElementById('controls-section').style.display = 'block';
+          
+          // Wait for toggle to be defined since it's now visible
+          await customElements.whenDefined('ui-toggle');
+          
+          // Run initial setup based on choice
+          updateSetupStatus('Setting up with chosen mode...', '#f59e0b');
+          await setupToggle();
+          
+          console.log('🧪 Network Recovery Test Ready!');
+          console.log('📋 Instructions:');
+          console.log('✅ Working Setup: TD fetch succeeds, toggle works with network failure simulation');
+          console.log('❌ Broken Setup: TD fetch fails BUT writeOperation still stored - retries work!');
+          console.log('1. Click the toggle - writeOperation is ALWAYS available for retries');
+          console.log('2. Use setup controls to switch between normal and broken TD scenarios');
+          console.log('3. Use test controls to simulate different network failure scenarios');
+          console.log('4. Component should handle failures gracefully and ALWAYS allow retries');
+        }
+
+        // Set up test controls (only after initialization)
+        document.getElementById('reset-failures').addEventListener('click', () => {
+          networkFailureCount = 0;
+          forceNextResult = null;
+          updateTestStatus();
+          console.log('🔄 Network test: Reset failure count to 0');
+        });
+        
+        document.getElementById('force-success').addEventListener('click', () => {
+          forceNextResult = 'success';
+          updateTestStatus();
+          console.log('🎯 Network test: Next operation will be forced to succeed');
+        });
+        
+        document.getElementById('force-failure').addEventListener('click', () => {
+          forceNextResult = 'failure';
+          updateTestStatus();
+          console.log('🎯 Network test: Next operation will be forced to fail');
+        });
+
+        // Setup test controls
+        document.getElementById('simulate-td-success').addEventListener('click', async () => {
+          simulateTdFailure = false;
+          updateSetupStatus('Testing normal setup...', '#f59e0b');
+          await setupToggle();
+        });
+        
+        document.getElementById('simulate-td-failure').addEventListener('click', async () => {
+          simulateTdFailure = true;
+          updateSetupStatus('Testing broken setup...', '#f59e0b');
+          await setupToggle();
+        });
+
+        // Setup toggle function
+        async function setupToggle() {
+          // Reset state
+          networkFailureCount = 0;
+          forceNextResult = null;
+          originalThing = null;
+          updateTestStatus();
+
+          // Setup WoT connection for real device interaction
+          while (!window.WoT) await new Promise(r => setTimeout(r, 100));
+          const servient = new window.WoT.Core.Servient();
+          servient.addClientFactory(new window.WoT.Http.HttpClientFactory());
+          const wot = await servient.start();
+          console.log('td-demo: WoT started', wot);
+          
+          let thing;
+          let initialValue = false; // default value
+          
+          try {
+            // Simulate TD failure if requested
+            if (simulateTdFailure) {
+              throw new Error('Simulated TD fetch failure for testing');
+            }
+            
+            const resp = await fetch('http://plugfest.thingweb.io/http-data-schema-thing');
+            if (!resp.ok) throw new Error('TD fetch failed: ' + resp.status);
+            const td = await resp.json();
+            thing = await wot.consume(td);
+            originalThing = thing; // Store for real operations
+            console.log('td-demo: Consumed TD and got thing', thing);
+            
+            // Read initial value from device
+            const raw = await (await thing.readProperty('bool')).value();
+            initialValue = Boolean(raw);
+            console.log('td-demo: read initial value ->', raw, 'coerced ->', initialValue);
+            
+          } catch (err) {
+            console.error('td-demo: TD setup failed:', err);
+            console.log('td-demo: Will still store writeOperation to allow retries when network recovers');
+            originalThing = null; // No real device available
+            
+            // Failed setup but we still want to store the writeOperation for retries
+            updateSetupStatus(`❌ Setup failed: ${err.message} - but writeOperation stored for retries`, '#f59e0b');
+          }
+          
+          // ALWAYS set up the toggle with writeOperation - even if TD setup failed
+          // This ensures the writeOperation is stored and retries are possible
+          console.log('td-demo: setting up writeToggle with network testing, initial value', initialValue);
+          console.log('td-demo: testableWriteOperation function:', testableWriteOperation);
+          const result = await writeToggle.setValue(initialValue, {
+            writeOperation: testableWriteOperation
+          });
+          console.log('td-demo: setValue result:', result);
+          console.log('td-demo: writeToggle setup complete - writeOperation stored regardless of TD status');
+          
+          // Update status based on whether TD setup succeeded or failed
+          if (originalThing) {
+            updateSetupStatus('✅ Setup successful - TD working, writeOperation stored', '#10b981');
+          } else {
+            updateSetupStatus('⚠️ TD failed but writeOperation stored - retries possible', '#f59e0b');
+          }
+          
+          // Listen for toggle changes to log test results (set up once per initialization)
+          writeToggle.addEventListener('valueMsg', (event) => {
+            console.log(`🔄 Toggle changed: ${event.detail.prevVal} → ${event.detail.newVal}`);
+          });
+        }
+
+        // Show initial setup choice - no automatic initialization
+        updateSetupStatus('Please choose your initial setup scenario above', '#6b7280');
+        updateTestStatus();
+      });
+    </script>
+  </body>
+</html>

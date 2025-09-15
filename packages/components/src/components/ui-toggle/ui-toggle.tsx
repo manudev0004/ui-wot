@@ -163,8 +163,7 @@ export class UiToggle {
 
     // Clear any existing error state
     if (this.operationStatus === 'error' && !options?._isRevert) {
-      this.operationStatus = 'idle';
-      this.lastError = undefined;
+      StatusIndicator.applyStatus(this, 'idle');
       this.connected = true;
     }
 
@@ -177,8 +176,17 @@ export class UiToggle {
     // If there is writeOperation store operation for future user interactions
     if (options.writeOperation && !options._isRevert) {
       this.storedWriteOperation = options.writeOperation;
-      this.updateValue(value, prevValue, false);
-      return true;
+      StatusIndicator.applyStatus(this, 'loading');
+
+      try {
+        // Update the value optimistically
+        this.updateValue(value, prevValue, false);
+        StatusIndicator.applyStatus(this, 'success');
+        return true;
+      } catch (error) {
+        StatusIndicator.applyStatus(this, 'error', error?.message || 'Setup failed');
+        return false;
+      }
     }
 
     // Execute operation immediately if no options selected
@@ -305,16 +313,6 @@ export class UiToggle {
     }
   }
 
-  /** Sets different operation status with automatic timeout to return to its idle state */
-  private setStatusWithTimeout(status: OperationStatus, duration: number = 1000): void {
-    this.operationStatus = status;
-    if (status !== 'idle') {
-      setTimeout(() => {
-        if (this.operationStatus === status) this.operationStatus = 'idle';
-      }, duration);
-    }
-  }
-
   /** Executes stored operations with error handling and retry logic */
   private async executeOperation(value: boolean, prevValue: boolean, options: any): Promise<boolean> {
     const optimistic = options?.optimistic !== false;
@@ -324,7 +322,7 @@ export class UiToggle {
       this.updateValue(value, prevValue);
     }
 
-    this.operationStatus = 'loading';
+    StatusIndicator.applyStatus(this, 'loading');
 
     try {
       // Execute the API call
@@ -334,7 +332,7 @@ export class UiToggle {
         await options.readOperation();
       }
 
-      this.setStatusWithTimeout('success', 1200); // Success status for 1.2 seconds
+      StatusIndicator.applyStatus(this, 'success');
 
       // Update value after successful operation, (if optimistic = false)
       if (!optimistic) {
@@ -343,8 +341,7 @@ export class UiToggle {
 
       return true;
     } catch (error) {
-      this.operationStatus = 'error';
-      this.lastError = error?.message || String(error) || 'Operation failed';
+      StatusIndicator.applyStatus(this, 'error', error?.message || String(error) || 'Operation failed');
 
       // Revert optimistic changes if operation is not successful or has an error
       if (optimistic && !options?._isRevert) {
@@ -359,8 +356,6 @@ export class UiToggle {
             autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 },
           });
         }, options.autoRetry.delay);
-      } else {
-        this.setStatusWithTimeout('idle', 3000); // Clear error after 3 seconds
       }
 
       return false;
@@ -386,29 +381,21 @@ export class UiToggle {
     const newValue = !this.isActive;
     const prevValue = this.isActive;
 
+    StatusIndicator.applyStatus(this, 'loading');
+
     // Execute stored operation if available
     if (this.storedWriteOperation) {
-      this.operationStatus = 'loading';
       this.updateValue(newValue, prevValue);
 
       try {
         await this.storedWriteOperation(newValue);
-        this.setStatusWithTimeout('success');
+        StatusIndicator.applyStatus(this, 'success');
       } catch (error) {
-        console.error('Write operation failed:', error);
-        this.operationStatus = 'error';
-        this.lastError = error?.message || 'Operation failed';
+        StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
         this.updateValue(prevValue, newValue, false);
-        this.setStatusWithTimeout('idle', 3000); // Clear error after 3 seconds
       }
     } else {
-      // Simple toggle without device operations
-      this.updateValue(newValue, prevValue);
-
-      if (this.showStatus) {
-        this.operationStatus = 'loading';
-        setTimeout(() => this.setStatusWithTimeout('success'), 100); // Quick success feedback
-      }
+      StatusIndicator.applyStatus(this, 'error', 'No operation configured - setup may have failed');
     }
   };
 
