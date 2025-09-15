@@ -207,10 +207,8 @@ export class UiText {
 
   /** Rendered line count after wrapping (for line numbers) */
   @State() private renderedLineCount: number = 0;
-
-  /** Fold state for structured JSON (paths of folded nodes) */
-  private foldedPaths: Set<string> = new Set();
-  @State() private foldingTick: number = 0;
+  /** Fold state map: path -> collapsed */
+  @State() private collapsedPaths: { [path: string]: boolean } = {};
 
   /** Structured mode expand/collapse */
   // replaced with per-node folding
@@ -771,33 +769,46 @@ export class UiText {
     return classes;
   }
 
-  private renderWithLineNumbers(content: any, isMonospace: boolean = false, fallbackText?: string): any {
+  private renderWithLineNumbers(
+    content: any,
+    isMonospace: boolean = false,
+    fallbackText?: string,
+    fold?: { collapsed: boolean; toggle: () => void } | null,
+    measuredCount?: number,
+  ): any {
     if (!this.showLineNumbers) return content;
 
-    // Fallback in case measurement not ready
     const basis = typeof content === 'string' ? content : fallbackText || '';
-    const fallbackCount = basis ? (basis.match(/\n/g) || []).length + 1 : 1;
-    const total = this.renderedLineCount || fallbackCount;
+    const splitCount = basis ? basis.split(/\n/).length : 1;
+    const total = measuredCount && measuredCount > splitCount ? measuredCount : splitCount;
     const numberFontClasses = isMonospace ? 'font-mono' : '';
     const contentFontClasses = isMonospace ? 'font-mono text-sm' : '';
-
-    // Fix width to avoid feedback loop increasing wraps when count grows
-    const lineNumberWidth = 4;
+    const lineNumberWidth = 4; // fixed gutter width
 
     return (
       <div class="flex leading-6">
-        {/* Line numbers column */}
         <div
           class={`select-none border-r pr-2 mr-3 ${numberFontClasses} ${this.dark ? 'text-gray-400 border-gray-600' : 'text-gray-500 border-gray-300'}`}
           style={{ width: `${lineNumberWidth}ch` }}
         >
           {Array.from({ length: total }).map((_, idx) => (
-            <div key={idx} class="text-right">
-              {idx + 1}
+            <div key={idx} class="flex items-center justify-end gap-1">
+              {fold && idx === 0 && (
+                <button
+                  type="button"
+                  onClick={fold.toggle}
+                  class={`w-4 h-4 flex items-center justify-center rounded text-xs border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                    this.dark ? 'text-gray-300' : 'text-gray-600'
+                  }`}
+                  tabindex="-1"
+                >
+                  {fold.collapsed ? '+' : '−'}
+                </button>
+              )}
+              <span>{idx + 1}</span>
             </div>
           ))}
         </div>
-        {/* Content column */}
         <div class={`flex-1 ${contentFontClasses}`}>
           <div class="whitespace-pre-wrap break-words" ref={el => (this.contentMeasureRef = el as HTMLElement)}>
             {content}
@@ -808,16 +819,19 @@ export class UiText {
   }
 
   /** Folding helpers */
-  private isFolded(path: string): boolean {
-    return this.foldedPaths.has(path);
+  private isCollapsed(path: string): boolean {
+    return !!this.collapsedPaths[path];
   }
 
   private toggleFold(path: string): void {
-    const next = new Set(this.foldedPaths);
-    if (next.has(path)) next.delete(path);
-    else next.add(path);
-    this.foldedPaths = next;
-    this.foldingTick++;
+    const current = this.collapsedPaths[path];
+    const updated = { ...this.collapsedPaths };
+    if (current) {
+      delete updated[path];
+    } else {
+      updated[path] = true;
+    }
+    this.collapsedPaths = updated;
     this.scheduleLineCountUpdate();
   }
 
@@ -845,98 +859,177 @@ export class UiText {
     return this.span('text-purple-600 dark:text-purple-400', String(v));
   }
 
-  private renderJsonValue(value: any, path: string, indent: number, isLast: boolean): any {
-    const pieces: any[] = [];
-    const indentText = this.indentStr(indent);
+  /** Build structured JSON into discrete visible lines with folding metadata */
+  private buildJsonLines(value: any): { nodes: any[]; path: string; foldable: boolean; folded: boolean; indent: number }[] {
+    const lines: { nodes: any[]; path: string; foldable: boolean; folded: boolean; indent: number }[] = [];
 
-    const pushLine = (nodes: any[]) => {
-      pieces.push(<>{nodes}</>);
-      pieces.push('\n');
+    const walk = (val: any, path: string, indent: number, isLast: boolean) => {
+      const indentText = this.indentStr(indent);
+      const folded = this.isCollapsed(path);
+      const isArray = Array.isArray(val);
+      const isObj = !isArray && typeof val === 'object' && val !== null;
+      // foldable determined contextually (isArray/isObj) when pushing lines
+
+      if (isArray) {
+        if (folded) {
+          lines.push({
+            nodes: [indentText, '[...]', isLast ? '' : ','],
+            path,
+            foldable: true,
+            folded: true,
+            indent,
+          });
+          return;
+        }
+        // Opening line
+        lines.push({ nodes: [indentText, '['], path, foldable: true, folded: false, indent });
+        for (let i = 0; i < val.length; i++) {
+          const child = val[i];
+          const childPath = path + '[' + i + ']';
+          const last = i === val.length - 1;
+          if (typeof child === 'object' && child !== null) {
+            walk(child, childPath, indent + 1, last);
+          } else {
+            const childIndent = this.indentStr(indent + 1);
+            const nodes: any[] = [childIndent];
+            if (typeof child === 'string') nodes.push(this.fmtString(child));
+            else if (typeof child === 'number') nodes.push(this.fmtNumber(child));
+            else if (typeof child === 'boolean') nodes.push(this.fmtBoolNull(child));
+            else if (child === null) nodes.push(this.fmtBoolNull(null));
+            else nodes.push(String(child));
+            nodes.push(last ? '' : ',');
+            lines.push({ nodes, path: childPath, foldable: false, folded: false, indent: indent + 1 });
+          }
+        }
+        lines.push({ nodes: [indentText, ']' + (isLast ? '' : ',')], path: path + '.__close', foldable: false, folded: false, indent });
+        return;
+      }
+
+      if (isObj) {
+        if (folded) {
+          lines.push({
+            nodes: [indentText, '{...}', isLast ? '' : ','],
+            path,
+            foldable: true,
+            folded: true,
+            indent,
+          });
+          return;
+        }
+        lines.push({ nodes: [indentText, '{'], path, foldable: true, folded: false, indent });
+        const entries = Object.entries(val);
+        for (let i = 0; i < entries.length; i++) {
+          const [k, v] = entries[i];
+          const last = i === entries.length - 1;
+          const childPath = path + '.' + k;
+          if (typeof v === 'object' && v !== null) {
+            // key line: render key + recurse value lines
+            // Represent key line merged with first line of child if child is folded
+            // We'll push a line for key + (if folded) summary, else let recursion handle
+            if (this.isCollapsed(childPath)) {
+              const childIndent = this.indentStr(indent + 1);
+              const nodes: any[] = [childIndent, this.fmtKey(k), ': '];
+              // Determine placeholder
+              const isChildArray = Array.isArray(v);
+              nodes.push(isChildArray ? '[...]' : '{...}');
+              nodes.push(last ? '' : ',');
+              lines.push({ nodes, path: childPath, foldable: true, folded: true, indent: indent + 1 });
+            } else {
+              // Key opening brace line
+              const childIndent = this.indentStr(indent + 1);
+              const openToken = Array.isArray(v) ? '[' : '{';
+              lines.push({ nodes: [childIndent, this.fmtKey(k), ': ', openToken], path: childPath, foldable: true, folded: false, indent: indent + 1 });
+              walk(v, childPath, indent + 1, last); // Child will add its internal lines including closing
+            }
+          } else {
+            const childIndent = this.indentStr(indent + 1);
+            const nodes: any[] = [childIndent, this.fmtKey(k), ': '];
+            if (typeof v === 'string') nodes.push(this.fmtString(v));
+            else if (typeof v === 'number') nodes.push(this.fmtNumber(v));
+            else if (typeof v === 'boolean') nodes.push(this.fmtBoolNull(v));
+            else if (v === null) nodes.push(this.fmtBoolNull(null));
+            else nodes.push(String(v));
+            nodes.push(last ? '' : ',');
+            lines.push({ nodes, path: childPath, foldable: false, folded: false, indent: indent + 1 });
+          }
+        }
+        lines.push({ nodes: [indentText, '}' + (isLast ? '' : ',')], path: path + '.__close', foldable: false, folded: false, indent });
+        return;
+      }
+
+      // Primitive root value
+      const nodes: any[] = [indentText];
+      if (typeof val === 'string') nodes.push(this.fmtString(val));
+      else if (typeof val === 'number') nodes.push(this.fmtNumber(val));
+      else if (typeof val === 'boolean') nodes.push(this.fmtBoolNull(val));
+      else if (val === null) nodes.push(this.fmtBoolNull(null));
+      else nodes.push(String(val));
+      lines.push({ nodes, path, foldable: false, folded: false, indent });
     };
 
-    const toggle = (folded: boolean) => (
-      <button class="inline-block text-xs mr-1 opacity-80 hover:opacity-100 select-none" onClick={() => this.toggleFold(path)} aria-label={folded ? 'Expand' : 'Collapse'}>
-        {folded ? '+' : '−'}
-      </button>
+    walk(value, 'root', 0, true);
+    return lines;
+  }
+
+  private renderStructuredWithLineNumbers(lines: { nodes: any[]; path: string; foldable: boolean; folded: boolean; indent: number }[]): any {
+    if (!this.showLineNumbers) {
+      return (
+        <pre class="whitespace-pre-wrap break-words font-mono text-sm m-0 leading-6">
+          {lines.map((l, idx) => (
+            <span key={l.path + '_' + idx}>
+              {l.nodes}
+              {idx < lines.length - 1 ? '\n' : ''}
+            </span>
+          ))}
+        </pre>
+      );
+    }
+
+    const numberFontClasses = 'font-mono';
+    const contentFontClasses = 'font-mono text-sm';
+    const lineNumberWidth = 4; // ch units
+
+    return (
+      <div class="flex leading-6">
+        <div
+          class={`select-none border-r pr-2 mr-3 ${numberFontClasses} ${this.dark ? 'text-gray-400 border-gray-600' : 'text-gray-500 border-gray-300'}`}
+          style={{ width: `${lineNumberWidth}ch` }}
+        >
+          {lines.map((line, idx) => {
+            const showToggle = line.foldable && !line.path.endsWith('.__close');
+            const folded = line.folded;
+            return (
+              <div key={line.path + '_' + idx} class="flex items-center justify-end gap-1">
+                <span>{idx + 1}</span>
+                {showToggle && (
+                  <button
+                    type="button"
+                    onClick={() => this.toggleFold(line.path)}
+                    class={`w-4 h-4 flex items-center justify-center rounded text-xs border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                      this.dark ? 'text-gray-300' : 'text-gray-600'
+                    }`}
+                    tabindex="-1"
+                    aria-label={folded ? 'Expand' : 'Collapse'}
+                  >
+                    {folded ? '+' : '−'}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div class={`flex-1 ${contentFontClasses}`}>
+          <pre class="whitespace-pre-wrap break-words font-mono text-sm m-0 leading-6">
+            {lines.map((l, idx) => (
+              <span key={l.path + '_' + idx}>
+                {l.nodes}
+                {idx < lines.length - 1 ? '\n' : ''}
+              </span>
+            ))}
+          </pre>
+        </div>
+      </div>
     );
-
-    if (Array.isArray(value)) {
-      const folded = this.isFolded(path);
-      if (folded) {
-        pushLine([indentText, toggle(true), '[...]', isLast ? '' : ',']);
-        return pieces;
-      }
-      pushLine([indentText, toggle(false), '[']);
-      const len = value.length;
-      for (let i = 0; i < len; i++) {
-        const childPath = path + '[' + i + ']';
-        const child = value[i];
-        const last = i === len - 1;
-        if (typeof child === 'object' && child !== null) {
-          pieces.push(this.renderJsonValue(child, childPath, indent + 1, last));
-        } else {
-          const lineNodes: any[] = [this.indentStr(indent + 1)];
-          if (typeof child === 'string') lineNodes.push(this.fmtString(child));
-          else if (typeof child === 'number') lineNodes.push(this.fmtNumber(child));
-          else if (typeof child === 'boolean') lineNodes.push(this.fmtBoolNull(child));
-          else if (child === null) lineNodes.push(this.fmtBoolNull(null));
-          else lineNodes.push(String(child));
-          lineNodes.push(last ? '' : ',');
-          pushLine(lineNodes);
-        }
-      }
-      pushLine([indentText, ']' + (isLast ? '' : ',')]);
-      return pieces;
-    }
-
-    if (typeof value === 'object' && value !== null) {
-      const folded = this.isFolded(path);
-      if (folded) {
-        pushLine([indentText, toggle(true), '{...}', isLast ? '' : ',']);
-        return pieces;
-      }
-      pushLine([indentText, toggle(false), '{']);
-      const entries = Object.entries(value);
-      const len = entries.length;
-      for (let i = 0; i < len; i++) {
-        const [k, v] = entries[i];
-        const childPath = path + '.' + k;
-        const last = i === len - 1;
-        if (typeof v === 'object' && v !== null) {
-          // key line with nested structure rendered by recursion
-          pieces.push(
-            <>
-              {this.indentStr(indent + 1)}
-              {this.fmtKey(k)}
-              {': '}
-            </>,
-          );
-          pieces.push(this.renderJsonValue(v, childPath, indent + 1, last));
-        } else {
-          const lineNodes: any[] = [this.indentStr(indent + 1), this.fmtKey(k), ': '];
-          if (typeof v === 'string') lineNodes.push(this.fmtString(v));
-          else if (typeof v === 'number') lineNodes.push(this.fmtNumber(v));
-          else if (typeof v === 'boolean') lineNodes.push(this.fmtBoolNull(v));
-          else if (v === null) lineNodes.push(this.fmtBoolNull(null));
-          else lineNodes.push(String(v));
-          lineNodes.push(last ? '' : ',');
-          pushLine(lineNodes);
-        }
-      }
-      pushLine([indentText, '}' + (isLast ? '' : ',')]);
-      return pieces;
-    }
-
-    // primitives
-    const lineNodes: any[] = [indentText];
-    if (typeof value === 'string') lineNodes.push(this.fmtString(value));
-    else if (typeof value === 'number') lineNodes.push(this.fmtNumber(value));
-    else if (typeof value === 'boolean') lineNodes.push(this.fmtBoolNull(value));
-    else if (value === null) lineNodes.push(this.fmtBoolNull(null));
-    else lineNodes.push(String(value));
-    lineNodes.push(isLast ? '' : ',');
-    pushLine(lineNodes);
-    return pieces;
   }
 
   private renderContent(): any {
@@ -975,7 +1068,7 @@ export class UiText {
       case 'area': {
         const contentText = this.value || this.placeholder || '';
         if (this.showLineNumbers) {
-          return this.renderWithLineNumbers(contentText, false);
+          return this.renderWithLineNumbers(contentText, false, contentText, null, this.renderedLineCount);
         }
         return (
           <div class="whitespace-pre-wrap break-words leading-6" style={{ height: '100%' }} ref={el => (this.contentRef = el as HTMLElement)}>
@@ -988,16 +1081,9 @@ export class UiText {
         const raw = this.value || this.placeholder || '';
         try {
           const parsed = JSON.parse(raw);
-          const prettyText = JSON.stringify(parsed, null, 2);
-          const content = (
-            <pre class="whitespace-pre-wrap break-words font-mono text-sm m-0 leading-6" ref={el => (this.contentRef = el as HTMLElement)}>
-              {this.renderJsonValue(parsed, 'root', 0, true)}
-            </pre>
-          );
-          if (this.showLineNumbers) {
-            return this.renderWithLineNumbers(content, true, prettyText);
-          }
-          return content;
+          const lines = this.buildJsonLines(parsed);
+          // Use structured custom renderer
+          return this.renderStructuredWithLineNumbers(lines);
         } catch {
           // Not JSON - fallback to plain text
           if (this.showLineNumbers) return this.renderWithLineNumbers(String(raw), true, String(raw));
@@ -1013,7 +1099,7 @@ export class UiText {
       default: {
         const contentText = this.value || this.placeholder || '';
         if (this.showLineNumbers) {
-          return this.renderWithLineNumbers(contentText, false);
+          return this.renderWithLineNumbers(contentText, false, contentText, null, this.renderedLineCount);
         }
         return (
           <div class="whitespace-pre-wrap break-words leading-6" ref={el => (this.contentRef = el as HTMLElement)}>
