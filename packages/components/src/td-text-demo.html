@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Minimal UI-Text TD Demo</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 900px;
+        margin: 28px auto;
+        padding: 18px;
+        background: #f8fafc;
+      }
+      .card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .row {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        margin: 14px 0;
+      }
+      h1 {
+        margin: 0 0 12px;
+      }
+      .meta {
+        color: #6b7280;
+        font-size: 12px;
+      }
+      .out {
+        margin-top: 8px;
+        padding: 10px;
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Load components: keep this in body so it initializes correctly -->
+    <script type="module" src="./build/ui-wot-components.esm.js"></script>
+
+    <div class="card">
+      <h1>UI-Text TD-Style Demo</h1>
+
+      <!-- Field variants -->
+      <div class="row">
+        <div style="flex: 1">
+          <h3>Field (outlined)</h3>
+          <ui-text mode="field" variant="outlined" label="Outlined" value="Single line text field"></ui-text>
+        </div>
+        <div style="flex: 1">
+          <h3>Field (filled)</h3>
+          <ui-text mode="field" variant="filled" label="Filled" value="Single line text field"></ui-text>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex: 1">
+          <h3>Field (minimal)</h3>
+          <ui-text mode="field" variant="minimal" label="Minimal" value="Single line text field"></ui-text>
+        </div>
+        <div style="flex: 1">
+          <h3>Field (outlined, colored)</h3>
+          <ui-text mode="field" variant="outlined" color="secondary" label="Colored (secondary)" value="Uses global --color-secondary"></ui-text>
+        </div>
+      </div>
+
+      <!-- Area modes -->
+      <div class="row">
+        <div style="flex: 1">
+          <h3>Area (outlined, line numbers)</h3>
+          <ui-text
+            id="txt-area-outline"
+            mode="area"
+            variant="outlined"
+            label="Area Outlined"
+            value="Multi-line text areaLine 2 of content&#10;Line 3 of content"
+            show-line-numbers="true"
+            min-rows="3"
+            max-rows="8"
+          ></ui-text>
+        </div>
+        <div style="flex: 1">
+          <h3>Area (filled, resizable)</h3>
+          <ui-text
+            id="txt-area-filled"
+            mode="area"
+            variant="filled"
+            label="Area Filled (Resizable)"
+            value="Resizable multi-line area.&#10;Drag the handle to change height and width; the border resizes."
+            resizable="true"
+            min-rows="3"
+            max-rows="8"
+          ></ui-text>
+        </div>
+      </div>
+
+      <!-- Structured / Unstructured -->
+      <div class="row">
+        <div style="flex: 1">
+          <h3>Structured (JSON, large)</h3>
+          <ui-text
+            id="txt-structured"
+            mode="unstructured"
+            variant="outlined"
+            label="Structured JSON with line numbers"
+            value='{
+  "deviceId": "thermostat-9f21",
+  "status": "online",
+  "sensors": [
+    { "type": "temp", "unit": "C", "values": [22.6, 22.8, 23.1, 22.9, 23.0, 23.2, 23.5] },
+    { "type": "humidity", "unit": "%", "values": [44, 45, 46, 45, 43, 42, 44] },
+    { "type": "pressure", "unit": "hPa", "values": [1010.2, 1010.4, 1010.8, 1011.1] }
+  ],
+  "metadata": {
+    "location": "Living Room",
+    "owner": "Alice",
+    "thresholds": { "temp": { "min": 18, "max": 26 }, "humidity": { "min": 30, "max": 60 } }
+  },
+  "events": [
+    { "ts": 1694451200000, "msg": "startup" },
+    { "ts": 1694454800000, "msg": "calibration" },
+    { "ts": 1694462000000, "msg": "ok" }
+  ]
+}'
+            show-line-numbers="true"
+          ></ui-text>
+        </div>
+        <div style="flex: 1">
+          <h3>Unstructured (paragraphs)</h3>
+          <ui-text
+            id="txt-unstructured"
+            mode="unstructured"
+            variant="minimal"
+            label="Plain text"
+            value="The quick brown fox jumps over the lazy dog.&#10;&#10;Unstructured text is ideal for prose, notes, and human-readable messages. It wraps naturally and uses the component's sans-serif font for readability.&#10;&#10;Unlike structured mode, this area does not use a monospace font or code-like background. It is intended to mirror how content appears in articles or chat logs."
+          ></ui-text>
+        </div>
+      </div>
+
+      <!-- Editable and validation -->
+      <div class="row">
+        <div style="flex: 1">
+          <h3>Editable (char count)</h3>
+          <ui-text
+            id="txt-editable"
+            mode="editable"
+            variant="outlined"
+            label="Editable"
+            value="Edit this text content"
+            show-char-count="true"
+            max-length="120"
+            show-save-button="true"
+          ></ui-text>
+        </div>
+        <div style="flex: 1">
+          <h3>Validation example</h3>
+          <ui-text
+            id="txt-email"
+            mode="field"
+            variant="outlined"
+            label="Email"
+            value="user@example.com"
+            helper-text="Enter a valid email address"
+            validation-pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+            required="true"
+          ></ui-text>
+        </div>
+      </div>
+
+      <!-- Status states -->
+      <div class="row">
+        <div style="flex: 1">
+          <h3>Status: success (primary)</h3>
+          <ui-text mode="field" variant="outlined" color="primary" label="Success" value="Saved OK" status="success"></ui-text>
+        </div>
+        <div style="flex: 1">
+          <h3>Status: warning (secondary)</h3>
+          <ui-text mode="field" variant="outlined" color="secondary" label="Warning" value="Needs attention" status="warning"></ui-text>
+        </div>
+      </div>
+      <div class="row">
+        <div style="flex: 1">
+          <h3>Status: error</h3>
+          <ui-text mode="field" variant="outlined" label="Error" value="Something went wrong" status="error"></ui-text>
+        </div>
+        <div style="flex: 1">
+          <h3>Status: loading</h3>
+          <ui-text mode="field" variant="outlined" label="Loading" value="Fetching..." status="loading"></ui-text>
+        </div>
+      </div>
+
+      <!-- Methods playground -->
+      <div class="row">
+        <div style="flex: 1">
+          <h3>Methods Playground</h3>
+          <ui-text id="txt-play" mode="area" variant="outlined" label="Playground" value="Try the buttons below" min-rows="3" max-rows="8"></ui-text>
+          <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap">
+            <button id="btn-get">Get Value</button>
+            <button id="btn-set">Set Value</button>
+            <button id="btn-clear">Clear</button>
+            <button id="btn-focus">Focus</button>
+            <button id="btn-validate">Validate</button>
+          </div>
+          <div id="out" class="out"></div>
+        </div>
+      </div>
+
+      <div class="meta">Open the browser console to see logs. Components style themselves; this page only arranges layout.</div>
+    </div>
+
+    <script>
+      // Ensure custom element is defined before wiring buttons
+      customElements.whenDefined('ui-text').then(() => {
+        const play = document.getElementById('txt-play');
+        const out = document.getElementById('out');
+
+        const say = m => (out.textContent = String(m ?? ''));
+
+        document.getElementById('btn-get').addEventListener('click', async () => {
+          try {
+            const v = await play.getValue();
+            say('Value: ' + JSON.stringify(v));
+          } catch (e) {
+            say('Error: ' + (e.message || e));
+          }
+        });
+
+        document.getElementById('btn-set').addEventListener('click', async () => {
+          try {
+            const v = 'Updated @ ' + new Date().toLocaleTimeString();
+            await play.setValue(v);
+            say('Set to: ' + v);
+          } catch (e) {
+            say('Error: ' + (e.message || e));
+          }
+        });
+
+        document.getElementById('btn-clear').addEventListener('click', async () => {
+          try {
+            await play.setValue('');
+            say('Cleared');
+          } catch (e) {
+            say('Error: ' + (e.message || e));
+          }
+        });
+
+        document.getElementById('btn-focus').addEventListener('click', async () => {
+          try {
+            if (typeof play.focus === 'function') {
+              await play.focus();
+              say('Focused');
+            } else {
+              say('Focus not available');
+            }
+          } catch (e) {
+            say('Error: ' + (e.message || e));
+          }
+        });
+
+        document.getElementById('btn-validate').addEventListener('click', async () => {
+          try {
+            if (typeof play.validate === 'function') {
+              const ok = await play.validate();
+              say('Validate: ' + (ok ? 'Valid' : 'Invalid'));
+            } else {
+              say('Validate not available');
+            }
+          } catch (e) {
+            say('Error: ' + (e.message || e));
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

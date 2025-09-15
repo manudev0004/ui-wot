@@ -512,25 +512,25 @@ export class UiText {
   /** Dynamic line calculation based on container size */
   private calculateDynamicLines(): number {
     if (!this.containerRef) return this.minRows;
-    
+
     const containerHeight = this.containerRef.clientHeight;
     const lineHeight = 24; // ~1.5rem in pixels
     const padding = 24; // Top and bottom padding
     const availableHeight = Math.max(containerHeight - padding, lineHeight);
     const calculatedLines = Math.floor(availableHeight / lineHeight);
-    
+
     return Math.max(this.minRows, Math.min(calculatedLines, this.maxRows));
   }
 
   /** Setup ResizeObserver for dynamic line calculation */
   private setupResizeObserver() {
     if (!window.ResizeObserver || this.mode !== 'area') return;
-    
+
     this.resizeObserver = new ResizeObserver(() => {
       // Force re-render by updating a state variable
       this.timestampCounter = Date.now();
     });
-    
+
     if (this.containerRef) {
       this.resizeObserver.observe(this.containerRef);
     }
@@ -554,7 +554,7 @@ export class UiText {
 
   private debouncedUpdate(value: string) {
     this.cleanupDebounceTimer();
-    
+
     this.debounceTimer = window.setTimeout(() => {
       this.handleValueUpdate(value);
     }, this.debounceMs);
@@ -562,7 +562,7 @@ export class UiText {
 
   private async handleValueUpdate(value: string) {
     const prevValue = this.value;
-    
+
     // Execute stored writeOperation if available
     if (this.storedWriteOperation) {
       StatusIndicator.applyStatus(this, 'loading');
@@ -594,7 +594,7 @@ export class UiText {
 
     const target = event.target as HTMLInputElement | HTMLTextAreaElement;
     const newValue = target.value;
-    
+
     // Update temp value immediately for UI responsiveness
     this.tempValue = newValue;
     this.hasUnsavedChanges = this.value !== newValue;
@@ -784,8 +784,8 @@ export class UiText {
             onBlur={this.handleBlur}
             rows={dynamicRows}
             maxLength={this.maxLength}
-            style={{ 
-              height: '100%'
+            style={{
+              height: '100%',
             }}
           ></textarea>
         );
@@ -813,14 +813,8 @@ export class UiText {
 
       case 'area':
         return (
-          <div 
-            class="whitespace-pre-wrap break-words"
-            style={{ height: '100%' }}
-          >
-            {this.showLineNumbers ? 
-              this.renderWithLineNumbers(this.value || this.placeholder || '') : 
-              (this.value || this.placeholder)
-            }
+          <div class="whitespace-pre-wrap break-words" style={{ height: '100%' }}>
+            {this.showLineNumbers ? this.renderWithLineNumbers(this.value || this.placeholder || '') : this.value || this.placeholder}
           </div>
         );
 
@@ -867,11 +861,7 @@ export class UiText {
 
         {/* Main container with status badge positioning similar to ui-toggle */}
         <div class="relative inline-flex items-center w-full">
-          <div 
-            class={`ui-text-container ${baseClasses}`}
-            style={containerStyle}
-            ref={(el) => this.containerRef = el}
-          >
+          <div class={`ui-text-container ${baseClasses}`} style={containerStyle} ref={el => (this.containerRef = el)}>
             {this.renderContent()}
           </div>
 
@@ -883,19 +873,20 @@ export class UiText {
         {this.mode === 'editable' && this.showSaveButton && (
           <div class="mt-2 flex gap-2">
             <button
-              class={`px-3 py-1 text-sm rounded transition-colors ${
-                this.hasUnsavedChanges 
-                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+              class="px-3 py-1 text-sm rounded transition-colors border"
+              style={{
+                backgroundColor: this.hasUnsavedChanges ? 'var(--color-primary)' : 'transparent',
+                color: this.hasUnsavedChanges ? 'var(--color-primary-contrast, #fff)' : 'var(--color-primary)',
+                borderColor: 'var(--color-primary)',
+                cursor: this.hasUnsavedChanges ? 'pointer' : 'not-allowed',
+                opacity: this.hasUnsavedChanges ? '1' : '0.6',
+              }}
               disabled={!this.hasUnsavedChanges}
               onClick={this.handleSave}
             >
               Save
             </button>
-            {this.hasUnsavedChanges && (
-              <span class="text-xs text-orange-500 self-center">Unsaved changes</span>
-            )}
+            {this.hasUnsavedChanges && <span class="text-xs text-orange-500 self-center">Unsaved changes</span>}
           </div>
         )}
 

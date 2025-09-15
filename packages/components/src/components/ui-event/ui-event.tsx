@@ -184,6 +184,11 @@ export class UiEvent {
    */
   private eventFilter?: (event: any) => boolean;
 
+  /**
+   * Cleanup function for event subscription
+   */
+  private unsubscribe?: () => void;
+
   /** Component events */
 
   /**
@@ -200,6 +205,12 @@ export class UiEvent {
 
   disconnectedCallback() {
     this.clearTimestampTimer();
+
+    // Clean up event subscription
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = undefined;
+    }
   }
 
   /** Watchers */
@@ -228,9 +239,23 @@ export class UiEvent {
 
     this.operationStatus = 'loading';
     this.lastError = '';
-    this.isSubscribed = true;
-    this.operationStatus = 'success';
-    this.lastUpdatedTs = Date.now();
+
+    try {
+      // The component is now ready to receive events via the addEvent() method
+      // No mock events are generated - events come from external sources
+
+      // Set up cleanup function for consistency (though no cleanup needed for external events)
+      this.unsubscribe = () => {
+        // Cleanup would go here if we had external subscriptions to clean up
+      };
+
+      this.isSubscribed = true;
+      this.operationStatus = 'success';
+      this.lastUpdatedTs = Date.now();
+    } catch (error) {
+      this.lastError = error.message || 'Failed to start listening';
+      this.operationStatus = 'error';
+    }
   }
 
   /**
@@ -238,8 +263,17 @@ export class UiEvent {
    */
   @Method()
   async stopListening(): Promise<void> {
+    if (!this.isSubscribed) return;
+
+    // Set flag to false FIRST to prevent race conditions
     this.isSubscribed = false;
     this.operationStatus = 'idle';
+
+    // Clean up event subscription
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = undefined;
+    }
   }
 
   /**
@@ -283,11 +317,32 @@ export class UiEvent {
   }
 
   /**
+   * Check if component is currently listening for events
+   */
+  @Method()
+  async isListening(): Promise<boolean> {
+    return this.isSubscribed;
+  }
+
+  /**
    * Set component status
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
     StatusIndicator.applyStatus(this, status, errorMessage);
+  }
+
+  /**
+   * Force cleanup (for debugging)
+   */
+  @Method()
+  async forceCleanup(): Promise<void> {
+    this.isSubscribed = false;
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = undefined;
+    }
+    this.operationStatus = 'idle';
   }
 
   /** Private methods */
@@ -338,13 +393,16 @@ export class UiEvent {
   private getVariantClasses(): string {
     const baseClasses = 'relative rounded-lg transition-all duration-200';
 
+    // Use CSS custom properties directly in style
+    const colorClass = `color-${this.color}`;
+
     switch (this.variant) {
       case 'minimal':
         return `${baseClasses} bg-transparent border-0`;
       case 'outlined':
-        return `${baseClasses} border-2 ${this.dark ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-white'}`;
+        return `${baseClasses} border-2 bg-transparent variant-outlined ${colorClass}`;
       case 'filled':
-        return `${baseClasses} border-0 ${this.dark ? 'bg-gray-700' : 'bg-gray-100'}`;
+        return `${baseClasses} border variant-filled ${colorClass}`;
       default:
         return baseClasses;
     }
@@ -366,19 +424,23 @@ export class UiEvent {
   private renderEventHistory() {
     if (this.eventHistory.length === 0) {
       return (
-        <div class={`text-center py-4 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>
+        <div class={`text-center py-4 ${this.dark ? 'text-[var(--neutral-clr-50)]' : 'text-[var(--color-neutral)]'}`}>
           <span class="text-sm">No events received</span>
         </div>
       );
     }
 
     return this.eventHistory.slice(0, 5).map(event => (
-      <div key={event.id} class={`border-b last:border-b-0 py-2 ${this.dark ? 'border-gray-600' : 'border-gray-200'}`}>
+      <div key={event.id} class="border-b last:border-b-0 py-2 border-[var(--color-neutral)]/30">
         <div class="flex justify-between items-start">
           <div class="flex-1">
-            <pre class={`text-xs font-mono ${this.dark ? 'text-gray-300' : 'text-gray-700'}`}>{JSON.stringify(event.data, null, 2)}</pre>
+            <pre class={`text-xs font-mono overflow-x-auto block ${this.dark ? 'text-[var(--neutral-clr-50)]' : 'text-[var(--neutral-clr-900)]'}`}>
+              {JSON.stringify(event.data, null, 2)}
+            </pre>
           </div>
-          {this.showTimestamp && <div class={`text-xs ml-2 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{new Date(event.timestamp).toLocaleTimeString()}</div>}
+          {this.showTimestamp && (
+            <div class={`text-xs ml-2 ${this.dark ? 'text-[var(--color-neutral-light)]' : 'text-[var(--color-neutral)]'}`}>{new Date(event.timestamp).toLocaleTimeString()}</div>
+          )}
         </div>
       </div>
     ));
@@ -390,10 +452,10 @@ export class UiEvent {
         <button
           class={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
             this.disabled
-              ? 'bg-gray-400 text-white cursor-not-allowed opacity-50'
+              ? 'bg-[var(--color-neutral)] text-white cursor-not-allowed opacity-50'
               : this.isSubscribed
-              ? 'bg-danger text-white hover:bg-red-600 focus:ring-danger cursor-pointer'
-              : 'bg-success text-white hover:bg-green-600 focus:ring-success cursor-pointer'
+              ? 'bg-[var(--color-danger)] text-white hover:bg-[var(--color-danger)]/80 focus:ring-[var(--color-danger)] cursor-pointer'
+              : 'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] focus:ring-[var(--color-primary)] cursor-pointer'
           }`}
           onClick={() => (this.isSubscribed ? this.stopListening() : this.startListening())}
           disabled={this.disabled}
@@ -402,7 +464,9 @@ export class UiEvent {
         </button>
         <button
           class={`px-3 py-2 rounded-md font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-            this.disabled ? 'bg-gray-400 text-white cursor-not-allowed opacity-50' : 'bg-neutral text-white hover:bg-neutral-hover focus:ring-neutral cursor-pointer'
+            this.disabled
+              ? 'bg-[var(--color-neutral)] text-white cursor-not-allowed opacity-50'
+              : 'bg-[var(--color-neutral)] text-white hover:bg-[var(--color-neutral-hover)] focus:ring-[var(--color-neutral)] cursor-pointer'
           }`}
           onClick={() => this.clearEvents()}
           disabled={this.disabled}
@@ -415,24 +479,27 @@ export class UiEvent {
 
   render() {
     const containerClasses = this.getVariantClasses();
+    const panelBg = this.dark ? 'bg-transparent' : 'bg-[var(--neutral-clr-50)]';
+    const textColor = this.dark ? 'text-[var(--neutral-clr-50)]' : 'text-[var(--neutral-clr-900)]';
+    const historyBg = this.dark ? 'bg-transparent' : 'bg-[var(--neutral-clr-50)]';
 
     return (
-      <div class="w-full">
+      <div class="w-full max-w-2xl">
         {/* Label */}
-        {this.label && <label class={`block text-sm font-medium mb-2 ${this.dark ? 'text-gray-200' : 'text-gray-700'}`}>{this.label}</label>}
+        {this.label && <label class={`block text-sm font-medium mb-2 ${textColor}`}>{this.label}</label>}
 
         {/* Main container with status badge */}
         <div class="relative inline-flex items-start w-full">
-          <div class={`${containerClasses} p-4 w-full`}>
+          <div class={`${containerClasses} p-4 w-full ${panelBg}`}>
             {/* Header with event info and status */}
             <div class="flex justify-between items-center mb-3">
               <div class="flex items-center gap-2">
-                <span class={`text-sm font-medium ${this.dark ? 'text-gray-200' : 'text-gray-800'}`}>📥 Event Listener</span>
-                {this.eventName && <span class={`text-xs px-2 py-1 rounded ${this.dark ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'}`}>{this.eventName}</span>}
+                <span class={`text-sm font-medium ${textColor}`}>Event Listener</span>
+                {this.eventName && <span class="text-xs px-2 py-1 rounded bg-[var(--color-neutral)]/20 text-[var(--color-neutral)]">{this.eventName}</span>}
               </div>
               <div class="flex items-center gap-1">
-                <span class={`w-2 h-2 rounded-full ${this.isSubscribed ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                <span class={`text-xs ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{this.eventCount} events</span>
+                <span class={`w-2 h-2 rounded-full ${this.isSubscribed ? 'bg-[var(--color-success)]' : 'bg-[var(--color-neutral)]'}`}></span>
+                <span class={`text-xs text-[var(--color-neutral)]`}>{this.eventCount} events</span>
               </div>
             </div>
 
@@ -440,7 +507,7 @@ export class UiEvent {
             {this.renderControls()}
 
             {/* Event history */}
-            <div class={`border rounded max-h-48 overflow-y-auto ${this.dark ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-50'}`}>{this.renderEventHistory()}</div>
+            <div class={`border rounded max-h-48 overflow-y-auto border-[var(--color-neutral)]/30 ${historyBg}`}>{this.renderEventHistory()}</div>
           </div>
 
           {/* Status badge */}
@@ -451,7 +518,7 @@ export class UiEvent {
         {this.renderLastUpdated()}
 
         {/* Error message */}
-        {this.lastError && <div class="text-xs mt-1 text-red-500">{this.lastError}</div>}
+        {this.lastError && <div class="text-xs mt-1 text-[var(--color-danger)]">{this.lastError}</div>}
       </div>
     );
   }

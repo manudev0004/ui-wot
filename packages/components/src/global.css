@@ -22,12 +22,12 @@
 /* CSS Variables - Colors, Fonts, Spacing */
 :root, :host {
 
-  --color-primary: #067362;
-  --color-primary-hover: #055a4e;
-  --color-primary-light: #0891a5;
+  --color-primary: #33b8a4;
+  --color-primary-hover: #2ea694;
+  --color-primary-light: #3ac8b3;
   --color-secondary: #B84A91;
-  --color-secondary-hover: #a04080;
-  --color-secondary-light: #c866a3;
+  --color-secondary-hover: #9e3877;
+  --color-secondary-light: #cc68ad;
   --color-neutral: #6b7280;
   --color-neutral-hover: #4b5563;
   --color-neutral-light: #9ca3af;
@@ -71,11 +71,11 @@
 }
 
 /* Component font */
-ui-button, ui-number-picker, ui-slider, ui-checkbox, ui-toggle, ui-calendar, ui-notification, ui-text {
+ui-button, ui-number-picker, ui-slider, ui-checkbox, ui-toggle, ui-calendar, ui-notification, ui-text, ui-event {
   font-family: var(--font-sans);
 }
 
-ui-button *, ui-number-picker *, ui-slider *, ui-checkbox *, ui-toggle *, ui-calendar *, ui-notification *, ui-text * {
+ui-button *, ui-number-picker *, ui-slider *, ui-checkbox *, ui-toggle *, ui-calendar *, ui-notification *, ui-text *, ui-event * {
   font-family: inherit;
 }
 

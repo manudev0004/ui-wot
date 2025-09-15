@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>UI-Event TD-Style Demo</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --card-bg: #ffffff;
+        --text: #1f2937;
+      }
+      .dark {
+        --bg: #0b1220;
+        --card-bg: #1f2937;
+        --text: #f9fafb;
+      }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 900px;
+        margin: 28px auto;
+        padding: 18px;
+        background: var(--bg);
+        color: var(--text);
+        transition: all 0.3s ease;
+      }
+      .card {
+        background: var(--card-bg);
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .row {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        margin: 14px 0;
+      }
+      h1 {
+        margin: 0 0 12px;
+      }
+      .meta {
+        color: #6b7280;
+        font-size: 14px;
+      }
+
+      #toggle-dark {
+        padding: 8px 16px;
+        border: 1px solid #d1d5db;
+        background: transparent;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      #toggle-dark:hover {
+        background: #f3f4f6;
+      }
+      .dark #toggle-dark {
+        border-color: #4b5563;
+        color: var(--text);
+      }
+      .dark #toggle-dark:hover {
+        background: #374151;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Load components: keep this in body so it initializes correctly -->
+    <script type="module" src="./build/ui-wot-components.esm.js"></script>
+
+    <div class="card">
+      <h1>UI-Event TD-Style Demo</h1>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap">
+        <p class="meta">Clean event listening component with professional JSON formatting and global CSS styling.</p>
+        <button id="toggle-dark" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+      </div>
+
+      <!-- Basic Event Listeners -->
+      <div class="row">
+        <div style="flex: 1">
+          <h3>Outlined Event Listener</h3>
+          <ui-event
+            id="event-1"
+            variant="outlined"
+            color="secondary"
+            label="Temperature Events"
+            event-name="temperature"
+            max-events="5"
+            show-timestamp="true"
+            show-status="true"
+          ></ui-event>
+        </div>
+        <div style="flex: 1">
+          <h3>Filled Event Listener</h3>
+          <ui-event id="event-2" variant="filled" color="secondary" label="Sensor Data" event-name="sensor" max-events="3" show-timestamp="true" show-status="true"></ui-event>
+        </div>
+      </div>
+
+      <!-- Different colors -->
+      <div class="row">
+        <div style="flex: 1">
+          <h3>Neutral Color</h3>
+          <ui-event id="event-3" variant="outlined" color="neutral" label="System Events" event-name="system" max-events="4" show-timestamp="false"></ui-event>
+        </div>
+        <div style="flex: 1">
+          <h3>With Last Updated</h3>
+          <ui-event id="event-4" variant="filled" color="primary" label="Status Updates" event-name="status" max-events="3" show-last-updated="true"></ui-event>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo Controls -->
+    <div class="card">
+      <h3>Demo Controls</h3>
+      <div class="controls">
+        <button onclick="sendRandomEvent('event-1')">Send Temperature Event</button>
+        <button onclick="sendRandomEvent('event-2')">Send Sensor Data</button>
+        <button onclick="sendRandomEvent('event-3')">Send System Event</button>
+        <button onclick="sendRandomEvent('event-4')">Send Status Event</button>
+        <button onclick="sendComplexEvent()">Send Complex JSON Event</button>
+        <button onclick="clearAllEvents()">Clear All Events</button>
+        <button onclick="checkAllComponentStatus()">Check All Status</button>
+      </div>
+
+      <h4>Auto Event Controls</h4>
+      <div class="controls">
+        <button onclick="startAutoEvents('event-1', generateTemperatureEvent, 2500)">Auto Temperature Events</button>
+        <button onclick="startAutoEvents('event-2', generateSensorEvent, 3000)">Auto Sensor Events</button>
+        <button onclick="startAutoEvents('event-3', generateSystemEvent, 4000)">Auto System Events</button>
+        <button onclick="stopAutoEvents('event-1')">Stop Auto Temp</button>
+        <button onclick="stopAutoEvents('event-2')">Stop Auto Sensor</button>
+        <button onclick="stopAutoEvents('event-3')">Stop Auto System</button>
+        <button onclick="stopAllAutoEvents()">Stop All Auto Events</button>
+      </div>
+
+      <div class="out" id="output">Click buttons above to test event functionality.</div>
+    </div>
+
+    <!-- Methods Demo -->
+    <div class="card">
+      <h3>Component Methods Demo</h3>
+      <ui-event
+        id="methods-demo"
+        variant="outlined"
+        color="primary"
+        label="Methods Test"
+        event-name="test"
+        max-events="10"
+        show-timestamp="true"
+        show-last-updated="true"
+      ></ui-event>
+
+      <div class="controls">
+        <button onclick="startListening()">Start Listening</button>
+        <button onclick="stopListening()">Stop Listening</button>
+        <button onclick="checkListeningStatus()">Check Status</button>
+        <button onclick="forceCleanup()">Force Cleanup</button>
+        <button onclick="getEventHistory()">Get Event History</button>
+        <button onclick="setErrorStatus()">Set Error Status</button>
+        <button onclick="setSuccessStatus()">Set Success Status</button>
+      </div>
+    </div>
+
+    <script>
+      let eventCounter = 0;
+      let autoEventIntervals = new Map(); // Track intervals for each component
+
+      // Sample event data generators
+      function generateTemperatureEvent() {
+        return {
+          temperature: (Math.random() * 40 + 10).toFixed(1),
+          humidity: (Math.random() * 80 + 20).toFixed(1),
+          timestamp: new Date().toISOString(),
+          location: 'Room ' + (Math.floor(Math.random() * 5) + 1),
+        };
+      }
+
+      function generateSensorEvent() {
+        return {
+          sensorId: 'sensor_' + (Math.floor(Math.random() * 3) + 1),
+          value: Math.random() * 100,
+          unit: ['°C', 'RH%', 'lux'][Math.floor(Math.random() * 3)],
+          status: ['normal', 'warning', 'critical'][Math.floor(Math.random() * 3)],
+          battery: Math.floor(Math.random() * 100),
+        };
+      }
+
+      function generateSystemEvent() {
+        return {
+          level: ['info', 'warning', 'error'][Math.floor(Math.random() * 3)],
+          message: ['System startup completed', 'Network connection established', 'Memory usage at 85%', 'Backup process started', 'Configuration updated'][
+            Math.floor(Math.random() * 5)
+          ],
+          module: ['core', 'network', 'storage', 'auth'][Math.floor(Math.random() * 4)],
+          code: Math.floor(Math.random() * 9000) + 1000,
+        };
+      }
+
+      function generateComplexEvent() {
+        return {
+          deviceInfo: {
+            id: 'device_' + Math.floor(Math.random() * 1000),
+            type: 'IoT Sensor',
+            firmware: 'v2.1.3',
+            location: {
+              building: 'Building A',
+              floor: Math.floor(Math.random() * 10) + 1,
+              room: 'Room ' + (Math.floor(Math.random() * 50) + 100),
+              coordinates: {
+                lat: 40.7128 + (Math.random() - 0.5) * 0.01,
+                lng: -74.006 + (Math.random() - 0.5) * 0.01,
+              },
+            },
+          },
+          measurements: [
+            { type: 'temperature', value: (Math.random() * 40 + 10).toFixed(2), unit: '°C' },
+            { type: 'humidity', value: (Math.random() * 80 + 20).toFixed(2), unit: '%' },
+            { type: 'pressure', value: (Math.random() * 50 + 1000).toFixed(2), unit: 'hPa' },
+          ],
+          metadata: {
+            timestamp: new Date().toISOString(),
+            quality: (Math.random() * 100).toFixed(1),
+            calibrated: Math.random() > 0.5,
+            tags: ['environmental', 'monitoring', 'critical'],
+          },
+        };
+      }
+
+      async function sendRandomEvent(elementId) {
+        const element = document.getElementById(elementId);
+
+        // Check if component is listening before sending event
+        const isListening = await element.isListening();
+        if (!isListening) {
+          updateOutput(`Cannot send event to ${elementId}: Component is not listening (stopped)`);
+          return;
+        }
+
+        let eventData;
+
+        switch (elementId) {
+          case 'event-1':
+            eventData = generateTemperatureEvent();
+            break;
+          case 'event-2':
+            eventData = generateSensorEvent();
+            break;
+          case 'event-3':
+            eventData = generateSystemEvent();
+            break;
+          case 'event-4':
+            eventData = { status: 'active', count: ++eventCounter };
+            break;
+          default:
+            eventData = { message: 'Test event', id: ++eventCounter };
+        }
+
+        await element.addEvent(eventData);
+        updateOutput(`Event sent to ${elementId}:`, eventData);
+      }
+
+      async function sendComplexEvent() {
+        const elements = ['event-1', 'event-2', 'event-3', 'event-4'];
+        const randomElement = elements[Math.floor(Math.random() * elements.length)];
+        const element = document.getElementById(randomElement);
+
+        // Check if the selected component is listening
+        const isListening = await element.isListening();
+        if (!isListening) {
+          updateOutput(`Cannot send complex event to ${randomElement}: Component is not listening (stopped)`);
+          return;
+        }
+
+        const eventData = generateComplexEvent();
+
+        await element.addEvent(eventData);
+        updateOutput(`Complex event sent to ${randomElement}:`, eventData);
+      }
+
+      async function clearAllEvents() {
+        const elements = ['event-1', 'event-2', 'event-3', 'event-4', 'methods-demo'];
+        for (const id of elements) {
+          const element = document.getElementById(id);
+          await element.clearEvents();
+        }
+        updateOutput('All events cleared.');
+      }
+
+      async function checkAllComponentStatus() {
+        const elements = ['event-1', 'event-2', 'event-3', 'event-4', 'methods-demo'];
+        let status = 'Component Status Check:\n';
+
+        for (const id of elements) {
+          const element = document.getElementById(id);
+          const isListening = await element.isListening();
+          status += `- ${id}: ${isListening ? 'LISTENING' : 'NOT LISTENING'}\n`;
+        }
+
+        updateOutput(status);
+      }
+
+      // Auto event generation functions
+      async function startAutoEvents(elementId, eventGenerator, intervalMs = 3000) {
+        // Stop any existing interval for this element
+        stopAutoEvents(elementId);
+
+        const element = document.getElementById(elementId);
+        if (!element) return;
+
+        const intervalId = setInterval(async () => {
+          // Check if component is still listening
+          const isListening = await element.isListening();
+          if (!isListening) {
+            stopAutoEvents(elementId); // Stop if component stopped listening
+            return;
+          }
+
+          const eventData = eventGenerator();
+          await element.addEvent(eventData);
+        }, intervalMs);
+
+        autoEventIntervals.set(elementId, intervalId);
+        updateOutput(`Started auto events for ${elementId} (every ${intervalMs}ms)`);
+      }
+
+      function stopAutoEvents(elementId) {
+        const intervalId = autoEventIntervals.get(elementId);
+        if (intervalId) {
+          clearInterval(intervalId);
+          autoEventIntervals.delete(elementId);
+          updateOutput(`Stopped auto events for ${elementId}`);
+        }
+      }
+
+      function stopAllAutoEvents() {
+        autoEventIntervals.forEach((intervalId, elementId) => {
+          clearInterval(intervalId);
+        });
+        autoEventIntervals.clear();
+        updateOutput('Stopped all auto events');
+      }
+
+      // Methods demo functions
+      async function startListening() {
+        const element = document.getElementById('methods-demo');
+        await element.startListening();
+        updateOutput('Started listening on methods-demo component');
+      }
+
+      async function stopListening() {
+        const element = document.getElementById('methods-demo');
+        await element.stopListening();
+        updateOutput('Stopped listening on methods-demo component');
+      }
+
+      async function checkListeningStatus() {
+        const element = document.getElementById('methods-demo');
+        const isListening = await element.isListening();
+        updateOutput(`Methods-demo component listening status: ${isListening ? 'LISTENING' : 'NOT LISTENING'}`);
+      }
+
+      async function forceCleanup() {
+        const element = document.getElementById('methods-demo');
+        await element.forceCleanup();
+        updateOutput('Force cleanup on methods-demo component');
+      }
+
+      async function getEventHistory() {
+        const element = document.getElementById('methods-demo');
+        const history = await element.getEventHistory();
+        updateOutput('Event history:', history);
+      }
+
+      async function setErrorStatus() {
+        const element = document.getElementById('methods-demo');
+        await element.setStatus('error', 'Connection failed - demo error');
+        updateOutput('Set error status on methods-demo component');
+      }
+
+      async function setSuccessStatus() {
+        const element = document.getElementById('methods-demo');
+        await element.setStatus('success');
+        updateOutput('Set success status on methods-demo component');
+      }
+
+      function updateOutput(message, data = null) {
+        const output = document.getElementById('output');
+        const timestamp = new Date().toLocaleTimeString();
+        let content = `[${timestamp}] ${message}`;
+
+        if (data) {
+          content += '\n' + JSON.stringify(data, null, 2);
+        }
+
+        output.textContent = content;
+      }
+
+      // Auto-start some components and send initial events
+      document.addEventListener('DOMContentLoaded', async () => {
+        // Wait for components to be ready
+        await customElements.whenDefined('ui-event');
+
+        // Start some listeners
+        await document.getElementById('event-1').startListening();
+        await document.getElementById('event-2').startListening();
+        await document.getElementById('methods-demo').startListening();
+
+        // Send some initial events to show the formatting
+        setTimeout(() => {
+          sendRandomEvent('event-1');
+        }, 500);
+
+        setTimeout(() => {
+          sendComplexEvent();
+        }, 1000);
+
+        // Start automatic event generation for demo purposes
+        setTimeout(() => {
+          startAutoEvents('event-1', generateTemperatureEvent, 3000); // Every 3 seconds
+          startAutoEvents('event-2', generateSensorEvent, 4000); // Every 4 seconds
+        }, 2000);
+
+        updateOutput('Demo initialized. Components are ready for testing. Auto events started for event-1 and event-2.');
+      });
+
+      // Dark mode toggle function
+      function toggleDarkMode() {
+        const isDark = document.documentElement.classList.toggle('dark');
+
+        // Update all ui-event components dark property
+        const uiEvents = document.querySelectorAll('ui-event');
+        uiEvents.forEach(element => {
+          element.setAttribute('dark', isDark.toString());
+        });
+
+        updateOutput(`Switched to ${isDark ? 'dark' : 'light'} mode`);
+      }
+
+      // Cleanup intervals when page unloads
+      window.addEventListener('beforeunload', () => {
+        stopAllAutoEvents();
+      });
+    </script>
+  </body>
+</html>
