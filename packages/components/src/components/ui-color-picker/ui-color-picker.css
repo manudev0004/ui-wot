@@ -1,0 +1,40 @@
+/* Import global CSS */
+@import '../../global.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host {
+  display: inline-block;
+}
+
+/* Color picker specific styles */
+.color-picker-input {
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  background: none;
+  outline: none;
+}
+
+.color-picker-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border: none;
+  border-radius: 0.375rem;
+}
+
+.color-picker-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 0.375rem;
+}
+
+.color-picker-input::-moz-color-swatch {
+  border: none;
+  border-radius: 0.375rem;
+}
+
+.color-picker-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}

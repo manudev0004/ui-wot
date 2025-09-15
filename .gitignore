@@ -78,3 +78,5 @@ typedoc.json
 docs
 .docs
 .backup
+.github
+.vscode

@@ -68,11 +68,6 @@ export class UiText {
   @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'outlined';
 
   /**
-   * Whether the component is disabled (editable mode only).
-   */
-  @Prop() disabled: boolean = false;
-
-  /**
    * Color theme variant.
    * TODO: Review - may be irrelevant for text components, consider removal
    */
@@ -116,10 +111,7 @@ export class UiText {
    */
   @Prop() placeholder?: string;
 
-  /**
-   * Whether the component is read-only.
-   */
-  @Prop() readonly: boolean = false;
+  // disabled/readonly removed per simplification
 
   /**
    * Maximum number of rows for area mode.
@@ -207,6 +199,22 @@ export class UiText {
   /** Reference to the container element for dynamic sizing */
   private containerRef?: HTMLElement;
 
+  /** Reference to rendered content block for measuring wrapped lines */
+  private contentRef?: HTMLElement;
+
+  /** Inner content measurer (used when line numbers are shown) */
+  private contentMeasureRef?: HTMLElement;
+
+  /** Rendered line count after wrapping (for line numbers) */
+  @State() private renderedLineCount: number = 0;
+
+  /** Fold state for structured JSON (paths of folded nodes) */
+  private foldedPaths: Set<string> = new Set();
+  @State() private foldingTick: number = 0;
+
+  /** Structured mode expand/collapse */
+  // replaced with per-node folding
+
   /** Helper method to update value and timestamps consistently */
   private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
     this.value = value;
@@ -251,6 +259,8 @@ export class UiText {
     if (newVal !== oldVal && !this.suppressEvents) {
       this.emitValueMsg(newVal, oldVal);
     }
+    // Recompute rendered line count on value changes
+    this.scheduleLineCountUpdate();
   }
 
   /** Public methods */
@@ -474,12 +484,17 @@ export class UiText {
 
   componentDidLoad() {
     this.setupResizeObserver();
+    // Initial line count after first render
+    this.scheduleLineCountUpdate();
+    // Recalculate on window resize as container width may change
+    window.addEventListener('resize', this.handleWindowResize, { passive: true });
   }
 
   disconnectedCallback() {
     this.stopTimestampUpdater();
     this.cleanupDebounceTimer();
     this.cleanupResizeObserver();
+    window.removeEventListener('resize', this.handleWindowResize as any);
   }
 
   /** Private methods */
@@ -509,7 +524,7 @@ export class UiText {
     }
   }
 
-  /** Dynamic line calculation based on container size */
+  /** Dynamic line calculation based on container size (rows for textarea/area) */
   private calculateDynamicLines(): number {
     if (!this.containerRef) return this.minRows;
 
@@ -522,18 +537,58 @@ export class UiText {
     return Math.max(this.minRows, Math.min(calculatedLines, this.maxRows));
   }
 
+  /** Compute number of visually rendered lines based on content element height and line-height */
+  private updateRenderedLineCount(): void {
+    const el = (this.contentMeasureRef as HTMLElement) || (this.contentRef as HTMLElement) || undefined;
+    if (!el) return;
+
+    const cs = window.getComputedStyle(el);
+    const fontSize = parseFloat(cs.fontSize || '16');
+    let lineHeight = parseFloat(cs.lineHeight || '0');
+    if (!lineHeight || Number.isNaN(lineHeight)) {
+      // Fallback for 'normal'
+      lineHeight = 1.5 * (fontSize || 16);
+    }
+
+    const height = el.scrollHeight || el.clientHeight;
+    if (!height || !lineHeight) return;
+
+    const count = Math.max(1, Math.ceil(height / lineHeight));
+    if (count !== this.renderedLineCount) {
+      this.renderedLineCount = count;
+    }
+  }
+
+  private _pendingRaf: number = 0;
+  private scheduleLineCountUpdate(): void {
+    if (this._pendingRaf) return;
+    this._pendingRaf = requestAnimationFrame(() => {
+      this._pendingRaf = 0;
+      this.updateRenderedLineCount();
+    });
+  }
+
+  private handleWindowResize = (() => {
+    let raf = 0;
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        this.updateRenderedLineCount();
+      });
+    };
+  })();
+
   /** Setup ResizeObserver for dynamic line calculation */
   private setupResizeObserver() {
-    if (!window.ResizeObserver || this.mode !== 'area') return;
+    if (!window.ResizeObserver) return;
 
     this.resizeObserver = new ResizeObserver(() => {
-      // Force re-render by updating a state variable
-      this.timestampCounter = Date.now();
+      // Recompute visual lines only; avoid forcing extra re-renders
+      this.updateRenderedLineCount();
     });
 
-    if (this.containerRef) {
-      this.resizeObserver.observe(this.containerRef);
-    }
+    if (this.containerRef) this.resizeObserver.observe(this.containerRef);
   }
 
   /** Cleanup ResizeObserver */
@@ -590,7 +645,7 @@ export class UiText {
   }
 
   private handleChange = async (event: Event): Promise<void> => {
-    if (this.mode !== 'editable' || this.readonly || this.disabled) return;
+    if (this.mode !== 'editable') return;
 
     const target = event.target as HTMLInputElement | HTMLTextAreaElement;
     const newValue = target.value;
@@ -620,13 +675,7 @@ export class UiText {
     await this.handleValueUpdate(this.tempValue);
   };
 
-  private handleFocus = (): void => {
-    // Focus handler - can be used for styling
-  };
-
-  private handleBlur = (): void => {
-    // Blur handler - can be used for styling
-  };
+  // Focus/blur handlers removed
 
   /** Render status badge */
   private renderStatusBadge() {
@@ -697,10 +746,6 @@ export class UiText {
         break;
     }
 
-    if (this.disabled) {
-      classes += ' opacity-50 cursor-not-allowed';
-    }
-
     return classes;
   }
 
@@ -723,44 +768,175 @@ export class UiText {
       classes += ' font-mono text-sm';
     }
 
-    if (this.disabled) {
-      classes += ' cursor-not-allowed';
-    }
-
     return classes;
   }
 
-  private renderWithLineNumbers(content: string, isMonospace: boolean = false): any {
-    if (!this.showLineNumbers) {
-      return content;
-    }
+  private renderWithLineNumbers(content: any, isMonospace: boolean = false, fallbackText?: string): any {
+    if (!this.showLineNumbers) return content;
 
-    const lines = content.split('\n');
-    const lineNumberWidth = Math.max(2, String(lines.length).length);
-    const lineHeight = '1.5';
+    // Fallback in case measurement not ready
+    const basis = typeof content === 'string' ? content : fallbackText || '';
+    const fallbackCount = basis ? (basis.match(/\n/g) || []).length + 1 : 1;
+    const total = this.renderedLineCount || fallbackCount;
     const numberFontClasses = isMonospace ? 'font-mono' : '';
     const contentFontClasses = isMonospace ? 'font-mono text-sm' : '';
 
+    // Fix width to avoid feedback loop increasing wraps when count grows
+    const lineNumberWidth = 4;
+
     return (
-      <div class="flex" style={{ lineHeight }}>
+      <div class="flex leading-6">
         {/* Line numbers column */}
-        <div class={`select-none border-r border-gray-300 pr-2 mr-3 ${numberFontClasses} ${this.dark ? 'text-gray-400 border-gray-600' : 'text-gray-500'}`} style={{ lineHeight }}>
-          {lines.map((_, index) => (
-            <div key={index} class="text-right" style={{ minWidth: `${lineNumberWidth}ch` }}>
-              {index + 1}
+        <div
+          class={`select-none border-r pr-2 mr-3 ${numberFontClasses} ${this.dark ? 'text-gray-400 border-gray-600' : 'text-gray-500 border-gray-300'}`}
+          style={{ width: `${lineNumberWidth}ch` }}
+        >
+          {Array.from({ length: total }).map((_, idx) => (
+            <div key={idx} class="text-right">
+              {idx + 1}
             </div>
           ))}
         </div>
         {/* Content column */}
-        <div class={`flex-1 ${contentFontClasses}`} style={{ whiteSpace: 'pre-wrap', lineHeight }}>
-          {lines.map((line, index) => (
-            <div key={index}>
-              {line || '\u00A0'} {/* Non-breaking space for empty lines */}
-            </div>
-          ))}
+        <div class={`flex-1 ${contentFontClasses}`}>
+          <div class="whitespace-pre-wrap break-words" ref={el => (this.contentMeasureRef = el as HTMLElement)}>
+            {content}
+          </div>
         </div>
       </div>
     );
+  }
+
+  /** Folding helpers */
+  private isFolded(path: string): boolean {
+    return this.foldedPaths.has(path);
+  }
+
+  private toggleFold(path: string): void {
+    const next = new Set(this.foldedPaths);
+    if (next.has(path)) next.delete(path);
+    else next.add(path);
+    this.foldedPaths = next;
+    this.foldingTick++;
+    this.scheduleLineCountUpdate();
+  }
+
+  private indentStr(level: number): string {
+    return '  '.repeat(Math.max(0, level));
+  }
+
+  private span(cls: string, text: string) {
+    return <span class={cls}>{text}</span>;
+  }
+
+  private fmtKey(key: string) {
+    return this.span('text-blue-600 dark:text-blue-400', '"' + key + '"');
+  }
+
+  private fmtString(val: string) {
+    return this.span('text-green-700 dark:text-green-400', '"' + val + '"');
+  }
+
+  private fmtNumber(n: number) {
+    return this.span('text-amber-600 dark:text-amber-400', String(n));
+  }
+
+  private fmtBoolNull(v: boolean | null) {
+    return this.span('text-purple-600 dark:text-purple-400', String(v));
+  }
+
+  private renderJsonValue(value: any, path: string, indent: number, isLast: boolean): any {
+    const pieces: any[] = [];
+    const indentText = this.indentStr(indent);
+
+    const pushLine = (nodes: any[]) => {
+      pieces.push(<>{nodes}</>);
+      pieces.push('\n');
+    };
+
+    const toggle = (folded: boolean) => (
+      <button class="inline-block text-xs mr-1 opacity-80 hover:opacity-100 select-none" onClick={() => this.toggleFold(path)} aria-label={folded ? 'Expand' : 'Collapse'}>
+        {folded ? '+' : '−'}
+      </button>
+    );
+
+    if (Array.isArray(value)) {
+      const folded = this.isFolded(path);
+      if (folded) {
+        pushLine([indentText, toggle(true), '[...]', isLast ? '' : ',']);
+        return pieces;
+      }
+      pushLine([indentText, toggle(false), '[']);
+      const len = value.length;
+      for (let i = 0; i < len; i++) {
+        const childPath = path + '[' + i + ']';
+        const child = value[i];
+        const last = i === len - 1;
+        if (typeof child === 'object' && child !== null) {
+          pieces.push(this.renderJsonValue(child, childPath, indent + 1, last));
+        } else {
+          const lineNodes: any[] = [this.indentStr(indent + 1)];
+          if (typeof child === 'string') lineNodes.push(this.fmtString(child));
+          else if (typeof child === 'number') lineNodes.push(this.fmtNumber(child));
+          else if (typeof child === 'boolean') lineNodes.push(this.fmtBoolNull(child));
+          else if (child === null) lineNodes.push(this.fmtBoolNull(null));
+          else lineNodes.push(String(child));
+          lineNodes.push(last ? '' : ',');
+          pushLine(lineNodes);
+        }
+      }
+      pushLine([indentText, ']' + (isLast ? '' : ',')]);
+      return pieces;
+    }
+
+    if (typeof value === 'object' && value !== null) {
+      const folded = this.isFolded(path);
+      if (folded) {
+        pushLine([indentText, toggle(true), '{...}', isLast ? '' : ',']);
+        return pieces;
+      }
+      pushLine([indentText, toggle(false), '{']);
+      const entries = Object.entries(value);
+      const len = entries.length;
+      for (let i = 0; i < len; i++) {
+        const [k, v] = entries[i];
+        const childPath = path + '.' + k;
+        const last = i === len - 1;
+        if (typeof v === 'object' && v !== null) {
+          // key line with nested structure rendered by recursion
+          pieces.push(
+            <>
+              {this.indentStr(indent + 1)}
+              {this.fmtKey(k)}
+              {': '}
+            </>,
+          );
+          pieces.push(this.renderJsonValue(v, childPath, indent + 1, last));
+        } else {
+          const lineNodes: any[] = [this.indentStr(indent + 1), this.fmtKey(k), ': '];
+          if (typeof v === 'string') lineNodes.push(this.fmtString(v));
+          else if (typeof v === 'number') lineNodes.push(this.fmtNumber(v));
+          else if (typeof v === 'boolean') lineNodes.push(this.fmtBoolNull(v));
+          else if (v === null) lineNodes.push(this.fmtBoolNull(null));
+          else lineNodes.push(String(v));
+          lineNodes.push(last ? '' : ',');
+          pushLine(lineNodes);
+        }
+      }
+      pushLine([indentText, '}' + (isLast ? '' : ',')]);
+      return pieces;
+    }
+
+    // primitives
+    const lineNodes: any[] = [indentText];
+    if (typeof value === 'string') lineNodes.push(this.fmtString(value));
+    else if (typeof value === 'number') lineNodes.push(this.fmtNumber(value));
+    else if (typeof value === 'boolean') lineNodes.push(this.fmtBoolNull(value));
+    else if (value === null) lineNodes.push(this.fmtBoolNull(null));
+    else lineNodes.push(String(value));
+    lineNodes.push(isLast ? '' : ',');
+    pushLine(lineNodes);
+    return pieces;
   }
 
   private renderContent(): any {
@@ -778,10 +954,7 @@ export class UiText {
             class={inputClasses}
             value={currentValue}
             placeholder={this.placeholder}
-            disabled={this.disabled || this.readonly}
             onInput={this.handleChange}
-            onFocus={this.handleFocus}
-            onBlur={this.handleBlur}
             rows={dynamicRows}
             maxLength={this.maxLength}
             style={{
@@ -790,19 +963,7 @@ export class UiText {
           ></textarea>
         );
       } else {
-        return (
-          <input
-            type="text"
-            class={inputClasses}
-            value={currentValue}
-            placeholder={this.placeholder}
-            disabled={this.disabled || this.readonly}
-            onInput={this.handleChange}
-            onFocus={this.handleFocus}
-            onBlur={this.handleBlur}
-            maxLength={this.maxLength}
-          />
-        );
+        return <input type="text" class={inputClasses} value={currentValue} placeholder={this.placeholder} onInput={this.handleChange} maxLength={this.maxLength} />;
       }
     }
 
@@ -811,22 +972,55 @@ export class UiText {
       case 'field':
         return <span class="block">{this.value || this.placeholder}</span>;
 
-      case 'area':
+      case 'area': {
+        const contentText = this.value || this.placeholder || '';
+        if (this.showLineNumbers) {
+          return this.renderWithLineNumbers(contentText, false);
+        }
         return (
-          <div class="whitespace-pre-wrap break-words" style={{ height: '100%' }}>
-            {this.showLineNumbers ? this.renderWithLineNumbers(this.value || this.placeholder || '') : this.value || this.placeholder}
+          <div class="whitespace-pre-wrap break-words leading-6" style={{ height: '100%' }} ref={el => (this.contentRef = el as HTMLElement)}>
+            {contentText}
           </div>
         );
+      }
 
-      case 'structured':
-        if (this.showLineNumbers) {
-          return <pre class="whitespace-pre-wrap break-words font-mono text-sm m-0">{this.renderWithLineNumbers(this.value || this.placeholder || '', true)}</pre>;
+      case 'structured': {
+        const raw = this.value || this.placeholder || '';
+        try {
+          const parsed = JSON.parse(raw);
+          const prettyText = JSON.stringify(parsed, null, 2);
+          const content = (
+            <pre class="whitespace-pre-wrap break-words font-mono text-sm m-0 leading-6" ref={el => (this.contentRef = el as HTMLElement)}>
+              {this.renderJsonValue(parsed, 'root', 0, true)}
+            </pre>
+          );
+          if (this.showLineNumbers) {
+            return this.renderWithLineNumbers(content, true, prettyText);
+          }
+          return content;
+        } catch {
+          // Not JSON - fallback to plain text
+          if (this.showLineNumbers) return this.renderWithLineNumbers(String(raw), true, String(raw));
+          return (
+            <pre class="whitespace-pre-wrap break-words font-mono text-sm m-0 leading-6" ref={el => (this.contentRef = el as HTMLElement)}>
+              {String(raw)}
+            </pre>
+          );
         }
-        return <pre class="whitespace-pre-wrap break-words font-mono text-sm m-0">{this.value || this.placeholder}</pre>;
+      }
 
       case 'unstructured':
-      default:
-        return <div class="whitespace-pre-wrap break-words">{this.value || this.placeholder}</div>;
+      default: {
+        const contentText = this.value || this.placeholder || '';
+        if (this.showLineNumbers) {
+          return this.renderWithLineNumbers(contentText, false);
+        }
+        return (
+          <div class="whitespace-pre-wrap break-words leading-6" ref={el => (this.contentRef = el as HTMLElement)}>
+            {contentText}
+          </div>
+        );
+      }
     }
   }
 
@@ -861,7 +1055,7 @@ export class UiText {
 
         {/* Main container with status badge positioning similar to ui-toggle */}
         <div class="relative inline-flex items-center w-full">
-          <div class={`ui-text-container ${baseClasses}`} style={containerStyle} ref={el => (this.containerRef = el)}>
+          <div class={`ui-text-container ${baseClasses}`} style={containerStyle} ref={el => (this.containerRef = el)} onTransitionEnd={() => this.scheduleLineCountUpdate()}>
             {this.renderContent()}
           </div>
 

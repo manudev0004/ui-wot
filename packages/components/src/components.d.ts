@@ -107,12 +107,12 @@ export namespace Components {
      */
     interface UiCalendar {
         /**
-          * Animation style for transitions. - none: No animations - slide: Slide transitions between months - fade: Fade transitions   - bounce: Playful bounce effects
+          * Animation style for transitions. - none: No animations - slide: Slide transitions between months - fade: Fade transitions - bounce: Playful bounce effects
           * @default 'slide'
          */
         "animation": 'none' | 'slide' | 'fade' | 'bounce';
         /**
-          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive actions - warning: Orange for caution - danger: Red for destructive actions
+          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones) - neutral: Grayscale for subtle integration - success: Green for positive actions - warning: Orange for caution - danger: Red for destructive actions
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger';
@@ -311,7 +311,7 @@ export namespace Components {
           * @param options - Configuration for device communication and behavior
           * @returns Promise resolving to true if successful, false if failed
           * @example Basic Usage ```javascript await checkbox.setValue(true); ```
-          * @example JS integaration with node-wot browser bundle * ```javascript const checkbox = document.getElementById('device-checkbox'); const initialValue = Boolean(await (await thing.readProperty('enabled')).value()); await checkbox.setValue(initialValue, { writeOperation: async value => { await thing.writeProperty('enabled', value); }, autoRetry: { attempts: 3, delay: 1000 } }); ```
+          * @example JS integration with node-wot browser bundle ```javascript const checkbox = document.getElementById('device-checkbox'); const initialValue = Boolean(await (await thing.readProperty('enabled')).value()); await checkbox.setValue(initialValue, { writeOperation: async value => { await thing.writeProperty('enabled', value); }, autoRetry: { attempts: 3, delay: 1000 } }); ```
          */
         "setValue": (value: boolean, options?: { writeOperation?: (value: boolean) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }) => Promise<boolean>;
         /**
@@ -341,9 +341,79 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Event listener component for subscribing to and publishing WoT events.
-     * Provides real-time event handling with filtering, buffering, and visual feedback.
-     * @example Basic Event Subscription
+     * A color picker component for selecting color values.
+     * Provides a simple HTML5 color input with consistent styling and WoT integration.
+     * @example Basic Usage
+     * ```html
+     * <ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const colorPicker = document.querySelector('#color-selector');
+     * // Set initial value with write operation
+     * await colorPicker.setValue('#00ff00', {
+     * writeOperation: async (color) => {
+     * await thing.writeProperty('deviceColor', color);
+     * }
+     * });
+     * // Listen for color changes
+     * colorPicker.addEventListener('valueMsg', (e) => {
+     * console.log('Color changed to:', e.detail.newVal);
+     * });
+     * ```
+     */
+    interface UiColorPicker {
+        /**
+          * Whether the component is disabled.
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Get the current color value.
+          * @returns The current color value
+         */
+        "getValue": () => Promise<string>;
+        /**
+          * Text label displayed above the color picker.
+         */
+        "label"?: string;
+        /**
+          * Whether the component is read-only.
+          * @default false
+         */
+        "readonly": boolean;
+        /**
+          * Set the color value programmatically.
+          * @param color - The color value in hex format
+          * @param options - Optional configuration including write operation
+          * @returns Promise that resolves to true if successful
+         */
+        "setValue": (color: string, options?: { writeOperation?: (value: string) => Promise<void>; _isRevert?: boolean; }) => Promise<boolean>;
+        /**
+          * Show last updated timestamp.
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Show status badge when true.
+          * @default true
+         */
+        "showStatus": boolean;
+        /**
+          * Current color value in hex format (e.g., #ff0000).
+          * @default '#000000'
+         */
+        "value": string;
+        /**
+          * Visual style variant of the color picker. - minimal: Simple color input with minimal styling - outlined: Border-focused design with outline style - filled: Solid background design with color preview
+          * @default 'outlined'
+         */
+        "variant": 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Event listener component for displaying and managing event data streams.
+     * Designed to connect with external data sources via JavaScript at the HTML level.
+     * @example Basic Event Display
      * ```html
      * <ui-event
      * label="Temperature Events"
@@ -352,34 +422,34 @@ export namespace Components {
      * show-timestamp="true">
      * </ui-event>
      * ```
-     * @example Event Publishing
-     * ```html
-     * <ui-event
-     * label="Alert Publisher"
-     * mode="publisher"
-     * event-name="alertTriggered"
-     * auto-publish="true">
-     * </ui-event>
+     * @example External Data Connection
+     * ```javascript
+     * const eventComponent = document.getElementById('event-listener');
+     * // Add events programmatically from external sources
+     * await eventComponent.addEvent({
+     * temperature: 23.5,
+     * humidity: 65,
+     * timestamp: Date.now()
+     * });
+     * // Listen for UI events
+     * eventComponent.addEventListener('eventReceived', (e) => {
+     * console.log('New event displayed:', e.detail);
+     * });
      * ```
-     * @example Advanced Filtering
+     * @example Event Filtering
      * ```javascript
      * const listener = document.getElementById('event-listener');
-     * // Set custom filter
+     * // Set custom filter for event data
      * await listener.setEventFilter((event) => {
-     * return event.payload.temperature > 25;
-     * });
-     * // Subscribe to events
-     * listener.addEventListener('eventReceived', (e) => {
-     * console.log('Filtered event:', e.detail);
+     * return event.data.temperature > 25;
      * });
      * ```
      */
     interface UiEvent {
         /**
-          * Auto-publish mode for publishers
-          * @default false
+          * Add an event programmatically from external sources
          */
-        "autoPublish": boolean;
+        "addEvent": (eventData: any, eventId?: string) => Promise<void>;
         /**
           * Clear event history
          */
@@ -410,7 +480,7 @@ export namespace Components {
          */
         "enableFiltering": boolean;
         /**
-          * Event name to subscribe to or publish
+          * Event name to subscribe to (for identification/display purposes)
          */
         "eventName"?: string;
         /**
@@ -418,9 +488,17 @@ export namespace Components {
          */
         "filterExpression"?: string;
         /**
+          * Force cleanup (for debugging)
+         */
+        "forceCleanup": () => Promise<void>;
+        /**
           * Get event history
          */
         "getEventHistory": () => Promise<Array<any>>;
+        /**
+          * Check if component is currently listening for events
+         */
+        "isListening": () => Promise<boolean>;
         /**
           * Enable keyboard interactions
           * @default true
@@ -435,19 +513,6 @@ export namespace Components {
           * @default 15
          */
         "maxEvents": number;
-        /**
-          * Component mode: listener or publisher
-          * @default 'listener'
-         */
-        "mode": 'listener' | 'publisher' | 'bidirectional';
-        /**
-          * Event payload template for publishing
-         */
-        "payloadTemplate"?: string;
-        /**
-          * Publish an event
-         */
-        "publishEvent": (payload: any, options?: { eventName?: string; }) => Promise<void>;
         /**
           * Whether component is in readonly mode
           * @default false
@@ -477,15 +542,106 @@ export namespace Components {
          */
         "showTimestamp": boolean;
         /**
-          * Start listening for events
+          * Start listening for events (enables the component)
          */
         "startListening": () => Promise<void>;
         /**
-          * Stop listening for events
+          * Stop listening for events (disables the component)
          */
         "stopListening": () => Promise<void>;
         /**
           * Visual style variant
+          * @default 'outlined'
+         */
+        "variant": 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * A file picker component for selecting and uploading files.
+     * Provides drag and drop functionality with visual feedback and file validation.
+     * @example Basic Usage
+     * ```html
+     * <ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
+     * ```
+     * @example Multiple Files
+     * ```html
+     * <ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const filePicker = document.querySelector('#file-upload');
+     * // Handle file selection
+     * filePicker.addEventListener('valueMsg', (e) => {
+     * const files = e.detail.newVal;
+     * console.log('Files selected:', files);
+     * });
+     * // Set upload operation
+     * await filePicker.setUploadOperation(async (files) => {
+     * const formData = new FormData();
+     * files.forEach(file => formData.append('files', file));
+     * await fetch('/api/upload', { method: 'POST', body: formData });
+     * });
+     * ```
+     */
+    interface UiFilePicker {
+        /**
+          * File type restrictions (e.g., ".pdf,.doc", "image/*").
+         */
+        "accept"?: string;
+        /**
+          * Clear the selected files.
+          * @returns Promise that resolves when files are cleared
+         */
+        "clearFiles": () => Promise<void>;
+        /**
+          * Whether the component is disabled.
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Get the currently selected files.
+          * @returns Array of selected files
+         */
+        "getFiles": () => Promise<File[]>;
+        /**
+          * Text label displayed above the file picker.
+         */
+        "label"?: string;
+        /**
+          * Maximum number of files when multiple is true.
+         */
+        "maxFiles"?: number;
+        /**
+          * Maximum file size in bytes.
+         */
+        "maxSize"?: number;
+        /**
+          * Whether multiple files can be selected.
+          * @default false
+         */
+        "multiple": boolean;
+        /**
+          * Whether the component is read-only.
+          * @default false
+         */
+        "readonly": boolean;
+        /**
+          * Set the upload operation to be executed when files are selected.
+          * @param operation - The upload operation function
+          * @returns Promise that resolves to true if successful
+         */
+        "setUploadOperation": (operation: (files: File[]) => Promise<any>) => Promise<boolean>;
+        /**
+          * Show last updated timestamp.
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Show status badge when true.
+          * @default true
+         */
+        "showStatus": boolean;
+        /**
+          * Visual style variant of the file picker. - minimal: Simple file input with minimal styling - outlined: Border-focused design with drag and drop area - filled: Solid background design with enhanced visual feedback
           * @default 'outlined'
          */
         "variant": 'minimal' | 'outlined' | 'filled';
@@ -656,7 +812,7 @@ export namespace Components {
           * @param options - Configuration for device communication and behavior
           * @returns Promise resolving to true if successful, false if failed
           * @example Basic Usage ```javascript await numberPicker.setValue(50); ```
-          * @example JS integaration with node-wot browser bundle * ```javascript const numberPicker = document.getElementById('device-volume'); const initialValue = Number(await (await thing.readProperty('volume')).value()); await numberPicker.setValue(initialValue, { writeOperation: async value => { await thing.writeProperty('volume', value); }, autoRetry: { attempts: 3, delay: 1000 } }); ```
+          * @example JS integration with node-wot browser bundle ```javascript const numberPicker = document.getElementById('device-volume'); const initialValue = Number(await (await thing.readProperty('volume')).value()); await numberPicker.setValue(initialValue, { writeOperation: async value => { await thing.writeProperty('volume', value); }, autoRetry: { attempts: 3, delay: 1000 } }); ```
          */
         "setValue": (value: number, options?: { writeOperation?: (value: number) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }) => Promise<boolean>;
         /**
@@ -810,7 +966,7 @@ export namespace Components {
           * @param options - Configuration options for the operation
           * @returns Promise<boolean> - true if successful, false if failed
           * @example Basic Usage (Easy) ```javascript // Simple value setting const slider = document.querySelector('ui-slider'); await slider.setValue(50);    // Set to 50 await slider.setValue(75.5);  // Set to 75.5 (decimals supported) ```
-          * @example Temperature Control (Advanced) ```javascript // Smart thermostat control const thermostat = document.querySelector('#thermostat');  await thermostat.setValue(72, { writeOperation: async () => { const response = await fetch('/api/hvac/setpoint', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({  temperature: 72,  zone: 'living-room'  }) }); if (!response.ok) throw new Error('Failed to set temperature'); }, optimistic: true, autoRetry: { attempts: 2, delay: 3000 } }); ```
+          * @example Temperature Control (Advanced) ```javascript // Smart thermostat control const thermostat = document.querySelector('#thermostat');  await thermostat.setValue(72, { writeOperation: async () => { const response = await fetch('/api/hvac/setpoint', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ temperature: 72, zone: 'living-room' }) }); if (!response.ok) throw new Error('Failed to set temperature'); }, optimistic: true, autoRetry: { attempts: 2, delay: 3000 } }); ```
           * @example Volume Control (Advanced) ```javascript // Audio system volume control const volumeSlider = document.querySelector('#volume');  await volumeSlider.setValue(85, { writeOperation: async () => { await fetch(`/api/audio/volume/${85}`); }, readOperation: async () => { // Verify the actual volume was set const response = await fetch('/api/audio/volume'); const { volume } = await response.json(); if (Math.abs(volume - 85) > 1) { throw new Error('Volume mismatch'); } } }); ```
           * @example Sensor Calibration (Advanced) ```javascript // Sensor calibration with validation const calibrationSlider = document.querySelector('#sensor-offset');  await calibrationSlider.setValue(-2.5, { writeOperation: async () => { // Apply calibration offset await fetch('/api/sensors/calibrate', { method: 'POST', body: JSON.stringify({ offset: -2.5 }) });  // Wait for sensor to stabilize await new Promise(resolve => setTimeout(resolve, 2000));  // Validate calibration worked const testReading = await fetch('/api/sensors/test-reading'); const { reading } = await testReading.json(); if (Math.abs(reading) > 0.1) { throw new Error('Calibration verification failed'); } } }); ```
          */
@@ -897,7 +1053,7 @@ export namespace Components {
      */
     interface UiText {
         /**
-          * Color theme variant.
+          * Color theme variant. TODO: Review - may be irrelevant for text components, consider removal
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
@@ -911,6 +1067,11 @@ export namespace Components {
           * @default false
          */
         "dark": boolean;
+        /**
+          * Debounce delay in milliseconds for editable mode updates (0 = disabled). When enabled, reduces API calls by only sending updates after user stops typing.
+          * @default 0
+         */
+        "debounceMs": number;
         /**
           * Whether the component is disabled (editable mode only).
           * @default false
@@ -927,11 +1088,6 @@ export namespace Components {
           * @example ```javascript // Basic usage const text = await textDisplay.getValue(); console.log('Current text:', text);  // With metadata const result = await textDisplay.getValue(true); console.log('Value:', result.value); console.log('Last updated:', new Date(result.lastUpdated)); console.log('Status:', result.status); ```
          */
         "getValue": (includeMetadata?: boolean) => Promise<string | { value: string; lastUpdated?: number; status: string; error?: string; }>;
-        /**
-          * Enable keyboard navigation for editable mode. Default: true
-          * @default true
-         */
-        "keyboard": boolean;
         /**
           * Text label displayed above the text display.
          */
@@ -964,6 +1120,11 @@ export namespace Components {
           * @default false
          */
         "readonly": boolean;
+        /**
+          * Enable text area resizing (area and editable modes).
+          * @default true
+         */
+        "resizable": boolean;
         /**
           * Set operation status for external status management. Use this method to manually control the visual status indicators when managing operations externally.
           * @param status - The status to set ('idle', 'loading', 'success', 'error')
@@ -1002,6 +1163,11 @@ export namespace Components {
           * @default false
          */
         "showLineNumbers": boolean;
+        /**
+          * Show save button for explicit updates (editable mode only). When true, changes are not sent until user clicks save.
+          * @default false
+         */
+        "showSaveButton": boolean;
         /**
           * Show status badge when true
           * @default true
@@ -1092,7 +1258,7 @@ export namespace Components {
           * @param options - Configuration for device communication and behavior
           * @returns Promise resolving to true if successful, false if failed
           * @example Basic Usage ```javascript await toggle.setValue(true); ```
-          * @example JS integaration with node-wot browser bundle * ```javascript const toggle = document.getElementById('device-toggle'); const initialValue = Boolean(await (await thing.readProperty('power')).value()); await toggle.setValue(initialValue, { writeOperation: async value => { await thing.writeProperty('power', value); }, autoRetry: { attempts: 3, delay: 1000 } }); ```
+          * @example JS integration with node-wot browser bundle ```javascript const toggle = document.getElementById('device-toggle'); const initialValue = Boolean(await (await thing.readProperty('power')).value()); await toggle.setValue(initialValue, { writeOperation: async value => { await thing.writeProperty('power', value); }, autoRetry: { attempts: 3, delay: 1000 } }); ```
          */
         "setValue": (value: boolean, options?: { writeOperation?: (value: boolean) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }) => Promise<boolean>;
         /**
@@ -1120,7 +1286,7 @@ export namespace Components {
          */
         "value": boolean;
         /**
-          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
+          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows cross when off, tick when on with red background when off and green when on - neon: Glowing effect when active
           * @default 'circle'
          */
         "variant": 'circle' | 'square' | 'apple' | 'cross' | 'neon';
@@ -1138,9 +1304,17 @@ export interface UiCheckboxCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiCheckboxElement;
 }
+export interface UiColorPickerCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiColorPickerElement;
+}
 export interface UiEventCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLUiEventElement;
+}
+export interface UiFilePickerCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLUiFilePickerElement;
 }
 export interface UiNotificationCustomEvent<T> extends CustomEvent<T> {
     detail: T;
@@ -1276,15 +1450,53 @@ declare global {
         prototype: HTMLUiCheckboxElement;
         new (): HTMLUiCheckboxElement;
     };
+    interface HTMLUiColorPickerElementEventMap {
+        "valueMsg": UiMsg<string>;
+    }
+    /**
+     * A color picker component for selecting color values.
+     * Provides a simple HTML5 color input with consistent styling and WoT integration.
+     * @example Basic Usage
+     * ```html
+     * <ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const colorPicker = document.querySelector('#color-selector');
+     * // Set initial value with write operation
+     * await colorPicker.setValue('#00ff00', {
+     * writeOperation: async (color) => {
+     * await thing.writeProperty('deviceColor', color);
+     * }
+     * });
+     * // Listen for color changes
+     * colorPicker.addEventListener('valueMsg', (e) => {
+     * console.log('Color changed to:', e.detail.newVal);
+     * });
+     * ```
+     */
+    interface HTMLUiColorPickerElement extends Components.UiColorPicker, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiColorPickerElementEventMap>(type: K, listener: (this: HTMLUiColorPickerElement, ev: UiColorPickerCustomEvent<HTMLUiColorPickerElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiColorPickerElementEventMap>(type: K, listener: (this: HTMLUiColorPickerElement, ev: UiColorPickerCustomEvent<HTMLUiColorPickerElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiColorPickerElement: {
+        prototype: HTMLUiColorPickerElement;
+        new (): HTMLUiColorPickerElement;
+    };
     interface HTMLUiEventElementEventMap {
         "eventReceived": UiMsg<any>;
-        "eventPublished": UiMsg<any>;
         "valueMsg": UiMsg<any>;
     }
     /**
-     * Event listener component for subscribing to and publishing WoT events.
-     * Provides real-time event handling with filtering, buffering, and visual feedback.
-     * @example Basic Event Subscription
+     * Event listener component for displaying and managing event data streams.
+     * Designed to connect with external data sources via JavaScript at the HTML level.
+     * @example Basic Event Display
      * ```html
      * <ui-event
      * label="Temperature Events"
@@ -1293,25 +1505,26 @@ declare global {
      * show-timestamp="true">
      * </ui-event>
      * ```
-     * @example Event Publishing
-     * ```html
-     * <ui-event
-     * label="Alert Publisher"
-     * mode="publisher"
-     * event-name="alertTriggered"
-     * auto-publish="true">
-     * </ui-event>
+     * @example External Data Connection
+     * ```javascript
+     * const eventComponent = document.getElementById('event-listener');
+     * // Add events programmatically from external sources
+     * await eventComponent.addEvent({
+     * temperature: 23.5,
+     * humidity: 65,
+     * timestamp: Date.now()
+     * });
+     * // Listen for UI events
+     * eventComponent.addEventListener('eventReceived', (e) => {
+     * console.log('New event displayed:', e.detail);
+     * });
      * ```
-     * @example Advanced Filtering
+     * @example Event Filtering
      * ```javascript
      * const listener = document.getElementById('event-listener');
-     * // Set custom filter
+     * // Set custom filter for event data
      * await listener.setEventFilter((event) => {
-     * return event.payload.temperature > 25;
-     * });
-     * // Subscribe to events
-     * listener.addEventListener('eventReceived', (e) => {
-     * console.log('Filtered event:', e.detail);
+     * return event.data.temperature > 25;
      * });
      * ```
      */
@@ -1328,6 +1541,50 @@ declare global {
     var HTMLUiEventElement: {
         prototype: HTMLUiEventElement;
         new (): HTMLUiEventElement;
+    };
+    interface HTMLUiFilePickerElementEventMap {
+        "valueMsg": UiMsg<File[]>;
+    }
+    /**
+     * A file picker component for selecting and uploading files.
+     * Provides drag and drop functionality with visual feedback and file validation.
+     * @example Basic Usage
+     * ```html
+     * <ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
+     * ```
+     * @example Multiple Files
+     * ```html
+     * <ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const filePicker = document.querySelector('#file-upload');
+     * // Handle file selection
+     * filePicker.addEventListener('valueMsg', (e) => {
+     * const files = e.detail.newVal;
+     * console.log('Files selected:', files);
+     * });
+     * // Set upload operation
+     * await filePicker.setUploadOperation(async (files) => {
+     * const formData = new FormData();
+     * files.forEach(file => formData.append('files', file));
+     * await fetch('/api/upload', { method: 'POST', body: formData });
+     * });
+     * ```
+     */
+    interface HTMLUiFilePickerElement extends Components.UiFilePicker, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLUiFilePickerElementEventMap>(type: K, listener: (this: HTMLUiFilePickerElement, ev: UiFilePickerCustomEvent<HTMLUiFilePickerElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLUiFilePickerElementEventMap>(type: K, listener: (this: HTMLUiFilePickerElement, ev: UiFilePickerCustomEvent<HTMLUiFilePickerElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLUiFilePickerElement: {
+        prototype: HTMLUiFilePickerElement;
+        new (): HTMLUiFilePickerElement;
     };
     interface HTMLUiNotificationElementEventMap {
         "notificationClose": {
@@ -1573,7 +1830,9 @@ declare global {
         "ui-button": HTMLUiButtonElement;
         "ui-calendar": HTMLUiCalendarElement;
         "ui-checkbox": HTMLUiCheckboxElement;
+        "ui-color-picker": HTMLUiColorPickerElement;
         "ui-event": HTMLUiEventElement;
+        "ui-file-picker": HTMLUiFilePickerElement;
         "ui-notification": HTMLUiNotificationElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
         "ui-slider": HTMLUiSliderElement;
@@ -1670,12 +1929,12 @@ declare namespace LocalJSX {
      */
     interface UiCalendar {
         /**
-          * Animation style for transitions. - none: No animations - slide: Slide transitions between months - fade: Fade transitions   - bounce: Playful bounce effects
+          * Animation style for transitions. - none: No animations - slide: Slide transitions between months - fade: Fade transitions - bounce: Playful bounce effects
           * @default 'slide'
          */
         "animation"?: 'none' | 'slide' | 'fade' | 'bounce';
         /**
-          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive actions - warning: Orange for caution - danger: Red for destructive actions
+          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones) - neutral: Grayscale for subtle integration - success: Green for positive actions - warning: Orange for caution - danger: Red for destructive actions
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger';
@@ -1866,9 +2125,71 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Event listener component for subscribing to and publishing WoT events.
-     * Provides real-time event handling with filtering, buffering, and visual feedback.
-     * @example Basic Event Subscription
+     * A color picker component for selecting color values.
+     * Provides a simple HTML5 color input with consistent styling and WoT integration.
+     * @example Basic Usage
+     * ```html
+     * <ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const colorPicker = document.querySelector('#color-selector');
+     * // Set initial value with write operation
+     * await colorPicker.setValue('#00ff00', {
+     * writeOperation: async (color) => {
+     * await thing.writeProperty('deviceColor', color);
+     * }
+     * });
+     * // Listen for color changes
+     * colorPicker.addEventListener('valueMsg', (e) => {
+     * console.log('Color changed to:', e.detail.newVal);
+     * });
+     * ```
+     */
+    interface UiColorPicker {
+        /**
+          * Whether the component is disabled.
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Text label displayed above the color picker.
+         */
+        "label"?: string;
+        /**
+          * Emitted when the color value changes.
+         */
+        "onValueMsg"?: (event: UiColorPickerCustomEvent<UiMsg<string>>) => void;
+        /**
+          * Whether the component is read-only.
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * Show last updated timestamp.
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Show status badge when true.
+          * @default true
+         */
+        "showStatus"?: boolean;
+        /**
+          * Current color value in hex format (e.g., #ff0000).
+          * @default '#000000'
+         */
+        "value"?: string;
+        /**
+          * Visual style variant of the color picker. - minimal: Simple color input with minimal styling - outlined: Border-focused design with outline style - filled: Solid background design with color preview
+          * @default 'outlined'
+         */
+        "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * Event listener component for displaying and managing event data streams.
+     * Designed to connect with external data sources via JavaScript at the HTML level.
+     * @example Basic Event Display
      * ```html
      * <ui-event
      * label="Temperature Events"
@@ -1877,34 +2198,30 @@ declare namespace LocalJSX {
      * show-timestamp="true">
      * </ui-event>
      * ```
-     * @example Event Publishing
-     * ```html
-     * <ui-event
-     * label="Alert Publisher"
-     * mode="publisher"
-     * event-name="alertTriggered"
-     * auto-publish="true">
-     * </ui-event>
+     * @example External Data Connection
+     * ```javascript
+     * const eventComponent = document.getElementById('event-listener');
+     * // Add events programmatically from external sources
+     * await eventComponent.addEvent({
+     * temperature: 23.5,
+     * humidity: 65,
+     * timestamp: Date.now()
+     * });
+     * // Listen for UI events
+     * eventComponent.addEventListener('eventReceived', (e) => {
+     * console.log('New event displayed:', e.detail);
+     * });
      * ```
-     * @example Advanced Filtering
+     * @example Event Filtering
      * ```javascript
      * const listener = document.getElementById('event-listener');
-     * // Set custom filter
+     * // Set custom filter for event data
      * await listener.setEventFilter((event) => {
-     * return event.payload.temperature > 25;
-     * });
-     * // Subscribe to events
-     * listener.addEventListener('eventReceived', (e) => {
-     * console.log('Filtered event:', e.detail);
+     * return event.data.temperature > 25;
      * });
      * ```
      */
     interface UiEvent {
-        /**
-          * Auto-publish mode for publishers
-          * @default false
-         */
-        "autoPublish"?: boolean;
         /**
           * Color theme
           * @default 'primary'
@@ -1931,7 +2248,7 @@ declare namespace LocalJSX {
          */
         "enableFiltering"?: boolean;
         /**
-          * Event name to subscribe to or publish
+          * Event name to subscribe to (for identification/display purposes)
          */
         "eventName"?: string;
         /**
@@ -1953,26 +2270,13 @@ declare namespace LocalJSX {
          */
         "maxEvents"?: number;
         /**
-          * Component mode: listener or publisher
-          * @default 'listener'
-         */
-        "mode"?: 'listener' | 'publisher' | 'bidirectional';
-        /**
-          * Emitted when an event is published (publisher mode)
-         */
-        "onEventPublished"?: (event: UiEventCustomEvent<UiMsg<any>>) => void;
-        /**
-          * Emitted when an event is received (listener mode)
+          * Emitted when an event is received from the Thing
          */
         "onEventReceived"?: (event: UiEventCustomEvent<UiMsg<any>>) => void;
         /**
-          * Standard value message event
+          * Standard value message event for consistency with other components
          */
         "onValueMsg"?: (event: UiEventCustomEvent<UiMsg<any>>) => void;
-        /**
-          * Event payload template for publishing
-         */
-        "payloadTemplate"?: string;
         /**
           * Whether component is in readonly mode
           * @default false
@@ -1995,6 +2299,85 @@ declare namespace LocalJSX {
         "showTimestamp"?: boolean;
         /**
           * Visual style variant
+          * @default 'outlined'
+         */
+        "variant"?: 'minimal' | 'outlined' | 'filled';
+    }
+    /**
+     * A file picker component for selecting and uploading files.
+     * Provides drag and drop functionality with visual feedback and file validation.
+     * @example Basic Usage
+     * ```html
+     * <ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
+     * ```
+     * @example Multiple Files
+     * ```html
+     * <ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+     * ```
+     * @example JavaScript Integration
+     * ```javascript
+     * const filePicker = document.querySelector('#file-upload');
+     * // Handle file selection
+     * filePicker.addEventListener('valueMsg', (e) => {
+     * const files = e.detail.newVal;
+     * console.log('Files selected:', files);
+     * });
+     * // Set upload operation
+     * await filePicker.setUploadOperation(async (files) => {
+     * const formData = new FormData();
+     * files.forEach(file => formData.append('files', file));
+     * await fetch('/api/upload', { method: 'POST', body: formData });
+     * });
+     * ```
+     */
+    interface UiFilePicker {
+        /**
+          * File type restrictions (e.g., ".pdf,.doc", "image/*").
+         */
+        "accept"?: string;
+        /**
+          * Whether the component is disabled.
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Text label displayed above the file picker.
+         */
+        "label"?: string;
+        /**
+          * Maximum number of files when multiple is true.
+         */
+        "maxFiles"?: number;
+        /**
+          * Maximum file size in bytes.
+         */
+        "maxSize"?: number;
+        /**
+          * Whether multiple files can be selected.
+          * @default false
+         */
+        "multiple"?: boolean;
+        /**
+          * Emitted when files are selected.
+         */
+        "onValueMsg"?: (event: UiFilePickerCustomEvent<UiMsg<File[]>>) => void;
+        /**
+          * Whether the component is read-only.
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * Show last updated timestamp.
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Show status badge when true.
+          * @default true
+         */
+        "showStatus"?: boolean;
+        /**
+          * Visual style variant of the file picker. - minimal: Simple file input with minimal styling - outlined: Border-focused design with drag and drop area - filled: Solid background design with enhanced visual feedback
           * @default 'outlined'
          */
         "variant"?: 'minimal' | 'outlined' | 'filled';
@@ -2334,7 +2717,7 @@ declare namespace LocalJSX {
      */
     interface UiText {
         /**
-          * Color theme variant.
+          * Color theme variant. TODO: Review - may be irrelevant for text components, consider removal
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
@@ -2349,15 +2732,15 @@ declare namespace LocalJSX {
          */
         "dark"?: boolean;
         /**
+          * Debounce delay in milliseconds for editable mode updates (0 = disabled). When enabled, reduces API calls by only sending updates after user stops typing.
+          * @default 0
+         */
+        "debounceMs"?: number;
+        /**
           * Whether the component is disabled (editable mode only).
           * @default false
          */
         "disabled"?: boolean;
-        /**
-          * Enable keyboard navigation for editable mode. Default: true
-          * @default true
-         */
-        "keyboard"?: boolean;
         /**
           * Text label displayed above the text display.
          */
@@ -2396,6 +2779,11 @@ declare namespace LocalJSX {
          */
         "readonly"?: boolean;
         /**
+          * Enable text area resizing (area and editable modes).
+          * @default true
+         */
+        "resizable"?: boolean;
+        /**
           * Show character count (editable mode only).
           * @default false
          */
@@ -2410,6 +2798,11 @@ declare namespace LocalJSX {
           * @default false
          */
         "showLineNumbers"?: boolean;
+        /**
+          * Show save button for explicit updates (editable mode only). When true, changes are not sent until user clicks save.
+          * @default false
+         */
+        "showSaveButton"?: boolean;
         /**
           * Show status badge when true
           * @default true
@@ -2502,7 +2895,7 @@ declare namespace LocalJSX {
          */
         "value"?: boolean;
         /**
-          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows × when off, ✓ when on with red background when off and green when on - neon: Glowing effect when active
+          * Visual style variant of the toggle. - circle: Common pill-shaped toggle (default) - square: Rectangular toggle with square thumb - apple: iOS-style switch (bigger size, rounded edges) - cross: Shows cross when off, tick when on with red background when off and green when on - neon: Glowing effect when active
           * @default 'circle'
          */
         "variant"?: 'circle' | 'square' | 'apple' | 'cross' | 'neon';
@@ -2511,7 +2904,9 @@ declare namespace LocalJSX {
         "ui-button": UiButton;
         "ui-calendar": UiCalendar;
         "ui-checkbox": UiCheckbox;
+        "ui-color-picker": UiColorPicker;
         "ui-event": UiEvent;
+        "ui-file-picker": UiFilePicker;
         "ui-notification": UiNotification;
         "ui-number-picker": UiNumberPicker;
         "ui-slider": UiSlider;
@@ -2587,9 +2982,32 @@ declare module "@stencil/core" {
              */
             "ui-checkbox": LocalJSX.UiCheckbox & JSXBase.HTMLAttributes<HTMLUiCheckboxElement>;
             /**
-             * Event listener component for subscribing to and publishing WoT events.
-             * Provides real-time event handling with filtering, buffering, and visual feedback.
-             * @example Basic Event Subscription
+             * A color picker component for selecting color values.
+             * Provides a simple HTML5 color input with consistent styling and WoT integration.
+             * @example Basic Usage
+             * ```html
+             * <ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
+             * ```
+             * @example JavaScript Integration
+             * ```javascript
+             * const colorPicker = document.querySelector('#color-selector');
+             * // Set initial value with write operation
+             * await colorPicker.setValue('#00ff00', {
+             * writeOperation: async (color) => {
+             * await thing.writeProperty('deviceColor', color);
+             * }
+             * });
+             * // Listen for color changes
+             * colorPicker.addEventListener('valueMsg', (e) => {
+             * console.log('Color changed to:', e.detail.newVal);
+             * });
+             * ```
+             */
+            "ui-color-picker": LocalJSX.UiColorPicker & JSXBase.HTMLAttributes<HTMLUiColorPickerElement>;
+            /**
+             * Event listener component for displaying and managing event data streams.
+             * Designed to connect with external data sources via JavaScript at the HTML level.
+             * @example Basic Event Display
              * ```html
              * <ui-event
              * label="Temperature Events"
@@ -2598,29 +3016,58 @@ declare module "@stencil/core" {
              * show-timestamp="true">
              * </ui-event>
              * ```
-             * @example Event Publishing
-             * ```html
-             * <ui-event
-             * label="Alert Publisher"
-             * mode="publisher"
-             * event-name="alertTriggered"
-             * auto-publish="true">
-             * </ui-event>
+             * @example External Data Connection
+             * ```javascript
+             * const eventComponent = document.getElementById('event-listener');
+             * // Add events programmatically from external sources
+             * await eventComponent.addEvent({
+             * temperature: 23.5,
+             * humidity: 65,
+             * timestamp: Date.now()
+             * });
+             * // Listen for UI events
+             * eventComponent.addEventListener('eventReceived', (e) => {
+             * console.log('New event displayed:', e.detail);
+             * });
              * ```
-             * @example Advanced Filtering
+             * @example Event Filtering
              * ```javascript
              * const listener = document.getElementById('event-listener');
-             * // Set custom filter
+             * // Set custom filter for event data
              * await listener.setEventFilter((event) => {
-             * return event.payload.temperature > 25;
-             * });
-             * // Subscribe to events
-             * listener.addEventListener('eventReceived', (e) => {
-             * console.log('Filtered event:', e.detail);
+             * return event.data.temperature > 25;
              * });
              * ```
              */
             "ui-event": LocalJSX.UiEvent & JSXBase.HTMLAttributes<HTMLUiEventElement>;
+            /**
+             * A file picker component for selecting and uploading files.
+             * Provides drag and drop functionality with visual feedback and file validation.
+             * @example Basic Usage
+             * ```html
+             * <ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
+             * ```
+             * @example Multiple Files
+             * ```html
+             * <ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+             * ```
+             * @example JavaScript Integration
+             * ```javascript
+             * const filePicker = document.querySelector('#file-upload');
+             * // Handle file selection
+             * filePicker.addEventListener('valueMsg', (e) => {
+             * const files = e.detail.newVal;
+             * console.log('Files selected:', files);
+             * });
+             * // Set upload operation
+             * await filePicker.setUploadOperation(async (files) => {
+             * const formData = new FormData();
+             * files.forEach(file => formData.append('files', file));
+             * await fetch('/api/upload', { method: 'POST', body: formData });
+             * });
+             * ```
+             */
+            "ui-file-picker": LocalJSX.UiFilePicker & JSXBase.HTMLAttributes<HTMLUiFilePickerElement>;
             /**
              * Notification component for displaying temporary event data with auto-dismiss functionality.
              * Supports multiple notification types with smooth animations and customizable duration.

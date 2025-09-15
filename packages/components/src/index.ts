@@ -1,6 +1,6 @@
 /**
  * @fileoverview Simple entry point for UI-WoT components
- * 
+ *
  * This exports the component classes for use in frameworks.
  * For HTML usage, just import the built bundle directly.
  */
@@ -15,6 +15,8 @@ export { UiCalendar } from './components/ui-calendar/ui-calendar';
 export { UiNotification } from './components/ui-notification/ui-notification';
 export { UiText } from './components/ui-text/ui-text';
 export { UiEvent } from './components/ui-event/ui-event';
+export { UiColorPicker } from './components/ui-color-picker/ui-color-picker';
+export { UiFilePicker } from './components/ui-file-picker/ui-file-picker';
 
 // Export utility types
 export * from './utils/types';

@@ -113,7 +113,7 @@
           <h3>Structured (JSON, large)</h3>
           <ui-text
             id="txt-structured"
-            mode="unstructured"
+            mode="structured"
             variant="outlined"
             label="Structured JSON with line numbers"
             value='{
@@ -177,28 +177,6 @@
             validation-pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
             required="true"
           ></ui-text>
-        </div>
-      </div>
-
-      <!-- Status states -->
-      <div class="row">
-        <div style="flex: 1">
-          <h3>Status: success (primary)</h3>
-          <ui-text mode="field" variant="outlined" color="primary" label="Success" value="Saved OK" status="success"></ui-text>
-        </div>
-        <div style="flex: 1">
-          <h3>Status: warning (secondary)</h3>
-          <ui-text mode="field" variant="outlined" color="secondary" label="Warning" value="Needs attention" status="warning"></ui-text>
-        </div>
-      </div>
-      <div class="row">
-        <div style="flex: 1">
-          <h3>Status: error</h3>
-          <ui-text mode="field" variant="outlined" label="Error" value="Something went wrong" status="error"></ui-text>
-        </div>
-        <div style="flex: 1">
-          <h3>Status: loading</h3>
-          <ui-text mode="field" variant="outlined" label="Loading" value="Fetching..." status="loading"></ui-text>
         </div>
       </div>
 

@@ -88,6 +88,18 @@
             >
               UI Notification
             </button>
+            <button
+              id="color-picker-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI Color Picker
+            </button>
+            <button
+              id="file-picker-tab"
+              class="tab-button border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium py-2 px-1 text-sm"
+            >
+              UI File Picker
+            </button>
           </nav>
         </div>
       </div>
@@ -1392,6 +1404,184 @@
 
     </div>
 
+  <!-- Color Picker Content -->
+  <div id="color-picker-content" class="tab-content hidden">
+    <div class="w-full max-w-5xl -mt-12 mx-auto p-6">
+        <!-- Basic Usage Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Color Picker Usage</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Interactive Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Interactive Mode</h3>
+              <ui-color-picker
+                value="#067362"
+                label="Primary Color"
+                show-last-updated="true"
+                show-status="true"
+              >
+              </ui-color-picker>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-color-picker
+  value="#067362"
+  label="Primary Color"&gt;
+&lt;/ui-color-picker&gt;</pre>
+            </div>
+
+            <!-- Read-Only Mode -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Read-Only Mode</h3>
+              <ui-color-picker
+                value="#B84A91"
+                label="Secondary Color"
+                readonly="true"
+                show-last-updated="true"
+              >
+              </ui-color-picker>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-color-picker
+  readonly="true"
+  label="Secondary Color"&gt;
+&lt;/ui-color-picker&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Additional Examples</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Theme Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Theme Color</h3>
+              <ui-color-picker value="#ff6b6b" label="Accent Color"></ui-color-picker>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-color-picker
+  value="#ff6b6b"&gt;
+&lt;/ui-color-picker&gt;</pre>
+            </div>
+
+            <!-- Background Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Background Color</h3>
+              <ui-color-picker value="#4ecdc4" label="Background"></ui-color-picker>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-color-picker
+  label="Background"&gt;
+&lt;/ui-color-picker&gt;</pre>
+            </div>
+
+            <!-- Brand Color -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Brand Color</h3>
+              <ui-color-picker value="#45b7d1" label="Brand"></ui-color-picker>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-color-picker
+  label="Brand"&gt;
+&lt;/ui-color-picker&gt;</pre>
+            </div>
+          </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- File Picker Content -->
+  <div id="file-picker-content" class="tab-content hidden">
+    <div class="w-full max-w-5xl -mt-12 mx-auto p-6">
+        <!-- Basic Usage Examples -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic File Picker Usage</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Single File -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Single File</h3>
+              <ui-file-picker
+                label="Upload Document"
+                accept=".pdf,.doc,.docx"
+                show-last-updated="true"
+                show-status="true"
+              >
+              </ui-file-picker>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-file-picker
+  label="Upload Document"
+  accept=".pdf,.doc,.docx"&gt;
+&lt;/ui-file-picker&gt;</pre>
+            </div>
+
+            <!-- Multiple Files -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Multiple Files</h3>
+              <ui-file-picker
+                label="Upload Images"
+                accept="image/*"
+                multiple="true"
+                max-files="5"
+                show-last-updated="true"
+              >
+              </ui-file-picker>
+              <pre class="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 overflow-x-auto border border-gray-200 dark:border-gray-700">&lt;ui-file-picker
+  multiple="true"
+  accept="image/*"&gt;
+&lt;/ui-file-picker&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- File Type Restrictions -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">File Type Restrictions</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Images Only -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Images Only</h3>
+              <ui-file-picker label="Images" accept="image/*" multiple="true"></ui-file-picker>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-file-picker
+  accept="image/*"&gt;
+&lt;/ui-file-picker&gt;</pre>
+            </div>
+
+            <!-- Documents Only -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Documents Only</h3>
+              <ui-file-picker label="Documents" accept=".pdf,.doc,.docx,.txt"></ui-file-picker>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-file-picker
+  accept=".pdf,.doc,.docx"&gt;
+&lt;/ui-file-picker&gt;</pre>
+            </div>
+
+            <!-- All Files -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">All Files</h3>
+              <ui-file-picker label="Any File" accept="*/*"></ui-file-picker>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-file-picker
+  accept="*/*"&gt;
+&lt;/ui-file-picker&gt;</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload Actions -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors duration-300">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Upload Actions</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- With Upload Operation -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">With Upload Operation</h3>
+              <ui-file-picker id="upload-demo" label="Upload to Server" accept="*/*" multiple="true"></ui-file-picker>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">// Set upload operation
+picker.setUploadOperation(async (files) => {
+  // Upload logic here
+});</pre>
+            </div>
+
+            <!-- Read-only -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Read-only</h3>
+              <ui-file-picker label="Current Files" readonly="true"></ui-file-picker>
+              <pre class="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">&lt;ui-file-picker
+  readonly="true"&gt;
+&lt;/ui-file-picker&gt;</pre>
+            </div>
+          </div>
+        </div>
+    </div>
+  </div>
+
     <script>
       const themeToggle = document.getElementById('theme-toggle');
       const html = document.documentElement;
@@ -1406,6 +1596,8 @@
       const calendarTab = document.getElementById('calendar-tab');
       const eventTab = document.getElementById('event-tab');
       const notificationTab = document.getElementById('notification-tab');
+      const colorPickerTab = document.getElementById('color-picker-tab');
+      const filePickerTab = document.getElementById('file-picker-tab');
       const toggleContent = document.getElementById('toggle-content');
       const numberPickerContent = document.getElementById('number-picker-content');
       const sliderContent = document.getElementById('slider-content');
@@ -1415,6 +1607,8 @@
       const calendarContent = document.getElementById('calendar-content');
       const eventContent = document.getElementById('event-content');
       const notificationContent = document.getElementById('notification-content');
+      const colorPickerContent = document.getElementById('color-picker-content');
+      const filePickerContent = document.getElementById('file-picker-content');
 
       function setTheme(isDark) {
         if (suppressThemeSync) return;
@@ -1422,7 +1616,7 @@
         try {
           html.classList.toggle('dark', isDark);
           localStorage.setItem('theme', isDark ? 'dark' : 'light');
-          document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox, ui-text, ui-calendar, ui-event, ui-notification').forEach(component => {
+          document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox, ui-text, ui-calendar, ui-event, ui-notification, ui-color-picker, ui-file-picker').forEach(component => {
             component.dark = isDark;
           });
         } finally {
@@ -1461,63 +1655,88 @@
         switchTab(toggleTab, toggleContent, 
           numberPickerTab, numberPickerContent, sliderTab, sliderContent, buttonTab, buttonContent, 
           checkboxTab, checkboxContent, textTab, textContent, calendarTab, calendarContent, 
-          eventTab, eventContent, notificationTab, notificationContent);
+          eventTab, eventContent, notificationTab, notificationContent, colorPickerTab, colorPickerContent,
+          filePickerTab, filePickerContent);
       });
 
       numberPickerTab.addEventListener('click', () => {
         switchTab(numberPickerTab, numberPickerContent, 
           toggleTab, toggleContent, sliderTab, sliderContent, buttonTab, buttonContent, 
           checkboxTab, checkboxContent, textTab, textContent, calendarTab, calendarContent, 
-          eventTab, eventContent, notificationTab, notificationContent);
+          eventTab, eventContent, notificationTab, notificationContent, colorPickerTab, colorPickerContent,
+          filePickerTab, filePickerContent);
       });
 
       sliderTab.addEventListener('click', () => {
         switchTab(sliderTab, sliderContent, 
           toggleTab, toggleContent, numberPickerTab, numberPickerContent, buttonTab, buttonContent, 
           checkboxTab, checkboxContent, textTab, textContent, calendarTab, calendarContent, 
-          eventTab, eventContent, notificationTab, notificationContent);
+          eventTab, eventContent, notificationTab, notificationContent, colorPickerTab, colorPickerContent,
+          filePickerTab, filePickerContent);
       });
 
       buttonTab.addEventListener('click', () => {
         switchTab(buttonTab, buttonContent, 
           toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
           checkboxTab, checkboxContent, textTab, textContent, calendarTab, calendarContent, 
-          eventTab, eventContent, notificationTab, notificationContent);
+          eventTab, eventContent, notificationTab, notificationContent, colorPickerTab, colorPickerContent,
+          filePickerTab, filePickerContent);
       });
 
       checkboxTab.addEventListener('click', () => {
         switchTab(checkboxTab, checkboxContent, 
           toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
           buttonTab, buttonContent, textTab, textContent, calendarTab, calendarContent, 
-          eventTab, eventContent, notificationTab, notificationContent);
+          eventTab, eventContent, notificationTab, notificationContent, colorPickerTab, colorPickerContent,
+          filePickerTab, filePickerContent);
       });
 
       textTab.addEventListener('click', () => {
         switchTab(textTab, textContent, 
           toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
           buttonTab, buttonContent, checkboxTab, checkboxContent, calendarTab, calendarContent, 
-          eventTab, eventContent, notificationTab, notificationContent);
+          eventTab, eventContent, notificationTab, notificationContent, colorPickerTab, colorPickerContent,
+          filePickerTab, filePickerContent);
       });
 
       calendarTab.addEventListener('click', () => {
         switchTab(calendarTab, calendarContent, 
           toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
           buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent, 
-          eventTab, eventContent, notificationTab, notificationContent);
+          eventTab, eventContent, notificationTab, notificationContent, colorPickerTab, colorPickerContent,
+          filePickerTab, filePickerContent);
       });
 
       eventTab.addEventListener('click', () => {
         switchTab(eventTab, eventContent, 
           toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
           buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent, 
-          calendarTab, calendarContent, notificationTab, notificationContent);
+          calendarTab, calendarContent, notificationTab, notificationContent, colorPickerTab, colorPickerContent,
+          filePickerTab, filePickerContent);
       });
 
       notificationTab.addEventListener('click', () => {
         switchTab(notificationTab, notificationContent, 
           toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
           buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent, 
-          calendarTab, calendarContent, eventTab, eventContent);
+          calendarTab, calendarContent, eventTab, eventContent, colorPickerTab, colorPickerContent,
+          filePickerTab, filePickerContent);
+      });
+
+      colorPickerTab.addEventListener('click', () => {
+        switchTab(colorPickerTab, colorPickerContent, 
+          toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
+          buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent, 
+          calendarTab, calendarContent, eventTab, eventContent, notificationTab, notificationContent,
+          filePickerTab, filePickerContent);
+      });
+
+      filePickerTab.addEventListener('click', () => {
+        switchTab(filePickerTab, filePickerContent, 
+          toggleTab, toggleContent, numberPickerTab, numberPickerContent, sliderTab, sliderContent, 
+          buttonTab, buttonContent, checkboxTab, checkboxContent, textTab, textContent, 
+          calendarTab, calendarContent, eventTab, eventContent, notificationTab, notificationContent,
+          colorPickerTab, colorPickerContent);
       });
 
       // Initialize theme
@@ -1541,7 +1760,7 @@
       // Add event listeners for component interaction
       document.addEventListener('DOMContentLoaded', () => {
         // Listen to all valueMsg events from components
-        document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox, ui-text, ui-calendar, ui-event, ui-notification').forEach(component => {
+        document.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-button, ui-checkbox, ui-text, ui-calendar, ui-event, ui-notification, ui-color-picker, ui-file-picker').forEach(component => {
           component.addEventListener('valueMsg', (event) => {
             console.log(`Component ${component.tagName} changed:`, event.detail);
           });
