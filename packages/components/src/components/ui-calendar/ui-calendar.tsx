@@ -25,9 +25,8 @@ export interface UiCalendarValueChange {
  *
  * @example Different Variants & Colors
  * ```html
- * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
- * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
- * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
+ * <ui-calendar variant="outlined" color="primary" label="Outlined Calendar"></ui-calendar>
+ * <ui-calendar variant="filled" color="secondary" label="Filled Calendar"></ui-calendar>
  * ```
  *
  * @example Sizes & Features
@@ -51,12 +50,10 @@ export class UiCalendar {
 
   /**
    * Visual style variant matching component family design.
-   * - minimal: Clean, borderless design with subtle hover effects
    * - outlined: Border with transparent background, colored accents
    * - filled: Solid background with contrasting text
-   * - elevated: Shadow and depth for prominent display
    */
-  @Prop() variant: 'minimal' | 'outlined' | 'filled' | 'elevated' = 'minimal';
+  @Prop() variant: 'outlined' | 'filled' = 'outlined';
 
   /**
    * Component size for different use cases.
@@ -64,7 +61,7 @@ export class UiCalendar {
    * - medium: Standard size (default)
    * - large: Prominent calendar with larger touch targets
    */
-  @Prop() size: 'small' | 'medium' | 'large' = 'medium';
+  // size prop removed
 
   /**
    * Whether the component is disabled (cannot be interacted with).
@@ -93,7 +90,7 @@ export class UiCalendar {
    * - warning: Orange for caution
    * - danger: Red for destructive actions
    */
-  @Prop() color: 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger' = 'primary';
+  @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
   /**
    * Optional text label for the calendar with enhanced styling.
@@ -103,15 +100,7 @@ export class UiCalendar {
    * ```
    */
   @Prop() label?: string;
-
-  /**
-   * Whether the component is read-only (displays value but cannot be changed).
-   * @example
-   * ```html
-   * <ui-calendar readonly="true" value="2023-12-25"></ui-calendar>
-   * ```
-   */
-  @Prop() readonly: boolean = false;
+  // readonly prop removed
 
   /**
    * Enable keyboard navigation and shortcuts.
@@ -182,7 +171,7 @@ export class UiCalendar {
    * - fade: Fade transitions
    * - bounce: Playful bounce effects
    */
-  @Prop() animation: 'none' | 'slide' | 'fade' | 'bounce' = 'slide';
+  // animation prop removed
 
   /**
    * Current selected date-time value (ISO string).
@@ -229,6 +218,7 @@ export class UiCalendar {
 
   private onDocumentKeyDown = (e: KeyboardEvent) => {
     if (!this.isOpen) return;
+    if (!this.keyboard) return;
     if (e.key === 'Escape') {
       e.preventDefault();
       this.closeCalendar();
@@ -422,7 +412,7 @@ export class UiCalendar {
     const newDate = new Date(this.currentYear, this.currentMonth, day);
 
     // Preserve time if includeTime is enabled
-    if (this.includeTime && this.selectedDate) {
+    if (this.includeTime && this.selectedDate && !isNaN(this.selectedDate.getTime())) {
       newDate.setHours(this.selectedDate.getHours());
       newDate.setMinutes(this.selectedDate.getMinutes());
     }
@@ -448,6 +438,35 @@ export class UiCalendar {
     }
   }
 
+  /** Clear current selection */
+  private clearSelection() {
+    const prevValue = this.value;
+    this.selectedDate = new Date(NaN);
+    this.value = '';
+    this.lastUpdatedTs = Date.now();
+    this.valueMsg.emit({
+      newVal: this.value,
+      prevVal: prevValue,
+      ts: Date.now(),
+      source: this.el?.id || 'ui-calendar',
+      ok: true,
+      meta: { component: 'ui-calendar', type: 'clear', source: 'user' },
+    });
+    this.dateChange.emit({ value: this.value, date: this.selectedDate, formattedValue: this.getDisplayValue() });
+    this.valueChange.emit({ value: this.value, date: this.selectedDate, formattedValue: this.getDisplayValue() });
+  }
+
+  /** Jump to and optionally select today */
+  private selectToday() {
+    const today = new Date();
+    this.currentMonth = today.getMonth();
+    this.currentYear = today.getFullYear();
+    const day = today.getDate();
+    if (!this.isDayOutOfRange(day)) {
+      this.handleDateSelect(day);
+    }
+  }
+
   /** Handle time change */
   private async handleTimeChange(event: Event) {
     if (this.disabled) return;
@@ -455,7 +474,8 @@ export class UiCalendar {
     const target = event.target as HTMLInputElement;
     const [hours, minutes] = target.value.split(':').map(Number);
 
-    const newDate = new Date(this.selectedDate);
+    const base = this.selectedDate && !isNaN(this.selectedDate.getTime()) ? new Date(this.selectedDate) : new Date();
+    const newDate = base;
     newDate.setHours(hours);
     newDate.setMinutes(minutes);
 
@@ -487,7 +507,7 @@ export class UiCalendar {
 
   /** Clock interface methods */
   private updateTimeFromClock() {
-    if (!this.selectedDate) this.selectedDate = new Date();
+    if (!this.selectedDate || isNaN(this.selectedDate.getTime())) this.selectedDate = new Date();
 
     const newDate = new Date(this.selectedDate);
     let hours = this.selectedHour;
@@ -528,7 +548,7 @@ export class UiCalendar {
   }
 
   private updateClockFromSelectedDate() {
-    if (!this.selectedDate) return;
+    if (!this.selectedDate || isNaN(this.selectedDate.getTime())) return;
 
     const hours = this.selectedDate.getHours();
     const minutes = this.selectedDate.getMinutes();
@@ -596,45 +616,38 @@ export class UiCalendar {
   /** Get comprehensive calendar styles matching component family design */
   private getCalendarStyles() {
     const isDisabled = this.disabled;
-    const isReadonly = this.readonly;
     const colorVars = this.getColorVars();
 
     // Base container styles
     let containerClass = `relative ${this.inline ? 'block' : 'inline-block'}`;
 
     // Enhanced input styles with family consistency
-    let inputClass = `w-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-      this.size === 'small' ? 'px-2 py-1 text-xs' : this.size === 'large' ? 'px-4 py-3 text-base' : 'px-3 py-2 text-sm'
-    } ${isDisabled || isReadonly ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`;
+    let inputClass = `w-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 px-3 py-2 text-sm ${
+      isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+    }`;
 
     // Calendar popup/inline styles with enhanced design
     let calendarClass = `${this.inline ? 'relative' : 'absolute top-full left-0 mt-1 z-50'} ${
       this.dark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
-    } border rounded-lg shadow-lg p-4 ${this.size === 'small' ? 'min-w-64' : this.size === 'large' ? 'min-w-80' : 'min-w-72'}`;
+    } border rounded-lg shadow-lg p-4 min-w-72`;
 
     // Inline styles for CSS variable colors
     let inputStyle: any = {};
 
     // Variant-specific styling matching family design
-    if (this.variant === 'minimal') {
-      inputClass += ` bg-transparent border-0 ${this.dark ? 'text-white hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-100'}`;
-      inputStyle.boxShadow = `0 0 0 2px ${colorVars.main}`;
-    } else if (this.variant === 'outlined') {
-      inputClass += ` border-2 bg-transparent ${this.dark ? 'text-white hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-50'}`;
+    if (this.variant === 'outlined') {
+      inputClass += ` border bg-transparent ${this.dark ? 'text-white hover:bg-gray-800' : 'hover:bg-gray-50'}`;
       inputStyle.borderColor = colorVars.main;
-      inputStyle.boxShadow = `0 0 0 2px ${colorVars.main}`;
+      // In light mode match text to outline color
+      if (!this.dark) inputStyle.color = colorVars.main;
     } else if (this.variant === 'filled') {
-      inputClass += ` text-white border-0 focus:ring-white`;
+      inputClass += ` border-0 focus:ring-white`;
       inputStyle.backgroundColor = colorVars.main;
-    } else if (this.variant === 'elevated') {
-      inputClass += ` bg-white border border-gray-300 shadow-md hover:shadow-lg ${this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'text-gray-900'}`;
-      inputStyle.boxShadow = `0 0 0 2px ${colorVars.main}`;
+      inputStyle.color = this.dark ? 'black' : 'white';
     }
 
     // Animation classes
-    if (this.animation !== 'none') {
-      calendarClass += ` ${this.animation === 'slide' ? 'transform transition-transform' : this.animation === 'fade' ? 'transition-opacity' : 'transition-all transform'}`;
-    }
+    // animation handling removed
 
     return { containerClass, inputClass, calendarClass, inputStyle };
   }
@@ -643,65 +656,28 @@ export class UiCalendar {
   private getColorVars() {
     switch (this.color) {
       case 'secondary':
-        return {
-          main: 'var(--color-secondary)',
-          hover: 'var(--color-secondary-hover)',
-          light: 'var(--color-secondary-light)',
-        };
+        return { main: 'var(--color-secondary)', hover: 'var(--color-secondary-hover)', light: 'var(--color-secondary-light)' };
       case 'neutral':
-        return {
-          main: 'var(--color-neutral)',
-          hover: 'var(--color-neutral-hover)',
-          light: 'var(--color-neutral-light)',
-        };
-      case 'success':
-        return {
-          main: 'var(--color-success)',
-          hover: 'var(--color-success)',
-          light: 'var(--color-success)',
-        };
-      case 'warning':
-        return {
-          main: 'var(--color-warning)',
-          hover: 'var(--color-warning)',
-          light: 'var(--color-warning)',
-        };
-      case 'danger':
-        return {
-          main: 'var(--color-danger)',
-          hover: 'var(--color-danger)',
-          light: 'var(--color-danger)',
-        };
-      default: // primary
-        return {
-          main: 'var(--color-primary)',
-          hover: 'var(--color-primary-hover)',
-          light: 'var(--color-primary-light)',
-        };
+        return { main: 'var(--color-neutral)', hover: 'var(--color-neutral-hover)', light: 'var(--color-neutral-light)' };
+      default:
+        return { main: 'var(--color-primary)', hover: 'var(--color-primary-hover)', light: 'var(--color-primary-light)' };
     }
   }
 
-  /** Get enhanced active color styling with CSS variables */
-  private getActiveColor() {
-    const colorVars = this.getColorVars();
-    return {
-      backgroundColor: colorVars.main,
-      color: 'white',
-      transition: 'all 0.2s ease-in-out',
-    };
-  }
+  // getActiveColor removed (inlined dynamic color usage)
 
   /** Get days in month */
   private getDaysInMonth() {
     const firstDay = new Date(this.currentYear, this.currentMonth, 1);
     const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
     const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
+    const nativeStart = firstDay.getDay(); // 0 (Sun) - 6 (Sat)
+    const adjustedStart = (nativeStart - this.firstDayOfWeek + 7) % 7; // shift for firstDayOfWeek
 
-    const days = [];
+    const days: Array<number | null> = [];
 
-    // Empty cells for days before month starts
-    for (let i = 0; i < startingDayOfWeek; i++) {
+    // Leading empty cells
+    for (let i = 0; i < adjustedStart; i++) {
       days.push(null);
     }
 
@@ -710,23 +686,71 @@ export class UiCalendar {
       days.push(day);
     }
 
+    // Trailing padding to complete final week
+    while (days.length % 7 !== 0) {
+      days.push(null);
+    }
+
     return days;
   }
 
   /** Format display value */
   private getDisplayValue() {
-    if (!this.selectedDate) return '';
+    if (!this.selectedDate || isNaN(this.selectedDate.getTime())) return '';
 
     const date = this.selectedDate.toLocaleDateString();
-    const time = this.includeTime ? this.selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    if (!this.includeTime) return date;
 
-    return this.includeTime ? `${date} ${time}` : date;
+    const hours24 = this.selectedDate.getHours();
+    const minutes = this.selectedDate.getMinutes();
+
+    if (this.timeFormat === '12') {
+      const suffix = hours24 >= 12 ? 'PM' : 'AM';
+      const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+      return `${date} ${hours12.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${suffix}`;
+    }
+
+    return `${date} ${hours24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   }
 
   /** Get month name */
   private getMonthName() {
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     return months[this.currentMonth];
+  }
+
+  /** Get weekday labels shifted by firstDayOfWeek */
+  private getWeekdayLabels() {
+    const base = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    if (this.firstDayOfWeek === 0) return base;
+    return [...base.slice(1), base[0]]; // Monday-first
+  }
+
+  /** Get ISO week number for a given date */
+  private getISOWeek(d: Date) {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    // Set to nearest Thursday: current date + 4 - current day number
+    const dayNum = date.getUTCDay() || 7; // 1..7 (Mon..Sun)
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    // Year of the week
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    // Calculate week number: (days between + 1) / 7
+    const weekNo = Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+    return weekNo;
+  }
+
+  /** Determine if a given day (in current month) is disabled by min/max */
+  private isDayOutOfRange(day: number) {
+    const candidate = new Date(this.currentYear, this.currentMonth, day);
+    if (this.minDate) {
+      const min = new Date(this.minDate);
+      if (candidate < new Date(min.getFullYear(), min.getMonth(), min.getDate())) return true;
+    }
+    if (this.maxDate) {
+      const max = new Date(this.maxDate);
+      if (candidate > new Date(max.getFullYear(), max.getMonth(), max.getDate())) return true;
+    }
+    return false;
   }
 
   // ========================================
@@ -871,7 +895,11 @@ export class UiCalendar {
     const styles = this.getCalendarStyles();
     const isDisabled = this.disabled;
     const days = this.getDaysInMonth();
-    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekDays = this.getWeekdayLabels();
+    const weeks: Array<Array<number | null>> = [];
+    for (let i = 0; i < days.length; i += 7) {
+      weeks.push(days.slice(i, i + 7));
+    }
 
     return (
       <div class={styles.containerClass}>
@@ -883,7 +911,6 @@ export class UiCalendar {
           <input
             ref={el => (this.inputEl = el as HTMLInputElement)}
             type="text"
-            readonly
             disabled={isDisabled}
             value={this.getDisplayValue()}
             class={styles.inputClass}
@@ -892,6 +919,7 @@ export class UiCalendar {
             placeholder={this.includeTime ? 'Select date and time' : 'Select date'}
             aria-haspopup="dialog"
             aria-expanded={this.isOpen ? 'true' : 'false'}
+            readOnly
           />
 
           {/* Calendar Icon */}
@@ -934,33 +962,70 @@ export class UiCalendar {
             </div>
 
             {/* Week Days */}
-            <div class="grid grid-cols-7 gap-1 mb-2">
+            <div class={`${this.showWeekNumbers ? 'grid grid-cols-8' : 'grid grid-cols-7'} gap-1 mb-2`}>
+              {this.showWeekNumbers && <div class={`text-center text-xs font-medium py-2 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>Wk</div>}
               {weekDays.map(day => (
                 <div class={`text-center text-xs font-medium py-2 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{day}</div>
               ))}
             </div>
 
-            {/* Calendar Grid */}
-            <div class="grid grid-cols-7 gap-1">
-              {days.map((day, index) => {
-                const isSelected =
-                  day === this.selectedDate?.getDate() && this.currentMonth === this.selectedDate?.getMonth() && this.currentYear === this.selectedDate?.getFullYear();
-
+            {/* Calendar Grid with optional week numbers */}
+            <div class="flex flex-col gap-1">
+              {weeks.map((week, wIdx) => {
+                const firstRealDay = week.find(d => d !== null) as number | null;
+                const weekDate = firstRealDay ? new Date(this.currentYear, this.currentMonth, firstRealDay) : new Date(this.currentYear, this.currentMonth, 1);
+                const weekNo = this.getISOWeek(weekDate);
                 return (
-                  <button
-                    key={index}
-                    class={`h-8 text-sm rounded transition-colors ${
-                      day === null ? '' : isSelected ? 'text-white' : `hover:bg-gray-100 dark:hover:bg-gray-700 ${this.dark ? 'text-white' : 'text-gray-900'}`
-                    }`}
-                    style={day !== null && isSelected ? this.getActiveColor() : {}}
-                    disabled={day === null}
-                    onClick={() => day && this.handleDateSelect(day)}
-                  >
-                    {day}
-                  </button>
+                  <div class={`${this.showWeekNumbers ? 'grid grid-cols-8' : 'grid grid-cols-7'} gap-1`}>
+                    {this.showWeekNumbers && <div class={`h-8 text-xs flex items-center justify-center ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{weekNo}</div>}
+                    {week.map((day, index) => {
+                      const isSelected =
+                        day === this.selectedDate?.getDate() && this.currentMonth === this.selectedDate?.getMonth() && this.currentYear === this.selectedDate?.getFullYear();
+                      const isDisabledDay = day === null || (day !== null && this.isDayOutOfRange(day));
+                      const baseText = this.dark ? 'text-white' : 'text-gray-900';
+                      return (
+                        <button
+                          key={`${wIdx}-${index}`}
+                          class={`h-8 text-sm rounded transition-colors ${
+                            isDisabledDay ? 'opacity-40 cursor-not-allowed' : isSelected ? '' : `hover:bg-gray-100 dark:hover:bg-gray-700 ${baseText}`
+                          }`}
+                          style={day !== null && isSelected ? { backgroundColor: this.getColorVars().main, color: this.variant === 'filled' && this.dark ? 'black' : 'white' } : {}}
+                          disabled={isDisabledDay}
+                          onClick={() => day && !isDisabledDay && this.handleDateSelect(day)}
+                        >
+                          {day ?? ''}
+                        </button>
+                      );
+                    })}
+                  </div>
                 );
               })}
             </div>
+
+            {(this.showTodayButton || this.showClearButton) && (
+              <div class={`mt-3 pt-3 border-t ${this.dark ? 'border-gray-700' : 'border-gray-200'} flex justify-between`}>
+                {this.showTodayButton ? (
+                  <button
+                    type="button"
+                    class={`px-3 py-1 text-sm rounded ${this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                    onClick={() => this.selectToday()}
+                  >
+                    Today
+                  </button>
+                ) : (
+                  <span></span>
+                )}
+                {this.showClearButton && (
+                  <button
+                    type="button"
+                    class={`px-3 py-1 text-sm rounded ${this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                    onClick={() => this.clearSelection()}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Enhanced Time Picker with Clock Interface */}
             {this.includeTime && (
@@ -970,8 +1035,9 @@ export class UiCalendar {
                   <button
                     type="button"
                     class={`px-2 py-1 text-xs rounded ${
-                      this.showClockView ? 'bg-primary text-white' : this.dark ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      this.showClockView ? 'text-white' : this.dark ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
+                    style={this.showClockView ? { backgroundColor: this.getColorVars().main } : {}}
                     onClick={() => this.toggleClockView()}
                   >
                     {this.showClockView ? '📝 Input' : '🕐 Clock'}
@@ -991,12 +1057,9 @@ export class UiCalendar {
                             <button
                               type="button"
                               class={`w-8 h-8 text-xs rounded-full transition-all ${
-                                this.selectedHour === hour
-                                  ? 'bg-primary text-white'
-                                  : this.dark
-                                  ? 'bg-gray-700 text-white hover:bg-gray-600'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                this.selectedHour === hour ? 'text-white' : this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                               }`}
+                              style={this.selectedHour === hour ? { backgroundColor: this.getColorVars().main } : {}}
                               onClick={() => this.setHour(hour)}
                             >
                               {hour.toString().padStart(2, '0')}
@@ -1017,11 +1080,12 @@ export class UiCalendar {
                               type="button"
                               class={`w-8 h-8 text-xs rounded-full transition-all ${
                                 this.selectedMinute === minute
-                                  ? 'bg-primary text-white'
+                                  ? 'text-white'
                                   : this.dark
                                   ? 'bg-gray-700 text-white hover:bg-gray-600'
                                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                               }`}
+                              style={this.selectedMinute === minute ? { backgroundColor: this.getColorVars().main } : {}}
                               onClick={() => this.setMinute(minute)}
                             >
                               {minute.toString().padStart(2, '0')}
@@ -1037,8 +1101,9 @@ export class UiCalendar {
                         <button
                           type="button"
                           class={`px-4 py-2 text-sm rounded transition-all ${
-                            this.isAM ? 'bg-primary text-white' : this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            this.isAM ? 'text-white' : this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                           }`}
+                          style={this.isAM ? { backgroundColor: this.getColorVars().main } : {}}
                           onClick={() => !this.isAM && this.toggleAMPM()}
                         >
                           AM
@@ -1046,8 +1111,9 @@ export class UiCalendar {
                         <button
                           type="button"
                           class={`px-4 py-2 text-sm rounded transition-all ${
-                            !this.isAM ? 'bg-primary text-white' : this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            !this.isAM ? 'text-white' : this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                           }`}
+                          style={!this.isAM ? { backgroundColor: this.getColorVars().main } : {}}
                           onClick={() => this.isAM && this.toggleAMPM()}
                         >
                           PM

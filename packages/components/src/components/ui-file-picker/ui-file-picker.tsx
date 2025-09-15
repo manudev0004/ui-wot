@@ -27,7 +27,7 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
  * });
  *
  * // Set upload operation
- * await filePicker.setUploadOperation(async (files) => {
+ * await filePicker.setUpload(async (files) => {
  *   const formData = new FormData();
  *   files.forEach(file => formData.append('files', file));
  *   await fetch('/api/upload', { method: 'POST', body: formData });
@@ -48,11 +48,6 @@ export class UiFilePicker {
    * Whether the component is disabled.
    */
   @Prop() disabled: boolean = false;
-
-  /**
-   * Whether the component is read-only.
-   */
-  @Prop() readonly: boolean = false;
 
   /**
    * Show last updated timestamp.
@@ -127,7 +122,7 @@ export class UiFilePicker {
    * @returns Promise that resolves to true if successful
    */
   @Method()
-  async setUploadOperation(operation: (files: File[]) => Promise<any>): Promise<boolean> {
+  async setUpload(operation: (files: File[]) => Promise<any>): Promise<boolean> {
     this.storedUploadOperation = operation;
     return true;
   }
@@ -243,7 +238,7 @@ export class UiFilePicker {
    */
   private handleDragOver(event: DragEvent): void {
     event.preventDefault();
-    if (!this.disabled && !this.readonly) {
+    if (!this.disabled) {
       this.isDragOver = true;
     }
   }
@@ -262,7 +257,7 @@ export class UiFilePicker {
     event.preventDefault();
     this.isDragOver = false;
 
-    if (this.disabled || this.readonly) return;
+    if (this.disabled) return;
 
     const files = event.dataTransfer?.files;
     if (files) {
@@ -282,8 +277,16 @@ export class UiFilePicker {
    * Open file dialog.
    */
   private openFileDialog(): void {
-    if (this.disabled || this.readonly) return;
+    if (this.disabled) return;
     this.fileInputRef?.click();
+  }
+
+  /** Click handler for drop zone to avoid opening from action buttons */
+  private handleDropZoneClick(event: MouseEvent): void {
+    if (this.disabled) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('.file-actions')) return; // ignore clicks on action buttons area
+    this.openFileDialog();
   }
 
   /**
@@ -322,10 +325,10 @@ export class UiFilePicker {
   /** Render method */
 
   render() {
-    const canInteract = !this.disabled && !this.readonly;
+    const canInteract = !this.disabled;
 
     return (
-      <div class={`${this.disabled ? 'disabled' : ''} ${this.readonly ? 'readonly' : ''}`}>
+      <div class={`${this.disabled ? 'disabled' : ''}`}>
         {this.label && <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{this.label}</label>}
 
         <div
@@ -333,7 +336,7 @@ export class UiFilePicker {
           onDragOver={e => this.handleDragOver(e)}
           onDragLeave={() => this.handleDragLeave()}
           onDrop={e => this.handleDrop(e)}
-          onClick={() => this.openFileDialog()}
+          onClick={e => this.handleDropZoneClick(e)}
         >
           <input
             ref={el => (this.fileInputRef = el)}
@@ -371,21 +374,12 @@ export class UiFilePicker {
                 </div>
                 {canInteract && (
                   <div class="file-actions flex gap-2">
-                    <button
-                      class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                      onClick={e => {
-                        e.stopPropagation();
-                        this.handleUpload();
-                      }}
-                    >
+                    <button class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors" onClick={() => this.handleUpload()}>
                       Upload
                     </button>
                     <button
                       class="px-3 py-1 text-sm border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors"
-                      onClick={e => {
-                        e.stopPropagation();
-                        this.clearFiles();
-                      }}
+                      onClick={() => this.clearFiles()}
                     >
                       Clear
                     </button>

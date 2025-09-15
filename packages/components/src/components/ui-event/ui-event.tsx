@@ -56,7 +56,7 @@ export class UiEvent {
   /**
    * Visual style variant
    */
-  @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'outlined';
+  @Prop() variant: 'outlined' | 'filled' = 'outlined';
 
   /**
    * Whether the component is disabled
@@ -87,11 +87,6 @@ export class UiEvent {
    * Show status badge when true
    */
   @Prop() showStatus: boolean = true;
-
-  /**
-   * Whether component is in readonly mode
-   */
-  @Prop() readonly: boolean = false;
 
   /**
    * Connection status indicator
@@ -397,8 +392,6 @@ export class UiEvent {
     const colorClass = `color-${this.color}`;
 
     switch (this.variant) {
-      case 'minimal':
-        return `${baseClasses} bg-transparent border-0`;
       case 'outlined':
         return `${baseClasses} border-2 bg-transparent variant-outlined ${colorClass}`;
       case 'filled':
