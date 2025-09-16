@@ -3,49 +3,47 @@ import { UiMsg } from '../../utils/types'; // Standard message format
 import { StatusIndicator, OperationStatus } from '../../utils/status-indicator'; // Status indicator utility
 
 /**
- * A versatile toggle switch component designed for WoT device control and monitoring.
+ * A versatile number picker component designed for WoT device control and monitoring.
  *
- * It has various features, multiple visual styles, status and last updated timestamps.
- * Supports both interactive control and read-only monitoring modes.
+ * It has increment/decrement buttons, multiple visual styles, status and last updated timestamps.
+ * Supports both interactive control and read-only monitoring modes with customizable ranges.
  *
  * @example Basic Usage
  * ```html
- * <ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
- * <ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
- * <ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
+ * <ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+ * <ui-number-picker variant="filled" value="50" min="0" max="100"></ui-number-picker>
+ * <ui-number-picker readonly="true" label="Sensor" show-last-updated="true"></ui-number-picker>
  * ```
  *
  * @example JS integaration with node-wot browser bundle
  * ```javascript
- * const toggle = document.getElementById('device-toggle');
- * const initialValue = Boolean(await (await thing.readProperty('power')).value());
+ * const numberPicker = document.getElementById('device-volume');
+ * const initialValue = Number(await (await thing.readProperty('volume')).value());
  *
- * await toggle.setValue(initialValue, {
+ * await numberPicker.setValue(initialValue, {
  *   writeOperation: async value => {
- *     await thing.writeProperty('power', value);
+ *     await thing.writeProperty('volume', value);
  *   }
  * });
  * ```
  */
 @Component({
-  tag: 'ui-toggle',
-  styleUrl: 'ui-toggle.css',
+  tag: 'ui-number-picker',
+  styleUrl: 'ui-number-picker.css',
   shadow: true,
 })
-export class UiToggle {
+export class UiNumberPicker {
   @Element() el: HTMLElement;
 
   // ============================== COMPONENT PROPERTIES ==============================
 
   /**
-   * Visual style variant of the toggle.
-   * - circle: Common pill-shaped toggle (default)
-   * - square: Rectangular toggle with square thumb
-   * - apple: iOS-style switch (bigger size, rounded edges)
-   * - cross: Shows cross when off, tick when on with red background when off and green when on
-   * - neon: Glowing effect when active
+   * Visual style variant of the number picker.
+   * - minimal: Clean buttons with subtle background (default)
+   * - outlined: Buttons with border outline
+   * - filled: Solid filled buttons
    */
-  @Prop() variant: 'circle' | 'square' | 'apple' | 'cross' | 'neon' = 'circle';
+  @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'minimal';
 
   /** Color theme for the active state matching to thingsweb theme */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
@@ -53,8 +51,8 @@ export class UiToggle {
   /** Enable dark mode theme styling when true */
   @Prop() dark: boolean = false;
 
-  /** Current boolean value of the toggle */
-  @Prop({ mutable: true }) value: boolean = false;
+  /** Current numeric value of the number picker */
+  @Prop({ mutable: true }) value: number = 0;
 
   /** Disable user interaction when true */
   @Prop() disabled: boolean = false;
@@ -62,10 +60,10 @@ export class UiToggle {
   /** Read only mode, display value but prevent changes when true. Just to monitor changes*/
   @Prop({ mutable: true }) readonly: boolean = false;
 
-  /** Text label displayed left to the toggle (optional) */
+  /** Text label displayed above the number picker (optional) */
   @Prop() label?: string;
 
-  /** Enable keyboard navigation so user can toggle using 'Space' and 'Enter' keys) when true */
+  /** Enable keyboard navigation so user can change value using 'Arrow Up' and 'Arrow Down' keys) when true */
   @Prop() keyboard: boolean = true;
 
   /** Show last updated timestamp below the component */
@@ -76,6 +74,15 @@ export class UiToggle {
 
   /** Connection state for read-only monitoring */
   @Prop({ mutable: true }) connected: boolean = true;
+
+  /** Minimum allowed value (optional) */
+  @Prop() min?: number = 0;
+
+  /** Maximum allowed value (optional) */
+  @Prop() max?: number = 100;
+
+  /** Step increment/decrement amount (optional) */
+  @Prop() step?: number = 1;
 
   // ============================== COMPONENT STATE ==============================
 
@@ -91,8 +98,8 @@ export class UiToggle {
   /** Timestamp for read-only pulse animation (optional) */
   @State() readPulseTs?: number;
 
-  /** Internal state that controls the visual appearance of the toggle */
-  @State() private isActive: boolean = false;
+  /** Internal state that controls the visual appearance of the number picker */
+  @State() private isActive: number = 0;
 
   /** Internal state counter for timestamp re-rendering */
   @State() private timestampCounter: number = 0;
@@ -109,40 +116,40 @@ export class UiToggle {
   private timestampUpdateTimer?: number;
 
   /** Stores API function from first initialization to re-use further for any user interactions */
-  private storedWriteOperation?: (value: boolean) => Promise<any>;
+  private storedWriteOperation?: (value: number) => Promise<any>;
 
   // ============================== EVENTS ==============================
 
   /**
-   * Emitted when toggle value changes through user interaction or setValue calls.
+   * Emitted when number picker value changes through user interaction or setValue calls.
    * Contains the new value, previous value, timestamp, and source information.
    */
-  @Event() valueMsg: EventEmitter<UiMsg<boolean>>;
+  @Event() valueMsg: EventEmitter<UiMsg<number>>;
 
   // ============================== PUBLIC METHODS ==============================
 
   /**
-   * Sets the toggle value with optional device communication api and other options.
+   * Sets the number picker value with optional device communication api and other options.
    *
-   * This is the primary method for connecting toggles to real devices.
+   * This is the primary method for connecting number pickers to real devices.
    * It supports optimistic updates, error handling, and automatic retries.
    *
-   * @param value - The boolean value to set (true = on, false = off)
+   * @param value - The numeric value to set
    * @param options - Optional configuration for device communication and behavior
    * @returns Promise resolving to true if successful, false if failed
    *
    * @example Basic Usage
    * ```javascript
-   * await toggle.setValue(true);
+   * await numberPicker.setValue(50);
    * ```
    *
    * @example JS integration with node-wot browser bundle
    * ```javascript
-   * const toggle = document.getElementById('device-toggle');
-   * const initialValue = Boolean(await (await thing.readProperty('power')).value());
-   * await toggle.setValue(initialValue, {
+   * const numberPicker = document.getElementById('device-volume');
+   * const initialValue = Number(await (await thing.readProperty('volume')).value());
+   * await numberPicker.setValue(initialValue, {
    *   writeOperation: async value => {
-   *     await thing.writeProperty('power', value);
+   *     await thing.writeProperty('volume', value);
    *   },
    *   autoRetry: { attempts: 3, delay: 1000 }
    * });
@@ -150,9 +157,9 @@ export class UiToggle {
    */
   @Method()
   async setValue(
-    value: boolean,
+    value: number,
     options?: {
-      writeOperation?: (value: boolean) => Promise<any>;
+      writeOperation?: (value: number) => Promise<any>;
       readOperation?: () => Promise<any>;
       optimistic?: boolean;
       autoRetry?: { attempts: number; delay: number };
@@ -164,7 +171,6 @@ export class UiToggle {
     // Clear any existing error state
     if (this.operationStatus === 'error' && !options?._isRevert) {
       StatusIndicator.applyStatus(this, 'idle');
-      this.connected = true;
     }
 
     // Simple value update without other operations
@@ -194,13 +200,13 @@ export class UiToggle {
   }
 
   /**
-   * Gets the current toggle value with optional metadata.
+   * Gets the current number picker value with optional metadata.
    *
    * @param includeMetadata - Whether to include status, timestamp and other information
    * @returns Current value or detailed metadata object
    */
   @Method()
-  async getValue(includeMetadata: boolean = false): Promise<boolean | { value: boolean; lastUpdated?: number; status: string; error?: string }> {
+  async getValue(includeMetadata: boolean = false): Promise<number | { value: number; lastUpdated?: number; status: string; error?: string }> {
     if (includeMetadata) {
       return {
         value: this.isActive,
@@ -218,10 +224,10 @@ export class UiToggle {
    * Use this for external data synchronization to prevent event loops.
    * Perfect for WebSocket updates or polling from remote devices.
    *
-   * @param value - The boolean value to set silently
+   * @param value - The numeric value to set silently
    */
   @Method()
-  async setValueSilent(value: boolean): Promise<void> {
+  async setValueSilent(value: number): Promise<void> {
     this.updateValue(value, this.isActive, false);
   }
 
@@ -261,7 +267,7 @@ export class UiToggle {
 
   /** Initialize component state from props */
   componentWillLoad() {
-    this.isActive = Boolean(this.value);
+    this.isActive = this.value || 0;
     this.isInitialized = true;
     if (this.showLastUpdated) this.startTimestampUpdater();
   }
@@ -282,7 +288,7 @@ export class UiToggle {
 
   /** Sync internal state when value prop changes externally */
   @Watch('value')
-  watchValue(newVal: boolean) {
+  watchValue(newVal: number) {
     if (!this.isInitialized) return;
 
     if (this.isActive !== newVal) {
@@ -299,9 +305,13 @@ export class UiToggle {
    * This is the core state update method that handles value changes consistently.
    * It updates both internal state and external prop and also manages timestamps, and emits events (optional).
    */
-  private updateValue(value: boolean, prevValue?: boolean, emitEvent: boolean = true): void {
-    this.isActive = value;
-    this.value = value;
+  private updateValue(value: number, prevValue?: number, emitEvent: boolean = true): void {
+    // Clamp and step the value for number picker specific logic
+    const clampedValue = Math.max(this.min || 0, Math.min(this.max || 100, value));
+    const steppedValue = Math.round(clampedValue / this.step) * this.step;
+
+    this.isActive = steppedValue;
+    this.value = steppedValue;
     this.lastUpdatedTs = Date.now();
 
     if (this.readonly) {
@@ -309,12 +319,12 @@ export class UiToggle {
     }
 
     if (emitEvent && !this.suppressEvents) {
-      this.emitValueMsg(value, prevValue);
+      this.emitValueMsg(steppedValue, prevValue);
     }
   }
 
   /** Executes stored operations with error handling and retry logic */
-  private async executeOperation(value: boolean, prevValue: boolean, options: any): Promise<boolean> {
+  private async executeOperation(value: number, prevValue: number, options: any): Promise<boolean> {
     const optimistic = options?.optimistic !== false;
 
     // Show new value immediately (if optimistic = true)
@@ -363,34 +373,39 @@ export class UiToggle {
   }
 
   /** Emits value change events with consistent UIMsg data structure */
-  private emitValueMsg(value: boolean, prevValue?: boolean) {
+  private emitValueMsg(value: number, prevValue?: number) {
     if (this.suppressEvents) return;
     this.valueMsg.emit({
       newVal: value,
       prevVal: prevValue,
       ts: Date.now(),
-      source: this.el?.id || 'ui-toggle',
+      source: this.el?.id || 'ui-number-picker',
       ok: true,
     });
   }
 
-  /** Handles user click interactions */
-  private handleChange = async () => {
+  /** Handles user increment/decrement interactions */
+  private handleChange = async (delta: number) => {
     if (this.disabled || this.readonly) return;
 
-    const newValue = !this.isActive;
-    const prevValue = this.isActive;
+    const newValue = this.isActive + delta;
 
-    StatusIndicator.applyStatus(this, 'loading');
+    // Check bounds
+    if (this.max !== undefined && newValue > this.max) return;
+    if (this.min !== undefined && newValue < this.min) return;
+
+    const prevValue = this.isActive;
 
     // Execute stored operation if available
     if (this.storedWriteOperation) {
+      StatusIndicator.applyStatus(this, 'loading');
       this.updateValue(newValue, prevValue);
 
       try {
         await this.storedWriteOperation(newValue);
         StatusIndicator.applyStatus(this, 'success');
       } catch (error) {
+        console.error('Write operation failed:', error);
         StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
         this.updateValue(prevValue, newValue, false);
       }
@@ -399,12 +414,25 @@ export class UiToggle {
     }
   };
 
-  /** Handle keyboard 'enter' and 'spacebar' input to toggle switch state */
+  /** Handle increment */
+  private handleIncrement = async () => {
+    this.handleChange(this.step);
+  };
+
+  /** Handle decrement */
+  private handleDecrement = async () => {
+    this.handleChange(-this.step);
+  };
+
+  /** Handle keyboard 'Arrow Up' and 'Arrow Down' input to change number value */
   private handleKeyDown = (event: KeyboardEvent) => {
     if (this.disabled || this.readonly || !this.keyboard) return;
-    if (event.key === ' ' || event.key === 'Enter') {
+    if (event.key === 'ArrowUp') {
       event.preventDefault();
-      this.handleChange();
+      this.handleIncrement();
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.handleDecrement();
     }
   };
 
@@ -454,81 +482,72 @@ export class UiToggle {
 
   // ============================== STYLING HELPERS ==============================
 
-  /** Generates CSS classes for the toggle container based on variant,color and state */
-  private getToggleStyle(): string {
-    const { variant, disabled, isActive, color } = this;
+  /** Get button style classes for increment/decrement buttons */
+  private getButtonStyle(type: 'increment' | 'decrement'): string {
+    const isDisabled = this.disabled;
+    const isAtMax = this.max !== undefined && this.isActive >= this.max && type === 'increment';
+    const isAtMin = this.min !== undefined && this.isActive <= this.min && type === 'decrement';
+    const disabled = isDisabled || isAtMax || isAtMin;
 
-    const sizeMap = {
-      apple: 'w-11 h-7',
-      default: 'w-12 h-6',
-    };
+    let baseClasses = 'w-12 h-12 flex items-center justify-center text-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg';
 
-    const shapeMap = {
-      square: 'rounded-md',
-      apple: 'rounded-full shadow-inner border-2 border-gray-500',
-      default: 'rounded-full',
-    };
-
-    const size = sizeMap[variant] || sizeMap.default;
-    const shape = shapeMap[variant] || shapeMap.default;
-    const disabledClass = disabled ? 'disabled-state' : '';
-
-    // Neon glow effects
-    let neonClass = '';
-    if (variant === 'neon' && isActive) {
-      neonClass = color === 'secondary' ? 'neon-secondary' : 'neon-primary';
-    } else if (variant === 'neon' && !isActive) {
-      neonClass = 'neon-red';
+    if (disabled) {
+      baseClasses += ' opacity-50 cursor-not-allowed';
+    } else {
+      baseClasses += ' cursor-pointer hover:scale-105 active:scale-95';
     }
 
-    return `relative inline-block cursor-pointer transition-all duration-300 ease-in-out ${size} ${shape} ${disabledClass} ${neonClass}`.trim();
-  }
-
-  /** Renders cross/tick icons for the cross variant */
-  private renderCrossIcons() {
-    if (this.variant !== 'cross') return null;
-
-    return (
-      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {!this.isActive ? (
-          <div class="absolute top-0 right-0 w-6 h-6 flex items-center justify-center">
-            <span class="text-white text-xl font-bold">×</span>
-          </div>
-        ) : (
-          <div class="absolute top-0 left-0 w-6 h-6 flex items-center justify-center">
-            <span class="text-white text-lg font-bold">✓</span>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  /** Generates CSS classes for the toggle thumb */
-  private getThumbStyle(): string {
-    const { variant, isActive } = this;
-
-    if (variant === 'apple') {
-      const movement = isActive ? 'translate-x-4' : 'translate-x-0';
-      return `absolute w-6 h-6 bg-white transition-all duration-200 ease-in-out shadow-md rounded-full top-0 left-0 ${movement}`;
+    // Variant-specific styling
+    if (this.variant === 'minimal') {
+      if (disabled) {
+        baseClasses += ' text-gray-400';
+      } else {
+        if (this.dark) {
+          baseClasses += ' bg-transparent text-white hover:bg-gray-800';
+        } else {
+          baseClasses += ' bg-transparent text-black hover:bg-gray-100';
+        }
+      }
+    } else if (this.variant === 'outlined') {
+      if (disabled) {
+        baseClasses += ' border-2 border-gray-300 text-gray-400 bg-transparent';
+      } else {
+        if (this.dark) {
+          baseClasses += ` border-2 bg-transparent text-white hover:text-white`;
+        } else {
+          baseClasses += ` border-2 bg-transparent text-black hover:text-white`;
+        }
+      }
+    } else if (this.variant === 'filled') {
+      if (disabled) {
+        baseClasses += ' bg-gray-400 text-white';
+      } else {
+        if (this.dark) {
+          baseClasses += ` text-white hover:opacity-90`;
+        } else {
+          baseClasses += ` text-white hover:opacity-90`;
+        }
+      }
     }
 
-    const shape = variant === 'square' ? 'rounded-sm' : 'rounded-full';
-    const position = variant === 'neon' ? 'top-0.5 left-1' : 'top-1 left-1';
-    const movement = isActive ? 'translate-x-6' : 'translate-x-0';
-
-    return `absolute w-4 h-4 bg-white transition-transform duration-300 ease-in-out shadow-sm ${shape} ${position} ${movement}`;
+    return baseClasses;
   }
 
-  /** Generate the background color based on variant and state */
-  private getBackgroundColor(): string {
-    const { color, variant, isActive } = this;
+  /** Get value display style */
+  private getValueStyle(): string {
+    const isDisabled = this.disabled;
 
-    if (color === 'neutral') return isActive ? 'var(--color-neutral)' : '#d1d5db';
-    if (variant === 'cross') return isActive ? this.getActiveColor() : 'var(--color-danger)';
-    if (variant === 'apple') return isActive ? 'var(--color-success)' : '#374151';
-    if (variant === 'neon') return isActive ? this.getNeonColor() : 'var(--color-danger)';
+    let classes = 'min-w-[60px] h-12 flex items-center justify-center text-lg font-semibold rounded-lg border-2';
 
-    return isActive ? this.getActiveColor() : '#d1d5db';
+    if (isDisabled) {
+      classes += ' bg-gray-100 text-gray-400 border-gray-300';
+      if (this.dark) classes += ' dark:bg-gray-800 dark:text-gray-600 dark:border-gray-600';
+    } else {
+      classes += ` bg-white`;
+      if (this.dark) classes += ` dark:bg-white`;
+    }
+
+    return classes;
   }
 
   /** Generate the active color using global CSS variables */
@@ -543,101 +562,149 @@ export class UiToggle {
     }
   }
 
-  /** Generate the neon color using global CSS variables */
-  private getNeonColor(): string {
-    return this.color === 'secondary' ? 'var(--color-secondary)' : 'var(--color-primary)';
+  /** Readonly background classes */
+  private getReadonlyBg(): string {
+    if (this.dark) {
+      return 'bg-gray-800 border-2 text-white';
+    }
+    return 'bg-white border-2 text-gray-900';
   }
 
   // ============================== MAIN COMPONENT RENDER METHOD ==============================
 
   /**
-   * Renders the complete toggle component with all features and styles.
+   * Renders the complete number picker component with all features and styles.
    */
   render() {
     const canInteract = !this.disabled && !this.readonly;
     const hoverTitle = this.readonly
       ? 'Read-only mode - Value reflects external state'
       : this.disabled
-      ? 'Toggle is disabled'
-      : `Click to ${this.isActive ? 'turn off' : 'turn on'}${this.label ? ` ${this.label}` : ''}`;
+      ? 'Number picker is disabled'
+      : `Use buttons or arrow keys to ${this.label ? `change ${this.label}` : 'change value'}`;
 
     return (
-      <div class="inline-block" part="container" role="group" aria-label={this.label || 'Toggle'}>
-        <div class="inline-flex items-center space-x-2 relative">
+      <div class="inline-block" part="container" role="group" aria-label={this.label || 'Number picker'}>
+        <div class="inline-flex flex-col items-center space-y-2 relative">
           {/* Label */}
           <slot name="label">
             {this.label && (
               <label
-                class={`select-none mr-2 transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer hover:text-opacity-80'} ${
+                class={`select-none text-sm font-medium transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed text-gray-400' : 'cursor-default'} ${
                   this.dark ? 'text-white' : 'text-gray-900'
                 }`}
-                onClick={() => canInteract && this.handleChange()}
                 title={hoverTitle}
                 part="label"
               >
                 {this.label}
+                {this.readonly && (
+                  <span class="ml-1 text-xs" style={{ color: 'var(--color-info)' }}>
+                    (Read-only)
+                  </span>
+                )}
               </label>
             )}
           </slot>
 
-          {/* Toggle Control */}
+          {/* Number Picker Control */}
           {this.readonly ? (
             // Read-only indicator
             <span
-              class={`inline-flex items-center justify-center transition-all duration-300 ${
-                this.variant === 'square' ? 'w-6 h-6 rounded-md' : this.variant === 'apple' ? 'w-7 h-7 rounded-full' : 'w-6 h-6 rounded-full'
-              }`}
+              class={`inline-flex items-center justify-center min-w-[120px] h-12 px-4 rounded-lg transition-all duration-300 ${this.getReadonlyBg()}`}
               style={{
-                backgroundColor: this.isActive ? 'var(--color-success)' : 'var(--color-danger)',
-                boxShadow: this.isActive ? '0 10px 15px -3px rgba(34, 197, 94, 0.5)' : '0 10px 15px -3px rgba(239, 68, 68, 0.5)',
+                borderColor: this.getActiveColor(),
+                color: this.dark ? 'white' : this.getActiveColor(),
               }}
-              title={`${hoverTitle} - Current state: ${this.isActive ? 'ON' : 'OFF'}`}
+              title={`${hoverTitle} - Current value: ${this.isActive}`}
               part="readonly-indicator"
             >
-              <span class={`text-white text-xs font-bold ${this.variant === 'square' ? 'text-[10px]' : ''}`}>
-                {this.variant === 'square' ? (this.isActive ? '■' : '□') : this.isActive ? '●' : '○'}
+              <span class={`text-lg font-medium`} style={{ color: this.dark ? 'white' : this.getActiveColor() }}>
+                {this.isActive}
               </span>
+
+              {/* Read Pulse Indicator */}
+              {this.readPulseTs && Date.now() - this.readPulseTs < 1500 && (
+                <span class="ml-2 flex items-center" part="readonly-pulse-sibling">
+                  <span
+                    class="w-3 h-3 rounded-full shadow-md"
+                    title="Updated"
+                    aria-hidden="true"
+                    style={{
+                      backgroundColor: 'var(--color-info)',
+                      animation: 'ui-read-pulse 1.4s ease-in-out forwards',
+                    }}
+                  ></span>
+                </span>
+              )}
             </span>
           ) : (
-            // Interactive toggle
-            <span
-              class={`${this.getToggleStyle()} ${canInteract ? 'hover:shadow-md' : ''} transition-all duration-200`}
-              style={{ backgroundColor: this.getBackgroundColor() }}
-              onClick={() => canInteract && this.handleChange()}
-              onKeyDown={this.handleKeyDown}
-              tabIndex={canInteract ? 0 : -1}
-              title={hoverTitle}
-              part="control"
-              role="switch"
-              aria-checked={this.isActive ? 'true' : 'false'}
-              aria-disabled={this.disabled ? 'true' : 'false'}
-            >
-              <span class={this.getThumbStyle()} part="thumb"></span>
-              {this.renderCrossIcons()}
-            </span>
+            // Interactive number picker
+            <div class="flex items-center gap-3 relative">
+              <div class="flex items-center gap-3" tabIndex={canInteract ? 0 : -1} onKeyDown={this.handleKeyDown} part="controls">
+                {/* Decrement Button */}
+                <button
+                  class={this.getButtonStyle('decrement')}
+                  style={
+                    !this.disabled && !(this.min !== undefined && this.isActive <= this.min) && this.variant === 'outlined'
+                      ? { borderColor: this.getActiveColor() }
+                      : this.variant === 'filled' && !this.disabled
+                      ? { backgroundColor: this.getActiveColor() }
+                      : {}
+                  }
+                  onClick={this.handleDecrement}
+                  disabled={this.disabled || (this.min !== undefined && this.isActive <= this.min)}
+                  aria-label="Decrease value"
+                  title={canInteract ? `Decrease by ${this.step}` : hoverTitle}
+                  part="decrement-button"
+                >
+                  −
+                </button>
+
+                {/* Value Display */}
+                <div
+                  class={this.getValueStyle()}
+                  style={
+                    !this.disabled
+                      ? {
+                          borderColor: this.getActiveColor(),
+                          color: this.getActiveColor(),
+                        }
+                      : {}
+                  }
+                  part="value-display"
+                  title={`Current value: ${this.isActive}`}
+                >
+                  {this.isActive}
+                </div>
+
+                {/* Increment Button */}
+                <button
+                  class={this.getButtonStyle('increment')}
+                  style={
+                    !this.disabled && !(this.max !== undefined && this.isActive >= this.max) && this.variant === 'outlined'
+                      ? { borderColor: this.getActiveColor() }
+                      : this.variant === 'filled' && !this.disabled
+                      ? { backgroundColor: this.getActiveColor() }
+                      : {}
+                  }
+                  onClick={this.handleIncrement}
+                  disabled={this.disabled || (this.max !== undefined && this.isActive >= this.max)}
+                  aria-label="Increase value"
+                  title={canInteract ? `Increase by ${this.step}` : hoverTitle}
+                  part="increment-button"
+                >
+                  +
+                </button>
+              </div>
+
+              {/* Status Badge */}
+              {this.renderStatusBadge()}
+            </div>
           )}
 
-          {/* Read Pulse Indicator */}
-          {this.readonly && this.readPulseTs && Date.now() - this.readPulseTs < 1500 && (
-            <span class="ml-1 flex items-center" part="readonly-pulse-sibling">
-              <span
-                class="w-3 h-3 rounded-full shadow-md"
-                title="Updated"
-                aria-hidden="true"
-                style={{
-                  backgroundColor: 'var(--color-info)',
-                  animation: 'ui-read-pulse 1.4s ease-in-out forwards',
-                }}
-              ></span>
-            </span>
-          )}
-
-          {/* Status Badge */}
-          {this.renderStatusBadge()}
+          {/* Last Updated Timestamp */}
+          {this.renderLastUpdated()}
         </div>
-
-        {/* Last Updated Timestamp */}
-        {this.renderLastUpdated()}
       </div>
     );
   }
