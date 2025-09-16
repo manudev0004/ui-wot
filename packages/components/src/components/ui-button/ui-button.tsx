@@ -221,41 +221,32 @@ export class UiButton {
   private getButtonStyle(): { classes: string; style: { [key: string]: string } } {
     const isDisabled = this.disabled;
 
-    // Thingweb-inspired button styling with Fira Mono font
     let baseClasses =
-      'inline-flex items-center justify-center gap-4 font-mono font-medium cursor-pointer transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-[10px] border px-5 py-3';
+      'px-4 py-2 rounded-2xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 font-medium cursor-pointer inline-flex items-center justify-center';
     let style: { [key: string]: string } = {};
-
-    // Apply Fira Mono font
-    style.fontFamily = 'var(--font-mono)';
-    style.fontSize = 'var(--fs-body, 1rem)';
-    style.fontWeight = 'var(--fw-medium, 500)';
-    style.lineHeight = 'normal';
 
     if (isDisabled) {
       baseClasses += ' opacity-50 cursor-not-allowed';
     } else {
-      baseClasses += ' hover:opacity-90 active:scale-[0.98] hover:scale-105';
+      baseClasses += ' hover:scale-105 active:scale-95';
     }
 
-    // Variant-specific styling matching Thingweb patterns
+    // Variant-specific styling with CSS variables
     if (this.variant === 'minimal') {
-      baseClasses += ' bg-transparent border-transparent hover:bg-gray-100 dark:hover:bg-gray-800';
-      style.color = this.getActiveColor();
+      style.backgroundColor = 'transparent';
+      style.borderColor = 'transparent';
+      if (!isDisabled) {
+        baseClasses += ' hover:bg-gray-100';
+      }
     } else if (this.variant === 'outlined') {
-      baseClasses += ' bg-transparent hover:bg-opacity-10';
+      style.backgroundColor = 'transparent';
       style.borderColor = this.getActiveColor();
       style.color = this.getActiveColor();
-      style['--hover-bg'] = this.getActiveColor();
     } else if (this.variant === 'filled') {
-      baseClasses += ' text-white';
       style.backgroundColor = this.getActiveColor();
       style.borderColor = this.getActiveColor();
-      style['--hover-bg'] = this.getHoverColor();
+      style.color = 'white';
     }
-
-    // Focus ring color
-    style['--tw-ring-color'] = this.getActiveColor();
 
     return { classes: baseClasses, style };
   }
@@ -268,19 +259,7 @@ export class UiButton {
       case 'neutral':
         return 'var(--color-neutral)';
       default:
-        return 'var(--ifm-color-primary)';
-    }
-  }
-
-  /** Generate the hover color using global CSS variables */
-  private getHoverColor(): string {
-    switch (this.color) {
-      case 'secondary':
-        return 'var(--color-secondary-hover)';
-      case 'neutral':
-        return 'var(--color-neutral-hover)';
-      default:
-        return 'var(--color-primary-hover)';
+        return 'var(--color-primary)';
     }
   }
 

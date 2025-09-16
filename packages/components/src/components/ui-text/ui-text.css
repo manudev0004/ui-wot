@@ -1,4 +1,3 @@
-/* Import single global CSS with everything */
 @import '../../global.css';
 
 @tailwind base;
@@ -10,7 +9,6 @@
   width: 100%;
 }
 
-/* Accent-aware focus styles using global tokens */
 .ui-text-container:focus-within {
   outline: none;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-accent, var(--color-primary)) 40%, transparent);

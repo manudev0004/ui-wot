@@ -1,4 +1,3 @@
-/* Import single global CSS with everything */
 @import '../../global.css';
 
 @tailwind base;
@@ -16,24 +15,4 @@ input[type='time']::-webkit-calendar-picker-indicator {
 
 :host(.dark) input[type='time']::-webkit-calendar-picker-indicator {
   filter: invert(0.8);
-}
-
-/* Focus styles */
-input:focus,
-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(6, 115, 98, 0.3);
-}
-
-/* Hover animations */
-button {
-  transition: all var(--transition-fast);
-}
-
-button:hover {
-  transform: translateY(-1px);
-}
-
-button:active {
-  transform: translateY(0);
 }

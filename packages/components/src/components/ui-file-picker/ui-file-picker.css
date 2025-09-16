@@ -1,4 +1,3 @@
-/* Import global CSS */
 @import '../../global.css';
 
 @tailwind base;
@@ -27,8 +26,4 @@
 .file-picker-input {
   /* Hide the native input; trigger via .openFileDialog() */
   display: none;
-}
-
-.file-actions {
-  gap: 0.5rem;
 }

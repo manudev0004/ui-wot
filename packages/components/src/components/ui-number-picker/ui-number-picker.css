@@ -1,55 +1,16 @@
-/* Import single global CSS with everything */
 @import '../../global.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Import single global CSS with everything */
-
-:host { 
+:host {
   display: inline-block;
 }
-
-/* Component-specific styles */
-:host(.ui-number-picker) button.text-white-force {
-  color: white !important;
+button.hover\:bg-opacity-10:hover {
+  background-color: color-mix(in srgb, var(--hover-bg) 10%, transparent) !important;
 }
 
-/* Button animations */
-.hover\:scale-105:hover {
-  transform: scale(1.05);
-}
-
-.active\:scale-95:active {
-  transform: scale(0.95);
-}
-
-/* Disabled state */
-button:disabled {
-  cursor: not-allowed !important;
-  transform: none !important;
-}
-
-button:disabled:hover {
-  transform: none !important;
-}
-
-/* Smooth transitions */
-button {
-  transition: all var(--transition-base);
-}
-
-/* Focus styles */
-button:focus {
-  outline: none;
-  --tw-ring-width: 2px;
-  --tw-ring-offset-width: 2px;
-  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
-}
-
-/* Number display styles */
-.number-display {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.025em;
+button:hover {
+  background-color: var(--hover-bg, inherit);
 }

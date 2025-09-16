@@ -36,13 +36,6 @@
   --color-danger: #dc2626;
   --color-info: #2563eb;
 
-  /* Thingweb-compatible variables */
-  --ifm-color-primary: #067362;
-  --neutral-clr-50: #ffffff;
-  --neutral-clr-900: #111827;
-  --fw-medium: 500;
-  --fs-body: 1rem;
-  --ff-secondary: 'Josefin Sans', sans-serif;
 
   
   /* Fonts */
@@ -71,11 +64,11 @@
 }
 
 /* Component font */
-ui-button, ui-number-picker, ui-slider, ui-checkbox, ui-toggle, ui-calendar, ui-notification, ui-text, ui-event {
+ui-button, ui-number-picker, ui-slider, ui-checkbox, ui-toggle, ui-calendar, ui-notification, ui-text {
   font-family: var(--font-sans);
 }
 
-ui-button *, ui-number-picker *, ui-slider *, ui-checkbox *, ui-toggle *, ui-calendar *, ui-notification *, ui-text *, ui-event * {
+ui-button *, ui-number-picker *, ui-slider *, ui-checkbox *, ui-toggle *, ui-calendar *, ui-notification *, ui-text * {
   font-family: inherit;
 }
 
