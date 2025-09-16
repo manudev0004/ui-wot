@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Minimal WoT Demo</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+    .component { margin: 30px 0; }
+    .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+    .connected { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  <h1>Minimal WoT Components Demo</h1>
+  
+  <div id="status" class="status">Connecting...</div>
+
+  <div class="component">
+    <h3>Calendar (TD: currentDateTime)</h3>
+    <ui-calendar id="calendar" include-time="true" show-status="true"></ui-calendar>
+  </div>
+
+  <div class="component">
+    <h3>Color Picker (TD: currentColor)</h3>
+    <ui-color-picker id="color" show-status="true"></ui-color-picker>
+  </div>
+
+    <div class="component">
+    <h3>File Uploader (TD: selectedFile property)</h3>
+    <ui-file-picker id="file" show-status="true"></ui-file-picker>
+  </div>
+
+  <div class="component">
+    <h3>Multiple Files Uploader (TD: fileList property)</h3>
+    <ui-file-picker id="files" multiple="true" show-status="true"></ui-file-picker>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
+  <script type="module" src="./build/ui-wot-components.esm.js"></script>
+
+  <script>
+    (async () => {
+      const status = document.getElementById('status');
+      
+      try {
+        // Wait for all components to be defined first
+        await Promise.all([
+          customElements.whenDefined('ui-calendar'),
+          customElements.whenDefined('ui-color-picker'), 
+          customElements.whenDefined('ui-file-picker')
+        ]);
+        
+        // Create WoT client
+        const servient = new WoT.Core.Servient();
+        servient.addClientFactory(new WoT.Http.HttpClientFactory());
+        const wot = await servient.start();
+        
+        // Connect to Thing
+        const thing = await wot.consume(await (await fetch('http://localhost:8080/testthing')).json());
+        status.textContent = 'Connected to TestThing';
+        status.className = 'status connected';
+
+        // Setup Calendar -> currentDateTime (fetch existing value first)
+        const calendar = document.getElementById('calendar');
+        try {
+          // Read the current value from the server
+          const currentValue = await thing.readProperty('currentDateTime');
+          const currentDateTime = await currentValue.value();
+          console.log('Current server dateTime:', currentDateTime);
+          
+          // Set the calendar with the current value and write operation
+          await calendar.setValue(currentDateTime, {
+            writeOperation: async (value) => {
+              await thing.writeProperty('currentDateTime', value);
+              console.log('Calendar wrote:', value);
+            }
+          });
+        } catch (error) {
+          console.error('Failed to read currentDateTime:', error);
+          // Fallback to current time if read fails
+          const now = new Date().toISOString();
+          await calendar.setValue(now, {
+            writeOperation: async (value) => {
+              await thing.writeProperty('currentDateTime', value);
+              console.log('Calendar wrote:', value);
+            }
+          });
+        }
+
+        // Setup Color Picker -> currentColor  
+        const color = document.getElementById('color');
+        await color.setValue('#3b82f6', {
+          writeOperation: async (value) => {
+            await thing.writeProperty('currentColor', value);
+            console.log('Color wrote:', value);
+          }
+        });
+
+        // Setup File Picker -> selectedFile property (no action for now)
+        const file = document.getElementById('file');
+        await file.setUpload(async (fileData) => {
+          console.log('File processed:', fileData.name, 'Size:', fileData.size);
+          // Just log the file data, don't invoke action yet
+          return { success: true, message: 'File processed successfully' };
+        }, {
+          propertyName: 'selectedFile',
+          writeProperty: async (prop, value) => {
+            console.log('Writing to property:', prop, value);
+            await thing.writeProperty(prop, value);
+          }
+        });
+
+        // Setup Multiple Files Picker -> fileList property (no action for now)
+        const files = document.getElementById('files');
+        await files.setUpload(async (fileData) => {
+          console.log('File processed:', fileData.name, 'Size:', fileData.size);
+          // Just log the file data, don't invoke action yet
+          return { success: true, message: 'File processed successfully' };
+        }, {
+          propertyName: 'fileList',
+          writeProperty: async (prop, value) => {
+            console.log('Writing to property:', prop, value);
+            await thing.writeProperty(prop, value);
+          }
+        });
+
+      } catch (error) {
+        status.textContent = 'Connection failed: ' + error.message;
+        status.className = 'status error';
+        console.error(error);
+      }
+    })();
+  </script>
+</body>
+</html>

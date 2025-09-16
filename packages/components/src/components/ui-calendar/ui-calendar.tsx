@@ -2,18 +2,6 @@ import { Component, Prop, State, h, Watch, Event, EventEmitter, Method, Element 
 import { UiMsg } from '../../utils/types';
 import { StatusIndicator } from '../../utils/status-indicator';
 
-export interface UiCalendarDateChange {
-  value: string;
-  date: Date;
-  formattedValue: string;
-}
-
-export interface UiCalendarValueChange {
-  value: string;
-  date: Date;
-  formattedValue: string;
-}
-
 /**
  * Advanced calendar component with comprehensive styling, variants, and features.
  * Matches the design family of ui-button, ui-slider, and other components.
@@ -286,18 +274,6 @@ export class UiCalendar {
     else this.openCalendar();
   };
 
-  /** Success feedback state */
-  @State() showSuccess: boolean = false;
-
-  /** Last error message */
-  @State() errorMessage?: string;
-
-  /** Event emitted when date changes */
-  @Event() dateChange: EventEmitter<UiCalendarDateChange>;
-
-  /** Standardized valueChange event for calendar */
-  @Event() valueChange: EventEmitter<UiCalendarValueChange>;
-
   /**
    * Standardized value event emitter - emits UiMsg<string> with enhanced metadata.
    * Provides consistent value change notifications with unified messaging format.
@@ -352,19 +328,6 @@ export class UiCalendar {
         type: 'setValue',
         source: 'method',
       },
-    });
-
-    // Emit legacy events for backward compatibility
-    this.dateChange.emit({
-      value: value,
-      date: this.selectedDate,
-      formattedValue: this.getDisplayValue(),
-    });
-
-    this.valueChange.emit({
-      value: value,
-      date: this.selectedDate,
-      formattedValue: this.getDisplayValue(),
     });
   }
 
@@ -422,10 +385,10 @@ export class UiCalendar {
 
     try {
       if (this.storedWriteOperation) {
-        StatusIndicator.applyStatus(this, 'loading');
+        // Only show loading for actual write operations
         this.updateValue(newValue, prevValue);
         await this.storedWriteOperation(newValue);
-        StatusIndicator.applyStatus(this, 'success');
+        // No success status for user interactions - they're immediate
       } else {
         this.updateValue(newValue, prevValue);
       }
@@ -434,7 +397,10 @@ export class UiCalendar {
     } catch (error) {
       console.error('handleDateSelect error for ui-calendar:', error);
       this.updateValue(prevValue!, newValue, false); // Revert on error
-      StatusIndicator.applyStatus(this, 'error', 'Operation failed');
+      // Only show error if it was a write operation that failed
+      if (this.storedWriteOperation) {
+        StatusIndicator.applyStatus(this, 'error', 'Write operation failed');
+      }
     }
   }
 
@@ -452,8 +418,6 @@ export class UiCalendar {
       ok: true,
       meta: { component: 'ui-calendar', type: 'clear', source: 'user' },
     });
-    this.dateChange.emit({ value: this.value, date: this.selectedDate, formattedValue: this.getDisplayValue() });
-    this.valueChange.emit({ value: this.value, date: this.selectedDate, formattedValue: this.getDisplayValue() });
   }
 
   /** Jump to and optionally select today */
@@ -479,34 +443,44 @@ export class UiCalendar {
     newDate.setHours(hours);
     newDate.setMinutes(minutes);
 
-    this.selectedDate = newDate;
-    this.value = newDate.toISOString();
+    const prevValue = this.value;
+    const newValue = newDate.toISOString();
 
-    // Emit standardized event
-    this.valueMsg.emit({
-      newVal: this.value,
-      prevVal: undefined,
-      ts: Date.now(),
-      source: this.el?.id || 'ui-calendar',
-      ok: true,
-      meta: {
-        component: 'ui-calendar',
-        type: 'timeChange',
-        source: 'user',
-      },
-    });
+    try {
+      if (this.storedWriteOperation) {
+        // Only show loading during actual write operations
+        this.selectedDate = newDate;
+        this.value = newValue;
+        await this.storedWriteOperation(newValue);
+      } else {
+        this.selectedDate = newDate;
+        this.value = newValue;
+      }
 
-    this.dateChange.emit({
-      value: this.value,
-      date: this.selectedDate,
-      formattedValue: this.getDisplayValue(),
-    });
-
-    // Local control only: external integrations should listen to the `dateChange` event.
+      // Emit standardized event
+      this.valueMsg.emit({
+        newVal: this.value,
+        prevVal: prevValue,
+        ts: Date.now(),
+        source: this.el?.id || 'ui-calendar',
+        ok: true,
+        meta: {
+          component: 'ui-calendar',
+          type: 'timeChange',
+          source: 'user',
+        },
+      });
+    } catch (error) {
+      console.error('handleTimeChange error for ui-calendar:', error);
+      // Only show error status if it was a write operation that failed
+      if (this.storedWriteOperation) {
+        StatusIndicator.applyStatus(this, 'error', 'Write operation failed');
+      }
+    }
   }
 
   /** Clock interface methods */
-  private updateTimeFromClock() {
+  private async updateTimeFromClock() {
     if (!this.selectedDate || isNaN(this.selectedDate.getTime())) this.selectedDate = new Date();
 
     const newDate = new Date(this.selectedDate);
@@ -523,28 +497,39 @@ export class UiCalendar {
     newDate.setHours(hours);
     newDate.setMinutes(this.selectedMinute);
 
-    this.selectedDate = newDate;
-    this.value = newDate.toISOString();
+    const prevValue = this.value;
+    const newValue = newDate.toISOString();
 
-    // Emit standardized event
-    this.valueMsg.emit({
-      newVal: this.value,
-      prevVal: undefined,
-      ts: Date.now(),
-      source: this.el?.id || 'ui-calendar',
-      ok: true,
-      meta: {
-        component: 'ui-calendar',
-        type: 'clockChange',
-        source: 'user',
-      },
-    });
+    try {
+      if (this.storedWriteOperation) {
+        // Only show loading during actual write operations
+        this.selectedDate = newDate;
+        this.value = newValue;
+        await this.storedWriteOperation(newValue);
+      } else {
+        this.selectedDate = newDate;
+        this.value = newValue;
+      }
 
-    this.dateChange.emit({
-      value: this.value,
-      date: this.selectedDate,
-      formattedValue: this.getDisplayValue(),
-    });
+      // Emit standardized event
+      this.valueMsg.emit({
+        newVal: this.value,
+        prevVal: prevValue,
+        ts: Date.now(),
+        source: this.el?.id || 'ui-calendar',
+        ok: true,
+        meta: {
+          component: 'ui-calendar',
+          type: 'clockChange',
+          source: 'user',
+        },
+      });
+    } catch (error) {
+      console.error('updateTimeFromClock error for ui-calendar:', error);
+      if (this.storedWriteOperation) {
+        StatusIndicator.applyStatus(this, 'error', 'Write operation failed');
+      }
+    }
   }
 
   private updateClockFromSelectedDate() {
@@ -574,19 +559,19 @@ export class UiCalendar {
     this.selectedMinute = minutes;
   }
 
-  private setHour(hour: number) {
+  private async setHour(hour: number) {
     this.selectedHour = hour;
-    this.updateTimeFromClock();
+    await this.updateTimeFromClock();
   }
 
-  private setMinute(minute: number) {
+  private async setMinute(minute: number) {
     this.selectedMinute = minute;
-    this.updateTimeFromClock();
+    await this.updateTimeFromClock();
   }
 
-  private toggleAMPM() {
+  private async toggleAMPM() {
     this.isAM = !this.isAM;
-    this.updateTimeFromClock();
+    await this.updateTimeFromClock();
   }
 
   private toggleClockView() {
@@ -758,23 +743,30 @@ export class UiCalendar {
   // ========================================
 
   /**
-   * Set the value programmatically with automatic operation handling
+   * Set the value programmatically with optional write operation
    * @param value - The date string value to set (ISO format)
-   * @param writeOperation - Optional write function to call after value update
+   * @param options - Optional configuration including writeOperation
    */
   @Method()
-  async setValue(value: string, writeOperation?: (value: string) => Promise<any>): Promise<any> {
+  async setValue(value: string, options?: { writeOperation?: (value: string) => Promise<any> }): Promise<any> {
     const prevValue = this.value;
 
-    // Store operation for potential user interaction
-    this.storedWriteOperation = writeOperation;
+    // Clear error state if not reverting
+    if (this.operationStatus === 'error') {
+      StatusIndicator.applyStatus(this, 'idle');
+    }
+
+    // Store operation for user interactions
+    if (options?.writeOperation) {
+      this.storedWriteOperation = options.writeOperation;
+    }
 
     try {
       StatusIndicator.applyStatus(this, 'loading');
       this.updateValue(value, prevValue);
 
-      if (writeOperation) {
-        const result = await writeOperation(value);
+      if (options?.writeOperation) {
+        const result = await options.writeOperation(value);
         StatusIndicator.applyStatus(this, 'success');
         return result;
       }
@@ -783,10 +775,8 @@ export class UiCalendar {
     } catch (error) {
       console.error('setValue error for ui-calendar:', error);
       this.updateValue(prevValue!, prevValue, false); // Revert on error
-      StatusIndicator.applyStatus(this, 'error', 'Operation failed');
+      StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
       throw error;
-    } finally {
-      this.storedWriteOperation = undefined;
     }
   }
 
@@ -859,37 +849,6 @@ export class UiCalendar {
     });
   }
 
-  /**
-   * Trigger a visual pulse effect to indicate the value was read/accessed.
-   * @example
-   * ```typescript
-   * await calendar.triggerReadPulse();
-   * ```
-   */
-  @Method()
-  async triggerReadPulse(): Promise<void> {
-    // Add pulse class temporarily
-    this.el.classList.add('read-pulse');
-
-    // Emit read event
-    this.valueMsg.emit({
-      newVal: this.value,
-      ts: Date.now(),
-      source: this.el?.id || 'ui-calendar',
-      ok: true,
-      meta: {
-        component: 'ui-calendar',
-        type: 'read',
-        source: 'method',
-      },
-    });
-
-    // Remove pulse class after animation
-    setTimeout(() => {
-      this.el.classList.remove('read-pulse');
-    }, 300);
-  }
-
   /** Render component */
   render() {
     const styles = this.getCalendarStyles();
@@ -902,257 +861,263 @@ export class UiCalendar {
     }
 
     return (
-      <div class={styles.containerClass}>
-        {/* Label */}
-        {this.label && <label class={`block text-sm font-medium mb-2 ${isDisabled ? 'text-gray-400' : ''} ${this.dark ? 'text-white' : 'text-gray-900'}`}>{this.label}</label>}
-
-        {/* Input Field */}
-        <div class="relative">
-          <input
-            ref={el => (this.inputEl = el as HTMLInputElement)}
-            type="text"
-            disabled={isDisabled}
-            value={this.getDisplayValue()}
-            class={styles.inputClass}
-            style={styles.inputStyle}
-            onClick={() => !isDisabled && this.toggleOpen()}
-            placeholder={this.includeTime ? 'Select date and time' : 'Select date'}
-            aria-haspopup="dialog"
-            aria-expanded={this.isOpen ? 'true' : 'false'}
-            readOnly
-          />
-
-          {/* Calendar Icon */}
-          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 0V2M12 0V2M2 4H14M2 2H14C15.1 2 16 2.9 16 4V14C16 15.1 15.1 16 14 16H2C0.9 16 0 15.1 0 14V4C0 2.9 0.9 2 2 2Z" fill="currentColor" opacity="0.6" />
-            </svg>
-          </div>
-
-          {/* Success Indicator */}
-          {this.showSuccess && (
-            <div class="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 z-10">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 3L4.5 8.5L2 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </div>
+      <div class="inline-block" part="container" role="group" aria-label={this.label || 'Calendar'}>
+        <div class="inline-flex items-center space-x-2 relative">
+          {/* Label */}
+          {this.label && (
+            <label
+              class={`select-none mr-2 transition-colors duration-200 ${isDisabled ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer hover:text-opacity-80'} ${
+                this.dark ? 'text-white' : 'text-gray-900'
+              }`}
+              onClick={() => !isDisabled && this.toggleOpen()}
+              part="label"
+            >
+              {this.label}
+            </label>
           )}
-        </div>
 
-        {/* Calendar Dropdown */}
-        {this.isOpen && (
-          <div ref={el => (this.calendarEl = el as HTMLElement)} class={styles.calendarClass} role="dialog" aria-modal="true">
-            {/* Header */}
-            <div class="flex items-center justify-between mb-4">
-              <button class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => this.navigateMonth(-1)}>
+          {/* Calendar Input Container */}
+          <div class={styles.containerClass}>
+            {/* Input Field */}
+            <div class="relative">
+              <input
+                ref={el => (this.inputEl = el as HTMLInputElement)}
+                type="text"
+                disabled={isDisabled}
+                value={this.getDisplayValue()}
+                class={styles.inputClass}
+                style={styles.inputStyle}
+                onClick={() => !isDisabled && this.toggleOpen()}
+                placeholder={this.includeTime ? 'Select date and time' : 'Select date'}
+                aria-haspopup="dialog"
+                aria-expanded={this.isOpen ? 'true' : 'false'}
+                readOnly
+              />
+
+              {/* Calendar Icon */}
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M4 0V2M12 0V2M2 4H14M2 2H14C15.1 2 16 2.9 16 4V14C16 15.1 15.1 16 14 16H2C0.9 16 0 15.1 0 14V4C0 2.9 0.9 2 2 2Z" fill="currentColor" opacity="0.6" />
                 </svg>
-              </button>
-
-              <div class={`text-lg font-medium ${this.dark ? 'text-white' : 'text-gray-900'}`}>
-                {this.getMonthName()} {this.currentYear}
               </div>
-
-              <button class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => this.navigateMonth(1)}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </button>
             </div>
 
-            {/* Week Days */}
-            <div class={`${this.showWeekNumbers ? 'grid grid-cols-8' : 'grid grid-cols-7'} gap-1 mb-2`}>
-              {this.showWeekNumbers && <div class={`text-center text-xs font-medium py-2 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>Wk</div>}
-              {weekDays.map(day => (
-                <div class={`text-center text-xs font-medium py-2 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{day}</div>
-              ))}
-            </div>
+            {/* Calendar Dropdown */}
+            {this.isOpen && (
+              <div ref={el => (this.calendarEl = el as HTMLElement)} class={styles.calendarClass} role="dialog" aria-modal="true">
+                {/* Header */}
+                <div class="flex items-center justify-between mb-4">
+                  <button class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => this.navigateMonth(-1)}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </button>
 
-            {/* Calendar Grid with optional week numbers */}
-            <div class="flex flex-col gap-1">
-              {weeks.map((week, wIdx) => {
-                const firstRealDay = week.find(d => d !== null) as number | null;
-                const weekDate = firstRealDay ? new Date(this.currentYear, this.currentMonth, firstRealDay) : new Date(this.currentYear, this.currentMonth, 1);
-                const weekNo = this.getISOWeek(weekDate);
-                return (
-                  <div class={`${this.showWeekNumbers ? 'grid grid-cols-8' : 'grid grid-cols-7'} gap-1`}>
-                    {this.showWeekNumbers && <div class={`h-8 text-xs flex items-center justify-center ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{weekNo}</div>}
-                    {week.map((day, index) => {
-                      const isSelected =
-                        day === this.selectedDate?.getDate() && this.currentMonth === this.selectedDate?.getMonth() && this.currentYear === this.selectedDate?.getFullYear();
-                      const isDisabledDay = day === null || (day !== null && this.isDayOutOfRange(day));
-                      const baseText = this.dark ? 'text-white' : 'text-gray-900';
-                      return (
-                        <button
-                          key={`${wIdx}-${index}`}
-                          class={`h-8 text-sm rounded transition-colors ${
-                            isDisabledDay ? 'opacity-40 cursor-not-allowed' : isSelected ? '' : `hover:bg-gray-100 dark:hover:bg-gray-700 ${baseText}`
-                          }`}
-                          style={day !== null && isSelected ? { backgroundColor: this.getColorVars().main, color: this.variant === 'filled' && this.dark ? 'black' : 'white' } : {}}
-                          disabled={isDisabledDay}
-                          onClick={() => day && !isDisabledDay && this.handleDateSelect(day)}
-                        >
-                          {day ?? ''}
-                        </button>
-                      );
-                    })}
+                  <div class={`text-lg font-medium ${this.dark ? 'text-white' : 'text-gray-900'}`}>
+                    {this.getMonthName()} {this.currentYear}
                   </div>
-                );
-              })}
-            </div>
 
-            {(this.showTodayButton || this.showClearButton) && (
-              <div class={`mt-3 pt-3 border-t ${this.dark ? 'border-gray-700' : 'border-gray-200'} flex justify-between`}>
-                {this.showTodayButton ? (
-                  <button
-                    type="button"
-                    class={`px-3 py-1 text-sm rounded ${this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
-                    onClick={() => this.selectToday()}
-                  >
-                    Today
-                  </button>
-                ) : (
-                  <span></span>
-                )}
-                {this.showClearButton && (
-                  <button
-                    type="button"
-                    class={`px-3 py-1 text-sm rounded ${this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
-                    onClick={() => this.clearSelection()}
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Enhanced Time Picker with Clock Interface */}
-            {this.includeTime && (
-              <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                <div class="flex items-center justify-between mb-3">
-                  <label class={`text-sm font-medium ${this.dark ? 'text-white' : 'text-gray-900'}`}>Time</label>
-                  <button
-                    type="button"
-                    class={`px-2 py-1 text-xs rounded ${
-                      this.showClockView ? 'text-white' : this.dark ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                    style={this.showClockView ? { backgroundColor: this.getColorVars().main } : {}}
-                    onClick={() => this.toggleClockView()}
-                  >
-                    {this.showClockView ? '📝 Input' : '🕐 Clock'}
+                  <button class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => this.navigateMonth(1)}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
                   </button>
                 </div>
 
-                {this.showClockView ? (
-                  /* Visual Clock Interface */
-                  <div class="flex flex-col items-center space-y-4">
-                    {/* Hour Selection */}
-                    <div class="text-center">
-                      <div class={`text-xs mb-2 ${this.dark ? 'text-gray-300' : 'text-gray-600'}`}>Hours</div>
-                      <div class="grid grid-cols-4 gap-1 max-w-48">
-                        {Array.from({ length: this.timeFormat === '12' ? 12 : 24 }, (_, i) => {
-                          const hour = this.timeFormat === '12' ? i + 1 : i;
+                {/* Week Days */}
+                <div class={`${this.showWeekNumbers ? 'grid grid-cols-8' : 'grid grid-cols-7'} gap-1 mb-2`}>
+                  {this.showWeekNumbers && <div class={`text-center text-xs font-medium py-2 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>Wk</div>}
+                  {weekDays.map(day => (
+                    <div class={`text-center text-xs font-medium py-2 ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{day}</div>
+                  ))}
+                </div>
+
+                {/* Calendar Grid with optional week numbers */}
+                <div class="flex flex-col gap-1">
+                  {weeks.map((week, wIdx) => {
+                    const firstRealDay = week.find(d => d !== null) as number | null;
+                    const weekDate = firstRealDay ? new Date(this.currentYear, this.currentMonth, firstRealDay) : new Date(this.currentYear, this.currentMonth, 1);
+                    const weekNo = this.getISOWeek(weekDate);
+                    return (
+                      <div class={`${this.showWeekNumbers ? 'grid grid-cols-8' : 'grid grid-cols-7'} gap-1`}>
+                        {this.showWeekNumbers && <div class={`h-8 text-xs flex items-center justify-center ${this.dark ? 'text-gray-400' : 'text-gray-500'}`}>{weekNo}</div>}
+                        {week.map((day, index) => {
+                          const isSelected =
+                            day === this.selectedDate?.getDate() && this.currentMonth === this.selectedDate?.getMonth() && this.currentYear === this.selectedDate?.getFullYear();
+                          const isDisabledDay = day === null || (day !== null && this.isDayOutOfRange(day));
+                          const baseText = this.dark ? 'text-white' : 'text-gray-900';
                           return (
                             <button
-                              type="button"
-                              class={`w-8 h-8 text-xs rounded-full transition-all ${
-                                this.selectedHour === hour ? 'text-white' : this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              key={`${wIdx}-${index}`}
+                              class={`h-8 text-sm rounded transition-colors ${
+                                isDisabledDay ? 'opacity-40 cursor-not-allowed' : isSelected ? '' : `hover:bg-gray-100 dark:hover:bg-gray-700 ${baseText}`
                               }`}
-                              style={this.selectedHour === hour ? { backgroundColor: this.getColorVars().main } : {}}
-                              onClick={() => this.setHour(hour)}
+                              style={
+                                day !== null && isSelected ? { backgroundColor: this.getColorVars().main, color: this.variant === 'filled' && this.dark ? 'black' : 'white' } : {}
+                              }
+                              disabled={isDisabledDay}
+                              onClick={() => day && !isDisabledDay && this.handleDateSelect(day)}
                             >
-                              {hour.toString().padStart(2, '0')}
+                              {day ?? ''}
                             </button>
                           );
                         })}
                       </div>
-                    </div>
+                    );
+                  })}
+                </div>
 
-                    {/* Minute Selection */}
-                    <div class="text-center">
-                      <div class={`text-xs mb-2 ${this.dark ? 'text-gray-300' : 'text-gray-600'}`}>Minutes</div>
-                      <div class="grid grid-cols-6 gap-1 max-w-48">
-                        {Array.from({ length: 12 }, (_, i) => {
-                          const minute = i * 5;
-                          return (
-                            <button
-                              type="button"
-                              class={`w-8 h-8 text-xs rounded-full transition-all ${
-                                this.selectedMinute === minute
-                                  ? 'text-white'
-                                  : this.dark
-                                  ? 'bg-gray-700 text-white hover:bg-gray-600'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
-                              style={this.selectedMinute === minute ? { backgroundColor: this.getColorVars().main } : {}}
-                              onClick={() => this.setMinute(minute)}
-                            >
-                              {minute.toString().padStart(2, '0')}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* AM/PM Toggle for 12-hour format */}
-                    {this.timeFormat === '12' && (
-                      <div class="flex space-x-2">
-                        <button
-                          type="button"
-                          class={`px-4 py-2 text-sm rounded transition-all ${
-                            this.isAM ? 'text-white' : this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          }`}
-                          style={this.isAM ? { backgroundColor: this.getColorVars().main } : {}}
-                          onClick={() => !this.isAM && this.toggleAMPM()}
-                        >
-                          AM
-                        </button>
-                        <button
-                          type="button"
-                          class={`px-4 py-2 text-sm rounded transition-all ${
-                            !this.isAM ? 'text-white' : this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          }`}
-                          style={!this.isAM ? { backgroundColor: this.getColorVars().main } : {}}
-                          onClick={() => this.isAM && this.toggleAMPM()}
-                        >
-                          PM
-                        </button>
-                      </div>
+                {(this.showTodayButton || this.showClearButton) && (
+                  <div class={`mt-3 pt-3 border-t ${this.dark ? 'border-gray-700' : 'border-gray-200'} flex justify-between`}>
+                    {this.showTodayButton ? (
+                      <button
+                        type="button"
+                        class={`px-3 py-1 text-sm rounded ${this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                        onClick={() => this.selectToday()}
+                      >
+                        Today
+                      </button>
+                    ) : (
+                      <span></span>
                     )}
-
-                    {/* Selected Time Display */}
-                    <div class={`text-lg font-mono ${this.dark ? 'text-white' : 'text-gray-900'}`}>
-                      {this.timeFormat === '12'
-                        ? `${this.selectedHour.toString().padStart(2, '0')}:${this.selectedMinute.toString().padStart(2, '0')} ${this.isAM ? 'AM' : 'PM'}`
-                        : `${this.selectedHour.toString().padStart(2, '0')}:${this.selectedMinute.toString().padStart(2, '0')}`}
-                    </div>
+                    {this.showClearButton && (
+                      <button
+                        type="button"
+                        class={`px-3 py-1 text-sm rounded ${this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                        onClick={() => this.clearSelection()}
+                      >
+                        Clear
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  /* Traditional Time Input */
-                  <input
-                    type="time"
-                    class={`w-full px-3 py-2 text-sm border rounded-md ${this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                    value={this.selectedDate ? `${String(this.selectedDate.getHours()).padStart(2, '0')}:${String(this.selectedDate.getMinutes()).padStart(2, '0')}` : ''}
-                    onInput={e => this.handleTimeChange(e)}
-                  />
+                )}
+
+                {/* Enhanced Time Picker with Clock Interface */}
+                {this.includeTime && (
+                  <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <div class="flex items-center justify-between mb-3">
+                      <label class={`text-sm font-medium ${this.dark ? 'text-white' : 'text-gray-900'}`}>Time</label>
+                      <button
+                        type="button"
+                        class={`px-2 py-1 text-xs rounded ${
+                          this.showClockView ? 'text-white' : this.dark ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                        style={this.showClockView ? { backgroundColor: this.getColorVars().main } : {}}
+                        onClick={() => this.toggleClockView()}
+                      >
+                        {this.showClockView ? '📝 Input' : '🕐 Clock'}
+                      </button>
+                    </div>
+
+                    {this.showClockView ? (
+                      /* Visual Clock Interface */
+                      <div class="flex flex-col items-center space-y-4">
+                        {/* Hour Selection */}
+                        <div class="text-center">
+                          <div class={`text-xs mb-2 ${this.dark ? 'text-gray-300' : 'text-gray-600'}`}>Hours</div>
+                          <div class="grid grid-cols-4 gap-1 max-w-48">
+                            {Array.from({ length: this.timeFormat === '12' ? 12 : 24 }, (_, i) => {
+                              const hour = this.timeFormat === '12' ? i + 1 : i;
+                              return (
+                                <button
+                                  type="button"
+                                  class={`w-8 h-8 text-xs rounded-full transition-all ${
+                                    this.selectedHour === hour
+                                      ? 'text-white'
+                                      : this.dark
+                                      ? 'bg-gray-700 text-white hover:bg-gray-600'
+                                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  }`}
+                                  style={this.selectedHour === hour ? { backgroundColor: this.getColorVars().main } : {}}
+                                  onClick={async () => await this.setHour(hour)}
+                                >
+                                  {hour.toString().padStart(2, '0')}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Minute Selection */}
+                        <div class="text-center">
+                          <div class={`text-xs mb-2 ${this.dark ? 'text-gray-300' : 'text-gray-600'}`}>Minutes</div>
+                          <div class="grid grid-cols-6 gap-1 max-w-48">
+                            {Array.from({ length: 12 }, (_, i) => {
+                              const minute = i * 5;
+                              return (
+                                <button
+                                  type="button"
+                                  class={`w-8 h-8 text-xs rounded-full transition-all ${
+                                    this.selectedMinute === minute
+                                      ? 'text-white'
+                                      : this.dark
+                                      ? 'bg-gray-700 text-white hover:bg-gray-600'
+                                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  }`}
+                                  style={this.selectedMinute === minute ? { backgroundColor: this.getColorVars().main } : {}}
+                                  onClick={async () => await this.setMinute(minute)}
+                                >
+                                  {minute.toString().padStart(2, '0')}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* AM/PM Toggle for 12-hour format */}
+                        {this.timeFormat === '12' && (
+                          <div class="flex space-x-2">
+                            <button
+                              type="button"
+                              class={`px-4 py-2 text-sm rounded transition-all ${
+                                this.isAM ? 'text-white' : this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              }`}
+                              style={this.isAM ? { backgroundColor: this.getColorVars().main } : {}}
+                              onClick={async () => !this.isAM && (await this.toggleAMPM())}
+                            >
+                              AM
+                            </button>
+                            <button
+                              type="button"
+                              class={`px-4 py-2 text-sm rounded transition-all ${
+                                !this.isAM ? 'text-white' : this.dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              }`}
+                              style={!this.isAM ? { backgroundColor: this.getColorVars().main } : {}}
+                              onClick={async () => this.isAM && (await this.toggleAMPM())}
+                            >
+                              PM
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Selected Time Display */}
+                        <div class={`text-lg font-mono ${this.dark ? 'text-white' : 'text-gray-900'}`}>
+                          {this.timeFormat === '12'
+                            ? `${this.selectedHour.toString().padStart(2, '0')}:${this.selectedMinute.toString().padStart(2, '0')} ${this.isAM ? 'AM' : 'PM'}`
+                            : `${this.selectedHour.toString().padStart(2, '0')}:${this.selectedMinute.toString().padStart(2, '0')}`}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Traditional Time Input */
+                      <input
+                        type="time"
+                        class={`w-full px-3 py-2 text-sm border rounded-md ${this.dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                        value={this.selectedDate ? `${String(this.selectedDate.getHours()).padStart(2, '0')}:${String(this.selectedDate.getMinutes()).padStart(2, '0')}` : ''}
+                        onInput={e => this.handleTimeChange(e)}
+                      />
+                    )}
+                  </div>
                 )}
               </div>
             )}
           </div>
-        )}
 
-        {/* Unified Status Indicators - Right aligned */}
-        <div class="flex justify-between items-start mt-2">
-          <div class="flex-1"></div>
-          <div class="flex flex-col items-end gap-1">
-            {this.showStatus && StatusIndicator.renderStatusBadge(this.operationStatus, this.lastError, h)}
-            {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
-          </div>
+          {/* Status Badge */}
+          {this.showStatus && StatusIndicator.renderStatusBadge(this.operationStatus, this.lastError, h)}
         </div>
 
-        {/* Error Message */}
-        {this.errorMessage && <div class="text-red-500 text-sm mt-2">{this.errorMessage}</div>}
+        {/* Last Updated Timestamp */}
+        {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
 
         {/* Click outside to close */}
         {this.isOpen && <div class="fixed inset-0 z-40" onClick={() => (this.isOpen = false)}></div>}

@@ -49,6 +49,21 @@ export class UiColorPicker {
   @Prop() readonly: boolean = false;
 
   /**
+   * Visual variant of the component.
+   */
+  @Prop() variant: 'outlined' | 'filled' = 'outlined';
+
+  /**
+   * Color scheme for the component.
+   */
+  @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
+
+  /**
+   * Dark theme support.
+   */
+  @Prop() dark: boolean = false;
+
+  /**
    * Show last updated timestamp.
    */
   @Prop() showLastUpdated: boolean = false;
@@ -198,12 +213,24 @@ export class UiColorPicker {
     this.valueMsg.emit(msg);
   }
 
-  /**
-   * Format timestamp for display.
-   */
-  private formatTimestamp(timestamp?: number): string {
-    if (!timestamp) return '';
-    return new Date(timestamp).toLocaleTimeString();
+  // ============================== RENDERING HELPERS ==============================
+
+  /** Renders the status badge according to current operation state */
+  private renderStatusBadge() {
+    if (!this.showStatus) return null;
+
+    const status = this.operationStatus || 'idle';
+    const message = this.lastError || (status === 'idle' ? 'Ready' : '');
+    return StatusIndicator.renderStatusBadge(status, message, h);
+  }
+
+  /** Renders the last updated timestamp */
+  private renderLastUpdated() {
+    if (!this.showLastUpdated) return null;
+
+    // render an invisible placeholder when lastUpdatedTs is missing.
+    const lastUpdatedDate = this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null;
+    return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
 
   // ============================== RENDER METHOD ==============================
@@ -212,39 +239,39 @@ export class UiColorPicker {
     const canInteract = !this.disabled && !this.readonly;
 
     return (
-      <div class="flex flex-col gap-2">
-        {this.label && <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{this.label}</label>}
+      <div class="inline-block" part="container" role="group" aria-label={this.label || 'Color Picker'}>
+        <div class="inline-flex items-center space-x-2 relative">
+          {/* Label */}
+          {this.label && (
+            <label
+              class={`select-none mr-2 transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer hover:text-opacity-80'} ${
+                this.dark ? 'text-white' : 'text-gray-900'
+              }`}
+              part="label"
+            >
+              {this.label}
+            </label>
+          )}
 
-        <div class="flex items-center">
+          {/* Color Picker Input */}
           <input
             type="color"
-            class={`color-picker-input w-16 h-16 border-2 border-gray-300 dark:border-gray-600 ${this.disabled ? 'opacity-50 cursor-not-allowed' : ''} ${
-              this.readonly ? 'cursor-default' : ''
-            }`}
+            class={`color-picker-input w-16 h-16 border-2 border-gray-300 dark:border-gray-600 rounded-md transition-all duration-200 ${
+              this.disabled ? 'opacity-50 cursor-not-allowed' : ''
+            } ${this.readonly ? 'cursor-default' : 'hover:border-gray-400 dark:hover:border-gray-500'}`}
             value={this.selectedColor}
             disabled={this.disabled}
             readonly={this.readonly}
             onInput={e => canInteract && this.handleColorChange(e)}
+            part="color-input"
           />
+
+          {/* Status Badge */}
+          {this.renderStatusBadge()}
         </div>
 
-        {this.showStatus && this.operationStatus !== 'idle' && (
-          <div
-            class={`status-indicator flex items-center gap-1 text-xs ${
-              this.operationStatus === 'loading'
-                ? 'text-blue-600 dark:text-blue-400'
-                : this.operationStatus === 'success'
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-red-600 dark:text-red-400'
-            }`}
-          >
-            {this.operationStatus === 'loading' && <span>Updating...</span>}
-            {this.operationStatus === 'success' && <span>✓</span>}
-            {this.operationStatus === 'error' && <span>✗ {this.lastError || 'Error'}</span>}
-          </div>
-        )}
-
-        {this.showLastUpdated && this.lastUpdatedTs && <div class="text-xs text-gray-500 dark:text-gray-400">Last updated: {this.formatTimestamp(this.lastUpdatedTs)}</div>}
+        {/* Last Updated Timestamp */}
+        {this.renderLastUpdated()}
       </div>
     );
   }
