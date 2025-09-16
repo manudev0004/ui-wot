@@ -139,16 +139,6 @@ export class UiButton {
 
   // =============== PRIVATE METHODS ===============
 
-  /** Sets different operation status with automatic timeout to return to its idle state */
-  private setStatusWithTimeout(status: OperationStatus, duration: number = 1000): void {
-    this.operationStatus = status;
-    if (status !== 'idle') {
-      setTimeout(() => {
-        if (this.operationStatus === status) this.operationStatus = 'idle';
-      }, duration);
-    }
-  }
-
   /** Emits click events with consistent UIMsg data structure */
   private emitClickMsg() {
     this.clickMsg.emit({
@@ -167,25 +157,18 @@ export class UiButton {
     this.lastClickedTs = Date.now();
     this.emitClickMsg();
 
+    StatusIndicator.applyStatus(this, 'loading');
+
     // Execute stored action if available
     if (this.storedAction) {
-      this.operationStatus = 'loading';
-
       try {
         await this.storedAction();
-        this.setStatusWithTimeout('success');
+        StatusIndicator.applyStatus(this, 'success');
       } catch (error) {
-        console.error('Button action failed:', error);
-        this.operationStatus = 'error';
-        this.lastError = error?.message || 'Action failed';
-        this.setStatusWithTimeout('idle', 3000); // Clear error after 3 seconds
+        StatusIndicator.applyStatus(this, 'error', error?.message || 'Action failed');
       }
     } else {
-      // Simple button without actions
-      if (this.showStatus) {
-        this.operationStatus = 'loading';
-        setTimeout(() => this.setStatusWithTimeout('success'), 100); // Quick success feedback
-      }
+      StatusIndicator.applyStatus(this, 'error', 'No action configured - setup may have failed');
     }
   };
 
@@ -220,13 +203,16 @@ export class UiButton {
 
     const status = this.operationStatus || 'idle';
     const message = this.lastError || (status === 'idle' ? 'Ready' : '');
-    return StatusIndicator.renderStatusBadge(status, 'light', message, h);
+    return StatusIndicator.renderStatusBadge(status, message, h);
   }
 
   /** Renders the last updated timestamp */
   private renderLastUpdated() {
-    if (!this.showLastUpdated || !this.lastClickedTs) return null;
-    return StatusIndicator.renderTimestamp(new Date(this.lastClickedTs), this.dark ? 'dark' : 'light', h);
+    if (!this.showLastUpdated) return null;
+
+    // render an invisible placeholder when lastClickedTs is missing.
+    const lastUpdatedDate = this.lastClickedTs ? new Date(this.lastClickedTs) : null;
+    return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
 
   // =============== STYLING HELPERS ===============
