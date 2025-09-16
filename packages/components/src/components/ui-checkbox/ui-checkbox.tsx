@@ -96,7 +96,7 @@ export class UiCheckbox {
   /** Timer for updating relative timestamps */
   private timestampUpdateTimer?: number;
 
-  /** Stores API function from first initialization to use further for any user interactions */
+  /** Stores API function from first initialization to re-use further for any user interactions */
   private storedWriteOperation?: (value: boolean) => Promise<any>;
 
   // ============================== EVENTS ==============================
@@ -116,7 +116,7 @@ export class UiCheckbox {
    * It supports optimistic updates, error handling, and automatic retries.
    *
    * @param value - The boolean value to set (true = checked, false = unchecked)
-   * @param options - Configuration for device communication and behavior
+   * @param options - Optional configuration for device communication and behavior
    * @returns Promise resolving to true if successful, false if failed
    *
    * @example Basic Usage

@@ -115,7 +115,7 @@ export class UiNumberPicker {
   /** Timer for updating relative timestamps */
   private timestampUpdateTimer?: number;
 
-  /** Stores API function from first initialization to use further for any user interactions */
+  /** Stores API function from first initialization to re-use further for any user interactions */
   private storedWriteOperation?: (value: number) => Promise<any>;
 
   // ============================== EVENTS ==============================
@@ -135,7 +135,7 @@ export class UiNumberPicker {
    * It supports optimistic updates, error handling, and automatic retries.
    *
    * @param value - The numeric value to set
-   * @param options - Configuration for device communication and behavior
+   * @param options - Optional configuration for device communication and behavior
    * @returns Promise resolving to true if successful, false if failed
    *
    * @example Basic Usage
@@ -182,8 +182,17 @@ export class UiNumberPicker {
     // If there is writeOperation store operation for future user interactions
     if (options.writeOperation && !options._isRevert) {
       this.storedWriteOperation = options.writeOperation;
-      this.updateValue(value, prevValue, false);
-      return true;
+      StatusIndicator.applyStatus(this, 'loading');
+
+      try {
+        // Update the value optimistically
+        this.updateValue(value, prevValue, false);
+        StatusIndicator.applyStatus(this, 'success');
+        return true;
+      } catch (error) {
+        StatusIndicator.applyStatus(this, 'error', error?.message || 'Setup failed');
+        return false;
+      }
     }
 
     // Execute operation immediately if no options selected
@@ -401,13 +410,7 @@ export class UiNumberPicker {
         this.updateValue(prevValue, newValue, false);
       }
     } else {
-      // Simple increment/decrement without device operations
-      this.updateValue(newValue, prevValue);
-
-      if (this.showStatus) {
-        StatusIndicator.applyStatus(this, 'loading');
-        setTimeout(() => StatusIndicator.applyStatus(this, 'success'), 100); // Quick success feedback
-      }
+      StatusIndicator.applyStatus(this, 'error', 'No operation configured - setup may have failed');
     }
   };
 

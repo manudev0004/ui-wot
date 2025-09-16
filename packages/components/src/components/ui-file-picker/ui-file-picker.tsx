@@ -1,44 +1,32 @@
 import { Component, Element, Prop, State, Event, EventEmitter, Method, h } from '@stencil/core';
-import { UiMsg } from '../../utils/types';
-import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
+import { UiMsg } from '../../utils/types'; // Standard message format
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator'; // Status indicator utility
 
 /**
- * A file picker component for selecting and uploading files.
- * Provides drag and drop functionality with visual feedback and file validation.
+ * A versatile file picker component designed for WoT device control.
+ *
+ * It supports single and multiple file selection, drag-and-drop, and file type restrictions.
  *
  * @example Basic Usage
  * ```html
  * <ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
- * ```
- *
- * @example Multiple Files
- * ```html
  * <ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+ * <ui-file-picker label="Device Files" show-last-updated="true"></ui-file-picker>
  * ```
  *
- * @example JavaScript Integration
+ * @example JS integration with node-wot browser bundle
  * ```javascript
- * const filePicker = document.querySelector('#file-upload');
- *
- * // Handle file selection
- * filePicker.addEventListener('valueMsg', (e) => {
- *   const files = e.detail.newVal;
- *   console.log('Files selected:', files);
- * });
- *
- * // Simple upload (just action)
- * await filePicker.setUpload(async (fileData) => {
- *   const result = await thing.invokeAction('upload-file', fileData);
- *   console.log('Upload result:', result);
- * });
- *
- * // Upload with property write
- * await filePicker.setUpload(async (fileData) => {
- *   const result = await thing.invokeAction('upload-file', fileData);
- *   console.log('Upload result:', result);
+ * const file = document.getElementById('file');
+ * await file.setUpload(async (fileData) => {
+ *   console.log('File processed:', fileData.name, 'Size:', fileData.size);
+ *   // Just log the file data, don't invoke action yet
+ *   return { success: true, message: 'File processed successfully' };
  * }, {
  *   propertyName: 'selectedFile',
- *   writeProperty: async (prop, value) => await thing.writeProperty(prop, value)
+ *   writeProperty: async (prop, value) => {
+ *     console.log('Writing to property:', prop, value);
+ *     await thing.writeProperty(prop, value);
+ *   }
  * });
  * ```
  */
@@ -50,101 +38,124 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 export class UiFilePicker {
   @Element() el: HTMLElement;
 
-  /** Component props */
+  // ============================== COMPONENT PROPERTIES ==============================
 
-  /**
-   * Whether the component is disabled.
-   */
-  @Prop() disabled: boolean = false;
-
-  /**
-   * Visual variant of the component.
-   */
-  @Prop() variant: 'outlined' | 'filled' = 'outlined';
-
-  /**
-   * Color scheme for the component.
-   */
+  /** Color theme for the active state matching to thingsweb theme */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
-  /**
-   * Dark theme support.
-   */
+  /** Enable dark mode theme styling when true */
   @Prop() dark: boolean = false;
 
-  /**
-   * Show last updated timestamp.
-   */
-  @Prop() showLastUpdated: boolean = false;
+  /** Disable user interaction when true */
+  @Prop() disabled: boolean = false;
 
-  /**
-   * Show status badge when true.
-   */
-  @Prop() showStatus: boolean = true;
-
-  /**
-   * Text label displayed above the file picker.
-   */
+  /** Text label displayed above the file picker (optional) */
   @Prop() label?: string;
 
-  /**
-   * File type restrictions (e.g., ".pdf,.doc", "image/*").
-   */
+  /** Show last updated timestamp below the component */
+  @Prop() showLastUpdated: boolean = false;
+
+  /** Show visual operation status indicators (loading, success, failed) right to the component */
+  @Prop() showStatus: boolean = true;
+
+  /** File type restrictions (e.g., ".pdf,.doc", "image/*") */
   @Prop() accept?: string;
 
-  /**
-   * Whether multiple files can be selected.
-   */
+  /** Whether multiple files can be selected */
   @Prop() multiple: boolean = false;
 
-  /**
-   * Maximum file size in bytes.
-   */
+  /** Maximum file size in bytes */
   @Prop() maxSize?: number;
 
-  /**
-   * Maximum number of files when multiple is true.
-   */
+  /** Maximum number of files when multiple is true */
   @Prop() maxFiles?: number;
 
-  /** Component state */
+  // ============================== COMPONENT STATE ==============================
 
-  /** Selected files */
-  @State() private selectedFiles: File[] = [];
-
-  /** Operation status for unified status indicators */
+  /** Current operation status for visual feedback */
   @State() operationStatus: OperationStatus = 'idle';
 
-  /** Last error message (if any) */
+  /** Error message from failed operations if any (optional) */
   @State() lastError?: string;
 
-  /** Timestamp of last value update */
+  /** Timestamp when value was last updated (optional) */
   @State() lastUpdatedTs?: number;
+
+  /** Internal state that controls the selected files of the file picker */
+  @State() private selectedFiles: File[] = [];
+
+  /** Internal state counter for timestamp re-rendering */
+  @State() private timestampCounter: number = 0;
+
+  /** Internal state to prevents infinite event loops while programmatic updates */
+  @State() private suppressEvents: boolean = false;
 
   /** Drag over state for visual feedback */
   @State() private isDragOver: boolean = false;
 
-  /** Stored upload operation for user interaction */
+  // ============================== PRIVATE PROPERTIES ==============================
+
+  /** Timer for updating relative timestamps */
+  private timestampUpdateTimer?: number;
+
+  /** Stores API function from first initialization
+   * to use later when user clicks upload
+   */
   private storedUploadOperation?: (files: File[]) => Promise<any>;
 
   /** File input reference */
   private fileInputRef?: HTMLInputElement;
 
-  /** Component events */
+  // ============================== EVENTS ==============================
 
   /**
-   * Emitted when files are selected.
+   * Emitted when file picker value changes through user interaction or setValue calls.
+   * Contains the new value, previous value, timestamp, and source information.
    */
   @Event() valueMsg: EventEmitter<UiMsg<File[]>>;
 
-  /** Public methods */
+  // ============================== PUBLIC METHODS ==============================
 
   /**
-   * Set the upload operation with WoT integration.
-   * Files are automatically converted to base64 with metadata.
+   * Sets the file picker upload operation with optional device communication api and other options.
+   *
+   * This is the primary method for connecting file pickers to real devices.
+   * Files are automatically converted to base64 with metadata for WoT integration.
+   *
    * @param operation - Function that receives processed file data
-   * @param options - Configuration options
-   * @returns Promise that resolves to true if successful
+   * @param options - Optional configuration for device communication and behavior
+   * @returns Promise resolving to true if successful, false if failed
+   *
+   * @example Single file upload
+   * ```javascript
+   * const file = document.getElementById('file');
+   * await file.setUpload(async (fileData) => {
+   *   console.log('File processed:', fileData.name, 'Size:', fileData.size);
+   *   // Just log the file data, don't invoke action yet
+   *   return { success: true, message: 'File processed successfully' };
+   * }, {
+   *   propertyName: 'selectedFile',
+   *   writeProperty: async (prop, value) => {
+   *     console.log('Writing to property:', prop, value);
+   *     await thing.writeProperty(prop, value);
+   *   }
+   * });
+   * ```
+   * @example Multiple file upload
+   * ```javascript
+   * const files = document.getElementById('files');
+   * await files.setUpload(async (fileData) => {
+   *   console.log('File processed:', fileData.name, 'Size:', fileData.size);
+   *   // Just log the file data, don't invoke action yet
+   *   return { success: true, message: 'File processed successfully' };
+   * }, {
+   *   propertyName: 'fileList',
+   *   writeProperty: async (prop, value) => {
+   *     console.log('Writing to property:', prop, value);
+   *     await thing.writeProperty(prop, value);
+   *   }
+   * });
+   * ```
    */
   @Method()
   async setUpload(
@@ -180,7 +191,7 @@ export class UiFilePicker {
           });
         }
 
-        // Write final file list if specified (only once at the end)
+        // Write final file list if specified
         if (options?.writeProperty && options?.propertyName) {
           await options.writeProperty(options.propertyName, fileList);
         }
@@ -214,17 +225,29 @@ export class UiFilePicker {
   }
 
   /**
-   * Get the currently selected files.
-   * @returns Array of selected files
+   * Gets the currently selected files with optional metadata.
+   *
+   * @param includeMetadata - Whether to include status, timestamp and other information
+   * @returns Current files or detailed metadata object
    */
   @Method()
-  async getFiles(): Promise<File[]> {
+  async getFiles(includeMetadata: boolean = false): Promise<File[] | { value: File[]; lastUpdated?: number; status: string; error?: string }> {
+    if (includeMetadata) {
+      return {
+        value: this.selectedFiles,
+        lastUpdated: this.lastUpdatedTs,
+        status: this.operationStatus,
+        error: this.lastError,
+      };
+    }
     return this.selectedFiles;
   }
 
   /**
-   * Clear the selected files.
-   * @returns Promise that resolves when files are cleared
+   * This method clears the files silently without triggering events.
+   *
+   * Use this for external data synchronization to prevent event loops.
+   * Perfect for WebSocket updates or polling from remote devices.
    */
   @Method()
   async clearFiles(): Promise<void> {
@@ -234,6 +257,33 @@ export class UiFilePicker {
     }
     this.lastUpdatedTs = Date.now();
   }
+
+  /**
+   * (Advance) to manually set the operation status indicator.
+   *
+   * Useful when managing device communication externally and you want to show loading/success/error states.
+   *
+   * @param status - The status to display
+   * @param errorMessage - (Optional) error message for error status
+   */
+  @Method()
+  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
+    StatusIndicator.applyStatus(this, status, errorMessage);
+  }
+
+  // ============================== LIFECYCLE METHODS ==============================
+
+  /** Initialize component state from props */
+  componentWillLoad() {
+    if (this.showLastUpdated) this.startTimestampUpdater();
+  }
+
+  /** Clean up timers when component is removed */
+  disconnectedCallback() {
+    this.stopTimestampUpdater();
+  }
+
+  // ============================== PRIVATE METHODS ==============================
 
   /**
    * Convert a file to base64 string.
@@ -254,11 +304,7 @@ export class UiFilePicker {
     });
   }
 
-  /** Private methods */
-
-  /**
-   * Handle file selection from input or drag and drop.
-   */
+  /** Handles user file selection interactions */
   private async handleFileSelection(files: FileList | null): Promise<void> {
     if (!files || files.length === 0) return;
 
@@ -271,17 +317,11 @@ export class UiFilePicker {
     this.selectedFiles = validFiles;
     this.lastUpdatedTs = Date.now();
 
-    // Emit event
     this.emitValueMsg(validFiles, prevFiles);
-
-    // DON'T execute upload operation automatically - wait for user to click Upload button
-    // Clear any previous status when new files are selected
     StatusIndicator.applyStatus(this, 'idle');
   }
 
-  /**
-   * Validate selected files against constraints.
-   */
+  /** Validates selected files against constraints */
   private validateFiles(files: File[]): File[] {
     const validFiles: File[] = [];
 
@@ -309,9 +349,7 @@ export class UiFilePicker {
     return validFiles;
   }
 
-  /**
-   * Check if file type is accepted.
-   */
+  /** Check if file type is accepted */
   private isFileTypeAccepted(file: File): boolean {
     if (!this.accept) return true;
 
@@ -331,9 +369,7 @@ export class UiFilePicker {
     });
   }
 
-  /**
-   * Handle drag over event.
-   */
+  /** Handle drag over event */
   private handleDragOver(event: DragEvent): void {
     event.preventDefault();
     if (!this.disabled) {
@@ -341,16 +377,12 @@ export class UiFilePicker {
     }
   }
 
-  /**
-   * Handle drag leave event.
-   */
+  /** Handle drag leave event */
   private handleDragLeave(): void {
     this.isDragOver = false;
   }
 
-  /**
-   * Handle drop event.
-   */
+  /** Handle drop event */
   private handleDrop(event: DragEvent): void {
     event.preventDefault();
     this.isDragOver = false;
@@ -363,17 +395,13 @@ export class UiFilePicker {
     }
   }
 
-  /**
-   * Handle file input change.
-   */
+  /** Handle file input change */
   private handleInputChange(event: Event): void {
     const target = event.target as HTMLInputElement;
     this.handleFileSelection(target.files);
   }
 
-  /**
-   * Open file dialog.
-   */
+  /** Open file dialog */
   private openFileDialog(): void {
     if (this.disabled) return;
     this.fileInputRef?.click();
@@ -387,29 +415,74 @@ export class UiFilePicker {
     this.openFileDialog();
   }
 
-  /**
-   * Emit the valueMsg event with standardized format.
-   */
-  private emitValueMsg(newVal: File[], prevVal?: File[]): void {
-    const msg: UiMsg<File[]> = {
-      newVal,
-      prevVal,
+  /** Emits value change events with consistent UIMsg data structure */
+  private emitValueMsg(newVal: File[], prevVal?: File[]) {
+    if (this.suppressEvents) return;
+    this.valueMsg.emit({
+      newVal: newVal,
+      prevVal: prevVal,
       ts: Date.now(),
-      source: this.el.id || 'ui-file-picker',
+      source: this.el?.id || 'ui-file-picker',
       ok: true,
-    };
-    this.valueMsg.emit(msg);
+    });
   }
 
-  /**
-   * Format file size for display.
-   */
+  /** Format file size for display */
   private formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /** Handle upload button click */
+  private async handleUpload(): Promise<void> {
+    if (this.selectedFiles.length === 0 || !this.storedUploadOperation) return;
+
+    try {
+      StatusIndicator.applyStatus(this, 'loading');
+      await this.storedUploadOperation(this.selectedFiles);
+      StatusIndicator.applyStatus(this, 'success');
+    } catch (error: any) {
+      StatusIndicator.applyStatus(this, 'error', error?.message || 'Upload failed');
+    }
+  }
+
+  /** Manages timestamp update timer for relative time display */
+  private startTimestampUpdater() {
+    this.stopTimestampUpdater();
+    this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 60000); //  Update every minute
+  }
+
+  /** Stops the timestamp update timer */
+  private stopTimestampUpdater() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+      this.timestampUpdateTimer = undefined;
+    }
+  }
+
+  /** Generate the active color using global CSS variables */
+  private getActiveColor(): string {
+    switch (this.color) {
+      case 'secondary':
+        return 'var(--color-secondary)';
+      case 'neutral':
+        return 'var(--color-neutral)';
+      default:
+        return 'var(--color-primary)';
+    }
+  }
+
+  /** Gets the CSS classes and styles */
+  private getVariantStyles(): { classes: string; style: any } {
+    const baseClasses = 'border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200';
+    const style: any = {};
+
+    style.borderColor = this.getActiveColor();
+    style.backgroundColor = this.dark ? 'transparent' : 'rgba(248, 250, 252, 0.5)';
+    return { classes: `${baseClasses} bg-transparent`, style };
   }
 
   // ============================== RENDERING HELPERS ==============================
@@ -432,22 +505,24 @@ export class UiFilePicker {
     return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
 
-  /** Render method */
+  // ============================== MAIN COMPONENT RENDER METHOD ==============================
 
+  /**
+   * Renders the complete file picker component with all features and styles.
+   */
   render() {
     const canInteract = !this.disabled;
+    const variantStyles = this.getVariantStyles();
+    const textColor = this.dark ? 'text-white' : 'text-gray-900';
+    const secondaryTextColor = this.dark ? 'text-gray-300' : 'text-gray-700';
+    const mutedTextColor = this.dark ? 'text-gray-400' : 'text-gray-500';
 
     return (
       <div class="inline-block" part="container" role="group" aria-label={this.label || 'File Picker'}>
         <div class="space-y-2">
           {/* Label */}
           {this.label && (
-            <label
-              class={`block text-sm font-medium transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed text-gray-400' : 'text-gray-700 dark:text-gray-300'} ${
-                this.dark ? 'text-white' : 'text-gray-900'
-              }`}
-              part="label"
-            >
+            <label class={`block text-sm font-medium transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed opacity-50' : ''} ${textColor}`} part="label">
               {this.label}
             </label>
           )}
@@ -455,9 +530,14 @@ export class UiFilePicker {
           <div class="inline-flex items-center space-x-2 relative">
             {/* File Drop Zone */}
             <div
-              class={`file-picker-drop-zone border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50 transition-all duration-200 ${
-                this.isDragOver ? 'drag-over border-blue-400 bg-blue-50' : ''
-              } ${canInteract ? 'hover:border-gray-400 cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+              class={`file-picker-drop-zone ${variantStyles.classes} ${this.isDragOver ? 'drag-over' : ''} ${
+                canInteract ? 'hover:border-opacity-80 cursor-pointer' : 'cursor-not-allowed opacity-50'
+              }`}
+              style={{
+                ...variantStyles.style,
+                borderColor: this.isDragOver ? this.getActiveColor() : variantStyles.style.borderColor,
+                backgroundColor: this.isDragOver ? `${this.getActiveColor()}20` : variantStyles.style.backgroundColor,
+              }}
               onDragOver={e => canInteract && this.handleDragOver(e)}
               onDragLeave={() => canInteract && this.handleDragLeave()}
               onDrop={e => canInteract && this.handleDrop(e)}
@@ -477,7 +557,7 @@ export class UiFilePicker {
               />
 
               <div class="flex flex-col items-center gap-3">
-                <div class="w-12 h-12 flex items-center justify-center text-gray-400">
+                <div class={`w-12 h-12 flex items-center justify-center ${mutedTextColor}`} style={{ color: this.getActiveColor() }}>
                   {this.selectedFiles.length > 0 ? (
                     <svg width="19" height="14" viewBox="0 0 19 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path
@@ -497,13 +577,14 @@ export class UiFilePicker {
 
                 {this.selectedFiles.length > 0 ? (
                   <div class="flex flex-col items-center gap-2">
-                    <div class="font-medium text-gray-700 dark:text-gray-300">
+                    <div class={`font-medium ${secondaryTextColor}`}>
                       {this.selectedFiles.length} file{this.selectedFiles.length !== 1 ? 's' : ''} selected
                     </div>
                     {canInteract && (
                       <div class="file-actions flex gap-2">
                         <button
-                          class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                          class="px-3 py-1 text-sm text-white rounded hover:opacity-80 transition-all"
+                          style={{ backgroundColor: this.getActiveColor() }}
                           onClick={e => {
                             e.stopPropagation();
                             this.handleUpload();
@@ -513,7 +594,12 @@ export class UiFilePicker {
                           Upload
                         </button>
                         <button
-                          class="px-3 py-1 text-sm border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors"
+                          class="px-3 py-1 text-sm border rounded hover:opacity-80 transition-all"
+                          style={{
+                            borderColor: 'var(--color-danger)',
+                            color: 'var(--color-danger)',
+                            backgroundColor: 'transparent',
+                          }}
                           onClick={e => {
                             e.stopPropagation();
                             this.clearFiles();
@@ -527,8 +613,8 @@ export class UiFilePicker {
                   </div>
                 ) : (
                   <div class="text-center">
-                    <div class="font-medium text-gray-700 dark:text-gray-300">{canInteract ? 'Click to select files or drag and drop' : 'No files selected'}</div>
-                    {this.accept && <div class="text-xs text-gray-500 mt-1">Accepted types: {this.accept}</div>}
+                    <div class={`font-medium ${secondaryTextColor}`}>{canInteract ? 'Click to select files or drag and drop' : 'No files selected'}</div>
+                    {this.accept && <div class={`text-xs mt-1 ${mutedTextColor}`}>Accepted types: {this.accept}</div>}
                   </div>
                 )}
               </div>
@@ -540,11 +626,11 @@ export class UiFilePicker {
 
           {/* File List */}
           {this.selectedFiles.length > 0 && (
-            <div class="mt-3 max-h-32 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded p-2 bg-gray-50 dark:bg-gray-800">
+            <div class={`mt-3 max-h-32 overflow-y-auto border rounded p-2 ${this.dark ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-gray-50'}`}>
               {this.selectedFiles.map((file, index) => (
-                <div key={index} class="flex justify-between items-center py-1 border-b border-gray-200 dark:border-gray-600 last:border-0">
-                  <span class="text-sm text-gray-700 dark:text-gray-300 truncate flex-1 mr-2">{file.name}</span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">{this.formatFileSize(file.size)}</span>
+                <div key={index} class={`flex justify-between items-center py-1 border-b last:border-0 ${this.dark ? 'border-gray-600' : 'border-gray-200'}`}>
+                  <span class={`text-sm truncate flex-1 mr-2 ${secondaryTextColor}`}>{file.name}</span>
+                  <span class={`text-xs flex-shrink-0 ${mutedTextColor}`}>{this.formatFileSize(file.size)}</span>
                 </div>
               ))}
             </div>
@@ -555,20 +641,5 @@ export class UiFilePicker {
         {this.renderLastUpdated()}
       </div>
     );
-  }
-
-  /**
-   * Handle upload button click.
-   */
-  private async handleUpload(): Promise<void> {
-    if (this.selectedFiles.length === 0 || !this.storedUploadOperation) return;
-
-    try {
-      StatusIndicator.applyStatus(this, 'loading');
-      await this.storedUploadOperation(this.selectedFiles);
-      StatusIndicator.applyStatus(this, 'success');
-    } catch (error: any) {
-      StatusIndicator.applyStatus(this, 'error', error?.message || 'Upload failed');
-    }
   }
 }

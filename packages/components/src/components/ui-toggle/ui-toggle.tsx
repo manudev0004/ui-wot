@@ -108,7 +108,7 @@ export class UiToggle {
   /** Timer for updating relative timestamps */
   private timestampUpdateTimer?: number;
 
-  /** Stores API function from first initialization to use further for any user interactions */
+  /** Stores API function from first initialization to re-use further for any user interactions */
   private storedWriteOperation?: (value: boolean) => Promise<any>;
 
   // ============================== EVENTS ==============================
@@ -128,7 +128,7 @@ export class UiToggle {
    * It supports optimistic updates, error handling, and automatic retries.
    *
    * @param value - The boolean value to set (true = on, false = off)
-   * @param options - Configuration for device communication and behavior
+   * @param options - Optional configuration for device communication and behavior
    * @returns Promise resolving to true if successful, false if failed
    *
    * @example Basic Usage
@@ -451,6 +451,7 @@ export class UiToggle {
     const lastUpdatedDate = this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null;
     return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
+
   // ============================== STYLING HELPERS ==============================
 
   /** Generates CSS classes for the toggle container based on variant,color and state */

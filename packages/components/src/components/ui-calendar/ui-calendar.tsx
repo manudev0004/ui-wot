@@ -1,31 +1,29 @@
-import { Component, Prop, State, h, Watch, Event, EventEmitter, Method, Element } from '@stencil/core';
-import { UiMsg } from '../../utils/types';
-import { StatusIndicator } from '../../utils/status-indicator';
+import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
+import { UiMsg } from '../../utils/types'; // Standard message format
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator'; // Status indicator utility
 
 /**
- * Advanced calendar component with comprehensive styling, variants, and features.
- * Matches the design family of ui-button, ui-slider, and other components.
+ * A versatile calendar component designed for WoT device control.
+ *
+ * It has various features, multiple visual styles, status and last updated timestamps.
  *
  * @example Basic Usage
  * ```html
- * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+ * <ui-calendar variant="outlined" value="2023-12-25T00:00:00.000Z" label="Select Date"></ui-calendar>
+ * <ui-calendar variant="filled" include-time="true" label="Pick Date & Time"></ui-calendar>
+ * <ui-calendar variant="outlined" label="Device Calendar" show-last-updated="true"></ui-calendar>
  * ```
  *
- * @example Different Variants & Colors
- * ```html
- * <ui-calendar variant="outlined" color="primary" label="Outlined Calendar"></ui-calendar>
- * <ui-calendar variant="filled" color="secondary" label="Filled Calendar"></ui-calendar>
- * ```
+ * @example JS integaration with node-wot browser bundle
+ * ```javascript
+ * const calendar = document.getElementById('device-calendar');
+ * const initialValue = await (await thing.readProperty('targetDate')).value();
  *
- * @example Sizes & Features
- * ```html
- * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
- * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
- * ```
- *
- * @example Dark Theme
- * ```html
- * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
+ * await calendar.setValue(initialValue, {
+ *   writeOperation: async value => {
+ *     await thing.writeProperty('targetDate', value);
+ *   }
+ * });
  * ```
  */
 @Component({
@@ -36,174 +34,377 @@ import { StatusIndicator } from '../../utils/status-indicator';
 export class UiCalendar {
   @Element() el!: HTMLElement;
 
+  // ============================== COMPONENT PROPERTIES ==============================
+
   /**
-   * Visual style variant matching component family design.
-   * - outlined: Border with transparent background, colored accents
-   * - filled: Solid background with contrasting text
+   * Visual style variant of the calendar.
+   * - outlined: Border-focused design with outline style
+   * - filled: Solid background design
    */
   @Prop() variant: 'outlined' | 'filled' = 'outlined';
 
-  /**
-   * Component size for different use cases.
-   * - small: Compact calendar for tight spaces
-   * - medium: Standard size (default)
-   * - large: Prominent calendar with larger touch targets
-   */
-  // size prop removed
-
-  /**
-   * Whether the component is disabled (cannot be interacted with).
-   * @example
-   * ```html
-   * <ui-calendar disabled="true" label="Cannot select"></ui-calendar>
-   * ```
-   */
-  @Prop() disabled: boolean = false;
-
-  /**
-   * Dark theme variant.
-   * @example
-   * ```html
-   * <ui-calendar dark="true" variant="filled"></ui-calendar>
-   * ```
-   */
-  @Prop() dark: boolean = false;
-
-  /**
-   * Color scheme matching the component family palette.
-   * - primary: Main brand color (blue tones)
-   * - secondary: Accent color (green/teal tones)
-   * - neutral: Grayscale for subtle integration
-   * - success: Green for positive actions
-   * - warning: Orange for caution
-   * - danger: Red for destructive actions
-   */
+  /** Color theme for the active state matching to thingsweb theme */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
-  /**
-   * Optional text label for the calendar with enhanced styling.
-   * @example
-   * ```html
-   * <ui-calendar label="Select Date"></ui-calendar>
-   * ```
-   */
-  @Prop() label?: string;
-  // readonly prop removed
+  /** Enable dark mode theme styling when true */
+  @Prop() dark: boolean = false;
 
-  /**
-   * Enable keyboard navigation and shortcuts.
-   * @example
-   * ```html
-   * <ui-calendar keyboard="false"></ui-calendar>
-   * ```
-   */
-  @Prop() keyboard: boolean = true;
-
-  /**
-   * Show last updated timestamp below the component.
-   * @example
-   * ```html
-   * <ui-calendar showLastUpdated="true"></ui-calendar>
-   * ```
-   */
-  @Prop() showLastUpdated: boolean = false;
-
-  /**
-   * Show status badge when true
-   */
-  @Prop() showStatus: boolean = true;
-
-  /**
-   * Display calendar inline instead of as dropdown popup.
-   * Perfect for always-visible date selection.
-   */
-  @Prop() inline: boolean = false;
-
-  /**
-   * Include time picker alongside date picker.
-   * Supports hour:minute selection with AM/PM or 24-hour format.
-   */
-  @Prop() includeTime: boolean = false;
-
-  /**
-   * Time format when includeTime is enabled.
-   * - 12: 12-hour format with AM/PM
-   * - 24: 24-hour format
-   */
-  @Prop() timeFormat: '12' | '24' = '12';
-
-  /**
-   * Show week numbers in calendar grid.
-   */
-  @Prop() showWeekNumbers: boolean = false;
-
-  /**
-   * First day of week (0 = Sunday, 1 = Monday).
-   */
-  @Prop() firstDayOfWeek: 0 | 1 = 0;
-
-  /**
-   * Show today button for quick navigation.
-   */
-  @Prop() showTodayButton: boolean = true;
-
-  /**
-   * Show clear button to reset selection.
-   */
-  @Prop() showClearButton: boolean = true;
-
-  /**
-   * Animation style for transitions.
-   * - none: No animations
-   * - slide: Slide transitions between months
-   * - fade: Fade transitions
-   * - bounce: Playful bounce effects
-   */
-  // animation prop removed
-
-  /**
-   * Current selected date-time value (ISO string).
-   */
+  /** Current date-time value of the calendar (ISO string) */
   @Prop({ mutable: true }) value?: string;
 
-  /**
-   * Minimum selectable date (ISO string).
-   */
-  @Prop() minDate?: string;
+  /** Disable user interaction when true */
+  @Prop() disabled: boolean = false;
 
-  /**
-   * Maximum selectable date (ISO string).
-   */
-  @Prop() maxDate?: string;
+  /** Text label displayed above the calendar (optional) */
+  @Prop() label?: string;
+
+  /** Enable keyboard navigation so user can interact using keyboard when true */
+  @Prop() keyboard: boolean = true;
+
+  /** Show last updated timestamp below the component */
+  @Prop() showLastUpdated: boolean = false;
+
+  /** Show visual operation status indicators (loading, success, failed) right to the component */
+  @Prop() showStatus: boolean = true;
 
   /** Connection state for readonly mode */
   @Prop({ mutable: true }) connected: boolean = true;
 
-  /**
-   * Thing Description URL for device control.
-   */
-  // TD integration removed: use events or external handlers instead
+  /** Display calendar inline instead of as dropdown popup */
+  @Prop() inline: boolean = false;
 
-  /** Current selected date */
-  @State() selectedDate: Date = new Date();
+  /** Include time picker alongside date picker */
+  @Prop() includeTime: boolean = false;
+
+  /** Time format when includeTime is enabled (12-hour or 24-hour) */
+  @Prop() timeFormat: '12' | '24' = '12';
+
+  /** Show week numbers in calendar grid */
+  @Prop() showWeekNumbers: boolean = false;
+
+  /** First day of week (0 = Sunday, 1 = Monday) */
+  @Prop() firstDayOfWeek: 0 | 1 = 0;
+
+  /** Show today button for quick navigation */
+  @Prop() showTodayButton: boolean = true;
+
+  /** Show clear button to reset selection */
+  @Prop() showClearButton: boolean = true;
+
+  /** Minimum selectable date (ISO string) */
+  @Prop() minDate?: string;
+
+  /** Maximum selectable date (ISO string) */
+  @Prop() maxDate?: string;
+
+  // ============================== COMPONENT STATE ==============================
+
+  /** Current operation status for visual feedback */
+  @State() operationStatus: OperationStatus = 'idle';
+
+  /** Error message from failed operations if any (optional) */
+  @State() lastError?: string;
+
+  /** Timestamp when value was last updated (optional) */
+  @State() lastUpdatedTs?: number;
+
+  /** Internal state that controls the selected date */
+  @State() private selectedDate: Date = new Date();
+
+  /** Internal state counter for timestamp re-rendering */
+  @State() private timestampCounter = 0;
+
+  /** Internal state to prevents infinite event loops while programmatic updates */
+  @State() private suppressEvents: boolean = false;
 
   /** Current view (month/year) */
-  @State() currentMonth: number = new Date().getMonth();
-  @State() currentYear: number = new Date().getFullYear();
+  @State() private currentMonth: number = new Date().getMonth();
+
+  /** Current view year */
+  @State() private currentYear: number = new Date().getFullYear();
 
   /** Calendar open state */
-  @State() isOpen: boolean = false;
+  @State() private isOpen: boolean = false;
 
   /** Time picker state */
-  @State() selectedHour: number = 12;
-  @State() selectedMinute: number = 0;
-  @State() isAM: boolean = true;
-  @State() showClockView: boolean = false;
+  @State() private selectedHour: number = 12;
 
+  /** Time picker minutes state */
+  @State() private selectedMinute: number = 0;
+
+  /** Time picker AM/PM state */
+  @State() private isAM: boolean = true;
+
+  /** Clock view toggle state */
+  @State() private showClockView: boolean = false;
+
+  // ============================== PRIVATE PROPERTIES ==============================
+
+  /** Timer for updating relative timestamps */
+  private timestampUpdateTimerRef?: number;
+
+  /** Stores API function from first initialization to use further for any user interactions */
+  private storedWriteOperation?: (value: string) => Promise<any>;
+
+  /** Input element reference */
   private inputEl?: HTMLInputElement | null;
+
+  /** Calendar element reference */
   private calendarEl?: HTMLElement | null;
+
+  /** Previously focused element for focus management */
   private previouslyFocused?: Element | null;
 
+  // ============================== EVENTS ==============================
+
+  /**
+   * Emitted when calendar value changes through user interaction or setValue calls.
+   * Contains the new value, previous value, timestamp, and source information.
+   */
+  @Event() valueMsg: EventEmitter<UiMsg<string>>;
+
+  // ============================== PUBLIC METHODS ==============================
+
+  /**
+   * Sets the calendar value with optional device communication api and other options.
+   *
+   * This is the primary method for connecting calendars to real devices.
+   * It supports optimistic updates, error handling, and automatic retries.
+   *
+   * @param value - The date string value to set (ISO format)
+   * @param options - Configuration for device communication and behavior
+   * @returns Promise resolving to any result from the operation
+   *
+   * @example Basic Usage
+   * ```javascript
+   * await calendar.setValue('2023-12-25T00:00:00.000Z');
+   * ```
+   *
+   * @example JS integration with node-wot browser bundle
+   * ```javascript
+   * const calendar = document.getElementById('device-calendar');
+   * const initialValue = await (await thing.readProperty('targetDate')).value();
+   * await calendar.setValue(initialValue, {
+   *   writeOperation: async value => {
+   *     await thing.writeProperty('targetDate', value);
+   *   }
+   * });
+   * ```
+   */
+  @Method()
+  async setValue(value: string, options?: { writeOperation?: (value: string) => Promise<any> }): Promise<any> {
+    const prevValue = this.value;
+
+    // Clear error state if not reverting
+    if (this.operationStatus === 'error') {
+      StatusIndicator.applyStatus(this, 'idle');
+    }
+
+    // Store operation for user interactions
+    if (options?.writeOperation) {
+      this.storedWriteOperation = options.writeOperation;
+    }
+
+    try {
+      StatusIndicator.applyStatus(this, 'loading');
+      this.updateValue(value, prevValue);
+
+      if (options?.writeOperation) {
+        const result = await options.writeOperation(value);
+        StatusIndicator.applyStatus(this, 'success');
+        return result;
+      }
+
+      StatusIndicator.applyStatus(this, 'idle');
+    } catch (error) {
+      console.error('setValue error for ui-calendar:', error);
+      this.updateValue(prevValue!, prevValue, false); // Revert on error
+      StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
+      throw error;
+    }
+  }
+
+  /**
+   * Gets the current calendar value with optional metadata.
+   *
+   * @param includeMetadata - Whether to include status, timestamp and other information
+   * @returns Current value or detailed metadata object
+   */
+  @Method()
+  async getValue(includeMetadata: boolean = false): Promise<string | undefined | { value: string | undefined; lastUpdated?: number; status: string; error?: string }> {
+    if (includeMetadata) {
+      return {
+        value: this.value,
+        lastUpdated: this.lastUpdatedTs,
+        status: this.operationStatus,
+        error: this.lastError,
+      };
+    }
+    return this.value;
+  }
+
+  /**
+   * This method updates the value silently without triggering events.
+   *
+   * Use this for external data synchronization to prevent event loops.
+   * Perfect for WebSocket updates or polling from remote devices.
+   *
+   * @param value - The date string value to set silently (ISO format)
+   */
+  @Method()
+  async setValueSilent(value: string): Promise<void> {
+    this.updateValue(value, this.value, false);
+  }
+
+  /**
+   * (Advance) to manually set the operation status indicator.
+   *
+   * Useful when managing device communication externally and you want to show loading/success/error states.
+   *
+   * @param status - The status to display
+   * @param errorMessage - (Optional) error message for error status
+   */
+  @Method()
+  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', message?: string): Promise<void> {
+    this.operationStatus = status;
+    if (status === 'error' && message) {
+      this.lastError = message;
+    } else if (status !== 'error') {
+      this.lastError = undefined;
+    }
+
+    if (status === 'success') {
+      this.lastUpdatedTs = Date.now();
+      // Auto-clear success status after short delay
+      setTimeout(() => {
+        if (this.operationStatus === 'success') {
+          this.operationStatus = 'idle';
+        }
+      }, 1200);
+    }
+
+    // Emit status change event
+    this.valueMsg.emit({
+      newVal: this.value,
+      ts: Date.now(),
+      source: this.el?.id || 'ui-calendar',
+      ok: status !== 'error',
+      meta: {
+        component: 'ui-calendar',
+        type: 'statusChange',
+        status,
+        message,
+        source: 'method',
+      },
+    });
+  }
+
+  // ============================== LIFECYCLE METHODS ==============================
+
+  /** Initialize component state from props */
+  async componentWillLoad() {
+    if (this.value) {
+      this.selectedDate = new Date(this.value);
+      this.currentMonth = this.selectedDate.getMonth();
+      this.currentYear = this.selectedDate.getFullYear();
+    }
+
+    if (this.showLastUpdated) this.startTimestampUpdater();
+  }
+
+  /** Clean up timers when component is removed */
+  disconnectedCallback() {
+    this.stopTimestampUpdater();
+  }
+
+  // ============================== WATCHERS ==============================
+
+  /** Sync internal state when value prop changes externally */
+  @Watch('value')
+  watchValue() {
+    if (this.value) {
+      this.selectedDate = new Date(this.value);
+      this.currentMonth = this.selectedDate.getMonth();
+      this.currentYear = this.selectedDate.getFullYear();
+    }
+  }
+
+  // ============================== PRIVATE METHODS ==============================
+
+  /**
+   * This is the core state update method that handles value changes consistently.
+   * It updates both internal state and external prop and also manages timestamps, and emits events (optional).
+   */
+  private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
+    this.value = value;
+
+    if (value) {
+      this.selectedDate = new Date(value);
+      this.currentMonth = this.selectedDate.getMonth();
+      this.currentYear = this.selectedDate.getFullYear();
+    }
+
+    this.lastUpdatedTs = Date.now();
+
+    if (emitEvent && !this.suppressEvents) {
+      this.emitValueEvents(value, prevValue);
+    }
+  }
+
+  /** Emits value change events with consistent UIMsg data structure */
+  private emitValueEvents(value: string, prevValue?: string): void {
+    // Emit standardized event
+    this.valueMsg.emit({
+      newVal: value,
+      prevVal: prevValue,
+      ts: Date.now(),
+      source: this.el?.id || 'ui-calendar',
+      ok: true,
+      meta: {
+        component: 'ui-calendar',
+        type: 'setValue',
+        source: 'method',
+      },
+    });
+  }
+
+  /** Handles user date selection interactions */
+  private async handleDateSelect(day: number) {
+    if (this.disabled) return;
+
+    const newDate = new Date(this.currentYear, this.currentMonth, day);
+
+    // Preserve time if includeTime is enabled
+    if (this.includeTime && this.selectedDate && !isNaN(this.selectedDate.getTime())) {
+      newDate.setHours(this.selectedDate.getHours());
+      newDate.setMinutes(this.selectedDate.getMinutes());
+    }
+
+    const prevValue = this.value;
+    const newValue = newDate.toISOString();
+
+    try {
+      if (this.storedWriteOperation) {
+        // Only show loading for actual write operations
+        this.updateValue(newValue, prevValue);
+        await this.storedWriteOperation(newValue);
+        // No success status for user interactions - they're immediate
+      } else {
+        this.updateValue(newValue, prevValue);
+      }
+
+      this.isOpen = false;
+    } catch (error) {
+      console.error('handleDateSelect error for ui-calendar:', error);
+      this.updateValue(prevValue!, newValue, false); // Revert on error
+      // Only show error if it was a write operation that failed
+      if (this.storedWriteOperation) {
+        StatusIndicator.applyStatus(this, 'error', 'Write operation failed');
+      }
+    }
+  }
+
+  /** Handle keyboard input for calendar interactions */
   private onDocumentKeyDown = (e: KeyboardEvent) => {
     if (!this.isOpen) return;
     if (!this.keyboard) return;
@@ -239,6 +440,7 @@ export class UiCalendar {
     }
   };
 
+  /** Open calendar dropdown */
   private openCalendar() {
     this.previouslyFocused = document.activeElement;
     this.isOpen = true;
@@ -251,6 +453,7 @@ export class UiCalendar {
     }, 0);
   }
 
+  /** Close calendar dropdown */
   private closeCalendar() {
     this.isOpen = false;
     document.removeEventListener('keydown', this.onDocumentKeyDown);
@@ -269,140 +472,11 @@ export class UiCalendar {
     }
   }
 
+  /** Toggle calendar open/close state */
   private toggleOpen = () => {
     if (this.isOpen) this.closeCalendar();
     else this.openCalendar();
   };
-
-  /**
-   * Standardized value event emitter - emits UiMsg<string> with enhanced metadata.
-   * Provides consistent value change notifications with unified messaging format.
-   * @example
-   * ```typescript
-   * calendar.addEventListener('valueMsg', (e) => {
-   *   console.log('Date changed:', e.detail.value);
-   *   console.log('Metadata:', e.detail.metadata);
-   * });
-   * ```
-   */
-  @Event() valueMsg: EventEmitter<UiMsg<string>>;
-
-  // Unified status indicator states
-  @State() operationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
-  @State() lastError?: string;
-  @State() lastUpdatedTs?: number;
-  @State() timestampUpdateTimer?: number;
-  @State() private timestampCounter = 0;
-
-  /** Stored write operation for user interaction */
-  private storedWriteOperation?: (value: string) => Promise<any>;
-
-  /** Helper method to update value and timestamps consistently */
-  private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
-    this.value = value;
-
-    if (value) {
-      this.selectedDate = new Date(value);
-      this.currentMonth = this.selectedDate.getMonth();
-      this.currentYear = this.selectedDate.getFullYear();
-    }
-
-    this.lastUpdatedTs = Date.now();
-
-    if (emitEvent) {
-      this.emitValueEvents(value, prevValue);
-    }
-  }
-
-  /** Helper method to emit all value events consistently */
-  private emitValueEvents(value: string, prevValue?: string): void {
-    // Emit standardized event
-    this.valueMsg.emit({
-      newVal: value,
-      prevVal: prevValue,
-      ts: Date.now(),
-      source: this.el?.id || 'ui-calendar',
-      ok: true,
-      meta: {
-        component: 'ui-calendar',
-        type: 'setValue',
-        source: 'method',
-      },
-    });
-  }
-
-  /** Watch for TD URL changes */
-  // TD watcher removed
-
-  /** Watch for value prop changes */
-  @Watch('value')
-  watchValue() {
-    if (this.value) {
-      this.selectedDate = new Date(this.value);
-      this.currentMonth = this.selectedDate.getMonth();
-      this.currentYear = this.selectedDate.getFullYear();
-    }
-  }
-
-  /** Initialize component */
-  async componentWillLoad() {
-    if (this.value) {
-      this.selectedDate = new Date(this.value);
-      this.currentMonth = this.selectedDate.getMonth();
-      this.currentYear = this.selectedDate.getFullYear();
-    }
-
-    // Initialize timestamp auto-update timer if showLastUpdated is enabled
-    if (this.showLastUpdated && this.lastUpdatedTs) {
-      this.timestampUpdateTimer = window.setInterval(() => {
-        // Force re-render to update relative timestamp
-        this.timestampCounter++;
-      }, 60000); // Update every 60 seconds
-    }
-  }
-
-  /** Cleanup component */
-  disconnectedCallback() {
-    if (this.timestampUpdateTimer) {
-      clearInterval(this.timestampUpdateTimer);
-    }
-  }
-
-  /** Handle date selection */
-  private async handleDateSelect(day: number) {
-    if (this.disabled) return;
-
-    const newDate = new Date(this.currentYear, this.currentMonth, day);
-
-    // Preserve time if includeTime is enabled
-    if (this.includeTime && this.selectedDate && !isNaN(this.selectedDate.getTime())) {
-      newDate.setHours(this.selectedDate.getHours());
-      newDate.setMinutes(this.selectedDate.getMinutes());
-    }
-
-    const prevValue = this.value;
-    const newValue = newDate.toISOString();
-
-    try {
-      if (this.storedWriteOperation) {
-        // Only show loading for actual write operations
-        this.updateValue(newValue, prevValue);
-        await this.storedWriteOperation(newValue);
-        // No success status for user interactions - they're immediate
-      } else {
-        this.updateValue(newValue, prevValue);
-      }
-
-      this.isOpen = false;
-    } catch (error) {
-      console.error('handleDateSelect error for ui-calendar:', error);
-      this.updateValue(prevValue!, newValue, false); // Revert on error
-      // Only show error if it was a write operation that failed
-      if (this.storedWriteOperation) {
-        StatusIndicator.applyStatus(this, 'error', 'Write operation failed');
-      }
-    }
-  }
 
   /** Clear current selection */
   private clearSelection() {
@@ -532,6 +606,7 @@ export class UiCalendar {
     }
   }
 
+  /** Update clock state from selected date */
   private updateClockFromSelectedDate() {
     if (!this.selectedDate || isNaN(this.selectedDate.getTime())) return;
 
@@ -559,21 +634,25 @@ export class UiCalendar {
     this.selectedMinute = minutes;
   }
 
+  /** Set hour in clock interface */
   private async setHour(hour: number) {
     this.selectedHour = hour;
     await this.updateTimeFromClock();
   }
 
+  /** Set minute in clock interface */
   private async setMinute(minute: number) {
     this.selectedMinute = minute;
     await this.updateTimeFromClock();
   }
 
+  /** Toggle AM/PM in 12-hour format */
   private async toggleAMPM() {
     this.isAM = !this.isAM;
     await this.updateTimeFromClock();
   }
 
+  /** Toggle between clock and input view */
   private toggleClockView() {
     this.showClockView = !this.showClockView;
     if (this.showClockView) {
@@ -581,7 +660,7 @@ export class UiCalendar {
     }
   }
 
-  /** Navigate month */
+  /** Navigate month by direction */
   private navigateMonth(direction: number) {
     let newMonth = this.currentMonth + direction;
     let newYear = this.currentYear;
@@ -631,9 +710,6 @@ export class UiCalendar {
       inputStyle.color = this.dark ? 'black' : 'white';
     }
 
-    // Animation classes
-    // animation handling removed
-
     return { containerClass, inputClass, calendarClass, inputStyle };
   }
 
@@ -648,8 +724,6 @@ export class UiCalendar {
         return { main: 'var(--color-primary)', hover: 'var(--color-primary-hover)', light: 'var(--color-primary-light)' };
     }
   }
-
-  // getActiveColor removed (inlined dynamic color usage)
 
   /** Get days in month */
   private getDaysInMonth() {
@@ -738,118 +812,45 @@ export class UiCalendar {
     return false;
   }
 
-  // ========================================
-  // Standardized Component API Methods
-  // ========================================
+  /** Manages timestamp update timer for relative time display */
+  private startTimestampUpdater() {
+    this.stopTimestampUpdater();
+    this.timestampUpdateTimerRef = window.setInterval(() => this.timestampCounter++, 60000); //  Update every minute
+  }
 
-  /**
-   * Set the value programmatically with optional write operation
-   * @param value - The date string value to set (ISO format)
-   * @param options - Optional configuration including writeOperation
-   */
-  @Method()
-  async setValue(value: string, options?: { writeOperation?: (value: string) => Promise<any> }): Promise<any> {
-    const prevValue = this.value;
-
-    // Clear error state if not reverting
-    if (this.operationStatus === 'error') {
-      StatusIndicator.applyStatus(this, 'idle');
-    }
-
-    // Store operation for user interactions
-    if (options?.writeOperation) {
-      this.storedWriteOperation = options.writeOperation;
-    }
-
-    try {
-      StatusIndicator.applyStatus(this, 'loading');
-      this.updateValue(value, prevValue);
-
-      if (options?.writeOperation) {
-        const result = await options.writeOperation(value);
-        StatusIndicator.applyStatus(this, 'success');
-        return result;
-      }
-
-      StatusIndicator.applyStatus(this, 'idle');
-    } catch (error) {
-      console.error('setValue error for ui-calendar:', error);
-      this.updateValue(prevValue!, prevValue, false); // Revert on error
-      StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
-      throw error;
+  /** Stops the timestamp update timer */
+  private stopTimestampUpdater() {
+    if (this.timestampUpdateTimerRef) {
+      clearInterval(this.timestampUpdateTimerRef);
+      this.timestampUpdateTimerRef = undefined;
     }
   }
 
-  /**
-   * Get the current calendar value.
-   * @returns Current date value as ISO string or undefined
-   * @example
-   * ```typescript
-   * const currentDate = await calendar.getValue();
-   * console.log('Selected date:', currentDate);
-   * ```
-   */
-  @Method()
-  async getValue(): Promise<string | undefined> {
-    return this.value;
+  // ============================== RENDERING HELPERS ==============================
+
+  /** Renders the status badge according to current operation state */
+  private renderStatusBadge() {
+    if (!this.showStatus) return null;
+
+    const status = this.operationStatus || 'idle';
+    const message = this.lastError || (status === 'idle' ? 'Ready' : '');
+    return StatusIndicator.renderStatusBadge(status, message, h);
   }
 
-  /**
-   * Set the value silently without emitting events or status changes
-   * @param value - The date string value to set (ISO format)
-   */
-  @Method()
-  async setValueSilent(value: string): Promise<void> {
-    this.updateValue(value, this.value, false);
+  /** Renders the last updated timestamp */
+  private renderLastUpdated() {
+    if (!this.showLastUpdated) return null;
+
+    // render an invisible placeholder when lastUpdatedTs is missing.
+    const lastUpdatedDate = this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null;
+    return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
 
+  // ============================== MAIN COMPONENT RENDER METHOD ==============================
+
   /**
-   * Set the visual status of the calendar (success, warning, error).
-   * @param status - Status type or null to clear
-   * @param message - Optional status message
-   * @example
-   * ```typescript
-   * await calendar.setStatus('error', 'Invalid date selected');
-   * await calendar.setStatus('success', 'Date saved successfully');
-   * await calendar.setStatus(null); // Clear status
-   * ```
+   * Renders the complete calendar component with all features and styles.
    */
-  @Method()
-  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', message?: string): Promise<void> {
-    this.operationStatus = status;
-    if (status === 'error' && message) {
-      this.lastError = message;
-    } else if (status !== 'error') {
-      this.lastError = undefined;
-    }
-
-    if (status === 'success') {
-      this.lastUpdatedTs = Date.now();
-      // Auto-clear success status after short delay
-      setTimeout(() => {
-        if (this.operationStatus === 'success') {
-          this.operationStatus = 'idle';
-        }
-      }, 1200);
-    }
-
-    // Emit status change event
-    this.valueMsg.emit({
-      newVal: this.value,
-      ts: Date.now(),
-      source: this.el?.id || 'ui-calendar',
-      ok: status !== 'error',
-      meta: {
-        component: 'ui-calendar',
-        type: 'statusChange',
-        status,
-        message,
-        source: 'method',
-      },
-    });
-  }
-
-  /** Render component */
   render() {
     const styles = this.getCalendarStyles();
     const isDisabled = this.disabled;
@@ -1113,11 +1114,11 @@ export class UiCalendar {
           </div>
 
           {/* Status Badge */}
-          {this.showStatus && StatusIndicator.renderStatusBadge(this.operationStatus, this.lastError, h)}
+          {this.renderStatusBadge()}
         </div>
 
         {/* Last Updated Timestamp */}
-        {this.showLastUpdated && StatusIndicator.renderTimestamp(this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null, this.dark ? 'dark' : 'light', h)}
+        {this.renderLastUpdated()}
 
         {/* Click outside to close */}
         {this.isOpen && <div class="fixed inset-0 z-40" onClick={() => (this.isOpen = false)}></div>}

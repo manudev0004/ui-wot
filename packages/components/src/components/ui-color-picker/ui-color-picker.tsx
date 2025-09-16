@@ -1,30 +1,24 @@
 import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
-import { UiMsg } from '../../utils/types';
-import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
+import { UiMsg } from '../../utils/types'; // Standard message format
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator'; // Status indicator utility
 
 /**
- * A color picker component for selecting color values.
- * Provides a simple HTML5 color input with consistent styling and WoT integration.
+ * A versatile color picker component designed for WoT device control.
  *
  * @example Basic Usage
  * ```html
  * <ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
  * ```
  *
- * @example JavaScript Integration
+ * @example JS integaration with node-wot browser bundle
  * ```javascript
- * const colorPicker = document.querySelector('#color-selector');
+ * const colorPicker = document.getElementById('device-color');
+ * const initialValue = String(await (await thing.readProperty('deviceColor')).value());
  *
- * // Set initial value with write operation
- * await colorPicker.setValue('#00ff00', {
- *   writeOperation: async (color) => {
- *     await thing.writeProperty('deviceColor', color);
+ * await colorPicker.setValue(initialValue, {
+ *   writeOperation: async value => {
+ *     await thing.writeProperty('deviceColor', value);
  *   }
- * });
- *
- * // Listen for color changes
- * colorPicker.addEventListener('valueMsg', (e) => {
- *   console.log('Color changed to:', e.detail.newVal);
  * });
  * ```
  */
@@ -38,179 +32,322 @@ export class UiColorPicker {
 
   // ============================== COMPONENT PROPERTIES ==============================
 
-  /**
-   * Whether the component is disabled.
-   */
-  @Prop() disabled: boolean = false;
-
-  /**
-   * Whether the component is read-only.
-   */
-  @Prop() readonly: boolean = false;
-
-  /**
-   * Visual variant of the component.
-   */
-  @Prop() variant: 'outlined' | 'filled' = 'outlined';
-
-  /**
-   * Color scheme for the component.
-   */
-  @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
-
-  /**
-   * Dark theme support.
-   */
+  /** Enable dark mode theme styling when true */
   @Prop() dark: boolean = false;
 
-  /**
-   * Show last updated timestamp.
-   */
-  @Prop() showLastUpdated: boolean = false;
-
-  /**
-   * Show status badge when true.
-   */
-  @Prop() showStatus: boolean = true;
-
-  /**
-   * Current color value in hex format (e.g., #ff0000).
-   */
+  /** Current color value in hex format (e.g., #ff0000) */
   @Prop({ mutable: true }) value: string = '#000000';
 
-  /**
-   * Text label displayed above the color picker.
-   */
+  /** Disable user interaction when true */
+  @Prop() disabled: boolean = false;
+
+  /** Text label displayed right to the color picker (optional) */
   @Prop() label?: string;
+
+  /** Show last updated timestamp below the component */
+  @Prop() showLastUpdated: boolean = false;
+
+  /** Show visual operation status indicators (loading, success, failed) right to the component */
+  @Prop() showStatus: boolean = true;
 
   // ============================== COMPONENT STATE ==============================
 
-  /** Internal state for the color value */
+  /** Current operation status for visual feedback */
+  @State() operationStatus: OperationStatus = 'idle';
+
+  /** Error message from failed operations if any (optional) */
+  @State() lastError?: string;
+
+  /** Timestamp when value was last updated (optional) */
+  @State() lastUpdatedTs?: number;
+
+  /** Internal state that controls the visual appearance of the color picker */
   @State() private selectedColor: string = '#000000';
 
-  /** Operation status for unified status indicators */
-  @State() private operationStatus: OperationStatus = 'idle';
+  /** Internal state counter for timestamp re-rendering */
+  @State() private timestampCounter: number = 0;
 
-  /** Last error message (if any) */
-  @State() private lastError?: string;
+  /** Internal state to prevents infinite event loops while programmatic updates */
+  @State() private suppressEvents: boolean = false;
 
-  /** Timestamp of last value update */
-  @State() private lastUpdatedTs?: number;
+  // ============================== PRIVATE PROPERTIES ==============================
 
-  /** Stored write operation for user interaction */
+  /** Tracks component initialization state to prevent early watchers */
+  private isInitialized: boolean = false;
+
+  /** Timer for updating relative timestamps */
+  private timestampUpdateTimer?: number;
+
+  /** Stores API function from first initialization to use further for any user interactions */
   private storedWriteOperation?: (value: string) => Promise<any>;
 
-  // ============================== COMPONENT EVENTS ==============================
+  // ============================== EVENTS ==============================
 
   /**
-   * Emitted when the color value changes.
+   * Emitted when color picker value changes through user interaction or setValue calls.
+   * Contains the new value, previous value, timestamp, and source information.
    */
   @Event() valueMsg: EventEmitter<UiMsg<string>>;
-
-  // ============================== LIFECYCLE METHODS ==============================
-
-  componentWillLoad() {
-    this.selectedColor = this.value || '#000000';
-  }
-
-  @Watch('value')
-  valueChanged(newValue: string) {
-    this.selectedColor = newValue || '#000000';
-  }
 
   // ============================== PUBLIC METHODS ==============================
 
   /**
-   * Set the color value programmatically.
-   * @param color - The color value in hex format
-   * @param options - Optional configuration including write operation
-   * @returns Promise that resolves to true if successful
+   * Sets the color picker value with optional device communication api and other options.
+   *
+   * This is the primary method for connecting color pickers to real devices.
+   * It supports optimistic updates, error handling, and automatic retries.
+   *
+   * @param value - The color value to set in hex format (e.g., #ff0000)
+   * @param options - Configuration for device communication and behavior
+   * @returns Promise resolving to true if successful, false if failed
+   *
+   * @example Basic Usage
+   * ```javascript
+   * await colorPicker.setValue('#ff0000');
+   * ```
+   *
+   * @example JS integration with node-wot browser bundle
+   * ```javascript
+   * const colorPicker = document.getElementById('device-color');
+   * const initialValue = String(await (await thing.readProperty('deviceColor')).value());
+   * await colorPicker.setValue(initialValue, {
+   *   writeOperation: async value => {
+   *     await thing.writeProperty('deviceColor', value);
+   *   },
+   *   autoRetry: { attempts: 3, delay: 1000 }
+   * });
+   * ```
    */
   @Method()
   async setValue(
-    color: string,
+    value: string,
     options?: {
-      writeOperation?: (value: string) => Promise<void>;
+      writeOperation?: (value: string) => Promise<any>;
+      readOperation?: () => Promise<any>;
+      optimistic?: boolean;
+      autoRetry?: { attempts: number; delay: number };
       _isRevert?: boolean;
     },
   ): Promise<boolean> {
     const prevValue = this.selectedColor;
 
-    // Clear error state unless reverting
+    // Clear any existing error state
     if (this.operationStatus === 'error' && !options?._isRevert) {
       StatusIndicator.applyStatus(this, 'idle');
     }
 
-    // Store write operation for user interactions
-    if (options?.writeOperation) {
-      this.storedWriteOperation = options.writeOperation;
+    // Simple value update without other operations
+    if (!options?.writeOperation && !options?.readOperation) {
+      this.updateValue(value, prevValue);
+      return true;
     }
 
-    // Update without emitting events (for setup)
-    this.updateValue(color, prevValue, false);
-    return true;
+    // If there is writeOperation store operation for future user interactions
+    if (options.writeOperation && !options._isRevert) {
+      this.storedWriteOperation = options.writeOperation;
+
+      try {
+        // Update the value optimistically
+        this.updateValue(value, prevValue, false);
+        return true;
+      } catch (error) {
+        StatusIndicator.applyStatus(this, 'error', error?.message || 'Setup failed');
+        return false;
+      }
+    }
+
+    // Execute operation immediately if no options selected
+    return this.executeOperation(value, prevValue, options);
   }
 
   /**
-   * Get the current color value.
-   * @returns The current color value
+   * Gets the current color picker value with optional metadata.
+   *
+   * @param includeMetadata - Whether to include status, timestamp and other information
+   * @returns Current value or detailed metadata object
    */
   @Method()
-  async getValue(): Promise<string> {
+  async getValue(includeMetadata: boolean = false): Promise<string | { value: string; lastUpdated?: number; status: string; error?: string }> {
+    if (includeMetadata) {
+      return {
+        value: this.selectedColor,
+        lastUpdated: this.lastUpdatedTs,
+        status: this.operationStatus,
+        error: this.lastError,
+      };
+    }
     return this.selectedColor;
+  }
+
+  /**
+   * This method updates the value silently without triggering events.
+   *
+   * Use this for external data synchronization to prevent event loops.
+   * Perfect for WebSocket updates or polling from remote devices.
+   *
+   * @param value - The color value to set silently in hex format
+   */
+  @Method()
+  async setValueSilent(value: string): Promise<void> {
+    this.updateValue(value, this.selectedColor, false);
+  }
+
+  /**
+   * (Advance) to manually set the operation status indicator.
+   *
+   * Useful when managing device communication externally and you want to show loading/success/error states.
+   *
+   * @param status - The status to display
+   * @param errorMessage - (Optional) error message for error status
+   */
+  @Method()
+  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
+    StatusIndicator.applyStatus(this, status, errorMessage);
+  }
+
+  // ============================== LIFECYCLE METHODS ==============================
+
+  /** Initialize component state from props */
+  componentWillLoad() {
+    this.selectedColor = this.value || '#000000';
+    this.isInitialized = true;
+    if (this.showLastUpdated) this.startTimestampUpdater();
+  }
+
+  /** Clean up timers when component is removed */
+  disconnectedCallback() {
+    this.stopTimestampUpdater();
+  }
+
+  // ============================== WATCHERS ==============================
+
+  /** Sync internal state when value prop changes externally */
+  @Watch('value')
+  watchValue(newVal: string) {
+    if (!this.isInitialized) return;
+
+    if (this.selectedColor !== newVal) {
+      const prevValue = this.selectedColor;
+      this.selectedColor = newVal;
+      this.emitValueMsg(newVal, prevValue);
+    }
   }
 
   // ============================== PRIVATE METHODS ==============================
 
   /**
-   * Handle color change from user interaction.
+   * This is the core state update method that handles value changes consistently.
+   * It updates both internal state and external prop and also manages timestamps, and emits events (optional).
    */
-  private async handleColorChange(event: Event): Promise<void> {
-    const target = event.target as HTMLInputElement;
-    const newColor = target.value;
-    const prevValue = this.selectedColor;
-
-    this.updateValue(newColor, prevValue, true);
-
-    // Execute stored write operation if available
-    if (this.storedWriteOperation) {
-      try {
-        StatusIndicator.applyStatus(this, 'loading');
-        await this.storedWriteOperation(newColor);
-        StatusIndicator.applyStatus(this, 'success');
-      } catch (error: any) {
-        StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
-        // Revert on error
-        await this.setValue(prevValue, { _isRevert: true });
-      }
-    }
-  }
-
-  /**
-   * Update the internal value and emit events if needed.
-   */
-  private updateValue(color: string, prevValue?: string, emitEvent: boolean = true): void {
-    this.selectedColor = color;
-    this.value = color;
+  private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
+    this.selectedColor = value;
+    this.value = value;
     this.lastUpdatedTs = Date.now();
 
-    if (emitEvent) {
-      this.emitValueMsg(color, prevValue);
+    if (emitEvent && !this.suppressEvents) {
+      this.emitValueMsg(value, prevValue);
     }
   }
 
-  /**
-   * Emit the valueMsg event with standardized format.
-   */
-  private emitValueMsg(newVal: string, prevVal?: string): void {
-    const msg: UiMsg<string> = {
-      newVal,
-      prevVal,
+  /** Executes stored operations with error handling and retry logic */
+  private async executeOperation(value: string, prevValue: string, options: any): Promise<boolean> {
+    const optimistic = options?.optimistic !== false;
+
+    // Show new value immediately (if optimistic = true)
+    if (optimistic && !options?._isRevert) {
+      this.updateValue(value, prevValue);
+    }
+
+    StatusIndicator.applyStatus(this, 'loading');
+
+    try {
+      // Execute the API call
+      if (options.writeOperation) {
+        await options.writeOperation(value);
+      } else if (options.readOperation) {
+        await options.readOperation();
+      }
+
+      StatusIndicator.applyStatus(this, 'success');
+
+      // Update value after successful operation, (if optimistic = false)
+      if (!optimistic) {
+        this.updateValue(value, prevValue);
+      }
+
+      return true;
+    } catch (error) {
+      StatusIndicator.applyStatus(this, 'error', error?.message || String(error) || 'Operation failed');
+
+      // Revert optimistic changes if operation is not successful or has an error
+      if (optimistic && !options?._isRevert) {
+        this.updateValue(prevValue, value, false);
+      }
+
+      // Retry logic
+      if (options?.autoRetry && options.autoRetry.attempts > 0) {
+        setTimeout(() => {
+          this.setValue(value, {
+            ...options,
+            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 },
+          });
+        }, options.autoRetry.delay);
+      }
+
+      return false;
+    }
+  }
+
+  /** Emits value change events with consistent UIMsg data structure */
+  private emitValueMsg(value: string, prevValue?: string) {
+    if (this.suppressEvents) return;
+    this.valueMsg.emit({
+      newVal: value,
+      prevVal: prevValue,
       ts: Date.now(),
-      source: this.el.id || 'ui-color-picker',
+      source: this.el?.id || 'ui-color-picker',
       ok: true,
-    };
-    this.valueMsg.emit(msg);
+    });
+  }
+
+  /** Handles user color change interactions */
+  private handleColorChange = async (event: Event) => {
+    if (this.disabled) return;
+
+    const target = event.target as HTMLInputElement;
+    const newValue = target.value;
+    const prevValue = this.selectedColor;
+
+    StatusIndicator.applyStatus(this, 'loading');
+
+    // Execute stored operation if available
+    if (this.storedWriteOperation) {
+      this.updateValue(newValue, prevValue);
+
+      try {        
+        await this.storedWriteOperation(newValue);
+        StatusIndicator.applyStatus(this, 'success');
+      } catch (error) {
+        StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
+        this.updateValue(prevValue, newValue, false);
+      }
+    } else {
+      StatusIndicator.applyStatus(this, 'error', 'No operation configured - setup may have failed');
+    }
+  };
+
+  /** Manages timestamp update timer for relative time display */
+  private startTimestampUpdater() {
+    this.stopTimestampUpdater();
+    this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 60000); //  Update every minute
+  }
+
+  /** Stops the timestamp update timer */
+  private stopTimestampUpdater() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+      this.timestampUpdateTimer = undefined;
+    }
   }
 
   // ============================== RENDERING HELPERS ==============================
@@ -233,10 +370,13 @@ export class UiColorPicker {
     return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
 
-  // ============================== RENDER METHOD ==============================
+  // ============================== MAIN COMPONENT RENDER METHOD ==============================
 
+  /**
+   * Renders the complete color picker component with all features and styles.
+   */
   render() {
-    const canInteract = !this.disabled && !this.readonly;
+    const canInteract = !this.disabled;
 
     return (
       <div class="inline-block" part="container" role="group" aria-label={this.label || 'Color Picker'}>
@@ -257,11 +397,10 @@ export class UiColorPicker {
           <input
             type="color"
             class={`color-picker-input w-16 h-16 border-2 border-gray-300 dark:border-gray-600 rounded-md transition-all duration-200 ${
-              this.disabled ? 'opacity-50 cursor-not-allowed' : ''
-            } ${this.readonly ? 'cursor-default' : 'hover:border-gray-400 dark:hover:border-gray-500'}`}
+              this.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-400 dark:hover:border-gray-500'
+            }`}
             value={this.selectedColor}
             disabled={this.disabled}
-            readonly={this.readonly}
             onInput={e => canInteract && this.handleColorChange(e)}
             part="color-input"
           />

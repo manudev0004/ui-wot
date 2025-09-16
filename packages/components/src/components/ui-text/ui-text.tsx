@@ -1,42 +1,30 @@
 import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
-import { UiMsg } from '../../utils/types';
-import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
+import { UiMsg } from '../../utils/types'; // Standard message format
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator'; // Status indicator utility
 
 /**
- * TextDisplay component supports multiple variants for text-heavy data display and editing.
+ * A versatile Text-Display component designed for WoT device control and monitoring
+ * It has various features, visual styles and supports text-heavy data display.
  * Provides field, area, structured, unstructured, and editable modes with consistent styling.
  *
- * @example Basic Field Display
+ * @example Basic Usage
  * ```html
  * <ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
- * ```
- *
- * @example Multi-line Area
- * ```html
  * <ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
- * ```
- *
- * @example Structured Data Display
- * ```html
  * <ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
- * ```
- *
- * @example Editable Mode
- * ```html
  * <ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
  * ```
  *
- * @example JavaScript Integration
+ * @example JS integration with node-wot browser bundle
  * ```javascript
- * const textDisplay = document.querySelector('#notes-field');
+ *   const textElement = document.getElementById('text-field');
+ *   const value = await (await thing.readProperty('string')).value();
  *
- * // Listen for value changes in editable mode
- * textDisplay.addEventListener('valueMsg', (e) => {
- *   console.log('Text changed to:', e.detail.payload);
- * });
- *
- * // Set value programmatically
- * await textDisplay.setValue('New content');
+ *   await textElement.setValue(value, {
+ *     writeOperation: async newValue => {
+ *       await thing.writeProperty('string', String(newValue));
+ *     },
+ *   });
  * ```
  */
 @Component({
@@ -47,7 +35,15 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 export class UiText {
   @Element() el: HTMLElement;
 
-  /** Component props */
+  // ============================== COMPONENT PROPERTIES ==============================
+
+  /**
+   * Visual style variant of the text display.
+   * - minimal: Text-only with subtle underline
+   * - outlined: Border style applied (default)
+   * - filled: Background color applied
+   */
+  @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'outlined';
 
   /**
    * Display mode for the text component.
@@ -59,93 +55,48 @@ export class UiText {
    */
   @Prop() mode: 'field' | 'area' | 'unstructured' | 'structured' | 'editable' = 'field';
 
-  /**
-   * Visual style variant of the text display.
-   * - minimal: Text-only with subtle underline or accent
-   * - outlined: Border style applied (default)
-   * - filled: Background color applied
-   */
-  @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'outlined';
-
-  /**
-   * Color theme variant.
-   * TODO: Review - may be irrelevant for text components, consider removal
-   */
+  /** Color theme for the active state matching to thingsweb theme */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
 
-  /**
-   * Enable dark theme for the component.
-   * When true, uses light text on dark backgrounds.
-   */
+  /** Enable dark mode theme styling when true */
   @Prop() dark: boolean = false;
 
-  /**
-   * Enable keyboard navigation for editable mode.
-   * Default: true
-   * TODO: Review - may be irrelevant since text inputs have native keyboard support
-   */
-  // @Prop() keyboard: boolean = true;
-
-  /**
-   * Show last updated timestamp.
-   */
-  @Prop() showLastUpdated: boolean = false;
-
-  /**
-   * Show status badge when true
-   */
-  @Prop() showStatus: boolean = true;
-
-  /**
-   * Current text value of the component.
-   */
+  /** Current text value of the component. */
   @Prop({ mutable: true }) value: string = '';
 
-  /**
-   * Text label displayed above the text display.
-   */
+  /** Text label displayed above the text display. */
   @Prop() label?: string;
 
-  /**
-   * Placeholder text shown when value is empty (editable mode only).
-   */
+  /** Show last updated timestamp below the component */
+  @Prop() showLastUpdated: boolean = false;
+
+  /** Show visual operation status indicators (loading, success, failed) right to the component */
+  @Prop() showStatus: boolean = false;
+
+  /** Placeholder text shown when value is empty (editable mode only). */
   @Prop() placeholder?: string;
 
-  // disabled/readonly removed per simplification
-
-  /**
-   * Maximum number of rows for area mode.
-   */
+  /** Maximum number of rows for area mode. */
   @Prop() maxRows: number = 10;
 
-  /**
-   * Minimum number of rows for area mode.
-   */
+  /** Minimum number of rows for area mode. */
   @Prop() minRows: number = 3;
 
-  /**
-   * Show character count (editable mode only).
-   */
-  @Prop() showCharCount: boolean = false;
-
-  /**
-   * Maximum character limit (editable mode only).
-   */
+  /** Maximum character limit (editable mode only). */
   @Prop() maxLength?: number;
 
-  /**
-   * Show line numbers (area and structured modes).
-   */
+  /** Show character count */
+  @Prop() showCharCount: boolean = false;
+
+  /** Show line numbers */
   @Prop() showLineNumbers: boolean = false;
 
-  /**
-   * Enable text area resizing (area and editable modes).
-   */
+  /** Enable text area resizable. */
   @Prop() resizable: boolean = true;
 
   /**
    * Debounce delay in milliseconds for editable mode updates (0 = disabled).
-   * When enabled, reduces API calls by only sending updates after user stops typing.
+   * Enabled it to reduce API calls by only sending updates after user stops typing.
    */
   @Prop() debounceMs: number = 0;
 
@@ -155,45 +106,47 @@ export class UiText {
    */
   @Prop() showSaveButton: boolean = false;
 
-  /** Connection state for readonly mode */
-  @Prop({ mutable: true }) connected: boolean = true;
+  // ============================== COMPONENT STATE ==============================
 
-  /** Component state */
-
-  /** Internal state for tracking if component is initialized */
-  private isInitialized: boolean = false;
-
-  /** Flag to prevent various event loops when setting values programmatically */
-  @State() private suppressEvents: boolean = false;
-
-  /** Operation status for unified status indicators */
+  /** Current operation status for visual feedback */
   @State() operationStatus: OperationStatus = 'idle';
 
-  /** Last error message (if any) */
+  /** Error message from failed operations if any (optional) */
   @State() lastError?: string;
 
-  /** Timestamp of last value update for showLastUpdated feature */
+  /** Timestamp when value was last updated (optional) */
   @State() lastUpdatedTs?: number;
 
-  /** Auto-updating timer for relative timestamps */
-  @State() private timestampUpdateTimer?: number;
-
-  /** Counter to trigger re-renders for timestamp updates - using state change to force re-render */
+  /** Internal state counter for timestamp re-rendering */
   @State() private timestampCounter: number = 0;
 
   /** Temporary value for debounced editing */
   @State() private tempValue: string = '';
 
-  /** Flag to track if there are unsaved changes */
+  /** Internal flag to track if there are unsaved changes */
   @State() private hasUnsavedChanges: boolean = false;
 
-  /** Stored write operation for user interaction */
-  private storedWriteOperation?: (value: string) => Promise<any>;
+  /** Internal state to prevents infinite event loops while programmatic updates */
+  @State() private suppressEvents: boolean = false;
+
+  /** Rendered line count after wrapping (for line numbers) */
+  @State() private renderedLineCount: number = 0;
+
+  /** Expand/Collapse state for each path */
+  @State() private collapsedPaths: { [path: string]: boolean } = {};
+
+  // ============================== PRIVATE PROPERTIES ==============================
+
+  /** Internal state for tracking if component is initialized */
+  private isInitialized: boolean = false;
+
+  /** Timer for updating relative timestamps */
+  private timestampUpdateTimer?: number;
 
   /** Debounce timer reference */
   private debounceTimer?: number;
 
-  /** ResizeObserver for dynamic line calculation */
+  /** ResizeObserver for to calculate dynamic line numbers */
   private resizeObserver?: ResizeObserver;
 
   /** Reference to the container element for dynamic sizing */
@@ -202,89 +155,48 @@ export class UiText {
   /** Reference to rendered content block for measuring wrapped lines */
   private contentRef?: HTMLElement;
 
-  /** Inner content measurer (used when line numbers are shown) */
+  /** Inner content measurer (used only when line numbers are shown) */
   private contentMeasureRef?: HTMLElement;
 
-  /** Rendered line count after wrapping (for line numbers) */
-  @State() private renderedLineCount: number = 0;
-  /** Fold state map: path -> collapsed */
-  @State() private collapsedPaths: { [path: string]: boolean } = {};
+  /** Stores API function from first initialization to re-use further for any user interactions */
+  private storedWriteOperation?: (value: string) => Promise<any>;
 
-  /** Structured mode expand/collapse */
-  // replaced with per-node folding
-
-  /** Helper method to update value and timestamps consistently */
-  private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
-    this.value = value;
-    this.lastUpdatedTs = Date.now();
-
-    if (emitEvent && !this.suppressEvents) {
-      this.emitValueMsg(value, prevValue);
-    }
-  }
-
-  /** Component events */
+  // ============================== EVENTS ==============================
 
   /**
-   * Event emitted when the text value changes (editable mode only).
-   *
-   * @example
-   * ```javascript
-   * textDisplay.addEventListener('valueMsg', (event) => {
-   *   // event.detail contains:
-   *   // - newVal: new value (string)
-   *   // - prevVal: previous value
-   *   // - source: component id
-   *   // - ts: timestamp
-   *
-   *   console.log('New value:', event.detail.newVal);
-   *
-   *   // Example: Send to server
-   *   fetch('/api/text', {
-   *     method: 'POST',
-   *     body: JSON.stringify({ text: event.detail.payload })
-   *   });
-   * });
-   * ```
+   * Emitted when toggle value changes through user interaction or setValue calls.
+   * Contains the new value, previous value, timestamp, and source information.
    */
   @Event() valueMsg: EventEmitter<UiMsg<string>>;
 
-  /** Watchers */
-
-  @Watch('value')
-  watchValue(newVal: string, oldVal: string) {
-    if (!this.isInitialized) return;
-    if (newVal !== oldVal && !this.suppressEvents) {
-      this.emitValueMsg(newVal, oldVal);
-    }
-    // Recompute rendered line count on value changes
-    this.scheduleLineCountUpdate();
-  }
-
-  /** Public methods */
+  // ============================== PUBLIC METHODS ==============================
 
   /**
    * Set the text value and handle optional operations and status management.
    *
+   * This is the primary method for connecting text to real devices.
+   * It supports optimistic updates, error handling, and automatic retries.
+   *
    * @param value - The string value to set
-   * @param options - Configuration options for the operation
-   * @returns Promise<boolean> - true if successful, false if failed
+   * @param options - Optional configuration options for the operation
+   * @returns Promise resolving to true if successful, false if failed
    *
-   * @example
+   * @example Basic Usage
+   * ```html
+   * await textElement.setValue(value);
+   * ```
+   *
+   * @example JS integration with node-wot browser bundle
    * ```javascript
-   * // Basic usage
-   * await textDisplay.setValue('New text content');
+   *   const textElement = document.getElementById('text-field');
+   *   const value = await (await thing.readProperty('string')).value();
    *
-   * // With external operation
-   * await textDisplay.setValue('Updated text', {
-   *   writeOperation: async () => {
-   *     const response = await fetch('/api/text', {
-   *       method: 'POST',
-   *       body: JSON.stringify({ text: 'Updated text' })
-   *     });
-   *   },
-   *   optimistic: true
-   * });
+   *   await textElement.setValue(value, {
+   *     writeOperation: async newValue => {
+   *       await thing.writeProperty('string', String(newValue));
+   *     },
+   *     autoRetry: { attempts: 3, delay: 1000 }
+   *   });
    * ```
    */
   @Method()
@@ -305,92 +217,37 @@ export class UiText {
       StatusIndicator.applyStatus(this, 'idle');
     }
 
-    // SIMPLE CASE: Just set value without operations
+    // Simple value update without other operations
     if (!options?.writeOperation && !options?.readOperation) {
       this.updateValue(value, prevValue);
       return true;
     }
 
-    // SETUP CASE: Store writeOperation for user interaction
+    // If there is writeOperation store operation for future user interactions
     if (options.writeOperation && !options._isRevert) {
       this.storedWriteOperation = options.writeOperation;
-      this.updateValue(value, prevValue, false); // No event for setup
-      return true;
+      StatusIndicator.applyStatus(this, 'loading');
+
+      try {
+        // Update the value optimistically
+        this.updateValue(value, prevValue, false);
+        StatusIndicator.applyStatus(this, 'success');
+        return true;
+      } catch (error) {
+        StatusIndicator.applyStatus(this, 'error', error?.message || 'Setup failed');
+        return false;
+      }
     }
 
-    // EXECUTION CASE: Execute operations immediately (internal calls)
+    // Execute operation immediately if no options selected
     return this.executeOperation(value, prevValue, options);
-  }
-
-  /** Simplified operation execution */
-  private async executeOperation(value: string, prevValue: string, options: any): Promise<boolean> {
-    const optimistic = options?.optimistic !== false;
-
-    // Optimistic update
-    if (optimistic && !options?._isRevert) {
-      this.updateValue(value, prevValue);
-    }
-
-    StatusIndicator.applyStatus(this, 'loading');
-
-    try {
-      // Execute the operation
-      if (options.writeOperation) {
-        await options.writeOperation(value);
-      } else if (options.readOperation) {
-        await options.readOperation();
-      }
-
-      // Success
-      StatusIndicator.applyStatus(this, 'success');
-
-      // Non-optimistic update
-      if (!optimistic) {
-        this.updateValue(value, prevValue);
-      }
-
-      return true;
-    } catch (error) {
-      // Error handling
-      StatusIndicator.applyStatus(this, 'error', error?.message || String(error) || 'Operation failed');
-
-      // Revert optimistic changes
-      if (optimistic && !options?._isRevert) {
-        this.updateValue(prevValue, value, false);
-      }
-
-      // Auto-retry
-      if (options?.autoRetry && options.autoRetry.attempts > 0) {
-        setTimeout(() => {
-          this.setValue(value, {
-            ...options,
-            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 },
-          });
-        }, options.autoRetry.delay);
-      }
-
-      return false;
-    }
   }
 
   /**
    * Get the current text value with optional metadata.
    *
-   * @param includeMetadata - Whether to include additional metadata (default: false)
-   * @returns Promise<string | MetadataResult> - Current value or object with metadata
-   *
-   * @example
-   * ```javascript
-   * // Basic usage
-   * const text = await textDisplay.getValue();
-   * console.log('Current text:', text);
-   *
-   * // With metadata
-   * const result = await textDisplay.getValue(true);
-   * console.log('Value:', result.value);
-   * console.log('Last updated:', new Date(result.lastUpdated));
-   * console.log('Status:', result.status);
-   * ```
+   * @param includeMetadata - Whether to include status, timestamp and other information
+   * @returns Current value or detailed metadata object
    */
   @Method()
   async getValue(includeMetadata: boolean = false): Promise<string | { value: string; lastUpdated?: number; status: string; error?: string }> {
@@ -406,55 +263,25 @@ export class UiText {
   }
 
   /**
-   * Set value without triggering events (for external updates).
-   * Use this method when updating from external data sources to prevent event loops.
+   * This method updates the value silently without triggering events.
+   *
+   * Use this for external data synchronization to prevent event loops.
+   * Perfect for WebSocket updates or polling from remote devices.
    *
    * @param value - The string value to set silently
-   * @returns Promise<void>
-   *
-   * @example
-   * ```javascript
-   * // Basic silent update
-   * await textDisplay.setValueSilent('Updated from server');
-   *
-   * // In real-time context (WebSocket)
-   * websocket.onmessage = async (event) => {
-   *   const data = JSON.parse(event.data);
-   *   await textDisplay.setValueSilent(data.text);
-   * };
-   * ```
    */
   @Method()
   async setValueSilent(value: string): Promise<void> {
-    this.updateValue(value, this.value, false); // Use helper with emitEvent=false
+    this.updateValue(value, this.value, false);
   }
 
   /**
-   * Set operation status for external status management.
-   * Use this method to manually control the visual status indicators
-   * when managing operations externally.
+   * (Advance) to manually set the operation status indicator.
    *
-   * @param status - The status to set ('idle', 'loading', 'success', 'error')
-   * @param errorMessage - Optional error message for error status
-   * @returns Promise<void>
+   * Useful when managing device communication externally and you want to show loading/success/error states.
    *
-   * @example
-   * ```javascript
-   * const textDisplay = document.querySelector('ui-text');
-   *
-   * // Show loading indicator
-   * await textDisplay.setStatus('loading');
-   *
-   * try {
-   *   await saveToServer();
-   *   await textDisplay.setStatus('success');
-   * } catch (error) {
-   *   await textDisplay.setStatus('error', error.message);
-   * }
-   *
-   * // Clear status indicator
-   * await textDisplay.setStatus('idle');
-   * ```
+   * @param status - The status to display
+   * @param errorMessage - (Optional) error message for error status
    */
   @Method()
   async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
@@ -472,7 +299,7 @@ export class UiText {
     }
   }
 
-  /** Lifecycle methods */
+  // ============================== LIFECYCLE METHODS ==============================
 
   componentWillLoad() {
     this.isInitialized = true;
@@ -495,9 +322,84 @@ export class UiText {
     window.removeEventListener('resize', this.handleWindowResize as any);
   }
 
-  /** Private methods */
+  // ============================== WATCHERS ==============================
 
-  /** Event handling */
+  /** Sync internal state when value prop changes externally */
+  @Watch('value')
+  watchValue(newVal: string, oldVal: string) {
+    if (!this.isInitialized) return;
+    if (newVal !== oldVal && !this.suppressEvents) {
+      this.emitValueMsg(newVal, oldVal);
+    }
+    // Recompute rendered line count on value changes
+    this.scheduleLineCountUpdate();
+  }
+
+  // ============================== PRIVATE METHODS ==============================
+
+  /**
+   * This is the core state update method that handles value changes consistently.
+   * It updates both internal state and external prop and also manages timestamps, and emits events (optional).
+   */
+  private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
+    this.value = value;
+    this.lastUpdatedTs = Date.now();
+
+    if (emitEvent && !this.suppressEvents) {
+      this.emitValueMsg(value, prevValue);
+    }
+  }
+
+  /** Executes stored operations with error handling and retry logic */
+  private async executeOperation(value: string, prevValue: string, options: any): Promise<boolean> {
+    const optimistic = options?.optimistic !== false;
+
+    // Show new value immediately (if optimistic = true)
+    if (optimistic && !options?._isRevert) {
+      this.updateValue(value, prevValue);
+    }
+
+    StatusIndicator.applyStatus(this, 'loading');
+
+    try {
+      // Execute the operation
+      if (options.writeOperation) {
+        await options.writeOperation(value);
+      } else if (options.readOperation) {
+        await options.readOperation();
+      }
+
+      StatusIndicator.applyStatus(this, 'success');
+
+      // Update value after successful operation, (if optimistic = false)
+      if (!optimistic) {
+        this.updateValue(value, prevValue);
+      }
+
+      return true;
+    } catch (error) {
+      StatusIndicator.applyStatus(this, 'error', error?.message || String(error) || 'Operation failed');
+
+      // Revert optimistic changes if operation is not successful or has an error
+      if (optimistic && !options?._isRevert) {
+        this.updateValue(prevValue, value, false);
+      }
+
+      // Retry logic
+      if (options?.autoRetry && options.autoRetry.attempts > 0) {
+        setTimeout(() => {
+          this.setValue(value, {
+            ...options,
+            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 },
+          });
+        }, options.autoRetry.delay);
+      }
+
+      return false;
+    }
+  }
+
+  /** Emits value change events with consistent UIMsg data structure */
   private emitValueMsg(value: string, prevValue?: string) {
     if (this.suppressEvents) return;
     this.valueMsg.emit({
@@ -509,12 +411,57 @@ export class UiText {
     });
   }
 
-  /** Timestamp management */
+  /** Handles user click interactions */
+  private handleChange = async (event: Event): Promise<void> => {
+    if (this.mode !== 'editable') return;
+
+    const target = event.target as HTMLInputElement | HTMLTextAreaElement;
+    const newValue = target.value;
+
+    // Update temp value
+    this.tempValue = newValue;
+    this.hasUnsavedChanges = this.value !== newValue;
+
+    // Handle save button mode if not using auto-save
+    if (this.showSaveButton) {
+      return;
+    }
+
+    // Handle debounced updates
+    if (this.debounceMs > 0) {
+      this.debouncedUpdate(newValue);
+      return;
+    }
+
+    // Immediate update
+    await this.handleValueUpdate(newValue);
+  };
+
+  /** Handle save button click */
+  private handleSave = async (): Promise<void> => {
+    if (!this.hasUnsavedChanges) return;
+    await this.handleValueUpdate(this.tempValue);
+  };
+
+  /** Handle window resize for line count updates */
+  private handleWindowResize = (() => {
+    let frame = 0;
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        this.updateRenderedLineCount();
+      });
+    };
+  })();
+
+  /** Manages timestamp update timer for relative time display */
   private startTimestampUpdater() {
     this.stopTimestampUpdater();
     this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 60000);
   }
 
+  /** Stops the timestamp update timer */
   private stopTimestampUpdater() {
     if (this.timestampUpdateTimer) {
       clearInterval(this.timestampUpdateTimer);
@@ -522,67 +469,11 @@ export class UiText {
     }
   }
 
-  /** Dynamic line calculation based on container size (rows for textarea/area) */
-  private calculateDynamicLines(): number {
-    if (!this.containerRef) return this.minRows;
-
-    const containerHeight = this.containerRef.clientHeight;
-    const lineHeight = 24; // ~1.5rem in pixels
-    const padding = 24; // Top and bottom padding
-    const availableHeight = Math.max(containerHeight - padding, lineHeight);
-    const calculatedLines = Math.floor(availableHeight / lineHeight);
-
-    return Math.max(this.minRows, Math.min(calculatedLines, this.maxRows));
-  }
-
-  /** Compute number of visually rendered lines based on content element height and line-height */
-  private updateRenderedLineCount(): void {
-    const el = (this.contentMeasureRef as HTMLElement) || (this.contentRef as HTMLElement) || undefined;
-    if (!el) return;
-
-    const cs = window.getComputedStyle(el);
-    const fontSize = parseFloat(cs.fontSize || '16');
-    let lineHeight = parseFloat(cs.lineHeight || '0');
-    if (!lineHeight || Number.isNaN(lineHeight)) {
-      // Fallback for 'normal'
-      lineHeight = 1.5 * (fontSize || 16);
-    }
-
-    const height = el.scrollHeight || el.clientHeight;
-    if (!height || !lineHeight) return;
-
-    const count = Math.max(1, Math.ceil(height / lineHeight));
-    if (count !== this.renderedLineCount) {
-      this.renderedLineCount = count;
-    }
-  }
-
-  private _pendingRaf: number = 0;
-  private scheduleLineCountUpdate(): void {
-    if (this._pendingRaf) return;
-    this._pendingRaf = requestAnimationFrame(() => {
-      this._pendingRaf = 0;
-      this.updateRenderedLineCount();
-    });
-  }
-
-  private handleWindowResize = (() => {
-    let raf = 0;
-    return () => {
-      if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        this.updateRenderedLineCount();
-      });
-    };
-  })();
-
-  /** Setup ResizeObserver for dynamic line calculation */
+  /** Resize Observer for dynamic line calculation */
   private setupResizeObserver() {
     if (!window.ResizeObserver) return;
 
     this.resizeObserver = new ResizeObserver(() => {
-      // Recompute visual lines only; avoid forcing extra re-renders
       this.updateRenderedLineCount();
     });
 
@@ -597,7 +488,7 @@ export class UiText {
     }
   }
 
-  /** Debounce helper methods */
+  /** Cleanup debounce timer */
   private cleanupDebounceTimer() {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
@@ -605,6 +496,7 @@ export class UiText {
     }
   }
 
+  /** Debounced update for value changes */
   private debouncedUpdate(value: string) {
     this.cleanupDebounceTimer();
 
@@ -613,6 +505,7 @@ export class UiText {
     }, this.debounceMs);
   }
 
+  /** Handles value updates with stored operations or simple updates */
   private async handleValueUpdate(value: string) {
     const prevValue = this.value;
 
@@ -642,187 +535,63 @@ export class UiText {
     }
   }
 
-  private handleChange = async (event: Event): Promise<void> => {
-    if (this.mode !== 'editable') return;
+  // ============================== LINE CALCULATION HELPER METHODS ==============================
 
-    const target = event.target as HTMLInputElement | HTMLTextAreaElement;
-    const newValue = target.value;
+  /** Line calculator based on container size */
+  private calculateDynamicLines(): number {
+    if (!this.containerRef) return this.minRows;
 
-    // Update temp value immediately for UI responsiveness
-    this.tempValue = newValue;
-    this.hasUnsavedChanges = this.value !== newValue;
+    const containerHeight = this.containerRef.clientHeight;
+    const lineHeight = 24; // ~1.5rem in pixels
+    const padding = 24; // Top + bottom padding
+    const availableHeight = Math.max(containerHeight - padding, lineHeight);
+    const calculatedLines = Math.floor(availableHeight / lineHeight);
 
-    // Handle save button mode - don't auto-save
-    if (this.showSaveButton) {
-      return;
+    return Math.max(this.minRows, Math.min(calculatedLines, this.maxRows));
+  }
+
+  /** No. of visually rendered lines based on content element height and line-height */
+  private updateRenderedLineCount(): void {
+    const el = (this.contentMeasureRef as HTMLElement) || (this.contentRef as HTMLElement) || undefined;
+    if (!el) return;
+
+    const cs = window.getComputedStyle(el);
+    const fontSize = parseFloat(cs.fontSize || '16');
+    let lineHeight = parseFloat(cs.lineHeight || '0');
+    if (!lineHeight || Number.isNaN(lineHeight)) {
+      // Fallback for 'normal'
+      lineHeight = 1.5 * (fontSize || 16);
     }
 
-    // Handle debounced updates
-    if (this.debounceMs > 0) {
-      this.debouncedUpdate(newValue);
-      return;
+    const height = el.scrollHeight || el.clientHeight;
+    if (!height || !lineHeight) return;
+
+    const count = Math.max(1, Math.ceil(height / lineHeight));
+    if (count !== this.renderedLineCount) {
+      this.renderedLineCount = count;
     }
-
-    // Immediate update (original behavior)
-    await this.handleValueUpdate(newValue);
-  };
-
-  /** Handle save button click */
-  private handleSave = async (): Promise<void> => {
-    if (!this.hasUnsavedChanges) return;
-    await this.handleValueUpdate(this.tempValue);
-  };
-
-  // Focus/blur handlers removed
-
-  /** Render status badge */
-  private renderStatusBadge() {
-    if (!this.showStatus || this.operationStatus === 'idle') return null;
-    return StatusIndicator.renderStatusBadge(this.operationStatus, this.lastError || '', h);
   }
 
-  /** Render last updated timestamp */
-  private renderLastUpdated() {
-    if (!this.showLastUpdated) return null;
+  /** Tracks animation frame ID for line count updates */
+  private frameId: number | null = null;
 
-    // render an invisible placeholder when lastUpdatedTs is missing.
-    const lastUpdatedDate = this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null;
-    return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
+  /** Schedule line count update on next animation frame to avoid excessive calculations */
+  private scheduleLineCountUpdate(): void {
+    if (this.frameId !== null) return;
+    this.frameId = requestAnimationFrame(() => {
+      this.frameId = null;
+      this.updateRenderedLineCount();
+    });
   }
 
-  /** Styling helpers */
-  private getBaseClasses(): string {
-    // Use inline-block for area+resizable so horizontal resize can change width
-    const widthClass = this.mode === 'area' && this.resizable ? 'inline-block' : 'w-full';
-    let classes = `relative ${widthClass} transition-all duration-200 font-sans`;
+  // ============================== JSON STRUCTURE HELPER METHODS==============================
 
-    // Variant-specific styling with CSS variables
-    switch (this.variant) {
-      case 'minimal':
-        if (this.dark) {
-          classes += ' border-b-2 border-gray-500 bg-transparent';
-        } else {
-          classes += ' border-b-2 border-gray-300 bg-transparent';
-        }
-        break;
-      case 'outlined':
-        if (this.dark) {
-          classes += ' border-2 border-gray-600 bg-gray-800 text-white hover:border-gray-500';
-        } else {
-          classes += ' border-2 border-gray-300 bg-white text-gray-900 hover:border-gray-400';
-        }
-        break;
-      case 'filled':
-        if (this.dark) {
-          classes += ' bg-gray-700 text-white border-2 border-gray-600';
-        } else {
-          classes += ' bg-gray-100 text-gray-900 border-2 border-gray-200';
-        }
-        break;
-    }
-
-    // Mode-specific styling with distinct visual differences
-    switch (this.mode) {
-      case 'field':
-        classes += ' rounded-md px-3 py-2 min-h-10';
-        break;
-      case 'area':
-        classes += ' rounded-lg px-4 py-3 min-h-24';
-        break;
-      case 'structured':
-        classes += ' rounded-lg px-4 py-3 font-mono text-sm';
-        // Gentle code-like background (non-important so color prop can override border)
-        classes += this.dark ? ' bg-gray-900 border-gray-500' : ' bg-gray-50 border-gray-300';
-        break;
-      case 'unstructured':
-        classes += ' rounded px-3 py-2 min-h-16';
-        // Simpler styling for unstructured (non-important)
-        classes += this.dark ? ' bg-transparent border-gray-700' : ' bg-transparent border-gray-200';
-        break;
-      case 'editable':
-        classes += ' rounded-md px-3 py-2 min-h-10 cursor-text';
-        break;
-    }
-
-    return classes;
-  }
-
-  // Removed getActiveColor (no longer used after moving to static Tailwind tokens)
-
-  /** Resolve color tokens from global CSS variables */
-  private getColorTokens() {
-    const map: Record<string, { base: string; light: string }> = {
-      primary: { base: 'var(--color-primary)', light: 'var(--color-primary-light)' },
-      secondary: { base: 'var(--color-secondary)', light: 'var(--color-secondary-light)' },
-      neutral: { base: 'var(--color-neutral)', light: 'var(--color-neutral-light)' },
-    };
-    return map[this.color] || map.primary;
-  }
-
-  private getInputClasses(): string {
-    let classes = 'w-full bg-transparent border-0 outline-none resize-none';
-
-    if (this.mode === 'structured') {
-      classes += ' font-mono text-sm';
-    }
-
-    return classes;
-  }
-
-  private renderWithLineNumbers(
-    content: any,
-    isMonospace: boolean = false,
-    fallbackText?: string,
-    fold?: { collapsed: boolean; toggle: () => void } | null,
-    measuredCount?: number,
-  ): any {
-    if (!this.showLineNumbers) return content;
-
-    const basis = typeof content === 'string' ? content : fallbackText || '';
-    const splitCount = basis ? basis.split(/\n/).length : 1;
-    const total = measuredCount && measuredCount > splitCount ? measuredCount : splitCount;
-    const numberFontClasses = isMonospace ? 'font-mono' : '';
-    const contentFontClasses = isMonospace ? 'font-mono text-sm' : '';
-    const lineNumberWidth = 4; // fixed gutter width
-
-    return (
-      <div class="flex leading-6">
-        <div
-          class={`select-none border-r pr-2 mr-3 ${numberFontClasses} ${this.dark ? 'text-gray-400 border-gray-600' : 'text-gray-500 border-gray-300'}`}
-          style={{ width: `${lineNumberWidth}ch` }}
-        >
-          {Array.from({ length: total }).map((_, idx) => (
-            <div key={idx} class="flex items-center justify-end gap-1">
-              {fold && idx === 0 && (
-                <button
-                  type="button"
-                  onClick={fold.toggle}
-                  class={`w-4 h-4 flex items-center justify-center rounded text-xs border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                    this.dark ? 'text-gray-300' : 'text-gray-600'
-                  }`}
-                  tabindex="-1"
-                >
-                  {fold.collapsed ? '+' : '−'}
-                </button>
-              )}
-              <span>{idx + 1}</span>
-            </div>
-          ))}
-        </div>
-        <div class={`flex-1 ${contentFontClasses}`}>
-          <div class="whitespace-pre-wrap break-words" ref={el => (this.contentMeasureRef = el as HTMLElement)}>
-            {content}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /** Folding helpers */
+  /** Check if a JSON path is collapsed*/
   private isCollapsed(path: string): boolean {
     return !!this.collapsedPaths[path];
   }
 
+  /** Folding state for a JSON path */
   private toggleFold(path: string): void {
     const current = this.collapsedPaths[path];
     const updated = { ...this.collapsedPaths };
@@ -835,26 +604,32 @@ export class UiText {
     this.scheduleLineCountUpdate();
   }
 
+  /** Generate indentation string for JSON structure display */
   private indentStr(level: number): string {
     return '  '.repeat(Math.max(0, level));
   }
 
+  /** Create a colored span element for JSON syntax highlighting */
   private span(cls: string, text: string) {
     return <span class={cls}>{text}</span>;
   }
 
+  /** Format JSON object keys with syntax highlighting */
   private fmtKey(key: string) {
     return this.span('text-blue-600 dark:text-blue-400', '"' + key + '"');
   }
 
+  /** Format JSON string values with syntax highlighting */
   private fmtString(val: string) {
     return this.span('text-green-700 dark:text-green-400', '"' + val + '"');
   }
 
+  /** Format JSON number values with syntax highlighting */
   private fmtNumber(n: number) {
     return this.span('text-amber-600 dark:text-amber-400', String(n));
   }
 
+  /** Format JSON boolean and null values with syntax highlighting */
   private fmtBoolNull(v: boolean | null) {
     return this.span('text-purple-600 dark:text-purple-400', String(v));
   }
@@ -971,6 +746,74 @@ export class UiText {
     return lines;
   }
 
+  // ============================== RENDERING HELPERS ==============================
+
+  /** Renders the status badge according to current operation state */
+  private renderStatusBadge() {
+    if (!this.showStatus || this.operationStatus === 'idle') return null;
+    return StatusIndicator.renderStatusBadge(this.operationStatus, this.lastError || '', h);
+  }
+
+  /** Render last updated timestamp with placeholder for space reservation */
+  private renderLastUpdated() {
+    if (!this.showLastUpdated) return null;
+
+    // render an invisible placeholder when lastUpdatedTs is missing.
+    const lastUpdatedDate = this.lastUpdatedTs ? new Date(this.lastUpdatedTs) : null;
+    return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
+  }
+
+  /** Renders content with line numbers and optional folding controls */
+  private renderWithLineNumbers(
+    content: any,
+    isMonospace: boolean = false,
+    fallbackText?: string,
+    fold?: { collapsed: boolean; toggle: () => void } | null,
+    measuredCount?: number,
+  ): any {
+    if (!this.showLineNumbers) return content;
+
+    const basis = typeof content === 'string' ? content : fallbackText || '';
+    const splitCount = basis ? basis.split(/\n/).length : 1;
+    const total = measuredCount && measuredCount > splitCount ? measuredCount : splitCount;
+    const numberFontClasses = isMonospace ? 'font-mono' : '';
+    const contentFontClasses = isMonospace ? 'font-mono text-sm' : '';
+    const lineNumberWidth = 4; // line gutter width
+
+    return (
+      <div class="flex leading-6">
+        <div
+          class={`select-none border-r pr-2 mr-3 ${numberFontClasses} ${this.dark ? 'text-gray-400 border-gray-600' : 'text-gray-500 border-gray-300'}`}
+          style={{ width: `${lineNumberWidth}ch` }}
+        >
+          {Array.from({ length: total }).map((_, idx) => (
+            <div key={idx} class="flex items-center justify-end gap-1">
+              {fold && idx === 0 && (
+                <button
+                  type="button"
+                  onClick={fold.toggle}
+                  class={`w-4 h-4 flex items-center justify-center rounded text-xs border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                    this.dark ? 'text-gray-300' : 'text-gray-600'
+                  }`}
+                  tabindex="-1"
+                >
+                  {fold.collapsed ? '+' : '−'}
+                </button>
+              )}
+              <span>{idx + 1}</span>
+            </div>
+          ))}
+        </div>
+        <div class={`flex-1 ${contentFontClasses}`}>
+          <div class="whitespace-pre-wrap break-words" ref={el => (this.contentMeasureRef = el as HTMLElement)}>
+            {content}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /** Renders structured JSON with line numbers and fold controls */
   private renderStructuredWithLineNumbers(lines: { nodes: any[]; path: string; foldable: boolean; folded: boolean; indent: number }[]): any {
     if (!this.showLineNumbers) {
       return (
@@ -987,7 +830,7 @@ export class UiText {
 
     const numberFontClasses = 'font-mono';
     const contentFontClasses = 'font-mono text-sm';
-    const lineNumberWidth = 4; // ch units
+    const lineNumberWidth = 4;
 
     return (
       <div class="flex leading-6">
@@ -1032,12 +875,13 @@ export class UiText {
     );
   }
 
+  /** Main content renderer which handles different modes and features */
   private renderContent(): any {
     const inputClasses = this.getInputClasses();
     const dynamicRows = this.mode === 'area' ? this.calculateDynamicLines() : this.minRows;
     const currentValue = this.showSaveButton ? this.tempValue : this.value;
 
-    // For editable mode, determine if we need single line or multi-line
+    // For editable mode, determine whether it needs single line or multi-line
     if (this.mode === 'editable') {
       const isMultiline = currentValue.includes('\n') || currentValue.length > 60;
 
@@ -1060,7 +904,7 @@ export class UiText {
       }
     }
 
-    // For display-only modes
+    // For other modes
     switch (this.mode) {
       case 'field':
         return <span class="block">{this.value || this.placeholder}</span>;
@@ -1085,7 +929,7 @@ export class UiText {
           // Use structured custom renderer
           return this.renderStructuredWithLineNumbers(lines);
         } catch {
-          // Not JSON - fallback to plain text
+          // If not JSON then fallback to plain text
           if (this.showLineNumbers) return this.renderWithLineNumbers(String(raw), true, String(raw));
           return (
             <pre class="whitespace-pre-wrap break-words font-mono text-sm m-0 leading-6" ref={el => (this.contentRef = el as HTMLElement)}>
@@ -1110,6 +954,88 @@ export class UiText {
     }
   }
 
+  // ============================== STYLING HELPERS ==============================
+
+  /** Generates CSS classes for the text container based on variant, theme and mode */
+  private getBaseClasses(): string {
+    // Inline-block for area+resizable so horizontal resize can change width
+    const widthClass = this.mode === 'area' && this.resizable ? 'inline-block' : 'w-full';
+    let classes = `relative ${widthClass} transition-all duration-200 font-sans`;
+
+    switch (this.variant) {
+      case 'minimal':
+        if (this.dark) {
+          classes += ' border-b-2 border-gray-500 bg-transparent';
+        } else {
+          classes += ' border-b-2 border-gray-300 bg-transparent';
+        }
+        break;
+      case 'outlined':
+        if (this.dark) {
+          classes += ' border-2 border-gray-600 bg-gray-800 text-white hover:border-gray-500';
+        } else {
+          classes += ' border-2 border-gray-300 bg-white text-gray-900 hover:border-gray-400';
+        }
+        break;
+      case 'filled':
+        if (this.dark) {
+          classes += ' bg-gray-700 text-white border-2 border-gray-600';
+        } else {
+          classes += ' bg-gray-100 text-gray-900 border-2 border-gray-200';
+        }
+        break;
+    }
+
+    // Mode-specific styling
+    switch (this.mode) {
+      case 'field':
+        classes += ' rounded-md px-3 py-2 min-h-10';
+        break;
+      case 'area':
+        classes += ' rounded-lg px-4 py-3 min-h-24';
+        break;
+      case 'structured':
+        classes += ' rounded-lg px-4 py-3 font-mono text-sm';
+        classes += this.dark ? ' bg-gray-900 border-gray-500' : ' bg-gray-50 border-gray-300';
+        break;
+      case 'unstructured':
+        classes += ' rounded px-3 py-2 min-h-16';
+        classes += this.dark ? ' bg-transparent border-gray-700' : ' bg-transparent border-gray-200';
+        break;
+      case 'editable':
+        classes += ' rounded-md px-3 py-2 min-h-10 cursor-text';
+        break;
+    }
+
+    return classes;
+  }
+
+  /** Get colors from global CSS variables for theming */
+  private getColor() {
+    const map: Record<string, { base: string; light: string }> = {
+      primary: { base: 'var(--color-primary)', light: 'var(--color-primary-light)' },
+      secondary: { base: 'var(--color-secondary)', light: 'var(--color-secondary-light)' },
+      neutral: { base: 'var(--color-neutral)', light: 'var(--color-neutral-light)' },
+    };
+    return map[this.color] || map.primary;
+  }
+
+  /** Generate CSS classes for input elements based on mode */
+  private getInputClasses(): string {
+    let classes = 'w-full bg-transparent border-0 outline-none resize-none';
+
+    if (this.mode === 'structured') {
+      classes += ' font-mono text-sm';
+    }
+
+    return classes;
+  }
+
+  // ============================== MAIN COMPONENT RENDER METHOD ==============================
+
+  /**
+   * Renders the complete text component with all features and styles.
+   */
   render() {
     const baseClasses = this.getBaseClasses();
     // Apply resizable behavior to the bordered container so the whole box (including border) resizes
@@ -1124,8 +1050,7 @@ export class UiText {
     }
 
     // Apply color tokens to border/background based on variant
-    const { base, light } = this.getColorTokens();
-    // Expose a CSS variable for focus styles
+    const { base, light } = this.getColor();
     (containerStyle as any)['--ui-accent'] = base;
     if (this.variant === 'outlined' || this.variant === 'minimal') {
       containerStyle.borderColor = base;
@@ -1139,17 +1064,16 @@ export class UiText {
         {/* Label */}
         {this.label && <label class={`block text-sm font-medium mb-2 ${this.dark ? 'text-gray-200' : 'text-gray-700'}`}>{this.label}</label>}
 
-        {/* Main container with status badge positioning similar to ui-toggle */}
         <div class="relative inline-flex items-center w-full">
           <div class={`ui-text-container ${baseClasses}`} style={containerStyle} ref={el => (this.containerRef = el)} onTransitionEnd={() => this.scheduleLineCountUpdate()}>
             {this.renderContent()}
           </div>
 
-          {/* Status badge - positioned to the right center after the text border, similar to other components */}
+          {/* Status badge  */}
           <div class="ml-2 flex-shrink-0">{this.renderStatusBadge()}</div>
         </div>
 
-        {/* Save button for explicit save mode */}
+        {/* Save button */}
         {this.mode === 'editable' && this.showSaveButton && (
           <div class="mt-2 flex gap-2">
             <button
@@ -1180,9 +1104,6 @@ export class UiText {
 
         {/* Last updated timestamp */}
         {this.renderLastUpdated()}
-
-        {/* Error message */}
-        {this.lastError && <div class="text-xs mt-1 text-red-500">{this.lastError}</div>}
       </div>
     );
   }

@@ -1,48 +1,25 @@
 import { Component, Element, Prop, State, Event, EventEmitter, Method, Watch, h } from '@stencil/core';
-import { UiMsg } from '../../utils/types';
 
 /**
- * Notification component for displaying temporary event data with auto-dismiss functionality.
- * Supports multiple notification types with smooth animations and customizable duration.
+ * A versatile notification component designed for WoT device control.
  *
- * @example Basic Notification
+ * @example Basic Usage
  * ```html
- * <ui-notification message="Operation completed successfully" type="success"></ui-notification>
+ * <ui-notification type="info" message="Operation completed successfully"></ui-notification>
+ * <ui-notification type="success" duration="3000" message="Device connected successfully"></ui-notification>
+ * <ui-notification type="warning" show-close-button="true" message="Low battery warning"></ui-notification>
  * ```
  *
- * @example Custom Duration
- * ```html
- * <ui-notification 
- *   message="This will auto-dismiss in 5 seconds" 
- *   type="info" 
- *   duration="5000">
- * </ui-notification>
- * ```
- *
- * @example Manual Dismiss
- * ```html
- * <ui-notification 
- *   message="Click to dismiss" 
- *   type="warning" 
- *   duration="0"
- *   id="manual-notification">
- * </ui-notification>
- * ```
- *
- * @example JavaScript Integration
+ * @example JS integration with node-wot browser bundle
  * ```javascript
- * const notification = document.querySelector('#manual-notification');
- * 
- * // Listen for close events
- * notification.addEventListener('notificationClose', (e) => {
- *   console.log('Notification closed:', e.detail);
+ * const notificationElement = document.getElementById('alert-notification');
+ * const eventName = 'temperature-critical';
+ * await thing.subscribeEvent(eventName, async (eventData) => {
+ *   const value = await eventData.value();
+ *   notificationElement.message = `Alert: ${eventName} - ${JSON.stringify(value)}`;
+ *   notificationElement.type = 'warning';
+ *   await notificationElement.show();
  * });
- * 
- * // Dismiss programmatically
- * await notification.dismiss();
- * 
- * // Show notification programmatically
- * await notification.show();
  * ```
  */
 @Component({
@@ -53,82 +30,69 @@ import { UiMsg } from '../../utils/types';
 export class UiNotification {
   @Element() el: HTMLElement;
 
-  /** Component props */
+  // ============================== COMPONENT PROPERTIES ==============================
 
   /**
-   * The message text to display in the notification.
-   */
-  @Prop() message: string = '';
-
-  /**
-   * Type of notification affecting styling and icons.
+   * Type of notification for different visual styling and icons.
    * - info: General information (blue)
-   * - success: Success messages (green) 
+   * - success: Success messages (green)
    * - warning: Warning messages (orange)
    * - error: Error messages (red)
    */
   @Prop() type: 'info' | 'success' | 'warning' | 'error' = 'info';
 
-  /**
-   * Duration in milliseconds before auto-dismiss.
-   * Set to 0 to disable auto-dismiss.
-   * Default: 3000 (3 seconds)
-   */
-  @Prop() duration: number = 3000;
-
-  /**
-   * Whether to show a close button.
-   * Default: true
-   */
-  @Prop() showCloseButton: boolean = true;
-
-  /**
-   * Whether to show an icon based on the notification type.
-   * Default: true
-   */
-  @Prop() showIcon: boolean = true;
-
-  /**
-   * Enable dark theme for the component.
-   */
+  /** Enable dark mode theme styling when true */
   @Prop() dark: boolean = false;
 
-  /** Component state */
+  /** The message text to display in the notification */
+  @Prop() message: string = '';
 
+  /** Duration before auto-dismiss (0 to disable auto-dismiss) */
+  @Prop() duration: number = 3000;
+
+  /** Whether to show a close button */
+  @Prop() showCloseButton: boolean = true;
+
+  /** Whether to show an icon based on the notification type */
+  @Prop() showIcon: boolean = true;
+
+  // ============================== COMPONENT STATE ==============================
+
+  /** Internal state that controls the visibility of the notification */
   @State() private isVisible: boolean = false;
+
+  /** Internal state counter for timestamp re-rendering */
   @State() private isAnimating: boolean = false;
+
+  /** Internal state to prevents from infinite event loops while programmatic updates */
   @State() private dismissTimer?: number;
 
-  /** Component events */
+  // ============================== EVENTS ==============================
 
   /**
    * Emitted when the notification is closed/dismissed.
    * Contains information about how it was closed (auto, manual, programmatic).
    */
-  @Event() notificationClose!: EventEmitter<{
+  @Event() notificationClose: EventEmitter<{
     message: string;
     type: string;
     dismissMethod: 'auto' | 'manual' | 'programmatic';
     timestamp: number;
   }>;
 
-  /**
-   * Emitted when notification value/state changes.
-   * Compatible with other UI components for unified event handling.
-   */
-  @Event() valueMsg!: EventEmitter<UiMsg>;
-
-  /** Watchers */
-
-  @Watch('duration')
-  onDurationChange() {
-    this.setupAutoDismiss();
-  }
-
-  /** Public methods */
+  // ============================== PUBLIC METHODS ==============================
 
   /**
-   * Show the notification with animation.
+   * Shows the notification with animation.
+   *
+   * This is the primary method for displaying notifications programmatically.
+   *
+   * @returns Promise resolving to void when animation completes
+   *
+   * @example Basic Usage
+   * ```javascript
+   * await notification.show();
+   * ```
    */
   @Method()
   async show(): Promise<void> {
@@ -136,31 +100,38 @@ export class UiNotification {
 
     this.isAnimating = true;
     this.isVisible = true;
-    
+
     // Allow animation to complete
     setTimeout(() => {
       this.isAnimating = false;
     }, 300);
 
-    // Emit valueMsg event for consistency with other components
-    this.valueMsg.emit({
-      newVal: true, // true indicates notification is shown
-      prevVal: false,
-      ts: Date.now(),
-      source: this.el?.id || 'ui-notification',
-      ok: true,
-      meta: {
-        action: 'show',
-        message: this.message,
-        type: this.type
-      }
-    });
-
     this.setupAutoDismiss();
   }
 
   /**
-   * Dismiss the notification with animation.
+   * Gets the current notification visibility with optional metadata.
+   *
+   * @param includeMetadata - Whether to include status, timestamp and other information
+   * @returns Current visibility or detailed metadata object
+   */
+  @Method()
+  async getValue(includeMetadata: boolean = false): Promise<boolean | { value: boolean; message: string; type: string; duration: number }> {
+    if (includeMetadata) {
+      return {
+        value: this.isVisible,
+        message: this.message,
+        type: this.type,
+        duration: this.duration,
+      };
+    }
+    return this.isVisible;
+  }
+
+  /**
+   * This method dismisses the notification with animation.
+   *
+   * For external control or programmatic dismissal.
    * @param method - How the notification was dismissed
    */
   @Method()
@@ -170,27 +141,12 @@ export class UiNotification {
     this.clearAutoDismiss();
     this.isAnimating = true;
 
-    // Emit valueMsg event for consistency with other components
-    this.valueMsg.emit({
-      newVal: false, // false indicates notification is dismissed
-      prevVal: true,
-      ts: Date.now(),
-      source: this.el?.id || 'ui-notification',
-      ok: true,
-      meta: {
-        action: 'dismiss',
-        method: method,
-        message: this.message,
-        type: this.type
-      }
-    });
-
     // Emit close event
     this.notificationClose.emit({
       message: this.message,
       type: this.type,
       dismissMethod: method,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // Start exit animation
@@ -201,7 +157,9 @@ export class UiNotification {
   }
 
   /**
-   * Toggle the notification visibility.
+   * (Advance) to toggle the notification visibility.
+   *
+   * Useful when managing notification state externally and you want to show/hide conditionally.
    */
   @Method()
   async toggle(): Promise<void> {
@@ -212,53 +170,32 @@ export class UiNotification {
     }
   }
 
-  /** Lifecycle methods */
+  // ============================== LIFECYCLE METHODS ==============================
 
-  componentWillLoad() {
-    // Auto-show on load - initialize state before first render to avoid warnings
-    if (!this.isVisible) {
-      this.isVisible = true;
-      this.isAnimating = true;
-      
-      // Setup auto-dismiss after showing
-      if (this.duration > 0) {
-        this.setupAutoDismiss();
-      }
-      
-      // Schedule animation completion
-      setTimeout(() => {
-        this.isAnimating = false;
-      }, 300);
-    }
-  }
+  /** Initialize component state from props */
+  componentWillLoad() {}
 
-  componentDidLoad() {
-    // Emit valueMsg event for consistency with other components (no state changes)
-    if (this.isVisible) {
-      this.valueMsg.emit({
-        newVal: true, // true indicates notification is shown
-        prevVal: false,
-        ts: Date.now(),
-        source: this.el?.id || 'ui-notification',
-        ok: true,
-        meta: {
-          action: 'auto-show',
-          message: this.message,
-          type: this.type
-        }
-      });
-    }
-  }
+  componentDidLoad() {}
 
+  /** Clean up timers when component is removed */
   disconnectedCallback() {
     this.clearAutoDismiss();
   }
 
-  /** Private methods */
+  // ============================== WATCHERS ==============================
 
+  /** Sync internal state when duration prop changes externally */
+  @Watch('duration')
+  onDurationChange() {
+    this.setupAutoDismiss();
+  }
+
+  // ============================== PRIVATE METHODS ==============================
+
+  /** Setup auto-dismiss timer for notification */
   private setupAutoDismiss(): void {
     this.clearAutoDismiss();
-    
+
     if (this.duration > 0) {
       this.dismissTimer = window.setTimeout(() => {
         this.dismiss('auto');
@@ -266,6 +203,7 @@ export class UiNotification {
     }
   }
 
+  /** Clear auto-dismiss timer */
   private clearAutoDismiss(): void {
     if (this.dismissTimer) {
       clearTimeout(this.dismissTimer);
@@ -273,10 +211,12 @@ export class UiNotification {
     }
   }
 
+  /** Handles user clicked close button */
   private handleCloseClick = (): void => {
     this.dismiss('manual');
   };
 
+  /** Specific configuration for styling and icons */
   private getTypeConfig() {
     const configs = {
       info: {
@@ -287,7 +227,7 @@ export class UiNotification {
         darkBgClass: 'bg-blue-900/20 border-blue-700',
         darkTextClass: 'text-blue-200',
         darkIconClass: 'text-blue-400',
-        icon: 'info'
+        icon: 'info',
       },
       success: {
         color: 'green',
@@ -297,7 +237,7 @@ export class UiNotification {
         darkBgClass: 'bg-green-900/20 border-green-700',
         darkTextClass: 'text-green-200',
         darkIconClass: 'text-green-400',
-        icon: 'check'
+        icon: 'check',
       },
       warning: {
         color: 'orange',
@@ -307,7 +247,7 @@ export class UiNotification {
         darkBgClass: 'bg-orange-900/20 border-orange-700',
         darkTextClass: 'text-orange-200',
         darkIconClass: 'text-orange-400',
-        icon: 'warning'
+        icon: 'warning',
       },
       error: {
         color: 'red',
@@ -317,19 +257,22 @@ export class UiNotification {
         darkBgClass: 'bg-red-900/20 border-red-700',
         darkTextClass: 'text-red-200',
         darkIconClass: 'text-red-400',
-        icon: 'error'
-      }
+        icon: 'error',
+      },
     };
 
     return configs[this.type] || configs.info;
   }
 
+  // ============================== RENDERING HELPERS ==============================
+
+  /** Renders the appropriate icon based on notification type */
   private renderIcon(iconType: string, classes: string): any {
     const baseProps = {
       class: `w-5 h-5 ${classes}`,
       fill: 'none',
       stroke: 'currentColor',
-      viewBox: '0 0 24 24'
+      viewBox: '0 0 24 24',
     };
 
     switch (iconType) {
@@ -369,6 +312,7 @@ export class UiNotification {
     }
   }
 
+  /** Renders the close button if enabled */
   private renderCloseButton(): any {
     if (!this.showCloseButton) return null;
 
@@ -376,11 +320,7 @@ export class UiNotification {
     const buttonClass = this.dark ? typeConfig.darkIconClass : typeConfig.iconClass;
 
     return (
-      <button
-        class={`ml-auto pl-3 ${buttonClass} hover:opacity-75 transition-opacity`}
-        onClick={this.handleCloseClick}
-        aria-label="Close notification"
-      >
+      <button class={`ml-auto pl-3 ${buttonClass} hover:opacity-75 transition-opacity`} onClick={this.handleCloseClick}>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
@@ -388,16 +328,19 @@ export class UiNotification {
     );
   }
 
+  // ============================== MAIN COMPONENT RENDER METHOD ==============================
+
+  /**
+   * Renders the complete notification component with all features and styles.
+   */
   render() {
     if (!this.isVisible && !this.isAnimating) {
       return null;
     }
 
     const typeConfig = this.getTypeConfig();
-    
-    // Base classes
     let containerClasses = 'notification-container border rounded-lg p-4 shadow-lg transition-all duration-300 ease-in-out';
-    
+
     // Theme-specific styling
     if (this.dark) {
       containerClasses += ` ${typeConfig.darkBgClass} ${typeConfig.darkTextClass}`;
@@ -417,19 +360,13 @@ export class UiNotification {
     const iconClasses = this.dark ? typeConfig.darkIconClass : typeConfig.iconClass;
 
     return (
-      <div class={containerClasses} role="alert" aria-live="polite">
+      <div class={containerClasses} role="alert">
         <div class="flex items-start">
           {/* Icon */}
-          {this.showIcon && (
-            <div class="flex-shrink-0 mr-3">
-              {this.renderIcon(typeConfig.icon, iconClasses)}
-            </div>
-          )}
+          {this.showIcon && <div class="flex-shrink-0 mr-3">{this.renderIcon(typeConfig.icon, iconClasses)}</div>}
 
           {/* Message */}
-          <div class="flex-1 font-medium">
-            {this.message}
-          </div>
+          <div class="flex-1 font-medium">{this.message}</div>
 
           {/* Close button */}
           {this.renderCloseButton()}
@@ -438,10 +375,7 @@ export class UiNotification {
         {/* Progress bar for auto-dismiss */}
         {this.duration > 0 && this.isVisible && !this.isAnimating && (
           <div class="mt-2 h-1 bg-black/10 rounded-full overflow-hidden">
-            <div 
-              class={`h-full bg-current opacity-30 notification-progress`}
-              style={{ animationDuration: `${this.duration}ms` }}
-            ></div>
+            <div class={`h-full bg-current opacity-30 notification-progress`} style={{ animationDuration: `${this.duration}ms` }}></div>
           </div>
         )}
       </div>
