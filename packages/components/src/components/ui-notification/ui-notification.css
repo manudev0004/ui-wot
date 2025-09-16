@@ -1,0 +1,80 @@
+@import '../../global.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host {
+  display: block;
+  position: relative;
+  z-index: 1000;
+}
+
+/* Notification container animations */
+.notification-container {
+  font-family: var(--font-sans);
+  max-width: 100%;
+  transform-origin: center;
+}
+
+/* Entry animation */
+.notification-enter {
+  opacity: 0;
+  transform: translateY(-20px) scale(0.95);
+  animation: notificationEnter 0.3s ease-out forwards;
+}
+
+.notification-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Exit animation */
+.notification-exit {
+  opacity: 1;
+  animation: notificationExit 0.3s ease-in forwards;
+}
+
+/* Keyframe animations */
+@keyframes notificationEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes notificationExit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+}
+
+/* Progress bar animation for auto-dismiss */
+.notification-progress {
+  animation: progressShrink linear;
+  animation-fill-mode: forwards;
+  transform-origin: left;
+}
+
+@keyframes progressShrink {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Hover effects */
+.notification-container:hover .notification-progress {
+  animation-play-state: paused;
+}

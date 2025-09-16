@@ -1,0 +1,29 @@
+@import '../../global.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host {
+  display: inline-block;
+}
+
+/* File picker specific styles */
+.file-picker-drop-zone {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.file-picker-drop-zone:hover {
+  border-color: var(--color-primary);
+}
+
+.file-picker-drop-zone.drag-over {
+  border-color: var(--color-primary);
+  background-color: rgba(51, 184, 164, 0.1);
+}
+
+.file-picker-input {
+  /* Hide the native input; trigger via .openFileDialog() */
+  display: none;
+}
