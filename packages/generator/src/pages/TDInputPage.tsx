@@ -12,6 +12,20 @@ export function TDInputPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  async function postTDToHost(td: any): Promise<string> {
+    const resp = await fetch('http://localhost:8088/serve-td', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(td)
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `TD host error (${resp.status})`);
+    }
+    const data = await resp.json();
+    return data.url as string;
+  }
+
   const onDrop = async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
@@ -19,9 +33,11 @@ export function TDInputPage() {
       setLoading(true);
 
       try {
-        const tdSource = { type: 'file' as const, content: file };
-        const parsedTD = await wotService.parseTDFromSource(tdSource);
-        const affordances = wotService.parseAffordances(parsedTD);
+  const tdSource = { type: 'file' as const, content: file };
+  const parsedTD = await wotService.parseTDFromSource(tdSource);
+  // Ask Node‑WoT servient to host this TD and give back a URL
+  const servedUrl = await postTDToHost(parsedTD);
+  const affordances = wotService.parseAffordances(parsedTD);
 
         // Create TD info object
         const tdInfo = {
@@ -32,10 +48,10 @@ export function TDInputPage() {
         };
 
   // Always replace current parsed TD and available affordances when loading a new TD from this page
-  dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
+  dispatch({ type: 'SET_TD_SOURCE', payload: { type: 'url', content: servedUrl } });
   dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
   dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
-  dispatch({ type: 'ADD_TD', payload: tdInfo });
+  dispatch({ type: 'ADD_TD', payload: { ...tdInfo, source: { type: 'url', content: servedUrl } } });
         
         navigate('/affordances');
       } catch (err) {
@@ -64,8 +80,10 @@ export function TDInputPage() {
 
     try {
       const tdSource = { type: 'url' as const, content: urlInput.trim() };
-      const parsedTD = await wotService.parseTDFromSource(tdSource);
-      const affordances = wotService.parseAffordances(parsedTD);
+  const parsedTD = await wotService.parseTDFromSource(tdSource);
+  // Rehost via Node‑WoT to normalize path/security and ensure liveness
+  const servedUrl = await postTDToHost(parsedTD);
+  const affordances = wotService.parseAffordances(parsedTD);
 
       // Create TD info object
       const tdInfo = {
@@ -76,10 +94,10 @@ export function TDInputPage() {
       };
 
   // Always replace current parsed TD and available affordances when loading a new TD from this page
-  dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
+  dispatch({ type: 'SET_TD_SOURCE', payload: { type: 'url', content: servedUrl } });
   dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
   dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
-  dispatch({ type: 'ADD_TD', payload: tdInfo });
+  dispatch({ type: 'ADD_TD', payload: { ...tdInfo, source: { type: 'url', content: servedUrl } } });
 
       navigate('/affordances');
     } catch (err) {

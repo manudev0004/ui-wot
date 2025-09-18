@@ -93,7 +93,7 @@ export function AffordanceSelectionPage() {
       // Create a group for these components
       if (components.length > 0) {
         const groupId = `group-${activeTdId}-${Date.now()}`;
-        
+
         // Create the affordance group
         const group = {
           id: groupId,
@@ -103,8 +103,7 @@ export function AffordanceSelectionPage() {
           layout: {
             i: groupId,
             x: 0,
-            y: Math.max(0, ...state.components.map(c => c.layout.y + c.layout.h), 
-                        ...state.groups.map(g => g.layout.y + g.layout.h)),
+            y: Math.max(0, ...state.components.map(c => c.layout.y + c.layout.h), ...state.groups.map(g => g.layout.y + g.layout.h)),
             w: 12, // Full width
             h: Math.ceil(components.length / 4) * 4 + 2, // Height based on component count + header
             minW: 8,
@@ -163,6 +162,10 @@ export function AffordanceSelectionPage() {
       'ui-text': 'bg-neutral-light/50 text-primary',
       'ui-calendar': 'bg-primary/20 text-primary',
       'ui-checkbox': 'bg-primary-light/20 text-primary-light',
+      'ui-color-picker': 'bg-purple-100 text-purple-800',
+      'ui-file-picker': 'bg-blue-100 text-blue-800',
+      'ui-event': 'bg-green-100 text-green-800',
+      'ui-notification': 'bg-yellow-100 text-yellow-800',
     };
     return colorMap[component] || 'bg-neutral-light/50 text-primary';
   };
@@ -181,11 +184,7 @@ export function AffordanceSelectionPage() {
                 <h1 className="text-2xl font-hero text-primary">SELECT AFFORDANCES</h1>
                 <p className="text-sm text-primary/70 font-body mt-1">
                   {state.parsedTD?.title} - Choose which affordances to include
-                  {state.components.length > 0 && (
-                    <span className="ml-2 text-accent">
-                      (Adding to existing dashboard with {state.components.length} components)
-                    </span>
-                  )}
+                  {state.components.length > 0 && <span className="ml-2 text-accent">(Adding to existing dashboard with {state.components.length} components)</span>}
                 </p>
               </div>
             </div>
@@ -239,7 +238,11 @@ export function AffordanceSelectionPage() {
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-heading font-medium ${getComponentBadgeColor(selectedComponentMap[affordance.key] || affordance.suggestedComponent)}`}>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-heading font-medium ${getComponentBadgeColor(
+                        selectedComponentMap[affordance.key] || affordance.suggestedComponent,
+                      )}`}
+                    >
                       {selectedComponentMap[affordance.key] || affordance.suggestedComponent}
                     </span>
                     {affordance.possibleComponents && affordance.possibleComponents.length > 1 && (
@@ -250,7 +253,9 @@ export function AffordanceSelectionPage() {
                         onClick={e => e.stopPropagation()}
                       >
                         {affordance.possibleComponents.map(pc => (
-                          <option key={pc} value={pc}>{pc}</option>
+                          <option key={pc} value={pc}>
+                            {pc}
+                          </option>
                         ))}
                       </select>
                     )}

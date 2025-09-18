@@ -1,5 +1,6 @@
 // import '@node-wot/browser-bundle';
 import { ParsedAffordance, TDSource } from '../types';
+import { ComponentMapper } from '../utils/component-integration';
 
 class WoTService {
   private wot: any;
@@ -149,7 +150,7 @@ class WoTService {
           forms: property.forms,
           suggestedComponent: this.suggestComponentForProperty(property),
           availableVariants: this.getAvailableVariants(this.suggestComponentForProperty(property)),
-          // Provide a list of possible components (e.g., slider and number-picker for numeric types)
+          // Provide a list of possible components using the enhanced ComponentMapper
           possibleComponents: this.getPossibleComponentsForProperty(property),
         });
       });
@@ -175,6 +176,9 @@ class WoTService {
     // Parse events
     if (td.events) {
       Object.entries(td.events).forEach(([key, event]: [string, any]) => {
+        const eventMapping = ComponentMapper.mapEventToComponent(event);
+        const allEventMappings = ComponentMapper.getAllPossibleComponentsForEvent(event);
+
         affordances.push({
           key,
           type: 'event',
@@ -182,9 +186,9 @@ class WoTService {
           description: event.description,
           schema: event,
           forms: event.forms,
-          suggestedComponent: 'ui-text',
-          availableVariants: ['minimal'],
-          possibleComponents: ['ui-text'],
+          suggestedComponent: eventMapping?.componentName || 'ui-event',
+          availableVariants: this.getAvailableVariants(eventMapping?.componentName || 'ui-event'),
+          possibleComponents: allEventMappings.map((m: any) => m.componentName),
         });
       });
     }
@@ -193,7 +197,15 @@ class WoTService {
   }
 
   private suggestComponentForProperty(property: any): string {
+    // Use the enhanced ComponentMapper for better suggestions
+    const mapping = ComponentMapper.mapPropertyToComponent(property);
+    if (mapping) {
+      return mapping.componentName;
+    }
+
+    // Fallback to original logic if ComponentMapper doesn't find a match
     if (!property.type) return 'ui-text';
+
     if (property.type === 'boolean') {
       return 'ui-toggle';
     }
@@ -228,7 +240,10 @@ class WoTService {
       'ui-number-picker': ['minimal', 'outlined', 'filled'],
       'ui-calendar': ['minimal', 'outlined', 'filled'],
       'ui-checkbox': ['minimal', 'outlined', 'filled'],
-      'ui-heading': ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+      'ui-color-picker': ['minimal', 'outlined', 'filled'],
+      'ui-file-picker': ['outlined'],
+      'ui-event': ['minimal'],
+      'ui-notification': ['info', 'success', 'warning', 'error'],
     };
 
     return variantMap[componentType] || ['minimal'];
@@ -236,6 +251,13 @@ class WoTService {
 
   // Return possible components for a property based on its type and schema
   private getPossibleComponentsForProperty(property: any): string[] {
+    // Use ComponentMapper to get all possible components for this property
+    const allMappings = ComponentMapper.getAllPossibleComponents(property);
+    if (allMappings.length > 0) {
+      return allMappings.map(mapping => mapping.componentName);
+    }
+
+    // Fallback to original logic
     if (!property.type) return ['ui-text'];
     if (property.type === 'boolean') return ['ui-toggle', 'ui-checkbox'];
     if (property.type === 'integer' || property.type === 'number') {
@@ -244,6 +266,7 @@ class WoTService {
     }
     if (property.type === 'string') {
       if (property.format === 'date' || property.format === 'date-time') return ['ui-calendar', 'ui-text'];
+      if (property.format === 'color') return ['ui-color-picker', 'ui-text'];
       return ['ui-text'];
     }
     return ['ui-text'];
