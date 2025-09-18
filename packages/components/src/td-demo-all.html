@@ -215,12 +215,14 @@
             <!-- TD Connected Text -->
             <ui-text
               id="td-text"
-              mode="structured"
-              variant="filled"
+              mode="editable"
+              variant="filled"              
+              debounce-ms="1000"
               value="Thing Description Data"
               label="TD Connected (string property)"
               show-last-updated="true"
-              readonly="true"
+              show-status="true"
+            
             ></ui-text>
           </div>
         </div>
@@ -284,7 +286,8 @@
         console.log('WoT servient started');
 
         // Fetch and consume Thing Description
-        const tdUrl = 'http://plugfest.thingweb.io/http-data-schema-thing';
+        const tdUrl = 'http://localhost:8080/testthing';
+        // const tdUrl = 'http://plugfest.thingweb.io/http-data-schema-thing';
         let thing;
         let serverHealth = 'unknown';
         
