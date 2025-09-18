@@ -98,8 +98,8 @@ export class UiNumberPicker {
   /** Timestamp for read-only pulse animation (optional) */
   @State() readPulseTs?: number;
 
-  /** Internal state that controls the visual appearance of the number picker */
-  @State() private isActive: number = 0;
+    /** Internal state holding the current displayed value */
+  @State() private currentValue: number = 0;
 
   /** Internal state counter for timestamp re-rendering */
   @State() private timestampCounter: number = 0;
@@ -166,7 +166,7 @@ export class UiNumberPicker {
       _isRevert?: boolean;
     },
   ): Promise<boolean> {
-    const prevValue = this.isActive;
+    const prevValue = this.currentValue;
 
     // Clear any existing error state
     if (this.operationStatus === 'error' && !options?._isRevert) {
@@ -209,13 +209,13 @@ export class UiNumberPicker {
   async getValue(includeMetadata: boolean = false): Promise<number | { value: number; lastUpdated?: number; status: string; error?: string }> {
     if (includeMetadata) {
       return {
-        value: this.isActive,
+        value: this.currentValue,
         lastUpdated: this.lastUpdatedTs,
         status: this.operationStatus,
         error: this.lastError,
       };
     }
-    return this.isActive;
+    return this.currentValue;
   }
 
   /**
@@ -228,7 +228,7 @@ export class UiNumberPicker {
    */
   @Method()
   async setValueSilent(value: number): Promise<void> {
-    this.updateValue(value, this.isActive, false);
+    this.updateValue(value, this.currentValue, false);
   }
 
   /**
@@ -267,7 +267,7 @@ export class UiNumberPicker {
 
   /** Initialize component state from props */
   componentWillLoad() {
-    this.isActive = this.value || 0;
+    this.currentValue = this.value || 0;
     this.isInitialized = true;
     if (this.showLastUpdated) this.startTimestampUpdater();
   }
@@ -291,9 +291,9 @@ export class UiNumberPicker {
   watchValue(newVal: number) {
     if (!this.isInitialized) return;
 
-    if (this.isActive !== newVal) {
-      const prevValue = this.isActive;
-      this.isActive = newVal;
+    if (this.currentValue !== newVal) {
+      const prevValue = this.currentValue;
+      this.currentValue = newVal;
       this.emitValueMsg(newVal, prevValue);
       if (this.readonly) this.readPulseTs = Date.now();
     }
@@ -310,7 +310,7 @@ export class UiNumberPicker {
     const clampedValue = Math.max(this.min || 0, Math.min(this.max || 100, value));
     const steppedValue = Math.round(clampedValue / this.step) * this.step;
 
-    this.isActive = steppedValue;
+    this.currentValue = steppedValue;
     this.value = steppedValue;
     this.lastUpdatedTs = Date.now();
 
@@ -388,13 +388,13 @@ export class UiNumberPicker {
   private handleChange = async (delta: number) => {
     if (this.disabled || this.readonly) return;
 
-    const newValue = this.isActive + delta;
+    const newValue = this.currentValue + delta;
 
     // Check bounds
     if (this.max !== undefined && newValue > this.max) return;
     if (this.min !== undefined && newValue < this.min) return;
 
-    const prevValue = this.isActive;
+    const prevValue = this.currentValue;
 
     // Execute stored operation if available
     if (this.storedWriteOperation) {
@@ -485,8 +485,8 @@ export class UiNumberPicker {
   /** Get button style classes for increment/decrement buttons */
   private getButtonStyle(type: 'increment' | 'decrement'): string {
     const isDisabled = this.disabled;
-    const isAtMax = this.max !== undefined && this.isActive >= this.max && type === 'increment';
-    const isAtMin = this.min !== undefined && this.isActive <= this.min && type === 'decrement';
+    const isAtMax = this.max !== undefined && this.currentValue >= this.max && type === 'increment';
+    const isAtMin = this.min !== undefined && this.currentValue <= this.min && type === 'decrement';
     const disabled = isDisabled || isAtMax || isAtMin;
 
     let baseClasses = 'w-12 h-12 flex items-center justify-center text-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg';
@@ -615,11 +615,11 @@ export class UiNumberPicker {
                 borderColor: this.getActiveColor(),
                 color: this.dark ? 'white' : this.getActiveColor(),
               }}
-              title={`${hoverTitle} - Current value: ${this.isActive}`}
+              title={`${hoverTitle} - Current value: ${this.currentValue}`}
               part="readonly-indicator"
             >
               <span class={`text-lg font-medium`} style={{ color: this.dark ? 'white' : this.getActiveColor() }}>
-                {this.isActive}
+                {this.currentValue}
               </span>
 
               {/* Read Pulse Indicator */}
@@ -645,14 +645,14 @@ export class UiNumberPicker {
                 <button
                   class={this.getButtonStyle('decrement')}
                   style={
-                    !this.disabled && !(this.min !== undefined && this.isActive <= this.min) && this.variant === 'outlined'
+                    !this.disabled && !(this.min !== undefined && this.currentValue <= this.min) && this.variant === 'outlined'
                       ? { borderColor: this.getActiveColor() }
                       : this.variant === 'filled' && !this.disabled
                       ? { backgroundColor: this.getActiveColor() }
                       : {}
                   }
                   onClick={this.handleDecrement}
-                  disabled={this.disabled || (this.min !== undefined && this.isActive <= this.min)}
+                  disabled={this.disabled || (this.min !== undefined && this.currentValue <= this.min)}
                   aria-label="Decrease value"
                   title={canInteract ? `Decrease by ${this.step}` : hoverTitle}
                   part="decrement-button"
@@ -672,23 +672,23 @@ export class UiNumberPicker {
                       : {}
                   }
                   part="value-display"
-                  title={`Current value: ${this.isActive}`}
+                  title={`Current value: ${this.currentValue}`}
                 >
-                  {this.isActive}
+                  {this.currentValue}
                 </div>
 
                 {/* Increment Button */}
                 <button
                   class={this.getButtonStyle('increment')}
                   style={
-                    !this.disabled && !(this.max !== undefined && this.isActive >= this.max) && this.variant === 'outlined'
+                    !this.disabled && !(this.max !== undefined && this.currentValue >= this.max) && this.variant === 'outlined'
                       ? { borderColor: this.getActiveColor() }
                       : this.variant === 'filled' && !this.disabled
                       ? { backgroundColor: this.getActiveColor() }
                       : {}
                   }
                   onClick={this.handleIncrement}
-                  disabled={this.disabled || (this.max !== undefined && this.isActive >= this.max)}
+                  disabled={this.disabled || (this.max !== undefined && this.currentValue >= this.max)}
                   aria-label="Increase value"
                   title={canInteract ? `Increase by ${this.step}` : hoverTitle}
                   part="increment-button"
