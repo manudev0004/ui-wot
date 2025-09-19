@@ -68,6 +68,9 @@
   "scripts": {
     "build": "stencil build",
     "start": "node ./dev-serve.js",
+    "start:wot": "npx wot-servient ./src/wot-server.js",
+    "test:wot": "npx wot-servient --client-only ./src/wot-client-test.js",
+    "wot:testthing": "node ../../node_modules/@node-wot/cli/dist/cli.js -f ./wot-servient.conf.json ./src/testthing.js",
     "test": "stencil test --spec --e2e",
     "test.watch": "stencil test --spec --e2e --watchAll",
     "generate": "stencil generate",
@@ -103,7 +106,9 @@
     "typedoc": "^0.26.0"
   },
   "dependencies": {
+    "@node-wot/binding-http": "^0.9.1",
+    "@node-wot/cli": "^0.9.1",
     "@node-wot/core": "^0.9.1",
-  "@node-wot/binding-http": "^0.9.0"
+    "@node-wot/binding-coap": "^0.9.1"
   }
 }

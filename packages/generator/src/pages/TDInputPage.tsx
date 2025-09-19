@@ -12,6 +12,20 @@ export function TDInputPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  async function postTDToHost(td: any): Promise<string> {
+    const resp = await fetch('http://localhost:8086/serve-td', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(td),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `TD host error (${resp.status})`);
+    }
+    const data = await resp.json();
+    return data.url as string;
+  }
+
   const onDrop = async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
@@ -21,6 +35,8 @@ export function TDInputPage() {
       try {
         const tdSource = { type: 'file' as const, content: file };
         const parsedTD = await wotService.parseTDFromSource(tdSource);
+        // Ask Node‑WoT servient to host this TD and give back a URL
+        const servedUrl = await postTDToHost(parsedTD);
         const affordances = wotService.parseAffordances(parsedTD);
 
         // Create TD info object
@@ -28,15 +44,15 @@ export function TDInputPage() {
           id: Date.now().toString(), // Simple ID generation
           title: parsedTD.title || 'Untitled TD',
           td: parsedTD,
-          source: tdSource
+          source: tdSource,
         };
 
-  // Always replace current parsed TD and available affordances when loading a new TD from this page
-  dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
-  dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
-  dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
-  dispatch({ type: 'ADD_TD', payload: tdInfo });
-        
+        // Always replace current parsed TD and available affordances when loading a new TD from this page
+        dispatch({ type: 'SET_TD_SOURCE', payload: { type: 'url', content: servedUrl } });
+        dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
+        dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
+        dispatch({ type: 'ADD_TD', payload: { ...tdInfo, source: { type: 'url', content: servedUrl } } });
+
         navigate('/affordances');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to parse Thing Description');
@@ -65,6 +81,8 @@ export function TDInputPage() {
     try {
       const tdSource = { type: 'url' as const, content: urlInput.trim() };
       const parsedTD = await wotService.parseTDFromSource(tdSource);
+      // Rehost via Node‑WoT to normalize path/security and ensure liveness
+      const servedUrl = await postTDToHost(parsedTD);
       const affordances = wotService.parseAffordances(parsedTD);
 
       // Create TD info object
@@ -72,14 +90,14 @@ export function TDInputPage() {
         id: Date.now().toString(), // Simple ID generation
         title: parsedTD.title || 'Untitled TD',
         td: parsedTD,
-        source: tdSource
+        source: tdSource,
       };
 
-  // Always replace current parsed TD and available affordances when loading a new TD from this page
-  dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
-  dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
-  dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
-  dispatch({ type: 'ADD_TD', payload: tdInfo });
+      // Always replace current parsed TD and available affordances when loading a new TD from this page
+      dispatch({ type: 'SET_TD_SOURCE', payload: { type: 'url', content: servedUrl } });
+      dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
+      dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
+      dispatch({ type: 'ADD_TD', payload: { ...tdInfo, source: { type: 'url', content: servedUrl } } });
 
       navigate('/affordances');
     } catch (err) {
@@ -98,15 +116,15 @@ export function TDInputPage() {
 
     try {
       const dashboardData = await dashboardService.importDashboard(file);
-      
+
       dispatch({
         type: 'LOAD_DASHBOARD',
         payload: {
           tdInfos: dashboardData.tdInfos,
           components: dashboardData.components,
           availableAffordances: dashboardData.availableAffordances,
-          groups: dashboardData.groups || [] // Include groups if available
-        }
+          groups: dashboardData.groups || [], // Include groups if available
+        },
       });
 
       navigate('/components');
@@ -138,9 +156,7 @@ export function TDInputPage() {
           <button onClick={handleBack} className="mr-4 p-2 text-primary hover:text-primary-light font-heading" aria-label="Go back">
             ← Back
           </button>
-          <h1 className="text-3xl font-hero text-primary">
-            {state.components.length > 0 ? 'ADD ANOTHER THING DESCRIPTION' : 'ADD THING DESCRIPTION'}
-          </h1>
+          <h1 className="text-3xl font-hero text-primary">{state.components.length > 0 ? 'ADD ANOTHER THING DESCRIPTION' : 'ADD THING DESCRIPTION'}</h1>
           {state.components.length > 0 && (
             <p className="text-sm text-primary/70 font-body mt-1">
               Adding to existing dashboard with {state.components.length} components from {state.tdInfos.length} TD{state.tdInfos.length !== 1 ? 's' : ''}
@@ -185,7 +201,7 @@ export function TDInputPage() {
         {/* File Upload */}
         <div className="bg-white rounded-lg shadow-sm border border-primary/20 p-6">
           <h2 className="text-xl font-heading font-semibold text-primary mb-4">From File</h2>
-          
+
           {/* Thing Description Upload */}
           <div className="mb-6">
             <h3 className="text-lg font-heading font-medium text-primary mb-3">Thing Description</h3>
@@ -226,13 +242,7 @@ export function TDInputPage() {
                   <div className="text-sm text-primary/70 font-body mb-4">Upload a previously exported dashboard file</div>
                   <div className="text-xs text-primary/50 font-body">Supports .json dashboard files</div>
                 </div>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleImportDashboard}
-                  className="hidden"
-                  disabled={loading}
-                />
+                <input type="file" accept=".json" onChange={handleImportDashboard} className="hidden" disabled={loading} />
               </label>
             </div>
           </div>
