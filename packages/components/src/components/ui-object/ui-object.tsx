@@ -40,16 +40,21 @@ export class UiObject {
   @State() private editing: any = {};
   @State() private operationStatus: OperationStatus = 'idle';
   @State() private lastError = '';
-  @State() private lastUpdatedTs = 0;
+  @State() private lastUpdatedTs?: number;
+  /** Internal state counter for timestamp re-rendering */
+  @State() private timestampCounter: number = 0;
 
   // ============================== PRIVATE PROPERTIES ==============================
   /** Stored write operation provided by connector; executed on Save */
   private storedWriteOperation?: (value: any) => Promise<any>;
   private boundElements: WeakSet<Element> = new WeakSet();
+  private timestampUpdateTimer?: number;
 
   // ============================== LIFECYCLE METHODS ==============================
   /** No TD wiring here; connector will call setValue(). */
-  async componentWillLoad() {}
+  async componentWillLoad() {
+    if (this.showLastUpdated) this.startTimestampUpdater();
+  }
 
   /** Bind local write-ops once children are rendered */
   componentDidLoad() {
@@ -65,6 +70,7 @@ export class UiObject {
 
   disconnectedCallback() {
     // nothing to cleanup: connector owns observe/poll lifecycles
+    this.stopTimestampUpdater();
   }
 
   // ============================== PUBLIC METHODS ==============================
@@ -192,6 +198,7 @@ export class UiObject {
     // If user hasn't edited (not dirty relative to previous value), sync editing to new value
     if (!wasDirty) this.editing = { ...v };
     this.lastUpdatedTs = Date.now();
+    this.startTimestampUpdater();
   }
 
   // Bind a no-op writeOperation to child inputs so they don't error on interaction
@@ -222,6 +229,22 @@ export class UiObject {
       }
     });
     if (tasks.length) await Promise.allSettled(tasks);
+  }
+
+  /** Manages timestamp update timer for relative time display */
+  private startTimestampUpdater() {
+    this.stopTimestampUpdater();
+    if (this.showLastUpdated) {
+      this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 60000); //  Update every minute
+    }
+  }
+
+  /** Stops the timestamp update timer */
+  private stopTimestampUpdater() {
+    if (this.timestampUpdateTimer) {
+      clearInterval(this.timestampUpdateTimer);
+      this.timestampUpdateTimer = undefined;
+    }
   }
 
   /** Render a single sub-field using appropriate child component */

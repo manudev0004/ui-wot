@@ -91,6 +91,9 @@ export class UiEvent {
   /** Timestamp when value was last updated (optional) */
   @State() lastUpdatedTs?: number;
 
+  /** Internal state counter for timestamp re-rendering */
+  @State() private timestampCounter: number = 0;
+
   /** Internal state for the event history */
   @State() private eventHistory: Array<{
     id: string;
@@ -134,17 +137,17 @@ export class UiEvent {
   async startListening(): Promise<void> {
     if (this.isSubscribed) return;
 
-    this.operationStatus = 'loading';
+    StatusIndicator.applyStatus(this, 'loading');
     this.lastError = '';
 
     try {
       // The component is now ready to receive events via the addEvent() method
       this.isSubscribed = true;
-      this.operationStatus = 'success';
-      this.lastUpdatedTs = Date.now();
+      StatusIndicator.applyStatus(this, 'success');
+      this.startTimestampUpdater();
     } catch (error) {
-      this.lastError = error.message || 'Failed to start listening';
-      this.operationStatus = 'error';
+      this.lastError = (error as any).message || 'Failed to start listening';
+      StatusIndicator.applyStatus(this, 'error', this.lastError);
     }
   }
 
@@ -279,10 +282,8 @@ export class UiEvent {
   /** Manages timestamp update timer for relative time display */
   private startTimestampUpdater() {
     this.stopTimestampUpdater();
-    if (this.showLastUpdated && this.lastUpdatedTs) {
-      this.timestampUpdateTimer = window.setInterval(() => {
-        this.lastUpdatedTs = this.lastUpdatedTs;
-      }, 60000); // Update every minute
+    if (this.showLastUpdated) {
+      this.timestampUpdateTimer = window.setInterval(() => this.timestampCounter++, 60000); //  Update every minute
     }
   }
 
