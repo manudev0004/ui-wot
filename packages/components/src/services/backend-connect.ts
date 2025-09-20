@@ -18,7 +18,7 @@ function joinUrl(base: string, path: string): string {
 }
 
 async function getJSON<T = any>(url: string): Promise<T> {
-  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  const res = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!res.ok) throw new Error(`GET ${url} failed: ${res.status} ${res.statusText}`);
   return res.json();
 }

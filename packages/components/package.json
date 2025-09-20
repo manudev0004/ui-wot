@@ -19,6 +19,66 @@
       "types": "./dist/types/components.d.ts",
       "require": "./dist/components.cjs.js"
     },
+    "./components/ui-toggle": {
+      "import": "./dist/components/ui-toggle.js",
+      "types": "./dist/components/ui-toggle.d.ts",
+      "require": "./dist/components/ui-toggle.js"
+    },
+    "./components/ui-number-picker": {
+      "import": "./dist/components/ui-number-picker.js",
+      "types": "./dist/components/ui-number-picker.d.ts",
+      "require": "./dist/components/ui-number-picker.js"
+    },
+    "./components/ui-checkbox": {
+      "import": "./dist/components/ui-checkbox.js",
+      "types": "./dist/components/ui-checkbox.d.ts",
+      "require": "./dist/components/ui-checkbox.js"
+    },
+    "./components/ui-calendar": {
+      "import": "./dist/components/ui-calendar.js",
+      "types": "./dist/components/ui-calendar.d.ts",
+      "require": "./dist/components/ui-calendar.js"
+    },
+    "./components/ui-notification": {
+      "import": "./dist/components/ui-notification.js",
+      "types": "./dist/components/ui-notification.d.ts",
+      "require": "./dist/components/ui-notification.js"
+    },
+    "./components/ui-slider": {
+      "import": "./dist/components/ui-slider.js",
+      "types": "./dist/components/ui-slider.d.ts",
+      "require": "./dist/components/ui-slider.js"
+    },
+    "./components/ui-text": {
+      "import": "./dist/components/ui-text.js",
+      "types": "./dist/components/ui-text.d.ts",
+      "require": "./dist/components/ui-text.js"
+    },
+    "./components/ui-button": {
+      "import": "./dist/components/ui-button.js",
+      "types": "./dist/components/ui-button.d.ts",
+      "require": "./dist/components/ui-button.js"
+    },
+    "./components/ui-event": {
+      "import": "./dist/components/ui-event.js",
+      "types": "./dist/components/ui-event.d.ts",
+      "require": "./dist/components/ui-event.js"
+    },
+    "./components/ui-color-picker": {
+      "import": "./dist/components/ui-color-picker.js",
+      "types": "./dist/components/ui-color-picker.d.ts",
+      "require": "./dist/components/ui-color-picker.js"
+    },
+    "./components/ui-file-picker": {
+      "import": "./dist/components/ui-file-picker.js",
+      "types": "./dist/components/ui-file-picker.d.ts",
+      "require": "./dist/components/ui-file-picker.js"
+    },
+    "./components/ui-object-editor": {
+      "import": "./dist/components/ui-object-editor.js",
+      "types": "./dist/components/ui-object-editor.d.ts",
+      "require": "./dist/components/ui-object-editor.js"
+    },
     "./services": {
       "import": "./dist/services.js",
       "types": "./dist/types/services.d.ts",
@@ -66,7 +126,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "stencil build",
+    "build": "stencil build && node ./scripts/postbuild.js",
     "start": "node ./dev-serve.js",
     "test": "stencil test --spec --e2e",
     "test.watch": "stencil test --spec --e2e --watchAll",
