@@ -8,6 +8,8 @@ import { wotService } from "./services/wotService";
 import "./App.css";
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useAppContext as useCtx } from './context/AppContext';
+import { Navbar } from './components/Navbar';
+import { NavbarProvider } from './context/NavbarContext';
 
 function RouterSync() {
   const { dispatch } = useCtx();
@@ -34,7 +36,9 @@ function RouterSync() {
 
   return (
     <div className="min-h-screen">
-      <main>
+      <NavbarProvider>
+  {location.pathname !== '/' && <Navbar />}
+  <main>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/td-input" element={<TDInputPage />} />
@@ -43,7 +47,8 @@ function RouterSync() {
           {/* keep a fallback to home */}
           <Route path="*" element={<HomePage />} />
         </Routes>
-      </main>
+        </main>
+      </NavbarProvider>
     </div>
   );
 }

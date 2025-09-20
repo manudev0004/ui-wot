@@ -20,3 +20,23 @@ export { UiFilePicker } from './components/ui-file-picker/ui-file-picker';
 
 // Export utility types
 export * from './utils/types';
+
+// Export services (tree-shakable)
+export * as Services from './services';
+
+// Also export browser-client helpers as top-level named exports for convenience
+export {
+	createHttpThing as createBrowserHttpThing,
+	consumeFromUrl as consumeFromUrlBrowser,
+	connectProperty as connectPropertyBrowser,
+	connectAction as connectActionBrowser,
+	connectEvent as connectEventBrowser,
+} from './services/browser-client';
+
+// Auto-connect, Node-WoT aware helpers (one-liner support)
+export {
+	connectAllAuto,
+	connectPropertyAuto,
+	connectActionAuto,
+	connectEventAuto,
+} from './services/auto-connect';

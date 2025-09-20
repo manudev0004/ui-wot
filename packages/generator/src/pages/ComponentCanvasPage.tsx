@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { wotService } from '../services/wotService';
 import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
@@ -8,6 +8,7 @@ import { GroupContainer } from '../components/GroupContainer';
 import { SmartEditPopup } from '../components/SmartEditPopup';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+import { useNavbar } from '../context/NavbarContext';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 // Use an `any`-typed alias to allow advanced props like draggableHandle/draggableCancel without TS friction
@@ -16,6 +17,7 @@ const AnyResponsiveGridLayout = ResponsiveGridLayout as unknown as React.Compone
 export function ComponentCanvasPage() {
   const { state, dispatch } = useAppContext();
   const navigate = useNavigate();
+  const { setContent, clear } = useNavbar();
   const [editingComponent, setEditingComponent] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   // attributes state for the currently editing component
@@ -68,14 +70,12 @@ export function ComponentCanvasPage() {
         tdInfos: state.tdInfos,
         components: state.components,
         availableAffordances: state.availableAffordances,
-        groups: state.groups, // Include groups in the export
+        groups: state.groups,
       };
 
-      // Export directly as JSON file instead of saving to localStorage
       const jsonString = JSON.stringify(dashboardData, null, 2);
       const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      
       const link = document.createElement('a');
       link.href = url;
       link.download = `${saveName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_dashboard.json`;
@@ -139,12 +139,9 @@ export function ComponentCanvasPage() {
   const handleComponentEdit = (componentId: string) => {
     console.log('[ComponentCanvas] handleComponentEdit called for', componentId, { isEditMode, editingComponent });
     const nextId = editingComponent === componentId ? null : componentId;
-    
-    // Always ensure edit mode is enabled when opening editor
     if (!isEditMode) {
       setIsEditMode(true);
     }
-    
     setEditingComponent(nextId);
   };
 
@@ -371,9 +368,62 @@ export function ComponentCanvasPage() {
     }
   };
 
-  const handleBack = () => {
-    navigate('/affordances');
-  };
+  const tdSummary = useMemo(() => {
+    const tdCount = state.tdInfos.length;
+    const compCount = state.components.length;
+    const tdText = tdCount > 0 ? `${tdCount} TD${tdCount > 1 ? 's' : ''} loaded` : 'No TD loaded';
+    return `DASHBOARD – ${tdText}, ${compCount} components`;
+  }, [state.tdInfos.length, state.components.length]);
+
+  useEffect(() => {
+    setContent({
+      info: <span>{tdSummary}</span>,
+      actions: (
+        <>
+          <div className="flex items-center gap-2">
+            <label className="font-heading text-primary" style={{ fontSize: 'var(--font-size-sm)' }}>Edit Mode:</label>
+            <button
+              onClick={() => {
+                const next = !isEditMode;
+                setIsEditMode(next);
+                if (!next) setEditingComponent(null);
+              }}
+              aria-pressed={isEditMode}
+              aria-label={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
+              title={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+                isEditMode ? 'bg-primary' : 'bg-gray-200'
+              }`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isEditMode ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+            <span className="text-primary/30">|</span>
+            <button
+              onClick={() => setShowSaveModal(true)}
+              disabled={state.components.length === 0}
+              className="bg-primary hover:bg-primary-light disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors"
+              title={state.components.length === 0 ? 'Add components to save dashboard' : 'Save current dashboard'}
+            >
+              Save Dashboard
+            </button>
+            <button
+              onClick={() => navigate('/td-input')}
+              className="bg-accent hover:bg-accent-light text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors"
+            >
+              Add TD
+            </button>
+            <button
+              onClick={() => { dispatch({ type: 'RESET_STATE' }); navigate('/'); }}
+              className="bg-primary hover:bg-primary-light text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors"
+            >
+              New Dashboard
+            </button>
+          </div>
+        </>
+      ),
+    });
+    return () => clear();
+  }, [tdSummary, isEditMode, state.components.length, navigate, dispatch, setContent, clear]);
 
   const renderComponent = (component: WoTComponent) => {
     const isEditing = editingComponent === component.id;
@@ -637,84 +687,10 @@ export function ComponentCanvasPage() {
 
   return (
     <div className="min-h-screen bg-neutral-light">
-      {/* Header */}
-      <div className="bg-white border-b border-primary sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <button onClick={handleBack} className="mr-4 p-2 text-primary hover:text-accent hover:bg-neutral-light rounded-lg transition-colors" aria-label="Go back">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-              <div>
-                <h1 className="text-2xl font-hero font-bold text-primary">DASHBOARD</h1>
-                <p className="text-sm font-body text-gray-600 mt-1">
-                  {state.tdInfos.length > 0 
-                    ? `${state.tdInfos.length} TD${state.tdInfos.length > 1 ? 's' : ''} loaded - ${state.components.length} components`
-                    : `${state.components.length} components loaded`
-                  }
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <label className="text-sm font-heading font-medium text-primary">Edit Mode:</label>
-                <button
-                  onClick={() => {
-                    const next = !isEditMode;
-                    setIsEditMode(next);
-                    if (!next) setEditingComponent(null);
-                  }}
-                  aria-pressed={isEditMode}
-                  aria-label={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
-                  title={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
-                    isEditMode ? 'bg-primary' : 'bg-gray-200'
-                  }`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isEditMode ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setShowSaveModal(true)}
-                  disabled={state.components.length === 0}
-                  className="bg-primary hover:bg-primary-light disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-heading font-medium py-2 px-4 rounded-lg transition-colors"
-                  title={state.components.length === 0 ? 'Add components to save dashboard' : 'Save current dashboard'}
-                >
-                  Save Dashboard
-                </button>
-                <button
-                  onClick={() => {
-                    navigate('/td-input');
-                  }}
-                  className="bg-accent hover:bg-accent-light text-white font-heading font-medium py-2 px-4 rounded-lg transition-colors"
-                >
-                  Add TD
-                </button>
-                <button
-                  onClick={() => {
-                    dispatch({ type: 'RESET_STATE' });
-                    navigate('/');
-                  }}
-                  className="bg-primary hover:bg-primary-light text-white font-heading font-medium py-2 px-4 rounded-lg transition-colors"
-                >
-                  New Dashboard
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Canvas - No sidebar padding needed anymore */}
       <div className="w-full min-h-screen transition-all duration-200">
-        <div className="w-full px-4 py-6">
+        <div className="page-container canvas-page py-6">
           {state.groups.length > 0 || state.components.some(c => !state.groups.some(g => g.affordanceIds.includes(c.id))) ? (
             <AnyResponsiveGridLayout
               className="layout"
@@ -834,7 +810,7 @@ export function ComponentCanvasPage() {
                 <p className="mt-1 text-sm font-body text-gray-500">No components have been selected yet. Go back to select affordances from your Thing Description.</p>
                 <div className="mt-6">
                   <button
-                    onClick={handleBack}
+                    onClick={() => navigate('/affordances')}
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-heading font-medium rounded-md text-white bg-primary hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
                 >
                   Select Affordances

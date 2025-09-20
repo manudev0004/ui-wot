@@ -9,8 +9,27 @@
   font-weight: 400;
 
   color-scheme: light;
-  color: #067362; /* Primary Base */
-  background-color: #ffffff;
+
+  /* Theme tokens */
+  --navbar-height: clamp(3.75rem, 6vw, 4.5rem);
+  --navbar-padding: clamp(0.75rem, 2.5vw, 1.25rem);
+  --navbar-content-gap: clamp(0.5rem, 1.5vw, 0.875rem);
+  --navbar-center-offset: clamp(0rem, 2vw, 0.75rem);
+  --font-size-sm: clamp(0.75rem, 1.2vw, 0.95rem);
+  --font-size-md: clamp(0.9rem, 1.6vw, 1.05rem);
+  --font-size-lg: clamp(1.15rem, 2.2vw, 1.45rem);
+  /* Page layout tokens */
+  --page-padding-x: clamp(0.75rem, 2vw, 1.25rem);
+  --affordances-max-width: 80rem; /* ~960px, tweak as needed */
+  --canvas-max-width: 80rem;      /* ~1280px, tweak as needed */
+  --navbar-bg: #ffffff;
+  --text-color: #067362; /* Primary Base */
+  --accent-color: #33b8a4; /* Accent Highlight */
+  --transition-speed: 200ms;
+  --bg-color: #ffffff;
+
+  color: var(--text-color);
+  background-color: var(--bg-color);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -21,15 +40,45 @@
   font-display: swap;
 }
 
+/* Dark theme overrides (class-based) */
+.dark {
+  color-scheme: dark;
+  --navbar-bg: #0f1a18;
+  --text-color: #e6f4f1;
+  --accent-color: #33b8a4;
+  --bg-color: #0b1412;
+}
+
 body {
   margin: 0;
   display: flex;
   min-width: 320px;
   min-height: 100vh;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
 }
 
 #root {
   width: 100%;
+}
+
+/* Reusable page container and per-page modifiers */
+.page-container {
+  width: 100%;
+  max-width: var(--page-max-width, 100%);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--page-padding-x);
+  padding-right: var(--page-padding-x);
+}
+
+.affordances-page {
+  --page-max-width: var(--affordances-max-width);
+}
+
+.canvas-page {
+  --page-max-width: var(--canvas-max-width);
 }
 
 /* React Grid Layout styles */
@@ -53,7 +102,6 @@ body {
   background-position: center;
   cursor: nw-resize;
 }
-
 .react-grid-item > .react-resizable-handle::after {
   content: "";
   position: absolute;
@@ -61,6 +109,11 @@ body {
   bottom: 3px;
   width: 5px;
   height: 5px;
-  border-right: 2px solid #067362; /* Primary Base */
-  border-bottom: 2px solid #067362; /* Primary Base */
+  border-right: 2px solid var(--text-color);
+  border-bottom: 2px solid var(--text-color);
+}
+@media (prefers-color-scheme: light) {
+  .demo-section {
+    background: #E4E6E6; /* Neutral Light */
+  }
 }

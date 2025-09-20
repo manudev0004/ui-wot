@@ -149,31 +149,17 @@ export function TDInputPage() {
     event.target.value = '';
   };
 
-  const handleBack = () => {
-    if (state.components.length > 0) {
-      // If we have existing components, go back to canvas
-      navigate('/components');
-    } else {
-      // Otherwise go to home
-      navigate('/');
-    }
-  };
+  // Back navigation handled by global Navbar
 
   return (
-    <div className="min-h-screen bg-neutral-light py-8">
+    <div className="min-h-screen bg-neutral-light py-6">
       <div className="max-w-2xl mx-auto px-4">
-        {/* Header */}
-        <div className="flex items-center mb-8">
-          <button onClick={handleBack} className="mr-4 p-2 text-primary hover:text-primary-light font-heading" aria-label="Go back">
-            ← Back
-          </button>
-          <h1 className="text-3xl font-hero text-primary">{state.components.length > 0 ? 'ADD ANOTHER THING DESCRIPTION' : 'ADD THING DESCRIPTION'}</h1>
-          {state.components.length > 0 && (
-            <p className="text-sm text-primary/70 font-body mt-1">
-              Adding to existing dashboard with {state.components.length} components from {state.tdInfos.length} TD{state.tdInfos.length !== 1 ? 's' : ''}
-            </p>
-          )}
-        </div>
+        {/* Context note when adding to existing dashboard */}
+        {state.components.length > 0 && (
+          <div className="mb-6 text-sm text-primary/70 font-body">
+            Adding to existing dashboard with {state.components.length} components from {state.tdInfos.length} TD{state.tdInfos.length !== 1 ? 's' : ''}
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
