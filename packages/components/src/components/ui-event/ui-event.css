@@ -9,7 +9,7 @@
   width: 100%;
 }
 
-/* Simple filled variant styles with background opacity only */
+/* Simple filled variant styles with background opacity */
 .variant-filled-primary {
   background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
 }

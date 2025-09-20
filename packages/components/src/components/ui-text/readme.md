@@ -1,4 +1,4 @@
-# text-display
+# ui-text
 
 
 
@@ -7,38 +7,38 @@
 
 ## Overview
 
-TextDisplay component supports multiple variants for text-heavy data display and editing.
+A versatile Text-Display component designed for WoT device control and monitoring
+It has various features, visual styles and supports text-heavy data display.
 Provides field, area, structured, unstructured, and editable modes with consistent styling.
 
 ## Properties
 
 | Property          | Attribute           | Description                                                                                                                                                                                                                                                          | Type                                                                | Default      |
 | ----------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------ |
-| `color`           | `color`             | Color theme variant.                                                                                                                                                                                                                                                 | `"neutral" \| "primary" \| "secondary"`                             | `'primary'`  |
-| `connected`       | `connected`         | Connection state for readonly mode                                                                                                                                                                                                                                   | `boolean`                                                           | `true`       |
-| `dark`            | `dark`              | Enable dark theme for the component. When true, uses light text on dark backgrounds.                                                                                                                                                                                 | `boolean`                                                           | `false`      |
-| `disabled`        | `disabled`          | Whether the component is disabled (editable mode only).                                                                                                                                                                                                              | `boolean`                                                           | `false`      |
-| `keyboard`        | `keyboard`          | Enable keyboard navigation for editable mode. Default: true                                                                                                                                                                                                          | `boolean`                                                           | `true`       |
+| `color`           | `color`             | Color theme for the active state matching to thingsweb theme                                                                                                                                                                                                         | `"neutral" \| "primary" \| "secondary"`                             | `'primary'`  |
+| `dark`            | `dark`              | Enable dark mode theme styling when true                                                                                                                                                                                                                             | `boolean`                                                           | `false`      |
+| `debounceMs`      | `debounce-ms`       | Debounce delay in milliseconds for editable mode updates (0 = disabled). Enabled it to reduce API calls by only sending updates after user stops typing.                                                                                                             | `number`                                                            | `0`          |
 | `label`           | `label`             | Text label displayed above the text display.                                                                                                                                                                                                                         | `string`                                                            | `undefined`  |
 | `maxLength`       | `max-length`        | Maximum character limit (editable mode only).                                                                                                                                                                                                                        | `number`                                                            | `undefined`  |
 | `maxRows`         | `max-rows`          | Maximum number of rows for area mode.                                                                                                                                                                                                                                | `number`                                                            | `10`         |
 | `minRows`         | `min-rows`          | Minimum number of rows for area mode.                                                                                                                                                                                                                                | `number`                                                            | `3`          |
 | `mode`            | `mode`              | Display mode for the text component. - field: One-line text display - area: Expandable text box (multi-line) - unstructured: Plain style, no highlighting - structured: Highlighted block (for JSON-like or formatted text) - editable: User can edit/write directly | `"area" \| "editable" \| "field" \| "structured" \| "unstructured"` | `'field'`    |
 | `placeholder`     | `placeholder`       | Placeholder text shown when value is empty (editable mode only).                                                                                                                                                                                                     | `string`                                                            | `undefined`  |
-| `readonly`        | `readonly`          | Whether the component is read-only.                                                                                                                                                                                                                                  | `boolean`                                                           | `false`      |
-| `showCharCount`   | `show-char-count`   | Show character count (editable mode only).                                                                                                                                                                                                                           | `boolean`                                                           | `false`      |
-| `showLastUpdated` | `show-last-updated` | Show last updated timestamp.                                                                                                                                                                                                                                         | `boolean`                                                           | `false`      |
-| `showLineNumbers` | `show-line-numbers` | Show line numbers (area and structured modes).                                                                                                                                                                                                                       | `boolean`                                                           | `false`      |
-| `showStatus`      | `show-status`       | Show status badge when true                                                                                                                                                                                                                                          | `boolean`                                                           | `true`       |
+| `resizable`       | `resizable`         | Enable text area resizable.                                                                                                                                                                                                                                          | `boolean`                                                           | `true`       |
+| `showCharCount`   | `show-char-count`   | Show character count                                                                                                                                                                                                                                                 | `boolean`                                                           | `false`      |
+| `showLastUpdated` | `show-last-updated` | Show last updated timestamp below the component                                                                                                                                                                                                                      | `boolean`                                                           | `false`      |
+| `showLineNumbers` | `show-line-numbers` | Show line numbers                                                                                                                                                                                                                                                    | `boolean`                                                           | `false`      |
+| `showSaveButton`  | `show-save-button`  | Show save button for explicit updates (editable mode only). When true, changes are not sent until user clicks save.                                                                                                                                                  | `boolean`                                                           | `false`      |
+| `showStatus`      | `show-status`       | Show visual operation status indicators (loading, success, failed) right to the component                                                                                                                                                                            | `boolean`                                                           | `false`      |
 | `value`           | `value`             | Current text value of the component.                                                                                                                                                                                                                                 | `string`                                                            | `''`         |
-| `variant`         | `variant`           | Visual style variant of the text display. - minimal: Text-only with subtle underline or accent - outlined: Border style applied (default) - filled: Background color applied                                                                                         | `"filled" \| "minimal" \| "outlined"`                               | `'outlined'` |
+| `variant`         | `variant`           | Visual style variant of the text display. - minimal: Text-only with subtle underline - outlined: Border style applied (default) - filled: Background color applied                                                                                                   | `"filled" \| "minimal" \| "outlined"`                               | `'outlined'` |
 
 
 ## Events
 
-| Event      | Description                                                     | Type                         |
-| ---------- | --------------------------------------------------------------- | ---------------------------- |
-| `valueMsg` | Event emitted when the text value changes (editable mode only). | `CustomEvent<UiMsg<string>>` |
+| Event      | Description                                                                                                                                              | Type                         |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `valueMsg` | Emitted when toggle value changes through user interaction or setValue calls. Contains the new value, previous value, timestamp, and source information. | `CustomEvent<UiMsg<string>>` |
 
 
 ## Methods
@@ -59,56 +59,61 @@ Get the current text value with optional metadata.
 
 #### Parameters
 
-| Name              | Type      | Description                                               |
-| ----------------- | --------- | --------------------------------------------------------- |
-| `includeMetadata` | `boolean` | - Whether to include additional metadata (default: false) |
+| Name              | Type      | Description                                                  |
+| ----------------- | --------- | ------------------------------------------------------------ |
+| `includeMetadata` | `boolean` | - Whether to include status, timestamp and other information |
 
 #### Returns
 
 Type: `Promise<string | { value: string; lastUpdated?: number; status: string; error?: string; }>`
 
-Promise<string | MetadataResult> - Current value or object with metadata
+Current value or detailed metadata object
 
 ### `setStatus(status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>`
 
-Set operation status for external status management.
-Use this method to manually control the visual status indicators
-when managing operations externally.
+(Advance) to manually set the operation status indicator.
+
+Useful when managing device communication externally and you want to show loading/success/error states.
 
 #### Parameters
 
-| Name           | Type                                          | Description                                                 |
-| -------------- | --------------------------------------------- | ----------------------------------------------------------- |
-| `status`       | `"error" \| "loading" \| "success" \| "idle"` | - The status to set ('idle', 'loading', 'success', 'error') |
-| `errorMessage` | `string`                                      | - Optional error message for error status                   |
+| Name           | Type                                          | Description                                 |
+| -------------- | --------------------------------------------- | ------------------------------------------- |
+| `status`       | `"error" \| "loading" \| "success" \| "idle"` | - The status to display                     |
+| `errorMessage` | `string`                                      | - (Optional) error message for error status |
 
 #### Returns
 
 Type: `Promise<void>`
 
-Promise<void>
 
-### `setValue(value: string, options?: { writeOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>`
+
+### `setValue(value: string, options?: { writeOperation?: (value: string) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }) => Promise<boolean>`
 
 Set the text value and handle optional operations and status management.
 
+This is the primary method for connecting text to real devices.
+It supports optimistic updates, error handling, and automatic retries.
+
 #### Parameters
 
-| Name      | Type                                                                                                                                                                                                             | Description                               |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `value`   | `string`                                                                                                                                                                                                         | - The string value to set                 |
-| `options` | `{ writeOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "error" \| "loading" \| "success"; errorMessage?: string; _isRevert?: boolean; }` | - Configuration options for the operation |
+| Name      | Type                                                                                                                                                                                     | Description                                        |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `value`   | `string`                                                                                                                                                                                 | - The string value to set                          |
+| `options` | `{ writeOperation?: (value: string) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }` | - Optional configuration options for the operation |
 
 #### Returns
 
 Type: `Promise<boolean>`
 
-Promise<boolean> - true if successful, false if failed
+Promise resolving to true if successful, false if failed
 
 ### `setValueSilent(value: string) => Promise<void>`
 
-Set value without triggering events (for external updates).
-Use this method when updating from external data sources to prevent event loops.
+This method updates the value silently without triggering events.
+
+Use this for external data synchronization to prevent event loops.
+Perfect for WebSocket updates or polling from remote devices.
 
 #### Parameters
 
@@ -120,7 +125,7 @@ Use this method when updating from external data sources to prevent event loops.
 
 Type: `Promise<void>`
 
-Promise<void>
+
 
 
 ----------------------------------------------

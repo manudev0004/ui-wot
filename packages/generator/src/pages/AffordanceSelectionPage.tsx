@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { wotService } from '../services/wotService';
 import { WoTComponent } from '../types';
+import { useNavbar } from '../context/NavbarContext';
 
 export function AffordanceSelectionPage() {
   const { state, dispatch } = useAppContext();
   const navigate = useNavigate();
+  const { setContent, clear } = useNavbar();
   const [selectedAffordances, setSelectedAffordances] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   // map affordanceKey -> selected component type (when multiple are available)
@@ -76,10 +78,11 @@ export function AffordanceSelectionPage() {
             variant: affordance.availableVariants[0],
             layout: {
               i: `${affordanceKey}-${Date.now()}-${index}`,
-              x: (index % 4) * 3, // 4 columns in group, 3 units wide
-              y: Math.floor(index / 4) * 3, // 3 units height per row
-              w: 3,
-              h: 3,
+              // Start compact: two tiles wide, two tiles high; dense placement
+              x: (index % 6) * 2,
+              y: Math.floor(index / 6) * 2,
+              w: 2,
+              h: 2,
               minW: 2,
               minH: 2,
             },
@@ -104,8 +107,8 @@ export function AffordanceSelectionPage() {
             i: groupId,
             x: 0,
             y: Math.max(0, ...state.components.map(c => c.layout.y + c.layout.h), ...state.groups.map(g => g.layout.y + g.layout.h)),
-            w: 12, // Full width
-            h: Math.ceil(components.length / 4) * 4 + 2, // Height based on component count + header
+            w: Math.max(10, Math.min(16, components.length * 2 + 4)),
+            h: Math.ceil(components.length / 6) * 3 + 3,
             minW: 8,
             minH: 6,
           },
@@ -118,12 +121,13 @@ export function AffordanceSelectionPage() {
             hideWrapper: false,
           },
           affordanceIds: components.map(c => c.id),
-          innerLayout: components.map(comp => ({
+          innerLayout: components.map((comp, idx) => ({
             i: comp.id,
-            x: comp.layout.x,
-            y: comp.layout.y,
-            w: comp.layout.w,
-            h: comp.layout.h,
+            // Place items in 6-column rows by default to avoid overlap
+            x: (idx * 6) % 24,
+            y: Math.floor((idx * 6) / 24) * 4,
+            w: Math.max(4, comp.layout.w || 4),
+            h: Math.max(3, comp.layout.h || 3),
           })),
           minSize: {
             width: 400,
@@ -149,9 +153,7 @@ export function AffordanceSelectionPage() {
     }
   };
 
-  const handleBack = () => {
-    navigate('/td-input');
-  };
+  // Back navigation handled by global Navbar
 
   const getComponentBadgeColor = (component: string) => {
     const colorMap: Record<string, string> = {
@@ -170,45 +172,46 @@ export function AffordanceSelectionPage() {
     return colorMap[component] || 'bg-neutral-light/50 text-primary';
   };
 
+  const navbarInfo = useMemo(() => {
+    const tdTitle = state.parsedTD?.title || 'Thing';
+    const suffix = state.components.length > 0 ? ` (Adding to existing dashboard with ${state.components.length} components)` : '';
+    return (
+      <span>
+        {tdTitle} – Choose which affordances to include{suffix}
+      </span>
+    );
+  }, [state.parsedTD, state.components.length]);
+
+  useEffect(() => {
+    setContent({
+      info: navbarInfo,
+      actions: (
+        <>
+          <button onClick={handleSelectAll} className="text-accent hover:text-accent/80 font-heading">
+            Select All
+          </button>
+          <span className="text-primary/30">|</span>
+          <button onClick={handleSelectNone} className="text-primary/70 hover:text-primary font-heading">
+            Select None
+          </button>
+          <span className="text-primary/30">|</span>
+          <button
+            onClick={handleLoad}
+            disabled={selectedAffordances.length === 0 || loading || !state.parsedTD}
+            className="bg-primary hover:bg-primary-light disabled:bg-gray-300 text-white font-heading font-medium py-1.5 px-4 rounded-lg transition-colors"
+          >
+            {loading ? 'Loading…' : `Load (${selectedAffordances.length})`}
+          </button>
+        </>
+      ),
+    });
+    return () => clear();
+  }, [navbarInfo, selectedAffordances.length, loading, state.parsedTD, setContent, clear]);
+
   return (
     <div className="min-h-screen bg-neutral-light">
-      {/* Header */}
-      <div className="bg-white border-b border-primary/20">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <button onClick={handleBack} className="mr-4 p-2 text-primary hover:text-primary-light font-heading" aria-label="Go back">
-                ← Back
-              </button>
-              <div>
-                <h1 className="text-2xl font-hero text-primary">SELECT AFFORDANCES</h1>
-                <p className="text-sm text-primary/70 font-body mt-1">
-                  {state.parsedTD?.title} - Choose which affordances to include
-                  {state.components.length > 0 && <span className="ml-2 text-accent">(Adding to existing dashboard with {state.components.length} components)</span>}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button onClick={handleSelectAll} className="text-sm text-accent hover:text-accent/80 font-heading">
-                Select All
-              </button>
-              <button onClick={handleSelectNone} className="text-sm text-primary/70 hover:text-primary font-heading">
-                Select None
-              </button>
-              <button
-                onClick={handleLoad}
-                disabled={selectedAffordances.length === 0 || loading || !state.parsedTD}
-                className="bg-primary hover:bg-primary-light disabled:bg-gray-300 text-white font-heading font-medium py-2 px-6 rounded-lg transition-colors"
-              >
-                {loading ? 'Loading...' : `Load (${selectedAffordances.length})`}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Affordances Grid */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="page-container affordances-page py-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {state.availableAffordances.map(affordance => (
             <div

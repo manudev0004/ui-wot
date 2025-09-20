@@ -1,13 +1,17 @@
-import { useEffect } from "react";
-import { AppProvider } from "./context/AppContext";
-import { HomePage } from "./pages/HomePage";
-import { TDInputPage } from "./pages/TDInputPage";
-import { AffordanceSelectionPage } from "./pages/AffordanceSelectionPage";
-import { ComponentCanvasPage } from "./pages/ComponentCanvasPage";
-import { wotService } from "./services/wotService";
-import "./App.css";
+import { useEffect } from 'react';
+import { AppProvider } from './context/AppContext';
+import { HomePage } from './pages/HomePage';
+import { TDInputPage } from './pages/TDInputPage';
+import { AffordanceSelectionPage } from './pages/AffordanceSelectionPage';
+import { ComponentCanvasPage } from './pages/ComponentCanvasPage';
+import { LovelaceLikeDemo } from './examples/LovelaceLikeDemo';
+import { MuuriDemo } from './examples/MuuriDemo';
+import { wotService } from './services/wotService';
+import './App.css';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useAppContext as useCtx } from './context/AppContext';
+import { Navbar } from './components/Navbar';
+import { NavbarProvider } from './context/NavbarContext';
 
 function RouterSync() {
   const { dispatch } = useCtx();
@@ -34,16 +38,21 @@ function RouterSync() {
 
   return (
     <div className="min-h-screen">
-      <main>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/td-input" element={<TDInputPage />} />
-          <Route path="/affordances" element={<AffordanceSelectionPage />} />
-          <Route path="/components/*" element={<ComponentCanvasPage />} />
-          {/* keep a fallback to home */}
-          <Route path="*" element={<HomePage />} />
-        </Routes>
-      </main>
+      <NavbarProvider>
+        {location.pathname !== '/' && <Navbar />}
+        <main>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/td-input" element={<TDInputPage />} />
+            <Route path="/affordances" element={<AffordanceSelectionPage />} />
+            <Route path="/components/*" element={<ComponentCanvasPage />} />
+            <Route path="/demo/lovelace" element={<LovelaceLikeDemo />} />
+            <Route path="/demo/muuri" element={<MuuriDemo />} />
+            {/* keep a fallback to home */}
+            <Route path="*" element={<HomePage />} />
+          </Routes>
+        </main>
+      </NavbarProvider>
     </div>
   );
 }

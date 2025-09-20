@@ -1,0 +1,29 @@
+{
+  "name": "ui-wot-react-min",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "backend": "node wot-backend.mjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node test-thing-server.js",
+    "start": "concurrently \"npm run backend\" \"npm run dev\"",
+    "demo": "echo '🚀 Starting UI-WoT React Demo...' && echo '1. TestThing server: http://localhost:8080' && echo '2. WoT backend: http://localhost:3001' && echo '3. React app: http://localhost:5173' && npm run start"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@thingweb/ui-wot-components": "file:../../packages/components",
+    "@node-wot/core": "^0.9.1",
+    "@node-wot/binding-http": "^0.9.1",
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "vite": "^6.0.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^8.2.2"
+  }
+}

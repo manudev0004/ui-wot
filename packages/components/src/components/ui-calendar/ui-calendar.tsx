@@ -5,7 +5,7 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
 /**
  * A versatile calendar component designed for WoT device control.
  *
- * It has various features, multiple visual styles, status and last updated timestamps.
+ * It has various features, visual styles, status and last updated timestamps and other options.
  *
  * @example Basic Usage
  * ```html
@@ -70,7 +70,7 @@ export class UiCalendar {
   /** Connection state for readonly mode */
   @Prop({ mutable: true }) connected: boolean = true;
 
-  /** Display calendar inline instead of as dropdown popup */
+  /** Display calendar inline instead of as a popup */
   @Prop() inline: boolean = false;
 
   /** Include time picker alongside date picker */
@@ -85,16 +85,16 @@ export class UiCalendar {
   /** First day of week (0 = Sunday, 1 = Monday) */
   @Prop() firstDayOfWeek: 0 | 1 = 0;
 
-  /** Show today button for quick navigation */
+  /** Show today button */
   @Prop() showTodayButton: boolean = true;
 
   /** Show clear button to reset selection */
   @Prop() showClearButton: boolean = true;
 
-  /** Minimum selectable date (ISO string) */
+  /** Minimum selectable date (ISO string)  (Optional) */
   @Prop() minDate?: string;
 
-  /** Maximum selectable date (ISO string) */
+  /** Maximum selectable date (ISO string)  (Optional) */
   @Prop() maxDate?: string;
 
   // ============================== COMPONENT STATE ==============================
@@ -140,12 +140,6 @@ export class UiCalendar {
 
   // ============================== PRIVATE PROPERTIES ==============================
 
-  /** Timer for updating relative timestamps */
-  private timestampUpdateTimerRef?: number;
-
-  /** Stores API function from first initialization to use further for any user interactions */
-  private storedWriteOperation?: (value: string) => Promise<any>;
-
   /** Input element reference */
   private inputEl?: HTMLInputElement | null;
 
@@ -154,6 +148,15 @@ export class UiCalendar {
 
   /** Previously focused element for focus management */
   private previouslyFocused?: Element | null;
+
+  /** Tracks component initialization state to prevent early watchers*/
+  private isInitialized: boolean = false;
+
+  /** Timer for updating relative timestamps */
+  private timestampUpdateTimerRef?: number;
+
+  /** Stores API function from first initialization to use further for any user interactions */
+  private storedWriteOperation?: (value: string) => Promise<any>;
 
   // ============================== EVENTS ==============================
 
@@ -172,7 +175,7 @@ export class UiCalendar {
    * It supports optimistic updates, error handling, and automatic retries.
    *
    * @param value - The date string value to set (ISO format)
-   * @param options - Configuration for device communication and behavior
+   * @param options - Optional configuration for device communication and behavior
    * @returns Promise resolving to any result from the operation
    *
    * @example Basic Usage
@@ -192,36 +195,42 @@ export class UiCalendar {
    * ```
    */
   @Method()
-  async setValue(value: string, options?: { writeOperation?: (value: string) => Promise<any> }): Promise<any> {
+  async setValue(
+    value: string,
+    options?: {
+      writeOperation?: (value: string) => Promise<any>;
+      readOperation?: () => Promise<any>;
+      optimistic?: boolean;
+      autoRetry?: { attempts: number; delay: number };
+      _isRevert?: boolean;
+    },
+  ): Promise<any> {
     const prevValue = this.value;
 
-    // Clear error state if not reverting
-    if (this.operationStatus === 'error') {
-      StatusIndicator.applyStatus(this, 'idle');
-    }
-
-    // Store operation for user interactions
-    if (options?.writeOperation) {
-      this.storedWriteOperation = options.writeOperation;
-    }
-
-    try {
-      StatusIndicator.applyStatus(this, 'loading');
+    // Simple value update without other operations
+    if (!options?.writeOperation && !options?.readOperation) {
       this.updateValue(value, prevValue);
-
-      if (options?.writeOperation) {
-        const result = await options.writeOperation(value);
-        StatusIndicator.applyStatus(this, 'success');
-        return result;
-      }
-
-      StatusIndicator.applyStatus(this, 'idle');
-    } catch (error) {
-      console.error('setValue error for ui-calendar:', error);
-      this.updateValue(prevValue!, prevValue, false); // Revert on error
-      StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
-      throw error;
+      return true;
     }
+
+    // If there is writeOperation store operation for future user interactions
+    if (options.writeOperation && !options._isRevert) {
+      this.storedWriteOperation = options.writeOperation;
+      StatusIndicator.applyStatus(this, 'loading');
+
+      try {
+        // Update the value optimistically
+        this.updateValue(value, prevValue, false);
+        StatusIndicator.applyStatus(this, 'success');
+        return true;
+      } catch (error) {
+        StatusIndicator.applyStatus(this, 'error', error?.message || 'Setup failed');
+        return false;
+      }
+    }
+
+    // Execute operation with optimistic update + retry handling
+    return this.executeOperation(value, prevValue, options);
   }
 
   /**
@@ -265,44 +274,15 @@ export class UiCalendar {
    * @param errorMessage - (Optional) error message for error status
    */
   @Method()
-  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', message?: string): Promise<void> {
-    this.operationStatus = status;
-    if (status === 'error' && message) {
-      this.lastError = message;
-    } else if (status !== 'error') {
-      this.lastError = undefined;
-    }
-
-    if (status === 'success') {
-      this.lastUpdatedTs = Date.now();
-      // Auto-clear success status after short delay
-      setTimeout(() => {
-        if (this.operationStatus === 'success') {
-          this.operationStatus = 'idle';
-        }
-      }, 1200);
-    }
-
-    // Emit status change event
-    this.valueMsg.emit({
-      newVal: this.value,
-      ts: Date.now(),
-      source: this.el?.id || 'ui-calendar',
-      ok: status !== 'error',
-      meta: {
-        component: 'ui-calendar',
-        type: 'statusChange',
-        status,
-        message,
-        source: 'method',
-      },
-    });
+  async setStatus(status: 'idle' | 'loading' | 'success' | 'error', errorMessage?: string): Promise<void> {
+    StatusIndicator.applyStatus(this, status, errorMessage);
   }
 
   // ============================== LIFECYCLE METHODS ==============================
 
   /** Initialize component state from props */
   async componentWillLoad() {
+    this.isInitialized = true;
     if (this.value) {
       this.selectedDate = new Date(this.value);
       this.currentMonth = this.selectedDate.getMonth();
@@ -322,6 +302,8 @@ export class UiCalendar {
   /** Sync internal state when value prop changes externally */
   @Watch('value')
   watchValue() {
+    if (!this.isInitialized) return;
+
     if (this.value) {
       this.selectedDate = new Date(this.value);
       this.currentMonth = this.selectedDate.getMonth();
@@ -347,12 +329,60 @@ export class UiCalendar {
     this.lastUpdatedTs = Date.now();
 
     if (emitEvent && !this.suppressEvents) {
-      this.emitValueEvents(value, prevValue);
+      this.emitValueMsg(value, prevValue);
+    }
+  }
+
+  /** Executes stored operations with error handling and retry logic */
+  private async executeOperation(value: string, prevValue: string, options: any): Promise<boolean> {
+    const optimistic = options?.optimistic !== false;
+
+    // Optimistic state update
+    if (optimistic && !options?._isRevert) {
+      this.updateValue(value, prevValue);
+    }
+
+    StatusIndicator.applyStatus(this, 'loading');
+
+    try {
+      if (options.writeOperation) {
+        await options.writeOperation(value);
+      } else if (options.readOperation) {
+        await options.readOperation();
+      }
+
+      StatusIndicator.applyStatus(this, 'success');
+
+      // Update value after successful operation, (if optimistic = false)
+      if (!optimistic) {
+        this.updateValue(value, prevValue);
+      }
+
+      return true;
+    } catch (error) {
+      StatusIndicator.applyStatus(this, 'error', error?.message || String(error) || 'Operation failed');
+
+      // Revert optimistic changes if operation is not successful or has an error
+      if (optimistic && !options?._isRevert) {
+        this.updateValue(prevValue, value, false);
+      }
+
+      // Retry logic
+      if (options?.autoRetry && options.autoRetry.attempts > 0) {
+        setTimeout(() => {
+          this.setValue(value, {
+            ...options,
+            autoRetry: { ...options.autoRetry, attempts: options.autoRetry.attempts - 1 },
+          });
+        }, options.autoRetry.delay);
+      }
+
+      return false;
     }
   }
 
   /** Emits value change events with consistent UIMsg data structure */
-  private emitValueEvents(value: string, prevValue?: string): void {
+  private emitValueMsg(value: string, prevValue?: string): void {
     // Emit standardized event
     this.valueMsg.emit({
       newVal: value,
@@ -385,10 +415,8 @@ export class UiCalendar {
 
     try {
       if (this.storedWriteOperation) {
-        // Only show loading for actual write operations
         this.updateValue(newValue, prevValue);
         await this.storedWriteOperation(newValue);
-        // No success status for user interactions - they're immediate
       } else {
         this.updateValue(newValue, prevValue);
       }
@@ -397,7 +425,6 @@ export class UiCalendar {
     } catch (error) {
       console.error('handleDateSelect error for ui-calendar:', error);
       this.updateValue(prevValue!, newValue, false); // Revert on error
-      // Only show error if it was a write operation that failed
       if (this.storedWriteOperation) {
         StatusIndicator.applyStatus(this, 'error', 'Write operation failed');
       }
@@ -461,13 +488,11 @@ export class UiCalendar {
       try {
         (this.previouslyFocused as HTMLElement).focus();
       } catch (e) {
-        /* ignore */
       }
     } else if (this.inputEl) {
       try {
         this.inputEl.focus();
       } catch (e) {
-        /* ignore */
       }
     }
   }
@@ -494,7 +519,7 @@ export class UiCalendar {
     });
   }
 
-  /** Jump to and optionally select today */
+  /** Jump to today */
   private selectToday() {
     const today = new Date();
     this.currentMonth = today.getMonth();
@@ -522,7 +547,6 @@ export class UiCalendar {
 
     try {
       if (this.storedWriteOperation) {
-        // Only show loading during actual write operations
         this.selectedDate = newDate;
         this.value = newValue;
         await this.storedWriteOperation(newValue);
@@ -546,7 +570,6 @@ export class UiCalendar {
       });
     } catch (error) {
       console.error('handleTimeChange error for ui-calendar:', error);
-      // Only show error status if it was a write operation that failed
       if (this.storedWriteOperation) {
         StatusIndicator.applyStatus(this, 'error', 'Write operation failed');
       }
@@ -576,7 +599,6 @@ export class UiCalendar {
 
     try {
       if (this.storedWriteOperation) {
-        // Only show loading during actual write operations
         this.selectedDate = newDate;
         this.value = newValue;
         await this.storedWriteOperation(newValue);
@@ -698,11 +720,10 @@ export class UiCalendar {
     // Inline styles for CSS variable colors
     let inputStyle: any = {};
 
-    // Variant-specific styling matching family design
+    // Variant-specific styling 
     if (this.variant === 'outlined') {
       inputClass += ` border bg-transparent ${this.dark ? 'text-white hover:bg-gray-800' : 'hover:bg-gray-50'}`;
       inputStyle.borderColor = colorVars.main;
-      // In light mode match text to outline color
       if (!this.dark) inputStyle.color = colorVars.main;
     } else if (this.variant === 'filled') {
       inputClass += ` border-0 focus:ring-white`;

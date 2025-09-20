@@ -374,49 +374,89 @@
           const dateCalendar = document.getElementById('td-calendar-date');
           if (dateCalendar) {
             await dateCalendar.componentOnReady();
-            
-            // Set up write operation only - let calendar fetch TD value when user interacts
-            await dateCalendar.setWriteOperation(async (newValue) => {
-              console.log('Writing date value:', newValue, 'to currentDate property');
-              // Extract just the date part for the TD property
-              const dateOnly = new Date(newValue).toISOString().split('T')[0];
-              await sharedThingInstance.writeProperty('currentDate', dateOnly);
-              console.log('Date write successful:', dateOnly);
-            });
-            
-            console.log('Date calendar connected - ready for user interaction');
+            try {
+              const prop = await sharedThingInstance.readProperty('currentDate');
+              let value = await prop.value(); // expected 'YYYY-MM-DD'
+              if (typeof value !== 'string') value = '';
+              const iso = value ? new Date(value + 'T00:00:00Z').toISOString() : new Date().toISOString();
+              await dateCalendar.setValue(iso, {
+                writeOperation: async (newValue) => {
+                  console.log('Writing date value:', newValue, 'to currentDate property');
+                  const dateOnly = new Date(newValue).toISOString().split('T')[0];
+                  await sharedThingInstance.writeProperty('currentDate', dateOnly);
+                  console.log('Date write successful:', dateOnly);
+                }
+              });
+              console.log('Date calendar connected, initial value:', iso);
+            } catch (err) {
+              console.warn('Date calendar init failed, falling back to now:', err);
+              const iso = new Date().toISOString();
+              await dateCalendar.setValue(iso, {
+                writeOperation: async (newValue) => {
+                  const dateOnly = new Date(newValue).toISOString().split('T')[0];
+                  await sharedThingInstance.writeProperty('currentDate', dateOnly);
+                }
+              });
+            }
           }
 
           // Time Calendar - connects to currentTime property
           const timeCalendar = document.getElementById('td-calendar-time');
           if (timeCalendar) {
             await timeCalendar.componentOnReady();
-            
-            // Set up write operation only - let calendar fetch TD value when user interacts
-            await timeCalendar.setWriteOperation(async (newValue) => {
-              console.log('Writing time value:', newValue, 'to currentTime property');
-              // Extract just the time part for the TD property
-              const timeOnly = new Date(newValue).toTimeString().split(' ')[0];
-              await sharedThingInstance.writeProperty('currentTime', timeOnly);
-              console.log('Time write successful:', timeOnly);
-            });
-            
-            console.log('Time calendar connected - ready for user interaction');
+            try {
+              const prop = await sharedThingInstance.readProperty('currentTime');
+              let value = await prop.value(); // expected 'HH:MM:SS'
+              if (typeof value !== 'string') value = '';
+              const today = new Date();
+              const datePart = today.toISOString().split('T')[0];
+              const iso = value ? new Date(datePart + 'T' + value + 'Z').toISOString() : today.toISOString();
+              await timeCalendar.setValue(iso, {
+                writeOperation: async (newValue) => {
+                  console.log('Writing time value:', newValue, 'to currentTime property');
+                  const timeOnly = new Date(newValue).toTimeString().split(' ')[0];
+                  await sharedThingInstance.writeProperty('currentTime', timeOnly);
+                  console.log('Time write successful:', timeOnly);
+                }
+              });
+              console.log('Time calendar connected, initial value:', iso);
+            } catch (err) {
+              console.warn('Time calendar init failed, falling back to now:', err);
+              const iso = new Date().toISOString();
+              await timeCalendar.setValue(iso, {
+                writeOperation: async (newValue) => {
+                  const timeOnly = new Date(newValue).toTimeString().split(' ')[0];
+                  await sharedThingInstance.writeProperty('currentTime', timeOnly);
+                }
+              });
+            }
           }
 
           // DateTime Calendar - connects to currentDateTime property
           const datetimeCalendar = document.getElementById('td-calendar-datetime');
           if (datetimeCalendar) {
             await datetimeCalendar.componentOnReady();
-            
-            // Set up write operation only - let calendar fetch TD value when user interacts
-            await datetimeCalendar.setWriteOperation(async (newValue) => {
-              console.log('Writing datetime value:', newValue, 'to currentDateTime property');
-              await sharedThingInstance.writeProperty('currentDateTime', newValue);
-              console.log('DateTime write successful');
-            });
-            
-            console.log('DateTime calendar connected - ready for user interaction');
+            try {
+              const prop = await sharedThingInstance.readProperty('currentDateTime');
+              let value = await prop.value(); // expected ISO string
+              if (typeof value !== 'string' || !value) value = new Date().toISOString();
+              await datetimeCalendar.setValue(value, {
+                writeOperation: async (newValue) => {
+                  console.log('Writing datetime value:', newValue, 'to currentDateTime property');
+                  await sharedThingInstance.writeProperty('currentDateTime', newValue);
+                  console.log('DateTime write successful');
+                }
+              });
+              console.log('DateTime calendar connected, initial value:', value);
+            } catch (err) {
+              const fallback = new Date().toISOString();
+              console.warn('DateTime calendar init failed, using now:', err);
+              await datetimeCalendar.setValue(fallback, {
+                writeOperation: async (newValue) => {
+                  await sharedThingInstance.writeProperty('currentDateTime', newValue);
+                }
+              });
+            }
           }
         }
 

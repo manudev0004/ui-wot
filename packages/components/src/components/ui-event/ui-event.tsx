@@ -80,12 +80,6 @@ export class UiEvent {
   /** Show event timestamps */
   @Prop() showTimestamp: boolean = true;
 
-  /** Enable event filtering */
-  @Prop() enableFiltering: boolean = false;
-
-  /** Filter expression */
-  @Prop() filterExpression?: string;
-
   // ============================== COMPONENT STATE ==============================
 
   /** Current operation status for visual feedback */
@@ -116,22 +110,10 @@ export class UiEvent {
   /** Timer for updating relative timestamps */
   private timestampUpdateTimer?: number;
 
-  /** Current filter function */
-  private eventFilter?: (event: any) => boolean;
-
-  /** Cleanup function for event subscription */
-  private unsubscribe?: () => void;
-
   // ============================== EVENTS ==============================
 
   /**
-   * Emitted when event listener value changes through user interaction or method calls.
-   * Contains the new value, previous value, timestamp, and source information.
-   */
-  @Event() valueMsg: EventEmitter<UiMsg<any>>;
-
-  /**
-   * Emitted when an event is received from the Thing.
+   * Emitted when an event is received.
    * Contains the event data with metadata and source information.
    */
   @Event() eventReceived: EventEmitter<UiMsg<any>>;
@@ -146,15 +128,6 @@ export class UiEvent {
    *
    * @returns Promise resolving to void when listening starts
    *
-   * @example Basic Usage
-   * ```javascript
-   * await eventComponent.startListening();
-   * ```
-   *
-   * @example JS integration with node-wot browser bundle
-   * ```javascript
-   * const eventComponent = document.getElementById('device-event');
-   * await eventComponent.startListening();
    * ```
    */
   @Method()
@@ -166,13 +139,6 @@ export class UiEvent {
 
     try {
       // The component is now ready to receive events via the addEvent() method
-      // No mock events are generated - events come from external sources
-
-      // Set up cleanup function for consistency (though no cleanup needed for external events)
-      this.unsubscribe = () => {
-        // Cleanup would go here if we had external subscriptions to clean up
-      };
-
       this.isSubscribed = true;
       this.operationStatus = 'success';
       this.lastUpdatedTs = Date.now();
@@ -202,10 +168,7 @@ export class UiEvent {
   }
 
   /**
-   * This method adds an event silently without triggering events.
-   *
-   * Use this for external data synchronization to prevent event loops.
-   * Perfect for WebSocket updates or polling from remote devices.
+   * This method adds an event.
    *
    * @param eventData - The event data to add
    * @param eventId - Optional event ID
@@ -236,7 +199,7 @@ export class UiEvent {
   }
 
   /**
-   * Stop listening for events (disables the component).
+   * Stop listening for events.
    *
    * @returns Promise resolving to void when listening stops
    */
@@ -244,25 +207,8 @@ export class UiEvent {
   async stopListening(): Promise<void> {
     if (!this.isSubscribed) return;
 
-    // Set flag to false FIRST to prevent race conditions
     this.isSubscribed = false;
     this.operationStatus = 'idle';
-
-    // Clean up event subscription
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = undefined;
-    }
-  }
-
-  /**
-   * Set event filter function for filtering incoming events.
-   *
-   * @param filterFn - Function to filter events
-   */
-  @Method()
-  async setEventFilter(filterFn: (event: any) => boolean): Promise<void> {
-    this.eventFilter = filterFn;
   }
 
   /**
@@ -284,19 +230,6 @@ export class UiEvent {
     return this.isSubscribed;
   }
 
-  /**
-   * Force cleanup (for debugging purposes).
-   */
-  @Method()
-  async forceCleanup(): Promise<void> {
-    this.isSubscribed = false;
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = undefined;
-    }
-    this.operationStatus = 'idle';
-  }
-
   // ============================== LIFECYCLE METHODS ==============================
 
   /** Initialize component state from props */
@@ -307,12 +240,6 @@ export class UiEvent {
   /** Clean up timers when component is removed */
   disconnectedCallback() {
     this.stopTimestampUpdater();
-
-    // Clean up event subscription
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = undefined;
-    }
   }
 
   // ============================== WATCHERS ==============================
@@ -334,13 +261,8 @@ export class UiEvent {
 
   // ============================== PRIVATE METHODS ==============================
 
-  /** Handles received events with filtering and history management */
+  /** Handles received events and history management */
   private handleReceivedEvent(event: any) {
-    // Apply filter if set
-    if (this.eventFilter && !this.eventFilter(event)) {
-      return;
-    }
-
     // Add to history
     this.eventHistory = [event, ...this.eventHistory.slice(0, this.maxEvents - 1)];
     this.eventCount++;
@@ -352,13 +274,6 @@ export class UiEvent {
       ts: event.timestamp,
       meta: { eventId: event.id, source: event.source },
     });
-
-    // Also emit as value message for consistency
-    this.valueMsg.emit({
-      newVal: event.data,
-      ts: event.timestamp,
-      meta: { type: 'event', eventName: this.eventName },
-    });
   }
 
   /** Manages timestamp update timer for relative time display */
@@ -366,7 +281,6 @@ export class UiEvent {
     this.stopTimestampUpdater();
     if (this.showLastUpdated && this.lastUpdatedTs) {
       this.timestampUpdateTimer = window.setInterval(() => {
-        // Force re-render to update relative timestamps
         this.lastUpdatedTs = this.lastUpdatedTs;
       }, 60000); // Update every minute
     }
@@ -385,20 +299,16 @@ export class UiEvent {
     const baseClasses = 'relative rounded-lg transition-all duration-200';
     const style: any = {};
 
-    switch (this.variant) {
-      case 'outlined':
-        style.borderColor = this.getActiveColor();
-        style.borderWidth = '2px';
-        return { classes: `${baseClasses} border bg-transparent`, style };
-      case 'filled':
-        // Use CSS classes for filled variant with opacity
-        const filledClass = `variant-filled-${this.color}`;
-        style.borderColor = this.getActiveColor();
-        style.borderWidth = '1px';
-        return { classes: `${baseClasses} border ${filledClass}`, style };
-      default:
-        return { classes: baseClasses, style };
+    if (this.variant === 'filled') {
+      const filledClass = `variant-filled-${this.color}`;
+      style.borderColor = this.getActiveColor();
+      style.borderWidth = '1px';
+      return { classes: `${baseClasses} border ${filledClass}`, style };
     }
+    // Outlined variant
+    style.borderColor = this.getActiveColor();
+    style.borderWidth = '2px';
+    return { classes: `${baseClasses} border bg-transparent`, style };
   }
 
   /** Generate the active color using global CSS variables */
@@ -454,7 +364,6 @@ export class UiEvent {
 
   /** Renders the control buttons */
   private renderControls() {
-    // Always use white text on colored button backgrounds for better contrast
     const primaryButtonStyle = this.isSubscribed ? { backgroundColor: 'var(--color-danger)', color: 'white' } : { backgroundColor: this.getActiveColor(), color: 'white' };
 
     return (
@@ -491,7 +400,6 @@ export class UiEvent {
   render() {
     const variantStyles = this.getVariantStyles();
     const panelBg = this.dark ? 'bg-transparent' : 'bg-[var(--neutral-clr-50)]';
-    // Use the selected color for "Event Listener" text in both variants
     const headerTextColor = this.getActiveColor();
     const generalTextColor = this.dark ? 'text-white' : 'text-gray-900';
     const historyBg = this.dark ? 'bg-transparent' : 'bg-[var(--neutral-clr-50)]';
@@ -501,7 +409,6 @@ export class UiEvent {
         {/* Label */}
         {this.label && <label class={`block text-sm font-medium mb-2 ${generalTextColor}`}>{this.label}</label>}
 
-        {/* Main container with status badge */}
         <div class="relative inline-flex items-start w-full">
           <div class={`${variantStyles.classes} p-4 w-full ${panelBg}`} style={variantStyles.style}>
             {/* Header with event info and status */}
@@ -531,9 +438,6 @@ export class UiEvent {
 
         {/* Last updated timestamp */}
         {this.renderLastUpdated()}
-
-        {/* Error message */}
-        {this.lastError && <div class="text-xs mt-1 text-[var(--color-danger)]">{this.lastError}</div>}
       </div>
     );
   }

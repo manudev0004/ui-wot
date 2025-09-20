@@ -1,150 +1,160 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { wotService } from '../services/wotService';
-import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
+import { GridStack } from 'gridstack';
+import 'gridstack/dist/dd-gridstack';
+import 'gridstack/dist/gridstack.min.css';
 import { useAppContext } from '../context/AppContext';
 import { WoTComponent } from '../types';
 import { GroupContainer } from '../components/GroupContainer';
 import { SmartEditPopup } from '../components/SmartEditPopup';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
+import { useNavbar } from '../context/NavbarContext';
 
-const ResponsiveGridLayout = WidthProvider(Responsive);
-// Use an `any`-typed alias to allow advanced props like draggableHandle/draggableCancel without TS friction
-const AnyResponsiveGridLayout = ResponsiveGridLayout as unknown as React.ComponentType<any>;
+// Utility to interpret existing grid-ish numbers as pixels for display
+const toPx = (n: number, scale: number) => (n > 40 ? n : Math.round(n * scale));
+const layoutToRect = (layout: { x: number; y: number; w: number; h: number }) => ({
+  x: toPx(layout.x, 32),
+  y: toPx(layout.y, 32),
+  w: toPx(layout.w, 90),
+  h: toPx(layout.h, 70),
+});
+
+// Tile sizes for GridStack units
+const TILE_W = 90;
+const TILE_H = 70;
+const MIN_CARD_H = 120; // header + minimal content
+const MIN_HIDE_CARD_H = 100;
+// Note: snapping handled by GridStack
+
+// gridToAbs no longer used in GridStack phase
+
+// absToGrid no longer used with GridStack-managed positions
 
 export function ComponentCanvasPage() {
   const { state, dispatch } = useAppContext();
   const navigate = useNavigate();
+  const { setContent, clear } = useNavbar();
   const [editingComponent, setEditingComponent] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  // GridStack based dragging will be handled via events
+  // Grid snapping
+  const [snapEnabled, setSnapEnabled] = useState(true);
   // attributes state for the currently editing component
   const [attributesList, setAttributesList] = useState<string[]>([]);
   const [attributesValues, setAttributesValues] = useState<Record<string, string>>({});
   const [attributesTypes, setAttributesTypes] = useState<Record<string, 'string' | 'number' | 'boolean'>>({});
 
-  // Dashboard save/load state
+  // Save modal state
   const [showSaveModal, setShowSaveModal] = useState(false);
-  const [saveName, setSaveName] = useState('');
+  const [saveName, setSaveName] = useState('My Dashboard');
   const [saveDescription, setSaveDescription] = useState('');
 
-  // Close the sidebar whenever Edit Mode is turned off
-  useEffect(() => {
-    if (!isEditMode && editingComponent) {
-      setEditingComponent(null);
-    }
-  }, [isEditMode]);
-
-  // Populate attributes when editing component changes
-  useEffect(() => {
-    if (editingComponent) {
-      // Small timeout to ensure the element has been rendered into DOM
-      const timeoutId = setTimeout(() => populateAttributes(editingComponent), 150);
-      return () => clearTimeout(timeoutId);
-    } else {
-      setAttributesList([]);
-      setAttributesValues({});
-      setAttributesTypes({});
-    }
-  }, [editingComponent]);
-
-  // Load saved dashboards on mount
-  useEffect(() => {
-    // No longer needed since we removed load functionality
-  }, []);
-
-  const handleSaveDashboard = async () => {
-    if (!saveName.trim()) {
-      alert('Please enter a dashboard name');
-      return;
-    }
-
+  const handleSaveDashboard = () => {
     try {
-      const dashboardData = {
-        name: saveName.trim(),
-        description: saveDescription.trim() || undefined,
-        version: '1.0.0',
-        timestamp: Date.now(),
-        tdInfos: state.tdInfos,
+      const data = {
+        name: saveName,
+        description: saveDescription,
         components: state.components,
-        availableAffordances: state.availableAffordances,
-        groups: state.groups, // Include groups in the export
+        groups: state.groups,
+        tdInfos: state.tdInfos,
       };
-
-      // Export directly as JSON file instead of saving to localStorage
-      const jsonString = JSON.stringify(dashboardData, null, 2);
-      const blob = new Blob([jsonString], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${saveName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_dashboard.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${saveName.replace(/\s+/g, '_')}.json`;
+      a.click();
       URL.revokeObjectURL(url);
-
-      setShowSaveModal(false);
-      setSaveName('');
-      setSaveDescription('');
-      alert('Dashboard exported successfully!');
-    } catch (error) {
-      console.error('Failed to export dashboard:', error);
-      alert('Failed to export dashboard. Please try again.');
+    } catch (e) {
+      console.error('Failed to export dashboard', e);
     }
+    setShowSaveModal(false);
   };
 
-  /**
-   * Handle layout changes for both groups and standalone components
-   */
-  const handleMainLayoutChange = (layout: Layout[]) => {
-    if (!isEditMode) return;
+  // Initialize GridStack on root grid and wire change events
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!gridRef.current) return;
+    const grid = GridStack.init(
+      {
+        column: 24,
+        cellHeight: TILE_H,
+        margin: 20,
+        acceptWidgets: false,
+        disableResize: !isEditMode,
+        disableDrag: !isEditMode,
+        float: false,
+      },
+      gridRef.current,
+    );
 
-    layout.forEach(layoutItem => {
-      // Check if this is a group
-      const group = state.groups.find(g => g.layout.i === layoutItem.i);
-      if (group) {
-        dispatch({
-          type: 'UPDATE_GROUP',
-          payload: {
-            id: group.id,
-            updates: {
-              layout: {
-                ...group.layout,
-                x: layoutItem.x,
-                y: layoutItem.y,
-                w: layoutItem.w,
-                h: layoutItem.h
-              }
-            }
-          }
-        });
-        return;
-      }
-
-      // Otherwise, handle as standalone component
-      const component = state.components.find(c => c.layout.i === layoutItem.i);
-      if (component) {
-        dispatch({
-          type: 'UPDATE_LAYOUT',
-          payload: {
-            id: component.id,
-            layout: { ...component.layout, x: layoutItem.x, y: layoutItem.y, w: layoutItem.w, h: layoutItem.h },
-          },
-        });
-      }
+    // Compact layout after initial render to avoid overlaps
+    requestAnimationFrame(() => {
+      try {
+        grid.compact();
+      } catch {}
     });
-  };
+
+    const onChange = (_: any, items: any[]) => {
+      if (!items) return;
+      items.forEach(it => {
+        const el = it.el as HTMLElement | null;
+        if (!el) return;
+        const itemId = el.getAttribute('data-item-id') || '';
+        if (!itemId) return;
+        const [kind, rawId] = itemId.split(':');
+        if (!rawId) return;
+        const rect = { x: it.x * TILE_W, y: it.y * TILE_H, w: it.w * TILE_W, h: it.h * TILE_H };
+        if (kind === 'comp') {
+          const comp = state.components.find(c => c.id === rawId);
+          if (comp) {
+            dispatch({ type: 'UPDATE_LAYOUT', payload: { id: comp.id, layout: { ...comp.layout, ...rect } } });
+          }
+        } else if (kind === 'group') {
+          const group = state.groups.find(g => g.id === rawId);
+          if (group) {
+            dispatch({ type: 'UPDATE_GROUP', payload: { id: group.id, updates: { layout: { ...group.layout, ...rect } } } });
+          }
+        }
+      });
+    };
+
+    const onAdded = (_: any, items: any[]) => {
+      if (!items) return;
+      items.forEach(it => {
+        const el = it.el as HTMLElement | null;
+        if (!el) return;
+        const itemId = el.getAttribute('data-item-id') || '';
+        if (!itemId) return;
+        const [kind, rawId] = itemId.split(':');
+        if (kind !== 'comp' || !rawId) return;
+        // Ensure component is not in any group now
+        const currentGroup = state.groups.find(g => g.affordanceIds.includes(rawId));
+        if (currentGroup) {
+          dispatch({ type: 'REMOVE_COMPONENT_FROM_GROUP', payload: { groupId: currentGroup.id, componentId: rawId } });
+        }
+      });
+    };
+
+    grid.on('change', onChange);
+    grid.on('added', onAdded);
+
+    return () => {
+      grid.off('change');
+      grid.off('added');
+      grid.destroy(false);
+    };
+  }, [dispatch, isEditMode, state.components, state.groups]);
 
   const handleComponentEdit = (componentId: string) => {
     console.log('[ComponentCanvas] handleComponentEdit called for', componentId, { isEditMode, editingComponent });
     const nextId = editingComponent === componentId ? null : componentId;
-    
-    // Always ensure edit mode is enabled when opening editor
     if (!isEditMode) {
       setIsEditMode(true);
     }
-    
+    if (nextId) {
+      populateAttributes(componentId);
+    }
     setEditingComponent(nextId);
   };
 
@@ -209,7 +219,7 @@ export function ComponentCanvasPage() {
       attrs.forEach(name => {
         const attrType = componentAttributes[name];
         types[name] = attrType;
-        
+
         if (attrType === 'boolean') {
           // For boolean attributes, check if they exist on the element
           vals[name] = el!.hasAttribute(name) ? 'true' : 'false';
@@ -235,84 +245,84 @@ export function ComponentCanvasPage() {
   const getComponentAttributes = (componentType: string): Record<string, 'string' | 'number' | 'boolean'> => {
     const attributeMap: Record<string, Record<string, 'string' | 'number' | 'boolean'>> = {
       'ui-button': {
-        'label': 'string',
-        'color': 'string',
-        'disabled': 'boolean',
-        'dark': 'boolean',
-        'readonly': 'boolean',
-        'keyboard': 'boolean',
-        'showLastUpdated': 'boolean'
+        label: 'string',
+        color: 'string',
+        disabled: 'boolean',
+        dark: 'boolean',
+        readonly: 'boolean',
+        keyboard: 'boolean',
+        showLastUpdated: 'boolean',
       },
       'ui-toggle': {
-        'value': 'boolean',
-        'label': 'string',
-        'color': 'string',
-        'disabled': 'boolean',
-        'dark': 'boolean',
-        'readonly': 'boolean',
-        'keyboard': 'boolean',
-        'showLastUpdated': 'boolean'
+        value: 'boolean',
+        label: 'string',
+        color: 'string',
+        disabled: 'boolean',
+        dark: 'boolean',
+        readonly: 'boolean',
+        keyboard: 'boolean',
+        showLastUpdated: 'boolean',
       },
       'ui-slider': {
-        'value': 'number',
-        'min': 'number',
-        'max': 'number',
-        'step': 'number',
-        'label': 'string',
-        'color': 'string',
-        'disabled': 'boolean',
-        'dark': 'boolean',
-        'readonly': 'boolean',
-        'keyboard': 'boolean',
-        'showLastUpdated': 'boolean',
-        'orientation': 'string',
-        'thumbShape': 'string',
-        'enableManualControl': 'boolean'
+        value: 'number',
+        min: 'number',
+        max: 'number',
+        step: 'number',
+        label: 'string',
+        color: 'string',
+        disabled: 'boolean',
+        dark: 'boolean',
+        readonly: 'boolean',
+        keyboard: 'boolean',
+        showLastUpdated: 'boolean',
+        orientation: 'string',
+        thumbShape: 'string',
+        enableManualControl: 'boolean',
       },
       'ui-text': {
-        'value': 'string',
-        'placeholder': 'string',
-        'label': 'string',
-        'color': 'string',
-        'disabled': 'boolean',
-        'dark': 'boolean',
-        'readonly': 'boolean',
-        'keyboard': 'boolean',
-        'showLastUpdated': 'boolean'
+        value: 'string',
+        placeholder: 'string',
+        label: 'string',
+        color: 'string',
+        disabled: 'boolean',
+        dark: 'boolean',
+        readonly: 'boolean',
+        keyboard: 'boolean',
+        showLastUpdated: 'boolean',
       },
       'ui-number-picker': {
-        'value': 'number',
-        'min': 'number',
-        'max': 'number',
-        'step': 'number',
-        'label': 'string',
-        'color': 'string',
-        'disabled': 'boolean',
-        'dark': 'boolean',
-        'readonly': 'boolean',
-        'keyboard': 'boolean',
-        'showLastUpdated': 'boolean'
+        value: 'number',
+        min: 'number',
+        max: 'number',
+        step: 'number',
+        label: 'string',
+        color: 'string',
+        disabled: 'boolean',
+        dark: 'boolean',
+        readonly: 'boolean',
+        keyboard: 'boolean',
+        showLastUpdated: 'boolean',
       },
       'ui-calendar': {
-        'value': 'string',
-        'label': 'string',
-        'color': 'string',
-        'disabled': 'boolean',
-        'dark': 'boolean',
-        'readonly': 'boolean',
-        'keyboard': 'boolean',
-        'showLastUpdated': 'boolean'
+        value: 'string',
+        label: 'string',
+        color: 'string',
+        disabled: 'boolean',
+        dark: 'boolean',
+        readonly: 'boolean',
+        keyboard: 'boolean',
+        showLastUpdated: 'boolean',
       },
       'ui-checkbox': {
-        'value': 'boolean',
-        'label': 'string',
-        'color': 'string',
-        'disabled': 'boolean',
-        'dark': 'boolean',
-        'readonly': 'boolean',
-        'keyboard': 'boolean',
-        'showLastUpdated': 'boolean'
-      }
+        value: 'boolean',
+        label: 'string',
+        color: 'string',
+        disabled: 'boolean',
+        dark: 'boolean',
+        readonly: 'boolean',
+        keyboard: 'boolean',
+        showLastUpdated: 'boolean',
+      },
     };
 
     return attributeMap[componentType] || {};
@@ -320,7 +330,7 @@ export function ComponentCanvasPage() {
 
   const applyAttributeChange = (componentId: string, name: string, value: string) => {
     if (!isEditMode) return; // block edits when not in edit mode
-    
+
     // update local state
     setAttributesValues(prev => ({ ...prev, [name]: value }));
 
@@ -330,28 +340,28 @@ export function ComponentCanvasPage() {
       console.warn('[ComponentCanvas] Component not found for id:', componentId);
       return;
     }
-    
+
     // Try multiple ways to find the element
     let el: HTMLElement | null = null;
-    
+
     // First, try to find by wrapper with data-component-id
     const wrapper = document.querySelector(`[data-component-id="${componentId}"]`);
     if (wrapper) {
       el = wrapper.querySelector(comp.uiComponent) as HTMLElement | null;
     }
-    
+
     // If not found, try direct query
     if (!el) {
       el = document.querySelector(comp.uiComponent) as HTMLElement | null;
     }
-    
+
     if (!el) {
       console.warn('[ComponentCanvas] Element not found for component:', comp.uiComponent, 'in component:', componentId);
       return;
     }
-    
+
     console.log('[ComponentCanvas] Applying attribute change:', { componentId, name, value, elementFound: !!el });
-    
+
     const attrType = attributesTypes[name];
     if (attrType === 'boolean') {
       // For boolean attributes, add/remove the attribute based on value
@@ -363,7 +373,7 @@ export function ComponentCanvasPage() {
     } else {
       el.setAttribute(name, value);
     }
-    
+
     // Force a re-render or update of the element if needed
     if (name === 'variant') {
       // Dispatch a custom event to notify the component of variant change
@@ -371,9 +381,71 @@ export function ComponentCanvasPage() {
     }
   };
 
-  const handleBack = () => {
-    navigate('/affordances');
-  };
+  const tdSummary = useMemo(() => {
+    const tdCount = state.tdInfos.length;
+    const compCount = state.components.length;
+    const tdText = tdCount > 0 ? `${tdCount} TD${tdCount > 1 ? 's' : ''} loaded` : 'No TD loaded';
+    return `DASHBOARD – ${tdText}, ${compCount} components`;
+  }, [state.tdInfos.length, state.components.length]);
+
+  useEffect(() => {
+    setContent({
+      info: <span>{tdSummary}</span>,
+      actions: (
+        <>
+          <div className="flex items-center space-x-3">
+            <label className="flex items-center space-x-2 text-sm text-primary">
+              <input type="checkbox" checked={snapEnabled} onChange={e => setSnapEnabled(e.target.checked)} />
+              <span>Snap to grid</span>
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="font-heading text-primary" style={{ fontSize: 'var(--font-size-sm)' }}>
+              Edit Mode:
+            </label>
+            <button
+              onClick={() => {
+                const next = !isEditMode;
+                setIsEditMode(next);
+                if (!next) setEditingComponent(null);
+              }}
+              aria-pressed={isEditMode}
+              aria-label={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
+              title={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+                isEditMode ? 'bg-primary' : 'bg-gray-200'
+              }`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isEditMode ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+            <span className="text-primary/30">|</span>
+
+            <button onClick={() => navigate('/td-input')} className="bg-accent hover:bg-accent-light text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors">
+              Add TD
+            </button>
+            <button
+              onClick={() => {
+                dispatch({ type: 'RESET_STATE' });
+                navigate('/');
+              }}
+              className="bg-primary hover:bg-primary-light text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors"
+            >
+              New
+            </button>
+            <button
+              onClick={() => setShowSaveModal(true)}
+              disabled={state.components.length === 0}
+              className="bg-primary hover:bg-primary-light disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors"
+              title={state.components.length === 0 ? 'Add components to save dashboard' : 'Save current dashboard'}
+            >
+              Save
+            </button>
+          </div>
+        </>
+      ),
+    });
+    return () => clear();
+  }, [tdSummary, isEditMode, state.components.length, navigate, dispatch, setContent, clear]);
 
   const renderComponent = (component: WoTComponent) => {
     const isEditing = editingComponent === component.id;
@@ -383,7 +455,7 @@ export function ComponentCanvasPage() {
     const createComponentElement = (el: HTMLElement | null) => {
       if (el && !isEditing) {
         el.innerHTML = '';
-        
+
         try {
           const element = document.createElement(component.uiComponent);
 
@@ -492,338 +564,164 @@ export function ComponentCanvasPage() {
       }
     };
 
-    // If hideCard is true, render only the component without card wrapper
-    if (component.hideCard) {
-      return (
-        <div
-          key={component.layout.i}
-          data-component-id={component.id}
-          className="relative w-full h-full flex items-center justify-center"
-          style={{ zIndex: isEditing ? 1000 : 1 }}
-          onClick={(e) => {
-            // When edit mode is on, clicking opens the editor
-            if (isEditMode) {
-              e.stopPropagation();
-              handleComponentEdit(component.id);
-            }
-          }}
-        >
-          {/* Edit overlay for card-less components */}
-          {isEditMode && (
-            <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 bg-white rounded shadow-md border no-drag edit-controls">
-              <button
-                type="button"
-                onClick={(e) => { 
-                  e.preventDefault(); 
-                  e.stopPropagation(); 
-                  handleComponentEdit(component.id); 
-                }}
-                className={`p-1 rounded transition-colors ${isEditing ? 'bg-accent text-white' : 'text-primary hover:text-accent'}`}
-                title="Edit component"
-                style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2001 }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                  />
-                </svg>
-              </button>
-              <button 
-                type="button"
-                onClick={(e) => { 
-                  e.preventDefault(); 
-                  e.stopPropagation(); 
-                  handleComponentClose(component.id); 
-                }} 
-                className="p-1 rounded text-primary hover:text-red-600 transition-colors" 
-                title="Remove component"
-                style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2001 }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          )}
-          
-          {/* Component Content - takes full container */}
-          <div className="w-full h-full flex items-center justify-center component-drag-handle no-drag" style={{ cursor: isEditMode ? 'move' : 'default' }}>
-            <div
-              ref={createComponentElement}
-              className="w-full h-full flex items-center justify-center"
-            />
-          </div>
-        </div>
-      );
-    }
-
-    // Default card wrapper rendering
-    return (
+    // Inner content for the card
+    const CardInner = (
       <div
         key={component.layout.i}
         data-component-id={component.id}
-        className="bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative group"
-        style={{ zIndex: isEditing ? 1000 : 1 }}
-        onClick={(e) => {
-          // When edit mode is on, clicking the card opens its editor
+        className={
+          component.hideCard ? 'relative w-full h-full component-drag-handle' : 'bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative group w-full h-full'
+        }
+        onClick={e => {
           if (isEditMode) {
             e.stopPropagation();
             handleComponentEdit(component.id);
           }
         }}
+        style={{ zIndex: isEditing ? 1000 : 1 }}
       >
-        {/* Component Header */}
-        <div className="bg-neutral-light px-3 py-2 border-b border-primary flex items-center justify-between">
-          <div className="flex items-center space-x-2 flex-1 component-drag-handle" style={{ cursor: isEditMode ? 'move' : 'default' }}>
-            <span className="text-sm font-heading font-medium text-primary truncate">{component.title}</span>
-            <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded">{component.type}</span>
-          </div>
-          {isEditMode && (
-            <div className="flex items-center space-x-1 relative no-drag edit-controls" style={{ zIndex: 2000 }}>
-              <button
-                type="button"
-                onClick={(e) => { 
-                  e.preventDefault(); 
-                  e.stopPropagation(); 
-                  handleComponentEdit(component.id); 
-                }}
-                className={`p-1 rounded transition-colors ${isEditing ? 'bg-accent text-white' : 'text-primary hover:text-accent'}`}
-                title="Edit component"
-                style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2001 }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                  />
-                </svg>
-              </button>
-              <button 
-                type="button"
-                onClick={(e) => { 
-                  e.preventDefault(); 
-                  e.stopPropagation(); 
-                  handleComponentClose(component.id); 
-                }} 
-                className="p-1 rounded text-primary hover:text-red-600 transition-colors" 
-                title="Remove component"
-                style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2001 }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Component Content */}
-        <div className="p-4 relative no-drag">
+        {!component.hideCard && (
           <div
-            ref={createComponentElement}
-            className="min-h-16 flex items-center justify-center"
-          />
-
-          {/* Per-card editor removed; page-level sidebar is used */}
+            className="bg-neutral-light px-3 h-9 flex items-center justify-between border-b border-primary component-drag-handle"
+            style={{ cursor: isEditMode ? 'move' : 'default' }}
+          >
+            <div className="flex items-center space-x-2 flex-1">
+              <span className="text-sm font-heading font-medium text-primary truncate">{component.title}</span>
+              <span className="text-xs text-gray-600 bg-white px-2 py-0.5 rounded">{component.type}</span>
+            </div>
+            {isEditMode && (
+              <div className="flex items-center space-x-1 relative no-drag edit-controls" style={{ zIndex: 2000 }}>
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleComponentEdit(component.id);
+                  }}
+                  className={`p-1 rounded transition-colors ${isEditing ? 'bg-accent text-white' : 'text-primary hover:text-accent'}`}
+                  title="Edit component"
+                  style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2001 }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleComponentClose(component.id);
+                  }}
+                  className="p-1 rounded text-primary hover:text-red-600 transition-colors"
+                  title="Remove component"
+                  style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2001 }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        <div
+          className="relative no-drag"
+          style={{ width: '100%', height: component.hideCard ? '100%' : 'calc(100% - 36px)', minHeight: component.hideCard ? MIN_HIDE_CARD_H : MIN_CARD_H - 36 }}
+        >
+          <div ref={createComponentElement} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} />
         </div>
       </div>
     );
+
+    return CardInner;
   };
 
   return (
     <div className="min-h-screen bg-neutral-light">
-      {/* Header */}
-      <div className="bg-white border-b border-primary sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <button onClick={handleBack} className="mr-4 p-2 text-primary hover:text-accent hover:bg-neutral-light rounded-lg transition-colors" aria-label="Go back">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-              <div>
-                <h1 className="text-2xl font-hero font-bold text-primary">DASHBOARD</h1>
-                <p className="text-sm font-body text-gray-600 mt-1">
-                  {state.tdInfos.length > 0 
-                    ? `${state.tdInfos.length} TD${state.tdInfos.length > 1 ? 's' : ''} loaded - ${state.components.length} components`
-                    : `${state.components.length} components loaded`
-                  }
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <label className="text-sm font-heading font-medium text-primary">Edit Mode:</label>
-                <button
-                  onClick={() => {
-                    const next = !isEditMode;
-                    setIsEditMode(next);
-                    if (!next) setEditingComponent(null);
-                  }}
-                  aria-pressed={isEditMode}
-                  aria-label={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
-                  title={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
-                    isEditMode ? 'bg-primary' : 'bg-gray-200'
-                  }`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isEditMode ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setShowSaveModal(true)}
-                  disabled={state.components.length === 0}
-                  className="bg-primary hover:bg-primary-light disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-heading font-medium py-2 px-4 rounded-lg transition-colors"
-                  title={state.components.length === 0 ? 'Add components to save dashboard' : 'Save current dashboard'}
-                >
-                  Save Dashboard
-                </button>
-                <button
-                  onClick={() => {
-                    navigate('/td-input');
-                  }}
-                  className="bg-accent hover:bg-accent-light text-white font-heading font-medium py-2 px-4 rounded-lg transition-colors"
-                >
-                  Add TD
-                </button>
-                <button
-                  onClick={() => {
-                    dispatch({ type: 'RESET_STATE' });
-                    navigate('/');
-                  }}
-                  className="bg-primary hover:bg-primary-light text-white font-heading font-medium py-2 px-4 rounded-lg transition-colors"
-                >
-                  New Dashboard
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Canvas - No sidebar padding needed anymore */}
-      <div className="w-full min-h-screen transition-all duration-200">
-        <div className="w-full px-4 py-6">
-          {state.groups.length > 0 || state.components.some(c => !state.groups.some(g => g.affordanceIds.includes(c.id))) ? (
-            <AnyResponsiveGridLayout
-              className="layout"
-              layouts={{
-                lg: [
-                  // Group layouts - enable proper resizing and positioning
-                  ...state.groups.map(g => ({ 
-                    ...g.layout, 
-                    minW: 6, 
-                    minH: 4, 
-                    maxW: Infinity,
-                    maxH: Infinity,
-                    isResizable: isEditMode,
-                    isDraggable: isEditMode
-                  })),
-                  // Standalone component layouts
-                  ...state.components
-                    .filter(c => !state.groups.some(g => g.affordanceIds.includes(c.id)))
-                    .map(c => ({ 
-                      ...c.layout, 
-                      minW: 2, 
-                      minH: 2, 
-                      maxW: Infinity,
-                      maxH: Infinity,
-                      isResizable: isEditMode,
-                      isDraggable: isEditMode
-                    }))
-                ],
-                md: [
-                  ...state.groups.map(g => ({ 
-                    ...g.layout, 
-                    minW: 4, 
-                    minH: 4, 
-                    maxW: Infinity,
-                    maxH: Infinity,
-                    isResizable: isEditMode,
-                    isDraggable: isEditMode
-                  })),
-                  ...state.components
-                    .filter(c => !state.groups.some(g => g.affordanceIds.includes(c.id)))
-                    .map(c => ({ 
-                      ...c.layout, 
-                      minW: 2, 
-                      minH: 2, 
-                      maxW: Infinity,
-                      maxH: Infinity,
-                      isResizable: isEditMode,
-                      isDraggable: isEditMode
-                    }))
-                ],
-                sm: [
-                  ...state.groups.map(g => ({ 
-                    ...g.layout, 
-                    minW: 3, 
-                    minH: 4, 
-                    maxW: Infinity,
-                    maxH: Infinity,
-                    isResizable: isEditMode,
-                    isDraggable: isEditMode
-                  })),
-                  ...state.components
-                    .filter(c => !state.groups.some(g => g.affordanceIds.includes(c.id)))
-                    .map(c => ({ 
-                      ...c.layout, 
-                      minW: 2, 
-                      minH: 2, 
-                      maxW: Infinity,
-                      maxH: Infinity,
-                      isResizable: isEditMode,
-                      isDraggable: isEditMode
-                    }))
-                ]
-              }}
-              breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-              cols={{ lg: 24, md: 20, sm: 12, xs: 8, xxs: 4 }}
-              rowHeight={60}
-              onLayoutChange={handleMainLayoutChange}
-              isDraggable={isEditMode}
-              isResizable={isEditMode}
-              margin={[16, 16]}
-              containerPadding={[16, 16]}
-              compactType={null}
-              preventCollision={true}
-              allowOverlap={true}
-              useCSSTransforms={false}
-              draggableHandle={'.group-header, .component-drag-handle'}
-              draggableCancel={'.no-drag, button, input, select, textarea, .edit-controls, .group-options, .options-panel'}
-              resizeHandles={['se', 'sw', 'nw', 'ne', 's', 'n', 'e', 'w']}
-            >
-              {/* Render Groups */}
-              {state.groups.map(group => (
-                <div key={group.id} data-group-id={group.id} className="group-wrapper">
-                  <GroupContainer
-                    group={group}
-                    components={state.components.filter(c => group.affordanceIds.includes(c.id))}
-                    isEditMode={isEditMode}
-                    onComponentEdit={handleComponentEdit}
-                    renderComponent={renderComponent}
-                    editingComponent={editingComponent}
-                  />
-                </div>
-              ))}
-              
-              {/* Render Standalone Components */}
-              {state.components
-                .filter(c => !state.groups.some(g => g.affordanceIds.includes(c.id)))
-                .map(renderComponent)
-              }
-            </AnyResponsiveGridLayout>
+      <div className="w-full transition-all duration-200" style={{ minHeight: 'calc(100vh - var(--navbar-height))' }}>
+        <div className="page-container canvas-page py-1" style={{ minHeight: 'inherit' }}>
+          {state.groups.length > 0 || state.components.length > 0 ? (
+            <div className="relative w-full bg-white border border-gray-200 rounded-lg overflow-hidden" style={{ minHeight: 'calc(100vh - var(--navbar-height) - 1rem)' }}>
+              <div className="grid-stack p-2" ref={gridRef}>
+                {state.groups.map(group => {
+                  const rect = layoutToRect(group.layout);
+                  const wUnitsRaw = Math.max(4, Math.round(rect.w / TILE_W));
+                  const hUnitsRaw = Math.max(2, Math.round(rect.h / TILE_H));
+                  const xUnits = Math.max(0, Math.round(rect.x / TILE_W));
+                  const yUnits = Math.max(0, Math.round(rect.y / TILE_H));
+                  const autoPos = xUnits === 0 && yUnits === 0;
+                  // Compute group min size from innerLayout extents
+                  const inner = group.innerLayout || [];
+                  const maxX = inner.reduce((m, i) => Math.max(m, (i.x || 0) + (i.w || 1)), 0);
+                  const maxY = inner.reduce((m, i) => Math.max(m, (i.y || 0) + (i.h || 1)), 0);
+                  const minWUnits = Math.max(6, maxX);
+                  const minHUnits = Math.max(4, maxY + 2);
+                  const wUnits = Math.max(wUnitsRaw, minWUnits);
+                  const hUnits = Math.max(hUnitsRaw, minHUnits);
+                  const groupChildren = state.components.filter(c => group.affordanceIds.includes(c.id));
+                  return (
+                    <div
+                      key={group.id}
+                      className="grid-stack-item"
+                      data-item-id={`group:${group.id}`}
+                      gs-x={(!autoPos ? (xUnits as any) : undefined) as any}
+                      gs-y={(!autoPos ? (yUnits as any) : undefined) as any}
+                      gs-w={wUnits as any}
+                      gs-h={hUnits as any}
+                      gs-min-w={minWUnits as any}
+                      gs-min-h={minHUnits as any}
+                      gs-auto-position={autoPos ? 'true' : 'false'}
+                    >
+                      <div className="grid-stack-item-content">
+                        <GroupContainer group={group} components={groupChildren} isEditMode={isEditMode} renderCard={renderComponent} />
+                      </div>
+                    </div>
+                  );
+                })}
+                {state.components
+                  .filter(c => !state.groups.some(g => g.affordanceIds.includes(c.id)))
+                  .map(component => {
+                    // ensure a reasonable default size for visibility
+                    const base = layoutToRect(component.layout);
+                    const rect = {
+                      w: Math.max(base.w || 360, 360),
+                      h: Math.max(base.h || 180, 180),
+                      x: base.x || 0,
+                      y: base.y || 0,
+                    };
+                    const wUnits = Math.max(4, Math.round(rect.w / TILE_W));
+                    const hUnits = Math.max(3, Math.round(rect.h / TILE_H));
+                    const xUnits = Math.max(0, Math.round(rect.x / TILE_W));
+                    const yUnits = Math.max(0, Math.round(rect.y / TILE_H));
+                    const autoPos = xUnits === 0 && yUnits === 0;
+                    return (
+                      <div
+                        key={component.id}
+                        className="grid-stack-item"
+                        data-item-id={`comp:${component.id}`}
+                        gs-x={(!autoPos ? (xUnits as any) : undefined) as any}
+                        gs-y={(!autoPos ? (yUnits as any) : undefined) as any}
+                        gs-w={wUnits as any}
+                        gs-h={hUnits as any}
+                        gs-min-w={4 as any}
+                        gs-min-h={3 as any}
+                        gs-auto-position={autoPos ? 'true' : 'false'}
+                      >
+                        <div className="grid-stack-item-content" style={{ minWidth: 360, minHeight: 180 }}>
+                          {renderComponent(component)}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
           ) : (
             <div className="text-center py-12">
               <div className="max-w-md mx-auto">
@@ -834,37 +732,39 @@ export function ComponentCanvasPage() {
                 <p className="mt-1 text-sm font-body text-gray-500">No components have been selected yet. Go back to select affordances from your Thing Description.</p>
                 <div className="mt-6">
                   <button
-                    onClick={handleBack}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-heading font-medium rounded-md text-white bg-primary hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
-                >
-                  Select Affordances
-                </button>
+                    onClick={() => navigate('/affordances')}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-heading font-medium rounded-md text-white bg-primary hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+                  >
+                    Select Affordances
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
         </div>
       </div>
 
       {/* Smart Edit Popup */}
-      {editingComponent && isEditMode && (() => {
-        const comp = state.components.find(c => c.id === editingComponent);
-        if (!comp) return null;
-        const afford = state.availableAffordances.find(a => a.key === comp.affordanceKey);
-        return (
-          <SmartEditPopup
-            component={comp}
-            affordance={afford}
-            onClose={() => setEditingComponent(null)}
-            attributesList={attributesList}
-            attributesValues={attributesValues}
-            attributesTypes={attributesTypes}
-            onAttributeChange={applyAttributeChange}
-            onVariantChange={handleVariantChange}
-            onComponentClose={handleComponentClose}
-          />
-        );
-      })()}
+      {editingComponent &&
+        isEditMode &&
+        (() => {
+          const comp = state.components.find(c => c.id === editingComponent);
+          if (!comp) return null;
+          const afford = state.availableAffordances.find(a => a.key === comp.affordanceKey);
+          return (
+            <SmartEditPopup
+              component={comp}
+              affordance={afford}
+              onClose={() => setEditingComponent(null)}
+              attributesList={attributesList}
+              attributesValues={attributesValues}
+              attributesTypes={attributesTypes}
+              onAttributeChange={applyAttributeChange}
+              onVariantChange={handleVariantChange}
+              onComponentClose={handleComponentClose}
+            />
+          );
+        })()}
 
       {/* Save Dashboard Modal */}
       {showSaveModal && (
@@ -903,10 +803,7 @@ export function ComponentCanvasPage() {
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={handleSaveDashboard}
-                  className="px-4 py-2 bg-primary hover:bg-primary-light text-white font-heading font-medium rounded-lg transition-colors"
-                >
+                <button onClick={handleSaveDashboard} className="px-4 py-2 bg-primary hover:bg-primary-light text-white font-heading font-medium rounded-lg transition-colors">
                   Export
                 </button>
               </div>

@@ -6,9 +6,7 @@
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 import { UiMsg } from "./utils/types";
-import { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 export { UiMsg } from "./utils/types";
-export { UiCalendarDateChange, UiCalendarValueChange } from "./components/ui-calendar/ui-calendar";
 export namespace Components {
     /**
      * A simple button component designed for WoT device actions.
@@ -83,170 +81,143 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Advanced calendar component with comprehensive styling, variants, and features.
-     * Matches the design family of ui-button, ui-slider, and other components.
+     * A versatile calendar component designed for WoT device control.
+     * It has various features, visual styles, status and last updated timestamps and other options.
      * @example Basic Usage
      * ```html
-     * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+     * <ui-calendar variant="outlined" value="2023-12-25T00:00:00.000Z" label="Select Date"></ui-calendar>
+     * <ui-calendar variant="filled" include-time="true" label="Pick Date & Time"></ui-calendar>
+     * <ui-calendar variant="outlined" label="Device Calendar" show-last-updated="true"></ui-calendar>
      * ```
-     * @example Different Variants & Colors
-     * ```html
-     * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
-     * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
-     * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
-     * ```
-     * @example Sizes & Features
-     * ```html
-     * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
-     * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
-     * ```
-     * @example Dark Theme
-     * ```html
-     * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
+     * @example JS integaration with node-wot browser bundle
+     * ```javascript
+     * const calendar = document.getElementById('device-calendar');
+     * const initialValue = await (await thing.readProperty('targetDate')).value();
+     * await calendar.setValue(initialValue, {
+     * writeOperation: async value => {
+     * await thing.writeProperty('targetDate', value);
+     * }
+     * });
      * ```
      */
     interface UiCalendar {
         /**
-          * Animation style for transitions. - none: No animations - slide: Slide transitions between months - fade: Fade transitions - bounce: Playful bounce effects
-          * @default 'slide'
-         */
-        "animation": 'none' | 'slide' | 'fade' | 'bounce';
-        /**
-          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones) - neutral: Grayscale for subtle integration - success: Green for positive actions - warning: Orange for caution - danger: Red for destructive actions
+          * Color theme for the active state matching to thingsweb theme
           * @default 'primary'
          */
-        "color": 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger';
+        "color": 'primary' | 'secondary' | 'neutral';
         /**
           * Connection state for readonly mode
           * @default true
          */
         "connected": boolean;
         /**
-          * Dark theme variant.
-          * @example ```html <ui-calendar dark="true" variant="filled"></ui-calendar> ```
+          * Enable dark mode theme styling when true
           * @default false
          */
         "dark": boolean;
         /**
-          * Whether the component is disabled (cannot be interacted with).
-          * @example ```html <ui-calendar disabled="true" label="Cannot select"></ui-calendar> ```
+          * Disable user interaction when true
           * @default false
          */
         "disabled": boolean;
         /**
-          * First day of week (0 = Sunday, 1 = Monday).
+          * First day of week (0 = Sunday, 1 = Monday)
           * @default 0
          */
         "firstDayOfWeek": 0 | 1;
         /**
-          * Get the current calendar value.
-          * @returns Current date value as ISO string or undefined
-          * @example ```typescript const currentDate = await calendar.getValue(); console.log('Selected date:', currentDate); ```
+          * Gets the current calendar value with optional metadata.
+          * @param includeMetadata - Whether to include status, timestamp and other information
+          * @returns Current value or detailed metadata object
          */
-        "getValue": () => Promise<string | undefined>;
+        "getValue": (includeMetadata?: boolean) => Promise<string | undefined | { value: string | undefined; lastUpdated?: number; status: string; error?: string; }>;
         /**
-          * Include time picker alongside date picker. Supports hour:minute selection with AM/PM or 24-hour format.
+          * Include time picker alongside date picker
           * @default false
          */
         "includeTime": boolean;
         /**
-          * Display calendar inline instead of as dropdown popup. Perfect for always-visible date selection.
+          * Display calendar inline instead of as a popup
           * @default false
          */
         "inline": boolean;
         /**
-          * Enable keyboard navigation and shortcuts.
-          * @example ```html <ui-calendar keyboard="false"></ui-calendar> ```
+          * Enable keyboard navigation so user can interact using keyboard when true
           * @default true
          */
         "keyboard": boolean;
         /**
-          * Optional text label for the calendar with enhanced styling.
-          * @example ```html <ui-calendar label="Select Date"></ui-calendar> ```
+          * Text label displayed above the calendar (optional)
          */
         "label"?: string;
         /**
-          * Maximum selectable date (ISO string).
+          * Maximum selectable date (ISO string)  (Optional)
          */
         "maxDate"?: string;
         /**
-          * Minimum selectable date (ISO string).
+          * Minimum selectable date (ISO string)  (Optional)
          */
         "minDate"?: string;
         /**
-          * Whether the component is read-only (displays value but cannot be changed).
-          * @example ```html <ui-calendar readonly="true" value="2023-12-25"></ui-calendar> ```
-          * @default false
+          * (Advance) to manually set the operation status indicator.  Useful when managing device communication externally and you want to show loading/success/error states.
+          * @param status - The status to display
+          * @param errorMessage - (Optional) error message for error status
          */
-        "readonly": boolean;
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
         /**
-          * Set the visual status of the calendar (success, warning, error).
-          * @param status - Status type or null to clear
-          * @param message - Optional status message
-          * @example ```typescript await calendar.setStatus('error', 'Invalid date selected'); await calendar.setStatus('success', 'Date saved successfully'); await calendar.setStatus(null); // Clear status ```
-         */
-        "setStatus": (status: "idle" | "loading" | "success" | "error", message?: string) => Promise<void>;
-        /**
-          * Set the value programmatically with automatic operation handling
+          * Sets the calendar value with optional device communication api and other options.  This is the primary method for connecting calendars to real devices. It supports optimistic updates, error handling, and automatic retries.
           * @param value - The date string value to set (ISO format)
-          * @param writeOperation - Optional write function to call after value update
+          * @param options - Optional configuration for device communication and behavior
+          * @returns Promise resolving to any result from the operation
+          * @example Basic Usage ```javascript await calendar.setValue('2023-12-25T00:00:00.000Z'); ```
+          * @example JS integration with node-wot browser bundle ```javascript const calendar = document.getElementById('device-calendar'); const initialValue = await (await thing.readProperty('targetDate')).value(); await calendar.setValue(initialValue, { writeOperation: async value => { await thing.writeProperty('targetDate', value); } }); ```
          */
-        "setValue": (value: string, writeOperation?: (value: string) => Promise<any>) => Promise<any>;
+        "setValue": (value: string, options?: { writeOperation?: (value: string) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }) => Promise<any>;
         /**
-          * Set the value silently without emitting events or status changes
-          * @param value - The date string value to set (ISO format)
+          * This method updates the value silently without triggering events.  Use this for external data synchronization to prevent event loops. Perfect for WebSocket updates or polling from remote devices.
+          * @param value - The date string value to set silently (ISO format)
          */
         "setValueSilent": (value: string) => Promise<void>;
         /**
-          * Show clear button to reset selection.
+          * Show clear button to reset selection
           * @default true
          */
         "showClearButton": boolean;
         /**
-          * Show last updated timestamp below the component.
-          * @example ```html <ui-calendar showLastUpdated="true"></ui-calendar> ```
+          * Show last updated timestamp below the component
           * @default false
          */
         "showLastUpdated": boolean;
         /**
-          * Show status badge when true
+          * Show visual operation status indicators (loading, success, failed) right to the component
           * @default true
          */
         "showStatus": boolean;
         /**
-          * Show today button for quick navigation.
+          * Show today button
           * @default true
          */
         "showTodayButton": boolean;
         /**
-          * Show week numbers in calendar grid.
+          * Show week numbers in calendar grid
           * @default false
          */
         "showWeekNumbers": boolean;
         /**
-          * Component size for different use cases. - small: Compact calendar for tight spaces - medium: Standard size (default) - large: Prominent calendar with larger touch targets
-          * @default 'medium'
-         */
-        "size": 'small' | 'medium' | 'large';
-        /**
-          * Time format when includeTime is enabled. - 12: 12-hour format with AM/PM - 24: 24-hour format
+          * Time format when includeTime is enabled (12-hour or 24-hour)
           * @default '12'
          */
         "timeFormat": '12' | '24';
         /**
-          * Trigger a visual pulse effect to indicate the value was read/accessed.
-          * @example ```typescript await calendar.triggerReadPulse(); ```
-         */
-        "triggerReadPulse": () => Promise<void>;
-        /**
-          * Current selected date-time value (ISO string).
+          * Current date-time value of the calendar (ISO string)
          */
         "value"?: string;
         /**
-          * Visual style variant matching component family design. - minimal: Clean, borderless design with subtle hover effects - outlined: Border with transparent background, colored accents - filled: Solid background with contrasting text - elevated: Shadow and depth for prominent display
-          * @default 'minimal'
+          * Visual style variant of the calendar. - outlined: Border-focused design with outline style - filled: Solid background design
+          * @default 'outlined'
          */
-        "variant": 'minimal' | 'outlined' | 'filled' | 'elevated';
+        "variant": 'outlined' | 'filled';
     }
     /**
      * A versatile checkbox component designed for WoT device control.
@@ -308,7 +279,7 @@ export namespace Components {
         /**
           * Sets the checkbox value with optional device communication api and other options.  This is the primary method for connecting checkboxes to real devices. It supports optimistic updates, error handling, and automatic retries.
           * @param value - The boolean value to set (true = checked, false = unchecked)
-          * @param options - Configuration for device communication and behavior
+          * @param options - Optional configuration for device communication and behavior
           * @returns Promise resolving to true if successful, false if failed
           * @example Basic Usage ```javascript await checkbox.setValue(true); ```
           * @example JS integration with node-wot browser bundle ```javascript const checkbox = document.getElementById('device-checkbox'); const initialValue = Boolean(await (await thing.readProperty('enabled')).value()); await checkbox.setValue(initialValue, { writeOperation: async value => { await thing.writeProperty('enabled', value); }, autoRetry: { attempts: 3, delay: 1000 } }); ```
@@ -341,121 +312,116 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * A color picker component for selecting color values.
-     * Provides a simple HTML5 color input with consistent styling and WoT integration.
+     * A versatile color picker component designed for WoT device control.
      * @example Basic Usage
      * ```html
      * <ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
      * ```
-     * @example JavaScript Integration
+     * @example JS integaration with node-wot browser bundle
      * ```javascript
-     * const colorPicker = document.querySelector('#color-selector');
-     * // Set initial value with write operation
-     * await colorPicker.setValue('#00ff00', {
-     * writeOperation: async (color) => {
-     * await thing.writeProperty('deviceColor', color);
+     * const colorPicker = document.getElementById('device-color');
+     * const initialValue = String(await (await thing.readProperty('deviceColor')).value());
+     * await colorPicker.setValue(initialValue, {
+     * writeOperation: async value => {
+     * await thing.writeProperty('deviceColor', value);
      * }
-     * });
-     * // Listen for color changes
-     * colorPicker.addEventListener('valueMsg', (e) => {
-     * console.log('Color changed to:', e.detail.newVal);
      * });
      * ```
      */
     interface UiColorPicker {
         /**
-          * Whether the component is disabled.
+          * Enable dark mode theme styling when true
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Disable user interaction when true
           * @default false
          */
         "disabled": boolean;
         /**
-          * Get the current color value.
-          * @returns The current color value
+          * Gets the current color picker value with optional metadata.
+          * @param includeMetadata - Whether to include status, timestamp and other information
+          * @returns Current value or detailed metadata object
          */
-        "getValue": () => Promise<string>;
+        "getValue": (includeMetadata?: boolean) => Promise<string | { value: string; lastUpdated?: number; status: string; error?: string; }>;
         /**
-          * Text label displayed above the color picker.
+          * Text label displayed right to the color picker (optional)
          */
         "label"?: string;
         /**
-          * Whether the component is read-only.
-          * @default false
+          * (Advance) to manually set the operation status indicator.  Useful when managing device communication externally and you want to show loading/success/error states.
+          * @param status - The status to display
+          * @param errorMessage - (Optional) error message for error status
          */
-        "readonly": boolean;
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
         /**
-          * Set the color value programmatically.
-          * @param color - The color value in hex format
-          * @param options - Optional configuration including write operation
-          * @returns Promise that resolves to true if successful
+          * Sets the color picker value with optional device communication api and other options.  This is the primary method for connecting color pickers to real devices. It supports optimistic updates, error handling, and automatic retries.
+          * @param value - The color value to set in hex format (e.g., #ff0000)
+          * @param options - Configuration for device communication and behavior
+          * @returns Promise resolving to true if successful, false if failed
+          * @example Basic Usage ```javascript await colorPicker.setValue('#ff0000'); ```
+          * @example JS integration with node-wot browser bundle ```javascript const colorPicker = document.getElementById('device-color'); const initialValue = String(await (await thing.readProperty('deviceColor')).value()); await colorPicker.setValue(initialValue, { writeOperation: async value => { await thing.writeProperty('deviceColor', value); }, autoRetry: { attempts: 3, delay: 1000 } }); ```
          */
-        "setValue": (color: string, options?: { writeOperation?: (value: string) => Promise<void>; _isRevert?: boolean; }) => Promise<boolean>;
+        "setValue": (value: string, options?: { writeOperation?: (value: string) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }) => Promise<boolean>;
         /**
-          * Show last updated timestamp.
+          * This method updates the value silently without triggering events.  Use this for external data synchronization to prevent event loops. Perfect for WebSocket updates or polling from remote devices.
+          * @param value - The color value to set silently in hex format
+         */
+        "setValueSilent": (value: string) => Promise<void>;
+        /**
+          * Show last updated timestamp below the component
           * @default false
          */
         "showLastUpdated": boolean;
         /**
-          * Show status badge when true.
+          * Show visual operation status indicators (loading, success, failed) right to the component
           * @default true
          */
         "showStatus": boolean;
         /**
-          * Current color value in hex format (e.g., #ff0000).
+          * Current color value in hex format (e.g., #ff0000)
           * @default '#000000'
          */
         "value": string;
-        /**
-          * Visual style variant of the color picker. - minimal: Simple color input with minimal styling - outlined: Border-focused design with outline style - filled: Solid background design with color preview
-          * @default 'outlined'
-         */
-        "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Event listener component for displaying and managing event data streams.
-     * Designed to connect with external data sources via JavaScript at the HTML level.
-     * @example Basic Event Display
+     * A versatile event listener component designed for WoT device control.
+     * It has various features, multiple visual styles, status and last updated timestamps.
+     * @example Basic Usage
      * ```html
-     * <ui-event
-     * label="Temperature Events"
-     * event-name="temperatureChanged"
-     * max-events="10"
-     * show-timestamp="true">
-     * </ui-event>
+     * <ui-event variant="outlined" label="Temperature Events" event-name="temperatureChanged"></ui-event>
+     * <ui-event variant="filled" label="Motion Events" max-events="20" show-timestamp="true"></ui-event>
+     * <ui-event variant="outlined" label="Device Status" show-last-updated="true"></ui-event>
      * ```
-     * @example External Data Connection
+     * @example JS integaration with node-wot browser bundle
      * ```javascript
-     * const eventComponent = document.getElementById('event-listener');
-     * // Add events programmatically from external sources
-     * await eventComponent.addEvent({
-     * temperature: 23.5,
-     * humidity: 65,
-     * timestamp: Date.now()
+     * const eventListener = document.getElementById('event-listener');
+     * await eventListener.startListening();
+     * // Subscribe to event and pipe to component
+     * await thing.subscribeEvent('on-bool', async data => {
+     * const value = data?.value ?? data;
+     * await eventListener.addEvent({
+     * event: 'on-bool',
+     * value,
+     * timestamp: new Date().toISOString()
      * });
-     * // Listen for UI events
-     * eventComponent.addEventListener('eventReceived', (e) => {
-     * console.log('New event displayed:', e.detail);
-     * });
-     * ```
-     * @example Event Filtering
-     * ```javascript
-     * const listener = document.getElementById('event-listener');
-     * // Set custom filter for event data
-     * await listener.setEventFilter((event) => {
-     * return event.data.temperature > 25;
      * });
      * ```
      */
     interface UiEvent {
         /**
-          * Add an event programmatically from external sources
+          * This method adds an event.
+          * @param eventData - The event data to add
+          * @param eventId - Optional event ID
          */
         "addEvent": (eventData: any, eventId?: string) => Promise<void>;
         /**
-          * Clear event history
+          * Clear event history and reset counters.
          */
         "clearEvents": () => Promise<void>;
         /**
-          * Color theme
+          * Color theme for the active state matching to thingsweb theme
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
@@ -465,47 +431,37 @@ export namespace Components {
          */
         "connected": boolean;
         /**
-          * Dark mode support
+          * Enable dark mode theme styling when true
           * @default false
          */
         "dark": boolean;
         /**
-          * Whether the component is disabled
+          * Disable user interaction when true
           * @default false
          */
         "disabled": boolean;
-        /**
-          * Enable event filtering
-          * @default false
-         */
-        "enableFiltering": boolean;
         /**
           * Event name to subscribe to (for identification/display purposes)
          */
         "eventName"?: string;
         /**
-          * Filter expression (JSONPath or simple property)
+          * Gets the current event history with optional metadata.
+          * @param includeMetadata - Whether to include status, timestamp and other information
+          * @returns Current event history or detailed metadata object
          */
-        "filterExpression"?: string;
+        "getEventHistory": (includeMetadata?: boolean) => Promise<Array<any> | { value: Array<any>; lastUpdated?: number; status: string; error?: string; }>;
         /**
-          * Force cleanup (for debugging)
-         */
-        "forceCleanup": () => Promise<void>;
-        /**
-          * Get event history
-         */
-        "getEventHistory": () => Promise<Array<any>>;
-        /**
-          * Check if component is currently listening for events
+          * Check if component is currently listening for events.
+          * @returns Promise resolving to boolean indicating listening status
          */
         "isListening": () => Promise<boolean>;
         /**
-          * Enable keyboard interactions
+          * Enable keyboard navigation so user can interact using keyboard when true
           * @default true
          */
         "keyboard": boolean;
         /**
-          * Display label for the component
+          * Text label displayed above the event listener (optional)
          */
         "label"?: string;
         /**
@@ -514,25 +470,18 @@ export namespace Components {
          */
         "maxEvents": number;
         /**
-          * Whether component is in readonly mode
-          * @default false
-         */
-        "readonly": boolean;
-        /**
-          * Set event filter function
-         */
-        "setEventFilter": (filterFn: (event: any) => boolean) => Promise<void>;
-        /**
-          * Set component status
+          * (Advance) to manually set the operation status indicator.  Useful when managing device communication externally and you want to show loading/success/error states.
+          * @param status - The status to display
+          * @param errorMessage - (Optional) error message for error status
          */
         "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
         /**
-          * Show last updated timestamp
+          * Show last updated timestamp below the component
           * @default false
          */
         "showLastUpdated": boolean;
         /**
-          * Show status badge when true
+          * Show visual operation status indicators (loading, success, failed) right to the component
           * @default true
          */
         "showStatus": boolean;
@@ -542,188 +491,188 @@ export namespace Components {
          */
         "showTimestamp": boolean;
         /**
-          * Start listening for events (enables the component)
+          * Starts listening for events with optional device communication api and other options.  This is the primary method for connecting event listeners to real devices. It supports event filtering, history management, and status tracking.
+          * @returns Promise resolving to void when listening starts  ```
          */
         "startListening": () => Promise<void>;
         /**
-          * Stop listening for events (disables the component)
+          * Stop listening for events.
+          * @returns Promise resolving to void when listening stops
          */
         "stopListening": () => Promise<void>;
         /**
-          * Visual style variant
+          * Visual style variant of the event listener. - outlined: Border-focused design with outline style - filled: Solid background design
           * @default 'outlined'
          */
-        "variant": 'minimal' | 'outlined' | 'filled';
+        "variant": 'outlined' | 'filled';
     }
     /**
-     * A file picker component for selecting and uploading files.
-     * Provides drag and drop functionality with visual feedback and file validation.
+     * A versatile file picker component designed for WoT device control.
+     * It supports single and multiple file selection, drag-and-drop, and file type restrictions.
      * @example Basic Usage
      * ```html
      * <ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
-     * ```
-     * @example Multiple Files
-     * ```html
      * <ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+     * <ui-file-picker label="Device Files" show-last-updated="true"></ui-file-picker>
      * ```
-     * @example JavaScript Integration
+     * @example JS integration with node-wot browser bundle
      * ```javascript
-     * const filePicker = document.querySelector('#file-upload');
-     * // Handle file selection
-     * filePicker.addEventListener('valueMsg', (e) => {
-     * const files = e.detail.newVal;
-     * console.log('Files selected:', files);
-     * });
-     * // Set upload operation
-     * await filePicker.setUploadOperation(async (files) => {
-     * const formData = new FormData();
-     * files.forEach(file => formData.append('files', file));
-     * await fetch('/api/upload', { method: 'POST', body: formData });
+     * const file = document.getElementById('file');
+     * await file.setUpload(async (fileData) => {
+     * console.log('File processed:', fileData.name, 'Size:', fileData.size);
+     * // Just log the file data, don't invoke action yet
+     * return { success: true, message: 'File processed successfully' };
+     * }, {
+     * propertyName: 'selectedFile',
+     * writeProperty: async (prop, value) => {
+     * console.log('Writing to property:', prop, value);
+     * await thing.writeProperty(prop, value);
+     * }
      * });
      * ```
      */
     interface UiFilePicker {
         /**
-          * File type restrictions (e.g., ".pdf,.doc", "image/*").
+          * File type restrictions (e.g., ".pdf,.doc", "image/*")
          */
         "accept"?: string;
         /**
-          * Clear the selected files.
-          * @returns Promise that resolves when files are cleared
+          * This method clears the files silently without triggering events.  Use this for external data synchronization to prevent event loops. Perfect for WebSocket updates or polling from remote devices.
          */
         "clearFiles": () => Promise<void>;
         /**
-          * Whether the component is disabled.
-          * @default false
+          * Color theme for the active state matching to thingsweb theme
+          * @default 'primary'
          */
-        "disabled": boolean;
+        "color": 'primary' | 'secondary' | 'neutral';
         /**
-          * Get the currently selected files.
-          * @returns Array of selected files
-         */
-        "getFiles": () => Promise<File[]>;
-        /**
-          * Text label displayed above the file picker.
-         */
-        "label"?: string;
-        /**
-          * Maximum number of files when multiple is true.
-         */
-        "maxFiles"?: number;
-        /**
-          * Maximum file size in bytes.
-         */
-        "maxSize"?: number;
-        /**
-          * Whether multiple files can be selected.
-          * @default false
-         */
-        "multiple": boolean;
-        /**
-          * Whether the component is read-only.
-          * @default false
-         */
-        "readonly": boolean;
-        /**
-          * Set the upload operation to be executed when files are selected.
-          * @param operation - The upload operation function
-          * @returns Promise that resolves to true if successful
-         */
-        "setUploadOperation": (operation: (files: File[]) => Promise<any>) => Promise<boolean>;
-        /**
-          * Show last updated timestamp.
-          * @default false
-         */
-        "showLastUpdated": boolean;
-        /**
-          * Show status badge when true.
-          * @default true
-         */
-        "showStatus": boolean;
-        /**
-          * Visual style variant of the file picker. - minimal: Simple file input with minimal styling - outlined: Border-focused design with drag and drop area - filled: Solid background design with enhanced visual feedback
-          * @default 'outlined'
-         */
-        "variant": 'minimal' | 'outlined' | 'filled';
-    }
-    /**
-     * Notification component for displaying temporary event data with auto-dismiss functionality.
-     * Supports multiple notification types with smooth animations and customizable duration.
-     * @example Basic Notification
-     * ```html
-     * <ui-notification message="Operation completed successfully" type="success"></ui-notification>
-     * ```
-     * @example Custom Duration
-     * ```html
-     * <ui-notification 
-     * message="This will auto-dismiss in 5 seconds" 
-     * type="info" 
-     * duration="5000">
-     * </ui-notification>
-     * ```
-     * @example Manual Dismiss
-     * ```html
-     * <ui-notification 
-     * message="Click to dismiss" 
-     * type="warning" 
-     * duration="0"
-     * id="manual-notification">
-     * </ui-notification>
-     * ```
-     * @example JavaScript Integration
-     * ```javascript
-     * const notification = document.querySelector('#manual-notification');
-     * // Listen for close events
-     * notification.addEventListener('notificationClose', (e) => {
-     * console.log('Notification closed:', e.detail);
-     * });
-     * // Dismiss programmatically
-     * await notification.dismiss();
-     * // Show notification programmatically
-     * await notification.show();
-     * ```
-     */
-    interface UiNotification {
-        /**
-          * Enable dark theme for the component.
+          * Enable dark mode theme styling when true
           * @default false
          */
         "dark": boolean;
         /**
-          * Dismiss the notification with animation.
+          * Disable user interaction when true
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Gets the currently selected files with optional metadata.
+          * @param includeMetadata - Whether to include status, timestamp and other information
+          * @returns Current files or detailed metadata object
+         */
+        "getFiles": (includeMetadata?: boolean) => Promise<File[] | { value: File[]; lastUpdated?: number; status: string; error?: string; }>;
+        /**
+          * Text label displayed above the file picker (optional)
+         */
+        "label"?: string;
+        /**
+          * Maximum number of files when multiple is true
+         */
+        "maxFiles"?: number;
+        /**
+          * Maximum file size in bytes
+         */
+        "maxSize"?: number;
+        /**
+          * Whether multiple files can be selected
+          * @default false
+         */
+        "multiple": boolean;
+        /**
+          * (Advance) to manually set the operation status indicator.  Useful when managing device communication externally and you want to show loading/success/error states.
+          * @param status - The status to display
+          * @param errorMessage - (Optional) error message for error status
+         */
+        "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
+        /**
+          * Sets the file picker upload operation with optional device communication api and other options.  This is the primary method for connecting file pickers to real devices. Files are automatically converted to base64 with metadata for WoT integration.
+          * @param operation - Function that receives processed file data
+          * @param options - Optional configuration for device communication and behavior
+          * @returns Promise resolving to true if successful, false if failed
+          * @example Single file upload  ```javascript const file = document.getElementById('file'); await file.setUpload(async (fileData) => { console.log('File processed:', fileData.name, 'Size:', fileData.size); // Just log the file data, don't invoke action yet return { success: true, message: 'File processed successfully' }; }, { propertyName: 'selectedFile', writeProperty: async (prop, value) => { console.log('Writing to property:', prop, value); await thing.writeProperty(prop, value); } }); ```
+          * @example Multiple file upload ```javascript const files = document.getElementById('files'); await files.setUpload(async (fileData) => { console.log('File processed:', fileData.name, 'Size:', fileData.size); // Just log the file data, don't invoke action yet return { success: true, message: 'File processed successfully' }; }, { propertyName: 'fileList', writeProperty: async (prop, value) => { console.log('Writing to property:', prop, value); await thing.writeProperty(prop, value); } }); ```
+         */
+        "setUpload": (operation: (fileData: { name: string; size: number; type: string; content: string; }) => Promise<any>, options?: { propertyName?: string; writeProperty?: (propertyName: string, value: any) => Promise<void>; }) => Promise<boolean>;
+        /**
+          * Show last updated timestamp below the component
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Show visual operation status indicators (loading, success, failed) right to the component
+          * @default true
+         */
+        "showStatus": boolean;
+    }
+    /**
+     * A versatile notification component designed for WoT device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-notification type="info" message="Operation completed successfully"></ui-notification>
+     * <ui-notification type="success" duration="3000" message="Device connected successfully"></ui-notification>
+     * <ui-notification type="warning" show-close-button="true" message="Low battery warning"></ui-notification>
+     * ```
+     * @example JS integration with node-wot browser bundle
+     * ```javascript
+     * const notificationElement = document.getElementById('alert-notification');
+     * const eventName = 'temperature-critical';
+     * await thing.subscribeEvent(eventName, async (eventData) => {
+     * const value = await eventData.value();
+     * notificationElement.message = `Alert: ${eventName} - ${JSON.stringify(value)}`;
+     * notificationElement.type = 'warning';
+     * await notificationElement.show();
+     * });
+     * ```
+     */
+    interface UiNotification {
+        /**
+          * Enable dark mode theme styling when true
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * This method dismisses the notification with animation.  For external control or programmatic dismissal.
           * @param method - How the notification was dismissed
          */
         "dismiss": (method?: "auto" | "manual" | "programmatic") => Promise<void>;
         /**
-          * Duration in milliseconds before auto-dismiss. Set to 0 to disable auto-dismiss. Default: 3000 (3 seconds)
+          * Duration before auto-dismiss (0 to disable auto-dismiss)
           * @default 3000
          */
         "duration": number;
         /**
-          * The message text to display in the notification.
+          * Gets the current notification visibility with optional metadata.
+          * @param includeMetadata - Whether to include status, timestamp and other information
+          * @returns Current visibility or detailed metadata object
+         */
+        "getValue": (includeMetadata?: boolean) => Promise<boolean | { value: boolean; message: string; type: string; duration: number; }>;
+        /**
+          * The message text to display in the notification
           * @default ''
          */
         "message": string;
         /**
-          * Show the notification with animation.
+          * Shows the notification with animation.  This is the primary method for displaying notifications programmatically.
+          * @returns Promise resolving to void when animation completes
+          * @example Basic Usage ```javascript await notification.show(); ```
          */
         "show": () => Promise<void>;
         /**
-          * Whether to show a close button. Default: true
+          * Whether to show a close button
           * @default true
          */
         "showCloseButton": boolean;
         /**
-          * Whether to show an icon based on the notification type. Default: true
+          * Whether to show an icon based on the notification type
           * @default true
          */
         "showIcon": boolean;
         /**
-          * Toggle the notification visibility.
+          * (Advance) to toggle the notification visibility.  Useful when managing notification state externally and you want to show/hide conditionally.
          */
         "toggle": () => Promise<void>;
         /**
-          * Type of notification affecting styling and icons. - info: General information (blue) - success: Success messages (green)  - warning: Warning messages (orange) - error: Error messages (red)
+          * Type of notification for different visual styling and icons. - info: General information (blue) - success: Success messages (green)  - warning: Warning messages (orange) - error: Error messages (red)
           * @default 'info'
          */
         "type": 'info' | 'success' | 'warning' | 'error';
@@ -809,7 +758,7 @@ export namespace Components {
         /**
           * Sets the number picker value with optional device communication api and other options.  This is the primary method for connecting number pickers to real devices. It supports optimistic updates, error handling, and automatic retries.
           * @param value - The numeric value to set
-          * @param options - Configuration for device communication and behavior
+          * @param options - Optional configuration for device communication and behavior
           * @returns Promise resolving to true if successful, false if failed
           * @example Basic Usage ```javascript await numberPicker.setValue(50); ```
           * @example JS integration with node-wot browser bundle ```javascript const numberPicker = document.getElementById('device-volume'); const initialValue = Number(await (await thing.readProperty('volume')).value()); await numberPicker.setValue(initialValue, { writeOperation: async value => { await thing.writeProperty('volume', value); }, autoRetry: { attempts: 3, delay: 1000 } }); ```
@@ -851,241 +800,183 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Advanced slider component with reactive state management and multiple visual styles.
+     * A versatile slider component designed for WoT device control and monitoring.
+     * It supports continuous value selection with multiple visual styles, orientations, and different thumb shapes.
+     * Supports both interactive control and read-only monitoring modes with customizable ranges.
      * @example Basic Usage
      * ```html
-     * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+     * <ui-slider variant="narrow" value="50" label="Brightness"></ui-slider>
+     * <ui-slider variant="wide" value="75" min="0" max="100"></ui-slider>
+     * <ui-slider readonly="true" label="Sensor" show-last-updated="true"></ui-slider>
      * ```
-     * @example Different Variants
-     * ```html
-     * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
-     * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
-     * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
-     * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
-     * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
-     * ```
-     * @example Read-Only Mode
-     * ```html
-     * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
-     * ```
-     * @example JavaScript Integration with Multiple Sliders
+     * @example JS integration with node-wot browser bundle
      * ```javascript
-     * // For single slider
-     * const slider = document.querySelector('#my-slider');
-     * // For multiple sliders
-     * const sliders = document.querySelectorAll('ui-slider');
-     * sliders.forEach(slider => {
-     * slider.addEventListener('valueMsg', (e) => {
-     * console.log('Slider ID:', e.detail.source);
-     * console.log('New value:', e.detail.payload);
+     * const slider = document.getElementById('device-brightness');
+     * const initialValue = Number(await (await thing.readProperty('brightness')).value());
+     * await slider.setValue(initialValue, {
+     * writeOperation: async value => {
+     * await thing.writeProperty('brightness', value);
+     * }
      * });
-     * });
-     * // Set value by ID
-     * const brightnessSlider = document.getElementById('brightness-slider');
-     * await brightnessSlider.setValue(75);
-     * ```
-     * @example HTML with IDs
-     * ```html
-     * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
-     * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
      * ```
      */
     interface UiSlider {
         /**
-          * Color theme variant.
+          * Color theme for the active state matching to thingsweb theme
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
-          * Connection state for readonly mode
+          * Connection state for read-only monitoring
           * @default true
          */
         "connected": boolean;
         /**
-          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * Enable dark mode theme styling when true
           * @default false
          */
         "dark": boolean;
         /**
-          * Whether the slider is disabled (cannot be interacted with).
+          * Disable user interaction when true
           * @default false
          */
         "disabled": boolean;
         /**
           * Get the current slider value with optional metadata.
-          * @param includeMetadata - Include last updated timestamp and status information
-          * @returns Promise that resolves to the current value or value with metadata
-          * @example Basic Usage (Easy) ```javascript // Get simple numeric value const slider = document.querySelector('ui-slider'); const currentValue = await slider.getValue(); console.log('Current position:', currentValue); ```
-          * @example With Metadata (Advanced) ```javascript // Get value with status information const slider = document.querySelector('ui-slider'); const result = await slider.getValue(true);  console.log('Value:', result.value); console.log('Last updated:', new Date(result.lastUpdated)); console.log('Status:', result.status); if (result.error) { console.error('Error:', result.error); } ```
-          * @example Multi-Slider Dashboard (Advanced) ```javascript // Monitor multiple sliders const sliders = document.querySelectorAll('ui-slider'); const dashboard = {};  for (const slider of sliders) { const data = await slider.getValue(true); dashboard[slider.id] = { value: data.value, percentage: ((data.value - slider.min) / (slider.max - slider.min)) * 100, status: data.status, lastUpdated: data.lastUpdated }; }  console.log('Slider Dashboard:', dashboard); ```
-          * @example Range Validation (Advanced) ```javascript // Check if values are in acceptable ranges const temperatureSliders = document.querySelectorAll('.temperature-slider'); const alerts = [];  for (const slider of temperatureSliders) { const value = await slider.getValue(); const zone = slider.getAttribute('data-zone');  if (value < 65 || value > 78) { alerts.push({ zone, temperature: value, status: value < 65 ? 'too-cold' : 'too-hot' }); } }  if (alerts.length > 0) { console.warn('Temperature alerts:', alerts); } ```
+          * @param includeMetadata - Whether to include status, timestamp and other information
+          * @returns Current value or detailed metadata object
          */
         "getValue": (includeMetadata?: boolean) => Promise<number | { value: number; lastUpdated?: number; status: string; error?: string; }>;
         /**
-          * Enable keyboard navigation (Arrow keys, Home, End, PageUp, PageDown). Default: true
+          * Enable keyboard navigation so user can change value using 'Arrow Up' and 'Arrow Down' keys) when true
           * @default true
          */
         "keyboard": boolean;
         /**
-          * Text label displayed above the slider.
+          * Text label displayed above the slider (optional)
          */
         "label"?: string;
         /**
-          * Maximum value of the slider.
+          * Maximum allowed value (optional)
           * @default 100
          */
-        "max": number;
+        "max"?: number;
         /**
-          * Minimum value of the slider.
+          * Minimum allowed value (optional)
           * @default 0
          */
-        "min": number;
+        "min"?: number;
         /**
-          * Orientation of the slider.
+          * Orientation of the slider
           * @default 'horizontal'
          */
         "orientation": 'horizontal' | 'vertical';
         /**
-          * Whether the slider is read-only (displays value but cannot be changed).
+          * Read only mode, display value but prevent changes when true. Just to monitor changes
           * @default false
          */
         "readonly": boolean;
         /**
-          * Set operation status for external status management.
-          * @param status - The status to set ('idle', 'loading', 'success', 'error')
-          * @param errorMessage - Optional error message for error status
-          * @returns Promise<void>
-          * @example Basic Usage (Easy) ```javascript const slider = document.querySelector('ui-slider');  // Show loading await slider.setStatus('loading');  // Show success await slider.setStatus('success');  // Show error await slider.setStatus('error', 'Connection timeout');  // Clear status await slider.setStatus('idle'); ```
-          * @example Climate System Control (Advanced) ```javascript // HVAC system with complex status management const thermostatSlider = document.querySelector('#thermostat');  async function updateHVACSetpoint(temperature) { try { await thermostatSlider.setStatus('loading');  // Step 1: Validate temperature range if (temperature < 60 || temperature > 85) { throw new Error('Temperature out of acceptable range'); }  // Step 2: Check system status const systemResponse = await fetch('/api/hvac/status'); const systemStatus = await systemResponse.json();  if (systemStatus.maintenance_mode) { throw new Error('System in maintenance mode'); }  // Step 3: Set new temperature const setResponse = await fetch('/api/hvac/setpoint', { method: 'POST', body: JSON.stringify({ temperature }) });  if (!setResponse.ok) { throw new Error('Failed to update setpoint'); }  // Success await thermostatSlider.setStatus('success');  } catch (error) { await thermostatSlider.setStatus('error', error.message); } } ```
-          * @example Progressive Status Updates (Advanced) ```javascript // Multi-step process with progressive status const calibrationSlider = document.querySelector('#sensor-calibration');  async function calibrateSensor(offset) { const steps = [ 'Preparing sensor...', 'Applying offset...', 'Stabilizing...', 'Verifying calibration...' ];  try { for (let i = 0; i < steps.length; i++) { await calibrationSlider.setStatus('loading'); console.log(`Step ${i + 1}: ${steps[i]}`);  // Simulate step processing await performCalibrationStep(i, offset); await new Promise(resolve => setTimeout(resolve, 1000)); }  await calibrationSlider.setStatus('success');  } catch (error) { await calibrationSlider.setStatus('error', `Calibration failed at step ${i + 1}`); } } ```
+          * (Advance) to manually set the operation status indicator.  Useful when managing device communication externally and you want to show loading/success/error states.
+          * @param status - The status to display
+          * @param errorMessage - (Optional) error message for error status
          */
         "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
         /**
-          * Set the slider value with automatic device communication and status management. Values are automatically clamped to the min/max range.
+          * Set the slider value with optional device api and other options.  This is the primary method for connecting slider to real devices. It supports optimistic updates, error handling, and automatic retries. Values are automatically clamped to the min/max range.
           * @param value - The numeric value to set (will be clamped to min/max range)
-          * @param options - Configuration options for the operation
-          * @returns Promise<boolean> - true if successful, false if failed
-          * @example Basic Usage (Easy) ```javascript // Simple value setting const slider = document.querySelector('ui-slider'); await slider.setValue(50);    // Set to 50 await slider.setValue(75.5);  // Set to 75.5 (decimals supported) ```
-          * @example Temperature Control (Advanced) ```javascript // Smart thermostat control const thermostat = document.querySelector('#thermostat');  await thermostat.setValue(72, { writeOperation: async () => { const response = await fetch('/api/hvac/setpoint', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ temperature: 72, zone: 'living-room' }) }); if (!response.ok) throw new Error('Failed to set temperature'); }, optimistic: true, autoRetry: { attempts: 2, delay: 3000 } }); ```
-          * @example Volume Control (Advanced) ```javascript // Audio system volume control const volumeSlider = document.querySelector('#volume');  await volumeSlider.setValue(85, { writeOperation: async () => { await fetch(`/api/audio/volume/${85}`); }, readOperation: async () => { // Verify the actual volume was set const response = await fetch('/api/audio/volume'); const { volume } = await response.json(); if (Math.abs(volume - 85) > 1) { throw new Error('Volume mismatch'); } } }); ```
-          * @example Sensor Calibration (Advanced) ```javascript // Sensor calibration with validation const calibrationSlider = document.querySelector('#sensor-offset');  await calibrationSlider.setValue(-2.5, { writeOperation: async () => { // Apply calibration offset await fetch('/api/sensors/calibrate', { method: 'POST', body: JSON.stringify({ offset: -2.5 }) });  // Wait for sensor to stabilize await new Promise(resolve => setTimeout(resolve, 2000));  // Validate calibration worked const testReading = await fetch('/api/sensors/test-reading'); const { reading } = await testReading.json(); if (Math.abs(reading) > 0.1) { throw new Error('Calibration verification failed'); } } }); ```
+          * @param options - Optional configuration options for the operation
+          * @returns Promise resolving to true if successful, false if failed
+          * @example Basic Usage ```javascript const slider = document.querySelector('ui-slider'); await slider.setValue(50);    // Set to 50 await slider.setValue(75.5);  // Set to 75.5 (decimals supported) ```
+          * @example JS integration with node-wot browser bundle ```javascript // Smart thermostat control const thermostat = document.querySelector('#thermostat');  await thermostat.setValue(72, { writeOperation: async value => { await thing.writeProperty('brightness', value); }, optimistic: true, autoRetry: { attempts: 2, delay: 3000 } }); ```
          */
         "setValue": (value: number, options?: { writeOperation?: (value: number) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }) => Promise<boolean>;
         /**
-          * Set value programmatically without triggering events (for external updates). Values are automatically clamped to the min/max range.
+          * This method updates the value silently without triggering events.  Use this for external data synchronization to prevent event loops. Perfect for WebSocket updates or polling from remote devices.
           * @param value - The numeric value to set silently
-          * @returns Promise<void>
-          * @example Basic Usage (Easy) ```javascript // Update from external data without triggering events const slider = document.querySelector('ui-slider'); await slider.setValueSilent(45); ```
-          * @example Sensor Data Updates (Advanced) ```javascript // Real-time sensor data updates const temperatureSlider = document.querySelector('#temperature-display');  // WebSocket connection for live sensor data const ws = new WebSocket('ws://sensors.example.com/temperature'); ws.addEventListener('message', async (event) => { const sensorData = JSON.parse(event.data);  if (sensorData.sensorId === 'temp-001') { // Silent update to prevent event loops await temperatureSlider.setValueSilent(sensorData.temperature);  // Visual pulse to show fresh data await temperatureSlider.triggerReadPulse(); } }); ```
-          * @example Multi-Zone Climate Control (Advanced) ```javascript // Update multiple zone sliders from API async function updateAllZones() { const response = await fetch('/api/climate/zones'); const zones = await response.json();  for (const zone of zones) { const slider = document.querySelector(`#zone-${zone.id}`); if (slider) { // Silent update from API data await slider.setValueSilent(zone.currentTemperature);  // Update setpoint slider too const setpointSlider = document.querySelector(`#setpoint-${zone.id}`); if (setpointSlider) { await setpointSlider.setValueSilent(zone.targetTemperature); } } } }  // Update every 60 seconds setInterval(updateAllZones, 60000); ```
-          * @example Data Synchronization (Advanced) ```javascript // Sync slider with external control system const volumeSlider = document.querySelector('#system-volume');  // Listen for external volume changes (from physical controls) const eventSource = new EventSource('/api/audio/events'); eventSource.addEventListener('volume-changed', async (event) => { const { newVolume, source } = JSON.parse(event.data);  // Only update if change came from external source if (source !== 'web-ui') { await volumeSlider.setValueSilent(newVolume); await volumeSlider.triggerReadPulse(); } }); ```
          */
         "setValueSilent": (value: number) => Promise<void>;
         /**
-          * Show last updated timestamp when true
+          * Show last updated timestamp below the component
           * @default false
          */
         "showLastUpdated": boolean;
         /**
-          * Show status badge when true
-          * @default true
+          * Show visual operation status indicators (loading, success, failed) right to the component
+          * @default false
          */
         "showStatus": boolean;
         /**
-          * Step increment for the slider.
+          * Step increment/decrement amount (optional)
           * @default 1
          */
-        "step": number;
+        "step"?: number;
         /**
-          * Shape of the slider thumb.
+          * Shape of the slider thumb
           * @default 'circle'
          */
         "thumbShape": 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond';
         /**
-          * Trigger a read pulse indicator for readonly mode when data is actually fetched. Provides visual feedback for data refresh operations.
-          * @returns Promise<void>
-          * @example Basic Usage (Easy) ```javascript // Show visual pulse when data is refreshed const slider = document.querySelector('ui-slider'); await slider.triggerReadPulse(); ```
-          * @example Periodic Data Refresh (Advanced) ```javascript // Regular sensor data updates with visual feedback const sensorSlider = document.querySelector('#pressure-sensor');  setInterval(async () => { try { const response = await fetch('/api/sensors/pressure'); const data = await response.json();  // Update value silently await sensorSlider.setValueSilent(data.pressure);  // Show visual pulse to indicate fresh data await sensorSlider.triggerReadPulse();  } catch (error) { console.error('Failed to refresh pressure data:', error); } }, 10000); // Every 10 seconds ```
-          * @example User-Triggered Refresh (Advanced) ```javascript // Manual refresh button with pulse feedback const refreshButton = document.querySelector('#refresh-sensors'); const sliders = document.querySelectorAll('ui-slider[readonly]');  refreshButton.addEventListener('click', async () => { refreshButton.disabled = true; refreshButton.textContent = 'Refreshing...';  try { // Fetch all sensor data const response = await fetch('/api/sensors/all'); const sensorData = await response.json();  // Update each slider with pulse for (const slider of sliders) { const sensorId = slider.getAttribute('data-sensor'); if (sensorData[sensorId]) { await slider.setValueSilent(sensorData[sensorId].value); await slider.triggerReadPulse(); } }  } catch (error) { console.error('Refresh failed:', error); } finally { refreshButton.disabled = false; refreshButton.textContent = 'Refresh Sensors'; } }); ```
-          * @example Real-time Streaming Data (Advanced) ```javascript // Continuous data stream with selective pulse const temperatureSliders = document.querySelectorAll('.temperature-sensor');  const eventSource = new EventSource('/api/sensors/stream'); eventSource.addEventListener('temperature', async (event) => { const { sensorId, temperature, isSignificantChange } = JSON.parse(event.data);  const slider = document.querySelector(`[data-sensor="${sensorId}"]`); if (slider) { // Always update value await slider.setValueSilent(temperature);  // Only pulse for significant changes (> 1 degree) if (isSignificantChange) { await slider.triggerReadPulse(); } } }); ```
+          * This triggers a visual pulse for read-only mode.  Useful to shows users when data has been refreshed from an external source. The pulse automatically fades after 1.5 seconds.
          */
         "triggerReadPulse": () => Promise<void>;
         /**
-          * Current numeric value of the slider.
+          * Current numeric value of the slider
           * @default 0
          */
         "value": number;
         /**
-          * Visual style variant of the slider.
+          * Visual style variant of the slider. - narrow: Thin track with minimal styling (default) - wide: Thicker track - rainbow: Multi-color gradient track - neon: Glowing effect styling - stepped: Visual step indicators
           * @default 'narrow'
          */
         "variant": 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
     /**
-     * TextDisplay component supports multiple variants for text-heavy data display and editing.
+     * A versatile Text-Display component designed for WoT device control and monitoring
+     * It has various features, visual styles and supports text-heavy data display.
      * Provides field, area, structured, unstructured, and editable modes with consistent styling.
-     * @example Basic Field Display
+     * @example Basic Usage
      * ```html
      * <ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
-     * ```
-     * @example Multi-line Area
-     * ```html
      * <ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
-     * ```
-     * @example Structured Data Display
-     * ```html
      * <ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
-     * ```
-     * @example Editable Mode
-     * ```html
      * <ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
      * ```
-     * @example JavaScript Integration
+     * @example JS integration with node-wot browser bundle
      * ```javascript
-     * const textDisplay = document.querySelector('#notes-field');
-     * // Listen for value changes in editable mode
-     * textDisplay.addEventListener('valueMsg', (e) => {
-     * console.log('Text changed to:', e.detail.payload);
+     * const textElement = document.getElementById('text-field');
+     * const value = await (await thing.readProperty('string')).value();
+     * await textElement.setValue(value, {
+     * writeOperation: async newValue => {
+     * await thing.writeProperty('string', String(newValue));
+     * },
      * });
-     * // Set value programmatically
-     * await textDisplay.setValue('New content');
      * ```
      */
     interface UiText {
         /**
-          * Color theme variant. TODO: Review - may be irrelevant for text components, consider removal
+          * Color theme for the active state matching to thingsweb theme
           * @default 'primary'
          */
         "color": 'primary' | 'secondary' | 'neutral';
         /**
-          * Connection state for readonly mode
-          * @default true
-         */
-        "connected": boolean;
-        /**
-          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * Enable dark mode theme styling when true
           * @default false
          */
         "dark": boolean;
         /**
-          * Debounce delay in milliseconds for editable mode updates (0 = disabled). When enabled, reduces API calls by only sending updates after user stops typing.
+          * Debounce delay in milliseconds for editable mode updates (0 = disabled). Enabled it to reduce API calls by only sending updates after user stops typing.
           * @default 0
          */
         "debounceMs": number;
-        /**
-          * Whether the component is disabled (editable mode only).
-          * @default false
-         */
-        "disabled": boolean;
         /**
           * Focus the input element (editable mode only).
          */
         "focusInput": () => Promise<void>;
         /**
           * Get the current text value with optional metadata.
-          * @param includeMetadata - Whether to include additional metadata (default: false)
-          * @returns Promise<string | MetadataResult> - Current value or object with metadata
-          * @example ```javascript // Basic usage const text = await textDisplay.getValue(); console.log('Current text:', text);  // With metadata const result = await textDisplay.getValue(true); console.log('Value:', result.value); console.log('Last updated:', new Date(result.lastUpdated)); console.log('Status:', result.status); ```
+          * @param includeMetadata - Whether to include status, timestamp and other information
+          * @returns Current value or detailed metadata object
          */
         "getValue": (includeMetadata?: boolean) => Promise<string | { value: string; lastUpdated?: number; status: string; error?: string; }>;
         /**
@@ -1116,50 +1007,42 @@ export namespace Components {
          */
         "placeholder"?: string;
         /**
-          * Whether the component is read-only.
-          * @default false
-         */
-        "readonly": boolean;
-        /**
-          * Enable text area resizing (area and editable modes).
+          * Enable text area resizable.
           * @default true
          */
         "resizable": boolean;
         /**
-          * Set operation status for external status management. Use this method to manually control the visual status indicators when managing operations externally.
-          * @param status - The status to set ('idle', 'loading', 'success', 'error')
-          * @param errorMessage - Optional error message for error status
-          * @returns Promise<void>
-          * @example ```javascript const textDisplay = document.querySelector('ui-text');  // Show loading indicator await textDisplay.setStatus('loading');  try {   await saveToServer();   await textDisplay.setStatus('success'); } catch (error) {   await textDisplay.setStatus('error', error.message); }  // Clear status indicator await textDisplay.setStatus('idle'); ```
+          * (Advance) to manually set the operation status indicator.  Useful when managing device communication externally and you want to show loading/success/error states.
+          * @param status - The status to display
+          * @param errorMessage - (Optional) error message for error status
          */
         "setStatus": (status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>;
         /**
-          * Set the text value and handle optional operations and status management.
+          * Set the text value and handle optional operations and status management.  This is the primary method for connecting text to real devices. It supports optimistic updates, error handling, and automatic retries.
           * @param value - The string value to set
-          * @param options - Configuration options for the operation
-          * @returns Promise<boolean> - true if successful, false if failed
-          * @example ```javascript // Basic usage await textDisplay.setValue('New text content');  // With external operation await textDisplay.setValue('Updated text', {   writeOperation: async () => {     const response = await fetch('/api/text', {       method: 'POST',       body: JSON.stringify({ text: 'Updated text' })     });   },   optimistic: true }); ```
+          * @param options - Optional configuration options for the operation
+          * @returns Promise resolving to true if successful, false if failed
+          * @example Basic Usage ```html await textElement.setValue(value); ```
+          * @example JS integration with node-wot browser bundle ```javascript const textElement = document.getElementById('text-field'); const value = await (await thing.readProperty('string')).value();  await textElement.setValue(value, { writeOperation: async newValue => { await thing.writeProperty('string', String(newValue)); }, autoRetry: { attempts: 3, delay: 1000 } }); ```
          */
         "setValue": (value: string, options?: { writeOperation?: (value: string) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }) => Promise<boolean>;
         /**
-          * Set value without triggering events (for external updates). Use this method when updating from external data sources to prevent event loops.
+          * This method updates the value silently without triggering events.  Use this for external data synchronization to prevent event loops. Perfect for WebSocket updates or polling from remote devices.
           * @param value - The string value to set silently
-          * @returns Promise<void>
-          * @example ```javascript // Basic silent update await textDisplay.setValueSilent('Updated from server');  // In real-time context (WebSocket) websocket.onmessage = async (event) => {   const data = JSON.parse(event.data);   await textDisplay.setValueSilent(data.text); }; ```
          */
         "setValueSilent": (value: string) => Promise<void>;
         /**
-          * Show character count (editable mode only).
+          * Show character count
           * @default false
          */
         "showCharCount": boolean;
         /**
-          * Show last updated timestamp.
+          * Show last updated timestamp below the component
           * @default false
          */
         "showLastUpdated": boolean;
         /**
-          * Show line numbers (area and structured modes).
+          * Show line numbers
           * @default false
          */
         "showLineNumbers": boolean;
@@ -1169,8 +1052,8 @@ export namespace Components {
          */
         "showSaveButton": boolean;
         /**
-          * Show status badge when true
-          * @default true
+          * Show visual operation status indicators (loading, success, failed) right to the component
+          * @default false
          */
         "showStatus": boolean;
         /**
@@ -1179,7 +1062,7 @@ export namespace Components {
          */
         "value": string;
         /**
-          * Visual style variant of the text display. - minimal: Text-only with subtle underline or accent - outlined: Border style applied (default) - filled: Background color applied
+          * Visual style variant of the text display. - minimal: Text-only with subtle underline - outlined: Border style applied (default) - filled: Background color applied
           * @default 'outlined'
          */
         "variant": 'minimal' | 'outlined' | 'filled';
@@ -1255,7 +1138,7 @@ export namespace Components {
         /**
           * Sets the toggle value with optional device communication api and other options.  This is the primary method for connecting toggles to real devices. It supports optimistic updates, error handling, and automatic retries.
           * @param value - The boolean value to set (true = on, false = off)
-          * @param options - Configuration for device communication and behavior
+          * @param options - Optional configuration for device communication and behavior
           * @returns Promise resolving to true if successful, false if failed
           * @example Basic Usage ```javascript await toggle.setValue(true); ```
           * @example JS integration with node-wot browser bundle ```javascript const toggle = document.getElementById('device-toggle'); const initialValue = Boolean(await (await thing.readProperty('power')).value()); await toggle.setValue(initialValue, { writeOperation: async value => { await thing.writeProperty('power', value); }, autoRetry: { attempts: 3, delay: 1000 } }); ```
@@ -1372,31 +1255,26 @@ declare global {
         new (): HTMLUiButtonElement;
     };
     interface HTMLUiCalendarElementEventMap {
-        "dateChange": UiCalendarDateChange;
-        "valueChange": UiCalendarValueChange;
         "valueMsg": UiMsg<string>;
     }
     /**
-     * Advanced calendar component with comprehensive styling, variants, and features.
-     * Matches the design family of ui-button, ui-slider, and other components.
+     * A versatile calendar component designed for WoT device control.
+     * It has various features, visual styles, status and last updated timestamps and other options.
      * @example Basic Usage
      * ```html
-     * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+     * <ui-calendar variant="outlined" value="2023-12-25T00:00:00.000Z" label="Select Date"></ui-calendar>
+     * <ui-calendar variant="filled" include-time="true" label="Pick Date & Time"></ui-calendar>
+     * <ui-calendar variant="outlined" label="Device Calendar" show-last-updated="true"></ui-calendar>
      * ```
-     * @example Different Variants & Colors
-     * ```html
-     * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
-     * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
-     * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
-     * ```
-     * @example Sizes & Features
-     * ```html
-     * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
-     * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
-     * ```
-     * @example Dark Theme
-     * ```html
-     * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
+     * @example JS integaration with node-wot browser bundle
+     * ```javascript
+     * const calendar = document.getElementById('device-calendar');
+     * const initialValue = await (await thing.readProperty('targetDate')).value();
+     * await calendar.setValue(initialValue, {
+     * writeOperation: async value => {
+     * await thing.writeProperty('targetDate', value);
+     * }
+     * });
      * ```
      */
     interface HTMLUiCalendarElement extends Components.UiCalendar, HTMLStencilElement {
@@ -1454,24 +1332,19 @@ declare global {
         "valueMsg": UiMsg<string>;
     }
     /**
-     * A color picker component for selecting color values.
-     * Provides a simple HTML5 color input with consistent styling and WoT integration.
+     * A versatile color picker component designed for WoT device control.
      * @example Basic Usage
      * ```html
      * <ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
      * ```
-     * @example JavaScript Integration
+     * @example JS integaration with node-wot browser bundle
      * ```javascript
-     * const colorPicker = document.querySelector('#color-selector');
-     * // Set initial value with write operation
-     * await colorPicker.setValue('#00ff00', {
-     * writeOperation: async (color) => {
-     * await thing.writeProperty('deviceColor', color);
+     * const colorPicker = document.getElementById('device-color');
+     * const initialValue = String(await (await thing.readProperty('deviceColor')).value());
+     * await colorPicker.setValue(initialValue, {
+     * writeOperation: async value => {
+     * await thing.writeProperty('deviceColor', value);
      * }
-     * });
-     * // Listen for color changes
-     * colorPicker.addEventListener('valueMsg', (e) => {
-     * console.log('Color changed to:', e.detail.newVal);
      * });
      * ```
      */
@@ -1491,40 +1364,28 @@ declare global {
     };
     interface HTMLUiEventElementEventMap {
         "eventReceived": UiMsg<any>;
-        "valueMsg": UiMsg<any>;
     }
     /**
-     * Event listener component for displaying and managing event data streams.
-     * Designed to connect with external data sources via JavaScript at the HTML level.
-     * @example Basic Event Display
+     * A versatile event listener component designed for WoT device control.
+     * It has various features, multiple visual styles, status and last updated timestamps.
+     * @example Basic Usage
      * ```html
-     * <ui-event
-     * label="Temperature Events"
-     * event-name="temperatureChanged"
-     * max-events="10"
-     * show-timestamp="true">
-     * </ui-event>
+     * <ui-event variant="outlined" label="Temperature Events" event-name="temperatureChanged"></ui-event>
+     * <ui-event variant="filled" label="Motion Events" max-events="20" show-timestamp="true"></ui-event>
+     * <ui-event variant="outlined" label="Device Status" show-last-updated="true"></ui-event>
      * ```
-     * @example External Data Connection
+     * @example JS integaration with node-wot browser bundle
      * ```javascript
-     * const eventComponent = document.getElementById('event-listener');
-     * // Add events programmatically from external sources
-     * await eventComponent.addEvent({
-     * temperature: 23.5,
-     * humidity: 65,
-     * timestamp: Date.now()
+     * const eventListener = document.getElementById('event-listener');
+     * await eventListener.startListening();
+     * // Subscribe to event and pipe to component
+     * await thing.subscribeEvent('on-bool', async data => {
+     * const value = data?.value ?? data;
+     * await eventListener.addEvent({
+     * event: 'on-bool',
+     * value,
+     * timestamp: new Date().toISOString()
      * });
-     * // Listen for UI events
-     * eventComponent.addEventListener('eventReceived', (e) => {
-     * console.log('New event displayed:', e.detail);
-     * });
-     * ```
-     * @example Event Filtering
-     * ```javascript
-     * const listener = document.getElementById('event-listener');
-     * // Set custom filter for event data
-     * await listener.setEventFilter((event) => {
-     * return event.data.temperature > 25;
      * });
      * ```
      */
@@ -1546,29 +1407,27 @@ declare global {
         "valueMsg": UiMsg<File[]>;
     }
     /**
-     * A file picker component for selecting and uploading files.
-     * Provides drag and drop functionality with visual feedback and file validation.
+     * A versatile file picker component designed for WoT device control.
+     * It supports single and multiple file selection, drag-and-drop, and file type restrictions.
      * @example Basic Usage
      * ```html
      * <ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
-     * ```
-     * @example Multiple Files
-     * ```html
      * <ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+     * <ui-file-picker label="Device Files" show-last-updated="true"></ui-file-picker>
      * ```
-     * @example JavaScript Integration
+     * @example JS integration with node-wot browser bundle
      * ```javascript
-     * const filePicker = document.querySelector('#file-upload');
-     * // Handle file selection
-     * filePicker.addEventListener('valueMsg', (e) => {
-     * const files = e.detail.newVal;
-     * console.log('Files selected:', files);
-     * });
-     * // Set upload operation
-     * await filePicker.setUploadOperation(async (files) => {
-     * const formData = new FormData();
-     * files.forEach(file => formData.append('files', file));
-     * await fetch('/api/upload', { method: 'POST', body: formData });
+     * const file = document.getElementById('file');
+     * await file.setUpload(async (fileData) => {
+     * console.log('File processed:', fileData.name, 'Size:', fileData.size);
+     * // Just log the file data, don't invoke action yet
+     * return { success: true, message: 'File processed successfully' };
+     * }, {
+     * propertyName: 'selectedFile',
+     * writeProperty: async (prop, value) => {
+     * console.log('Writing to property:', prop, value);
+     * await thing.writeProperty(prop, value);
+     * }
      * });
      * ```
      */
@@ -1593,43 +1452,25 @@ declare global {
     dismissMethod: 'auto' | 'manual' | 'programmatic';
     timestamp: number;
   };
-        "valueMsg": UiMsg;
     }
     /**
-     * Notification component for displaying temporary event data with auto-dismiss functionality.
-     * Supports multiple notification types with smooth animations and customizable duration.
-     * @example Basic Notification
+     * A versatile notification component designed for WoT device control.
+     * @example Basic Usage
      * ```html
-     * <ui-notification message="Operation completed successfully" type="success"></ui-notification>
+     * <ui-notification type="info" message="Operation completed successfully"></ui-notification>
+     * <ui-notification type="success" duration="3000" message="Device connected successfully"></ui-notification>
+     * <ui-notification type="warning" show-close-button="true" message="Low battery warning"></ui-notification>
      * ```
-     * @example Custom Duration
-     * ```html
-     * <ui-notification 
-     * message="This will auto-dismiss in 5 seconds" 
-     * type="info" 
-     * duration="5000">
-     * </ui-notification>
-     * ```
-     * @example Manual Dismiss
-     * ```html
-     * <ui-notification 
-     * message="Click to dismiss" 
-     * type="warning" 
-     * duration="0"
-     * id="manual-notification">
-     * </ui-notification>
-     * ```
-     * @example JavaScript Integration
+     * @example JS integration with node-wot browser bundle
      * ```javascript
-     * const notification = document.querySelector('#manual-notification');
-     * // Listen for close events
-     * notification.addEventListener('notificationClose', (e) => {
-     * console.log('Notification closed:', e.detail);
+     * const notificationElement = document.getElementById('alert-notification');
+     * const eventName = 'temperature-critical';
+     * await thing.subscribeEvent(eventName, async (eventData) => {
+     * const value = await eventData.value();
+     * notificationElement.message = `Alert: ${eventName} - ${JSON.stringify(value)}`;
+     * notificationElement.type = 'warning';
+     * await notificationElement.show();
      * });
-     * // Dismiss programmatically
-     * await notification.dismiss();
-     * // Show notification programmatically
-     * await notification.show();
      * ```
      */
     interface HTMLUiNotificationElement extends Components.UiNotification, HTMLStencilElement {
@@ -1688,43 +1529,24 @@ declare global {
         "valueMsg": UiMsg<number>;
     }
     /**
-     * Advanced slider component with reactive state management and multiple visual styles.
+     * A versatile slider component designed for WoT device control and monitoring.
+     * It supports continuous value selection with multiple visual styles, orientations, and different thumb shapes.
+     * Supports both interactive control and read-only monitoring modes with customizable ranges.
      * @example Basic Usage
      * ```html
-     * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+     * <ui-slider variant="narrow" value="50" label="Brightness"></ui-slider>
+     * <ui-slider variant="wide" value="75" min="0" max="100"></ui-slider>
+     * <ui-slider readonly="true" label="Sensor" show-last-updated="true"></ui-slider>
      * ```
-     * @example Different Variants
-     * ```html
-     * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
-     * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
-     * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
-     * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
-     * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
-     * ```
-     * @example Read-Only Mode
-     * ```html
-     * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
-     * ```
-     * @example JavaScript Integration with Multiple Sliders
+     * @example JS integration with node-wot browser bundle
      * ```javascript
-     * // For single slider
-     * const slider = document.querySelector('#my-slider');
-     * // For multiple sliders
-     * const sliders = document.querySelectorAll('ui-slider');
-     * sliders.forEach(slider => {
-     * slider.addEventListener('valueMsg', (e) => {
-     * console.log('Slider ID:', e.detail.source);
-     * console.log('New value:', e.detail.payload);
+     * const slider = document.getElementById('device-brightness');
+     * const initialValue = Number(await (await thing.readProperty('brightness')).value());
+     * await slider.setValue(initialValue, {
+     * writeOperation: async value => {
+     * await thing.writeProperty('brightness', value);
+     * }
      * });
-     * });
-     * // Set value by ID
-     * const brightnessSlider = document.getElementById('brightness-slider');
-     * await brightnessSlider.setValue(75);
-     * ```
-     * @example HTML with IDs
-     * ```html
-     * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
-     * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
      * ```
      */
     interface HTMLUiSliderElement extends Components.UiSlider, HTMLStencilElement {
@@ -1745,33 +1567,25 @@ declare global {
         "valueMsg": UiMsg<string>;
     }
     /**
-     * TextDisplay component supports multiple variants for text-heavy data display and editing.
+     * A versatile Text-Display component designed for WoT device control and monitoring
+     * It has various features, visual styles and supports text-heavy data display.
      * Provides field, area, structured, unstructured, and editable modes with consistent styling.
-     * @example Basic Field Display
+     * @example Basic Usage
      * ```html
      * <ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
-     * ```
-     * @example Multi-line Area
-     * ```html
      * <ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
-     * ```
-     * @example Structured Data Display
-     * ```html
      * <ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
-     * ```
-     * @example Editable Mode
-     * ```html
      * <ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
      * ```
-     * @example JavaScript Integration
+     * @example JS integration with node-wot browser bundle
      * ```javascript
-     * const textDisplay = document.querySelector('#notes-field');
-     * // Listen for value changes in editable mode
-     * textDisplay.addEventListener('valueMsg', (e) => {
-     * console.log('Text changed to:', e.detail.payload);
+     * const textElement = document.getElementById('text-field');
+     * const value = await (await thing.readProperty('string')).value();
+     * await textElement.setValue(value, {
+     * writeOperation: async newValue => {
+     * await thing.writeProperty('string', String(newValue));
+     * },
      * });
-     * // Set value programmatically
-     * await textDisplay.setValue('New content');
      * ```
      */
     interface HTMLUiTextElement extends Components.UiText, HTMLStencilElement {
@@ -1905,154 +1719,121 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Advanced calendar component with comprehensive styling, variants, and features.
-     * Matches the design family of ui-button, ui-slider, and other components.
+     * A versatile calendar component designed for WoT device control.
+     * It has various features, visual styles, status and last updated timestamps and other options.
      * @example Basic Usage
      * ```html
-     * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+     * <ui-calendar variant="outlined" value="2023-12-25T00:00:00.000Z" label="Select Date"></ui-calendar>
+     * <ui-calendar variant="filled" include-time="true" label="Pick Date & Time"></ui-calendar>
+     * <ui-calendar variant="outlined" label="Device Calendar" show-last-updated="true"></ui-calendar>
      * ```
-     * @example Different Variants & Colors
-     * ```html
-     * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
-     * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
-     * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
-     * ```
-     * @example Sizes & Features
-     * ```html
-     * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
-     * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
-     * ```
-     * @example Dark Theme
-     * ```html
-     * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
+     * @example JS integaration with node-wot browser bundle
+     * ```javascript
+     * const calendar = document.getElementById('device-calendar');
+     * const initialValue = await (await thing.readProperty('targetDate')).value();
+     * await calendar.setValue(initialValue, {
+     * writeOperation: async value => {
+     * await thing.writeProperty('targetDate', value);
+     * }
+     * });
      * ```
      */
     interface UiCalendar {
         /**
-          * Animation style for transitions. - none: No animations - slide: Slide transitions between months - fade: Fade transitions - bounce: Playful bounce effects
-          * @default 'slide'
-         */
-        "animation"?: 'none' | 'slide' | 'fade' | 'bounce';
-        /**
-          * Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones) - neutral: Grayscale for subtle integration - success: Green for positive actions - warning: Orange for caution - danger: Red for destructive actions
+          * Color theme for the active state matching to thingsweb theme
           * @default 'primary'
          */
-        "color"?: 'primary' | 'secondary' | 'neutral' | 'success' | 'warning' | 'danger';
+        "color"?: 'primary' | 'secondary' | 'neutral';
         /**
           * Connection state for readonly mode
           * @default true
          */
         "connected"?: boolean;
         /**
-          * Dark theme variant.
-          * @example ```html <ui-calendar dark="true" variant="filled"></ui-calendar> ```
+          * Enable dark mode theme styling when true
           * @default false
          */
         "dark"?: boolean;
         /**
-          * Whether the component is disabled (cannot be interacted with).
-          * @example ```html <ui-calendar disabled="true" label="Cannot select"></ui-calendar> ```
+          * Disable user interaction when true
           * @default false
          */
         "disabled"?: boolean;
         /**
-          * First day of week (0 = Sunday, 1 = Monday).
+          * First day of week (0 = Sunday, 1 = Monday)
           * @default 0
          */
         "firstDayOfWeek"?: 0 | 1;
         /**
-          * Include time picker alongside date picker. Supports hour:minute selection with AM/PM or 24-hour format.
+          * Include time picker alongside date picker
           * @default false
          */
         "includeTime"?: boolean;
         /**
-          * Display calendar inline instead of as dropdown popup. Perfect for always-visible date selection.
+          * Display calendar inline instead of as a popup
           * @default false
          */
         "inline"?: boolean;
         /**
-          * Enable keyboard navigation and shortcuts.
-          * @example ```html <ui-calendar keyboard="false"></ui-calendar> ```
+          * Enable keyboard navigation so user can interact using keyboard when true
           * @default true
          */
         "keyboard"?: boolean;
         /**
-          * Optional text label for the calendar with enhanced styling.
-          * @example ```html <ui-calendar label="Select Date"></ui-calendar> ```
+          * Text label displayed above the calendar (optional)
          */
         "label"?: string;
         /**
-          * Maximum selectable date (ISO string).
+          * Maximum selectable date (ISO string)  (Optional)
          */
         "maxDate"?: string;
         /**
-          * Minimum selectable date (ISO string).
+          * Minimum selectable date (ISO string)  (Optional)
          */
         "minDate"?: string;
         /**
-          * Event emitted when date changes
-         */
-        "onDateChange"?: (event: UiCalendarCustomEvent<UiCalendarDateChange>) => void;
-        /**
-          * Standardized valueChange event for calendar
-         */
-        "onValueChange"?: (event: UiCalendarCustomEvent<UiCalendarValueChange>) => void;
-        /**
-          * Standardized value event emitter - emits UiMsg<string> with enhanced metadata. Provides consistent value change notifications with unified messaging format.
-          * @example ```typescript calendar.addEventListener('valueMsg', (e) => {   console.log('Date changed:', e.detail.value);   console.log('Metadata:', e.detail.metadata); }); ```
+          * Emitted when calendar value changes through user interaction or setValue calls. Contains the new value, previous value, timestamp, and source information.
          */
         "onValueMsg"?: (event: UiCalendarCustomEvent<UiMsg<string>>) => void;
         /**
-          * Whether the component is read-only (displays value but cannot be changed).
-          * @example ```html <ui-calendar readonly="true" value="2023-12-25"></ui-calendar> ```
-          * @default false
-         */
-        "readonly"?: boolean;
-        /**
-          * Show clear button to reset selection.
+          * Show clear button to reset selection
           * @default true
          */
         "showClearButton"?: boolean;
         /**
-          * Show last updated timestamp below the component.
-          * @example ```html <ui-calendar showLastUpdated="true"></ui-calendar> ```
+          * Show last updated timestamp below the component
           * @default false
          */
         "showLastUpdated"?: boolean;
         /**
-          * Show status badge when true
+          * Show visual operation status indicators (loading, success, failed) right to the component
           * @default true
          */
         "showStatus"?: boolean;
         /**
-          * Show today button for quick navigation.
+          * Show today button
           * @default true
          */
         "showTodayButton"?: boolean;
         /**
-          * Show week numbers in calendar grid.
+          * Show week numbers in calendar grid
           * @default false
          */
         "showWeekNumbers"?: boolean;
         /**
-          * Component size for different use cases. - small: Compact calendar for tight spaces - medium: Standard size (default) - large: Prominent calendar with larger touch targets
-          * @default 'medium'
-         */
-        "size"?: 'small' | 'medium' | 'large';
-        /**
-          * Time format when includeTime is enabled. - 12: 12-hour format with AM/PM - 24: 24-hour format
+          * Time format when includeTime is enabled (12-hour or 24-hour)
           * @default '12'
          */
         "timeFormat"?: '12' | '24';
         /**
-          * Current selected date-time value (ISO string).
+          * Current date-time value of the calendar (ISO string)
          */
         "value"?: string;
         /**
-          * Visual style variant matching component family design. - minimal: Clean, borderless design with subtle hover effects - outlined: Border with transparent background, colored accents - filled: Solid background with contrasting text - elevated: Shadow and depth for prominent display
-          * @default 'minimal'
+          * Visual style variant of the calendar. - outlined: Border-focused design with outline style - filled: Solid background design
+          * @default 'outlined'
          */
-        "variant"?: 'minimal' | 'outlined' | 'filled' | 'elevated';
+        "variant"?: 'outlined' | 'filled';
     }
     /**
      * A versatile checkbox component designed for WoT device control.
@@ -2125,105 +1906,84 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * A color picker component for selecting color values.
-     * Provides a simple HTML5 color input with consistent styling and WoT integration.
+     * A versatile color picker component designed for WoT device control.
      * @example Basic Usage
      * ```html
      * <ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
      * ```
-     * @example JavaScript Integration
+     * @example JS integaration with node-wot browser bundle
      * ```javascript
-     * const colorPicker = document.querySelector('#color-selector');
-     * // Set initial value with write operation
-     * await colorPicker.setValue('#00ff00', {
-     * writeOperation: async (color) => {
-     * await thing.writeProperty('deviceColor', color);
+     * const colorPicker = document.getElementById('device-color');
+     * const initialValue = String(await (await thing.readProperty('deviceColor')).value());
+     * await colorPicker.setValue(initialValue, {
+     * writeOperation: async value => {
+     * await thing.writeProperty('deviceColor', value);
      * }
-     * });
-     * // Listen for color changes
-     * colorPicker.addEventListener('valueMsg', (e) => {
-     * console.log('Color changed to:', e.detail.newVal);
      * });
      * ```
      */
     interface UiColorPicker {
         /**
-          * Whether the component is disabled.
+          * Enable dark mode theme styling when true
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Disable user interaction when true
           * @default false
          */
         "disabled"?: boolean;
         /**
-          * Text label displayed above the color picker.
+          * Text label displayed right to the color picker (optional)
          */
         "label"?: string;
         /**
-          * Emitted when the color value changes.
+          * Emitted when color picker value changes through user interaction or setValue calls. Contains the new value, previous value, timestamp, and source information.
          */
         "onValueMsg"?: (event: UiColorPickerCustomEvent<UiMsg<string>>) => void;
         /**
-          * Whether the component is read-only.
-          * @default false
-         */
-        "readonly"?: boolean;
-        /**
-          * Show last updated timestamp.
+          * Show last updated timestamp below the component
           * @default false
          */
         "showLastUpdated"?: boolean;
         /**
-          * Show status badge when true.
+          * Show visual operation status indicators (loading, success, failed) right to the component
           * @default true
          */
         "showStatus"?: boolean;
         /**
-          * Current color value in hex format (e.g., #ff0000).
+          * Current color value in hex format (e.g., #ff0000)
           * @default '#000000'
          */
         "value"?: string;
-        /**
-          * Visual style variant of the color picker. - minimal: Simple color input with minimal styling - outlined: Border-focused design with outline style - filled: Solid background design with color preview
-          * @default 'outlined'
-         */
-        "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Event listener component for displaying and managing event data streams.
-     * Designed to connect with external data sources via JavaScript at the HTML level.
-     * @example Basic Event Display
+     * A versatile event listener component designed for WoT device control.
+     * It has various features, multiple visual styles, status and last updated timestamps.
+     * @example Basic Usage
      * ```html
-     * <ui-event
-     * label="Temperature Events"
-     * event-name="temperatureChanged"
-     * max-events="10"
-     * show-timestamp="true">
-     * </ui-event>
+     * <ui-event variant="outlined" label="Temperature Events" event-name="temperatureChanged"></ui-event>
+     * <ui-event variant="filled" label="Motion Events" max-events="20" show-timestamp="true"></ui-event>
+     * <ui-event variant="outlined" label="Device Status" show-last-updated="true"></ui-event>
      * ```
-     * @example External Data Connection
+     * @example JS integaration with node-wot browser bundle
      * ```javascript
-     * const eventComponent = document.getElementById('event-listener');
-     * // Add events programmatically from external sources
-     * await eventComponent.addEvent({
-     * temperature: 23.5,
-     * humidity: 65,
-     * timestamp: Date.now()
+     * const eventListener = document.getElementById('event-listener');
+     * await eventListener.startListening();
+     * // Subscribe to event and pipe to component
+     * await thing.subscribeEvent('on-bool', async data => {
+     * const value = data?.value ?? data;
+     * await eventListener.addEvent({
+     * event: 'on-bool',
+     * value,
+     * timestamp: new Date().toISOString()
      * });
-     * // Listen for UI events
-     * eventComponent.addEventListener('eventReceived', (e) => {
-     * console.log('New event displayed:', e.detail);
-     * });
-     * ```
-     * @example Event Filtering
-     * ```javascript
-     * const listener = document.getElementById('event-listener');
-     * // Set custom filter for event data
-     * await listener.setEventFilter((event) => {
-     * return event.data.temperature > 25;
      * });
      * ```
      */
     interface UiEvent {
         /**
-          * Color theme
+          * Color theme for the active state matching to thingsweb theme
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
@@ -2233,35 +1993,26 @@ declare namespace LocalJSX {
          */
         "connected"?: boolean;
         /**
-          * Dark mode support
+          * Enable dark mode theme styling when true
           * @default false
          */
         "dark"?: boolean;
         /**
-          * Whether the component is disabled
+          * Disable user interaction when true
           * @default false
          */
         "disabled"?: boolean;
-        /**
-          * Enable event filtering
-          * @default false
-         */
-        "enableFiltering"?: boolean;
         /**
           * Event name to subscribe to (for identification/display purposes)
          */
         "eventName"?: string;
         /**
-          * Filter expression (JSONPath or simple property)
-         */
-        "filterExpression"?: string;
-        /**
-          * Enable keyboard interactions
+          * Enable keyboard navigation so user can interact using keyboard when true
           * @default true
          */
         "keyboard"?: boolean;
         /**
-          * Display label for the component
+          * Text label displayed above the event listener (optional)
          */
         "label"?: string;
         /**
@@ -2270,25 +2021,16 @@ declare namespace LocalJSX {
          */
         "maxEvents"?: number;
         /**
-          * Emitted when an event is received from the Thing
+          * Emitted when an event is received. Contains the event data with metadata and source information.
          */
         "onEventReceived"?: (event: UiEventCustomEvent<UiMsg<any>>) => void;
         /**
-          * Standard value message event for consistency with other components
-         */
-        "onValueMsg"?: (event: UiEventCustomEvent<UiMsg<any>>) => void;
-        /**
-          * Whether component is in readonly mode
-          * @default false
-         */
-        "readonly"?: boolean;
-        /**
-          * Show last updated timestamp
+          * Show last updated timestamp below the component
           * @default false
          */
         "showLastUpdated"?: boolean;
         /**
-          * Show status badge when true
+          * Show visual operation status indicators (loading, success, failed) right to the component
           * @default true
          */
         "showStatus"?: boolean;
@@ -2298,140 +2040,121 @@ declare namespace LocalJSX {
          */
         "showTimestamp"?: boolean;
         /**
-          * Visual style variant
+          * Visual style variant of the event listener. - outlined: Border-focused design with outline style - filled: Solid background design
           * @default 'outlined'
          */
-        "variant"?: 'minimal' | 'outlined' | 'filled';
+        "variant"?: 'outlined' | 'filled';
     }
     /**
-     * A file picker component for selecting and uploading files.
-     * Provides drag and drop functionality with visual feedback and file validation.
+     * A versatile file picker component designed for WoT device control.
+     * It supports single and multiple file selection, drag-and-drop, and file type restrictions.
      * @example Basic Usage
      * ```html
      * <ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
-     * ```
-     * @example Multiple Files
-     * ```html
      * <ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+     * <ui-file-picker label="Device Files" show-last-updated="true"></ui-file-picker>
      * ```
-     * @example JavaScript Integration
+     * @example JS integration with node-wot browser bundle
      * ```javascript
-     * const filePicker = document.querySelector('#file-upload');
-     * // Handle file selection
-     * filePicker.addEventListener('valueMsg', (e) => {
-     * const files = e.detail.newVal;
-     * console.log('Files selected:', files);
-     * });
-     * // Set upload operation
-     * await filePicker.setUploadOperation(async (files) => {
-     * const formData = new FormData();
-     * files.forEach(file => formData.append('files', file));
-     * await fetch('/api/upload', { method: 'POST', body: formData });
+     * const file = document.getElementById('file');
+     * await file.setUpload(async (fileData) => {
+     * console.log('File processed:', fileData.name, 'Size:', fileData.size);
+     * // Just log the file data, don't invoke action yet
+     * return { success: true, message: 'File processed successfully' };
+     * }, {
+     * propertyName: 'selectedFile',
+     * writeProperty: async (prop, value) => {
+     * console.log('Writing to property:', prop, value);
+     * await thing.writeProperty(prop, value);
+     * }
      * });
      * ```
      */
     interface UiFilePicker {
         /**
-          * File type restrictions (e.g., ".pdf,.doc", "image/*").
+          * File type restrictions (e.g., ".pdf,.doc", "image/*")
          */
         "accept"?: string;
         /**
-          * Whether the component is disabled.
-          * @default false
+          * Color theme for the active state matching to thingsweb theme
+          * @default 'primary'
          */
-        "disabled"?: boolean;
+        "color"?: 'primary' | 'secondary' | 'neutral';
         /**
-          * Text label displayed above the file picker.
-         */
-        "label"?: string;
-        /**
-          * Maximum number of files when multiple is true.
-         */
-        "maxFiles"?: number;
-        /**
-          * Maximum file size in bytes.
-         */
-        "maxSize"?: number;
-        /**
-          * Whether multiple files can be selected.
-          * @default false
-         */
-        "multiple"?: boolean;
-        /**
-          * Emitted when files are selected.
-         */
-        "onValueMsg"?: (event: UiFilePickerCustomEvent<UiMsg<File[]>>) => void;
-        /**
-          * Whether the component is read-only.
-          * @default false
-         */
-        "readonly"?: boolean;
-        /**
-          * Show last updated timestamp.
-          * @default false
-         */
-        "showLastUpdated"?: boolean;
-        /**
-          * Show status badge when true.
-          * @default true
-         */
-        "showStatus"?: boolean;
-        /**
-          * Visual style variant of the file picker. - minimal: Simple file input with minimal styling - outlined: Border-focused design with drag and drop area - filled: Solid background design with enhanced visual feedback
-          * @default 'outlined'
-         */
-        "variant"?: 'minimal' | 'outlined' | 'filled';
-    }
-    /**
-     * Notification component for displaying temporary event data with auto-dismiss functionality.
-     * Supports multiple notification types with smooth animations and customizable duration.
-     * @example Basic Notification
-     * ```html
-     * <ui-notification message="Operation completed successfully" type="success"></ui-notification>
-     * ```
-     * @example Custom Duration
-     * ```html
-     * <ui-notification 
-     * message="This will auto-dismiss in 5 seconds" 
-     * type="info" 
-     * duration="5000">
-     * </ui-notification>
-     * ```
-     * @example Manual Dismiss
-     * ```html
-     * <ui-notification 
-     * message="Click to dismiss" 
-     * type="warning" 
-     * duration="0"
-     * id="manual-notification">
-     * </ui-notification>
-     * ```
-     * @example JavaScript Integration
-     * ```javascript
-     * const notification = document.querySelector('#manual-notification');
-     * // Listen for close events
-     * notification.addEventListener('notificationClose', (e) => {
-     * console.log('Notification closed:', e.detail);
-     * });
-     * // Dismiss programmatically
-     * await notification.dismiss();
-     * // Show notification programmatically
-     * await notification.show();
-     * ```
-     */
-    interface UiNotification {
-        /**
-          * Enable dark theme for the component.
+          * Enable dark mode theme styling when true
           * @default false
          */
         "dark"?: boolean;
         /**
-          * Duration in milliseconds before auto-dismiss. Set to 0 to disable auto-dismiss. Default: 3000 (3 seconds)
+          * Disable user interaction when true
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Text label displayed above the file picker (optional)
+         */
+        "label"?: string;
+        /**
+          * Maximum number of files when multiple is true
+         */
+        "maxFiles"?: number;
+        /**
+          * Maximum file size in bytes
+         */
+        "maxSize"?: number;
+        /**
+          * Whether multiple files can be selected
+          * @default false
+         */
+        "multiple"?: boolean;
+        /**
+          * Emitted when file picker value changes through user interaction or setValue calls. Contains the new value, previous value, timestamp, and source information.
+         */
+        "onValueMsg"?: (event: UiFilePickerCustomEvent<UiMsg<File[]>>) => void;
+        /**
+          * Show last updated timestamp below the component
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Show visual operation status indicators (loading, success, failed) right to the component
+          * @default true
+         */
+        "showStatus"?: boolean;
+    }
+    /**
+     * A versatile notification component designed for WoT device control.
+     * @example Basic Usage
+     * ```html
+     * <ui-notification type="info" message="Operation completed successfully"></ui-notification>
+     * <ui-notification type="success" duration="3000" message="Device connected successfully"></ui-notification>
+     * <ui-notification type="warning" show-close-button="true" message="Low battery warning"></ui-notification>
+     * ```
+     * @example JS integration with node-wot browser bundle
+     * ```javascript
+     * const notificationElement = document.getElementById('alert-notification');
+     * const eventName = 'temperature-critical';
+     * await thing.subscribeEvent(eventName, async (eventData) => {
+     * const value = await eventData.value();
+     * notificationElement.message = `Alert: ${eventName} - ${JSON.stringify(value)}`;
+     * notificationElement.type = 'warning';
+     * await notificationElement.show();
+     * });
+     * ```
+     */
+    interface UiNotification {
+        /**
+          * Enable dark mode theme styling when true
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Duration before auto-dismiss (0 to disable auto-dismiss)
           * @default 3000
          */
         "duration"?: number;
         /**
-          * The message text to display in the notification.
+          * The message text to display in the notification
           * @default ''
          */
         "message"?: string;
@@ -2445,21 +2168,17 @@ declare namespace LocalJSX {
     timestamp: number;
   }>) => void;
         /**
-          * Emitted when notification value/state changes. Compatible with other UI components for unified event handling.
-         */
-        "onValueMsg"?: (event: UiNotificationCustomEvent<UiMsg>) => void;
-        /**
-          * Whether to show a close button. Default: true
+          * Whether to show a close button
           * @default true
          */
         "showCloseButton"?: boolean;
         /**
-          * Whether to show an icon based on the notification type. Default: true
+          * Whether to show an icon based on the notification type
           * @default true
          */
         "showIcon"?: boolean;
         /**
-          * Type of notification affecting styling and icons. - info: General information (blue) - success: Success messages (green)  - warning: Warning messages (orange) - error: Error messages (red)
+          * Type of notification for different visual styling and icons. - info: General information (blue) - success: Success messages (green)  - warning: Warning messages (orange) - error: Error messages (red)
           * @default 'info'
          */
         "type"?: 'info' | 'success' | 'warning' | 'error';
@@ -2561,186 +2280,149 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
-     * Advanced slider component with reactive state management and multiple visual styles.
+     * A versatile slider component designed for WoT device control and monitoring.
+     * It supports continuous value selection with multiple visual styles, orientations, and different thumb shapes.
+     * Supports both interactive control and read-only monitoring modes with customizable ranges.
      * @example Basic Usage
      * ```html
-     * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+     * <ui-slider variant="narrow" value="50" label="Brightness"></ui-slider>
+     * <ui-slider variant="wide" value="75" min="0" max="100"></ui-slider>
+     * <ui-slider readonly="true" label="Sensor" show-last-updated="true"></ui-slider>
      * ```
-     * @example Different Variants
-     * ```html
-     * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
-     * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
-     * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
-     * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
-     * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
-     * ```
-     * @example Read-Only Mode
-     * ```html
-     * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
-     * ```
-     * @example JavaScript Integration with Multiple Sliders
+     * @example JS integration with node-wot browser bundle
      * ```javascript
-     * // For single slider
-     * const slider = document.querySelector('#my-slider');
-     * // For multiple sliders
-     * const sliders = document.querySelectorAll('ui-slider');
-     * sliders.forEach(slider => {
-     * slider.addEventListener('valueMsg', (e) => {
-     * console.log('Slider ID:', e.detail.source);
-     * console.log('New value:', e.detail.payload);
+     * const slider = document.getElementById('device-brightness');
+     * const initialValue = Number(await (await thing.readProperty('brightness')).value());
+     * await slider.setValue(initialValue, {
+     * writeOperation: async value => {
+     * await thing.writeProperty('brightness', value);
+     * }
      * });
-     * });
-     * // Set value by ID
-     * const brightnessSlider = document.getElementById('brightness-slider');
-     * await brightnessSlider.setValue(75);
-     * ```
-     * @example HTML with IDs
-     * ```html
-     * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
-     * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
      * ```
      */
     interface UiSlider {
         /**
-          * Color theme variant.
+          * Color theme for the active state matching to thingsweb theme
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
-          * Connection state for readonly mode
+          * Connection state for read-only monitoring
           * @default true
          */
         "connected"?: boolean;
         /**
-          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * Enable dark mode theme styling when true
           * @default false
          */
         "dark"?: boolean;
         /**
-          * Whether the slider is disabled (cannot be interacted with).
+          * Disable user interaction when true
           * @default false
          */
         "disabled"?: boolean;
         /**
-          * Enable keyboard navigation (Arrow keys, Home, End, PageUp, PageDown). Default: true
+          * Enable keyboard navigation so user can change value using 'Arrow Up' and 'Arrow Down' keys) when true
           * @default true
          */
         "keyboard"?: boolean;
         /**
-          * Text label displayed above the slider.
+          * Text label displayed above the slider (optional)
          */
         "label"?: string;
         /**
-          * Maximum value of the slider.
+          * Maximum allowed value (optional)
           * @default 100
          */
         "max"?: number;
         /**
-          * Minimum value of the slider.
+          * Minimum allowed value (optional)
           * @default 0
          */
         "min"?: number;
         /**
-          * Primary event emitted when the slider value changes.
+          * Emitted when slider value changes through user interaction or setValue calls. Contains the new value, previous value, timestamp, and source information.
          */
         "onValueMsg"?: (event: UiSliderCustomEvent<UiMsg<number>>) => void;
         /**
-          * Orientation of the slider.
+          * Orientation of the slider
           * @default 'horizontal'
          */
         "orientation"?: 'horizontal' | 'vertical';
         /**
-          * Whether the slider is read-only (displays value but cannot be changed).
+          * Read only mode, display value but prevent changes when true. Just to monitor changes
           * @default false
          */
         "readonly"?: boolean;
         /**
-          * Show last updated timestamp when true
+          * Show last updated timestamp below the component
           * @default false
          */
         "showLastUpdated"?: boolean;
         /**
-          * Show status badge when true
-          * @default true
+          * Show visual operation status indicators (loading, success, failed) right to the component
+          * @default false
          */
         "showStatus"?: boolean;
         /**
-          * Step increment for the slider.
+          * Step increment/decrement amount (optional)
           * @default 1
          */
         "step"?: number;
         /**
-          * Shape of the slider thumb.
+          * Shape of the slider thumb
           * @default 'circle'
          */
         "thumbShape"?: 'circle' | 'square' | 'arrow' | 'triangle' | 'diamond';
         /**
-          * Current numeric value of the slider.
+          * Current numeric value of the slider
           * @default 0
          */
         "value"?: number;
         /**
-          * Visual style variant of the slider.
+          * Visual style variant of the slider. - narrow: Thin track with minimal styling (default) - wide: Thicker track - rainbow: Multi-color gradient track - neon: Glowing effect styling - stepped: Visual step indicators
           * @default 'narrow'
          */
         "variant"?: 'narrow' | 'wide' | 'rainbow' | 'neon' | 'stepped';
     }
     /**
-     * TextDisplay component supports multiple variants for text-heavy data display and editing.
+     * A versatile Text-Display component designed for WoT device control and monitoring
+     * It has various features, visual styles and supports text-heavy data display.
      * Provides field, area, structured, unstructured, and editable modes with consistent styling.
-     * @example Basic Field Display
+     * @example Basic Usage
      * ```html
      * <ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
-     * ```
-     * @example Multi-line Area
-     * ```html
      * <ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
-     * ```
-     * @example Structured Data Display
-     * ```html
      * <ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
-     * ```
-     * @example Editable Mode
-     * ```html
      * <ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
      * ```
-     * @example JavaScript Integration
+     * @example JS integration with node-wot browser bundle
      * ```javascript
-     * const textDisplay = document.querySelector('#notes-field');
-     * // Listen for value changes in editable mode
-     * textDisplay.addEventListener('valueMsg', (e) => {
-     * console.log('Text changed to:', e.detail.payload);
+     * const textElement = document.getElementById('text-field');
+     * const value = await (await thing.readProperty('string')).value();
+     * await textElement.setValue(value, {
+     * writeOperation: async newValue => {
+     * await thing.writeProperty('string', String(newValue));
+     * },
      * });
-     * // Set value programmatically
-     * await textDisplay.setValue('New content');
      * ```
      */
     interface UiText {
         /**
-          * Color theme variant. TODO: Review - may be irrelevant for text components, consider removal
+          * Color theme for the active state matching to thingsweb theme
           * @default 'primary'
          */
         "color"?: 'primary' | 'secondary' | 'neutral';
         /**
-          * Connection state for readonly mode
-          * @default true
-         */
-        "connected"?: boolean;
-        /**
-          * Enable dark theme for the component. When true, uses light text on dark backgrounds.
+          * Enable dark mode theme styling when true
           * @default false
          */
         "dark"?: boolean;
         /**
-          * Debounce delay in milliseconds for editable mode updates (0 = disabled). When enabled, reduces API calls by only sending updates after user stops typing.
+          * Debounce delay in milliseconds for editable mode updates (0 = disabled). Enabled it to reduce API calls by only sending updates after user stops typing.
           * @default 0
          */
         "debounceMs"?: number;
-        /**
-          * Whether the component is disabled (editable mode only).
-          * @default false
-         */
-        "disabled"?: boolean;
         /**
           * Text label displayed above the text display.
          */
@@ -2765,8 +2447,7 @@ declare namespace LocalJSX {
          */
         "mode"?: 'field' | 'area' | 'unstructured' | 'structured' | 'editable';
         /**
-          * Event emitted when the text value changes (editable mode only).
-          * @example ```javascript textDisplay.addEventListener('valueMsg', (event) => {   // event.detail contains:   // - newVal: new value (string)   // - prevVal: previous value   // - source: component id   // - ts: timestamp    console.log('New value:', event.detail.newVal);    // Example: Send to server   fetch('/api/text', {     method: 'POST',     body: JSON.stringify({ text: event.detail.payload })   }); }); ```
+          * Emitted when toggle value changes through user interaction or setValue calls. Contains the new value, previous value, timestamp, and source information.
          */
         "onValueMsg"?: (event: UiTextCustomEvent<UiMsg<string>>) => void;
         /**
@@ -2774,27 +2455,22 @@ declare namespace LocalJSX {
          */
         "placeholder"?: string;
         /**
-          * Whether the component is read-only.
-          * @default false
-         */
-        "readonly"?: boolean;
-        /**
-          * Enable text area resizing (area and editable modes).
+          * Enable text area resizable.
           * @default true
          */
         "resizable"?: boolean;
         /**
-          * Show character count (editable mode only).
+          * Show character count
           * @default false
          */
         "showCharCount"?: boolean;
         /**
-          * Show last updated timestamp.
+          * Show last updated timestamp below the component
           * @default false
          */
         "showLastUpdated"?: boolean;
         /**
-          * Show line numbers (area and structured modes).
+          * Show line numbers
           * @default false
          */
         "showLineNumbers"?: boolean;
@@ -2804,8 +2480,8 @@ declare namespace LocalJSX {
          */
         "showSaveButton"?: boolean;
         /**
-          * Show status badge when true
-          * @default true
+          * Show visual operation status indicators (loading, success, failed) right to the component
+          * @default false
          */
         "showStatus"?: boolean;
         /**
@@ -2814,7 +2490,7 @@ declare namespace LocalJSX {
          */
         "value"?: string;
         /**
-          * Visual style variant of the text display. - minimal: Text-only with subtle underline or accent - outlined: Border style applied (default) - filled: Background color applied
+          * Visual style variant of the text display. - minimal: Text-only with subtle underline - outlined: Border style applied (default) - filled: Background color applied
           * @default 'outlined'
          */
         "variant"?: 'minimal' | 'outlined' | 'filled';
@@ -2937,26 +2613,23 @@ declare module "@stencil/core" {
              */
             "ui-button": LocalJSX.UiButton & JSXBase.HTMLAttributes<HTMLUiButtonElement>;
             /**
-             * Advanced calendar component with comprehensive styling, variants, and features.
-             * Matches the design family of ui-button, ui-slider, and other components.
+             * A versatile calendar component designed for WoT device control.
+             * It has various features, visual styles, status and last updated timestamps and other options.
              * @example Basic Usage
              * ```html
-             * <ui-calendar variant="outlined" color="primary" label="Select Date"></ui-calendar>
+             * <ui-calendar variant="outlined" value="2023-12-25T00:00:00.000Z" label="Select Date"></ui-calendar>
+             * <ui-calendar variant="filled" include-time="true" label="Pick Date & Time"></ui-calendar>
+             * <ui-calendar variant="outlined" label="Device Calendar" show-last-updated="true"></ui-calendar>
              * ```
-             * @example Different Variants & Colors
-             * ```html
-             * <ui-calendar variant="minimal" color="secondary" label="Minimal Calendar"></ui-calendar>
-             * <ui-calendar variant="filled" color="primary" label="Filled Calendar"></ui-calendar>
-             * <ui-calendar variant="outlined" color="neutral" label="Outlined Calendar"></ui-calendar>
-             * ```
-             * @example Sizes & Features
-             * ```html
-             * <ui-calendar size="large" include-time="true" label="Large with Time"></ui-calendar>
-             * <ui-calendar size="small" inline="true" label="Small Inline"></ui-calendar>
-             * ```
-             * @example Dark Theme
-             * ```html
-             * <ui-calendar theme="dark" variant="filled" color="primary"></ui-calendar>
+             * @example JS integaration with node-wot browser bundle
+             * ```javascript
+             * const calendar = document.getElementById('device-calendar');
+             * const initialValue = await (await thing.readProperty('targetDate')).value();
+             * await calendar.setValue(initialValue, {
+             * writeOperation: async value => {
+             * await thing.writeProperty('targetDate', value);
+             * }
+             * });
              * ```
              */
             "ui-calendar": LocalJSX.UiCalendar & JSXBase.HTMLAttributes<HTMLUiCalendarElement>;
@@ -2982,127 +2655,92 @@ declare module "@stencil/core" {
              */
             "ui-checkbox": LocalJSX.UiCheckbox & JSXBase.HTMLAttributes<HTMLUiCheckboxElement>;
             /**
-             * A color picker component for selecting color values.
-             * Provides a simple HTML5 color input with consistent styling and WoT integration.
+             * A versatile color picker component designed for WoT device control.
              * @example Basic Usage
              * ```html
              * <ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
              * ```
-             * @example JavaScript Integration
+             * @example JS integaration with node-wot browser bundle
              * ```javascript
-             * const colorPicker = document.querySelector('#color-selector');
-             * // Set initial value with write operation
-             * await colorPicker.setValue('#00ff00', {
-             * writeOperation: async (color) => {
-             * await thing.writeProperty('deviceColor', color);
+             * const colorPicker = document.getElementById('device-color');
+             * const initialValue = String(await (await thing.readProperty('deviceColor')).value());
+             * await colorPicker.setValue(initialValue, {
+             * writeOperation: async value => {
+             * await thing.writeProperty('deviceColor', value);
              * }
-             * });
-             * // Listen for color changes
-             * colorPicker.addEventListener('valueMsg', (e) => {
-             * console.log('Color changed to:', e.detail.newVal);
              * });
              * ```
              */
             "ui-color-picker": LocalJSX.UiColorPicker & JSXBase.HTMLAttributes<HTMLUiColorPickerElement>;
             /**
-             * Event listener component for displaying and managing event data streams.
-             * Designed to connect with external data sources via JavaScript at the HTML level.
-             * @example Basic Event Display
+             * A versatile event listener component designed for WoT device control.
+             * It has various features, multiple visual styles, status and last updated timestamps.
+             * @example Basic Usage
              * ```html
-             * <ui-event
-             * label="Temperature Events"
-             * event-name="temperatureChanged"
-             * max-events="10"
-             * show-timestamp="true">
-             * </ui-event>
+             * <ui-event variant="outlined" label="Temperature Events" event-name="temperatureChanged"></ui-event>
+             * <ui-event variant="filled" label="Motion Events" max-events="20" show-timestamp="true"></ui-event>
+             * <ui-event variant="outlined" label="Device Status" show-last-updated="true"></ui-event>
              * ```
-             * @example External Data Connection
+             * @example JS integaration with node-wot browser bundle
              * ```javascript
-             * const eventComponent = document.getElementById('event-listener');
-             * // Add events programmatically from external sources
-             * await eventComponent.addEvent({
-             * temperature: 23.5,
-             * humidity: 65,
-             * timestamp: Date.now()
+             * const eventListener = document.getElementById('event-listener');
+             * await eventListener.startListening();
+             * // Subscribe to event and pipe to component
+             * await thing.subscribeEvent('on-bool', async data => {
+             * const value = data?.value ?? data;
+             * await eventListener.addEvent({
+             * event: 'on-bool',
+             * value,
+             * timestamp: new Date().toISOString()
              * });
-             * // Listen for UI events
-             * eventComponent.addEventListener('eventReceived', (e) => {
-             * console.log('New event displayed:', e.detail);
-             * });
-             * ```
-             * @example Event Filtering
-             * ```javascript
-             * const listener = document.getElementById('event-listener');
-             * // Set custom filter for event data
-             * await listener.setEventFilter((event) => {
-             * return event.data.temperature > 25;
              * });
              * ```
              */
             "ui-event": LocalJSX.UiEvent & JSXBase.HTMLAttributes<HTMLUiEventElement>;
             /**
-             * A file picker component for selecting and uploading files.
-             * Provides drag and drop functionality with visual feedback and file validation.
+             * A versatile file picker component designed for WoT device control.
+             * It supports single and multiple file selection, drag-and-drop, and file type restrictions.
              * @example Basic Usage
              * ```html
              * <ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
-             * ```
-             * @example Multiple Files
-             * ```html
              * <ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+             * <ui-file-picker label="Device Files" show-last-updated="true"></ui-file-picker>
              * ```
-             * @example JavaScript Integration
+             * @example JS integration with node-wot browser bundle
              * ```javascript
-             * const filePicker = document.querySelector('#file-upload');
-             * // Handle file selection
-             * filePicker.addEventListener('valueMsg', (e) => {
-             * const files = e.detail.newVal;
-             * console.log('Files selected:', files);
-             * });
-             * // Set upload operation
-             * await filePicker.setUploadOperation(async (files) => {
-             * const formData = new FormData();
-             * files.forEach(file => formData.append('files', file));
-             * await fetch('/api/upload', { method: 'POST', body: formData });
+             * const file = document.getElementById('file');
+             * await file.setUpload(async (fileData) => {
+             * console.log('File processed:', fileData.name, 'Size:', fileData.size);
+             * // Just log the file data, don't invoke action yet
+             * return { success: true, message: 'File processed successfully' };
+             * }, {
+             * propertyName: 'selectedFile',
+             * writeProperty: async (prop, value) => {
+             * console.log('Writing to property:', prop, value);
+             * await thing.writeProperty(prop, value);
+             * }
              * });
              * ```
              */
             "ui-file-picker": LocalJSX.UiFilePicker & JSXBase.HTMLAttributes<HTMLUiFilePickerElement>;
             /**
-             * Notification component for displaying temporary event data with auto-dismiss functionality.
-             * Supports multiple notification types with smooth animations and customizable duration.
-             * @example Basic Notification
+             * A versatile notification component designed for WoT device control.
+             * @example Basic Usage
              * ```html
-             * <ui-notification message="Operation completed successfully" type="success"></ui-notification>
+             * <ui-notification type="info" message="Operation completed successfully"></ui-notification>
+             * <ui-notification type="success" duration="3000" message="Device connected successfully"></ui-notification>
+             * <ui-notification type="warning" show-close-button="true" message="Low battery warning"></ui-notification>
              * ```
-             * @example Custom Duration
-             * ```html
-             * <ui-notification 
-             * message="This will auto-dismiss in 5 seconds" 
-             * type="info" 
-             * duration="5000">
-             * </ui-notification>
-             * ```
-             * @example Manual Dismiss
-             * ```html
-             * <ui-notification 
-             * message="Click to dismiss" 
-             * type="warning" 
-             * duration="0"
-             * id="manual-notification">
-             * </ui-notification>
-             * ```
-             * @example JavaScript Integration
+             * @example JS integration with node-wot browser bundle
              * ```javascript
-             * const notification = document.querySelector('#manual-notification');
-             * // Listen for close events
-             * notification.addEventListener('notificationClose', (e) => {
-             * console.log('Notification closed:', e.detail);
+             * const notificationElement = document.getElementById('alert-notification');
+             * const eventName = 'temperature-critical';
+             * await thing.subscribeEvent(eventName, async (eventData) => {
+             * const value = await eventData.value();
+             * notificationElement.message = `Alert: ${eventName} - ${JSON.stringify(value)}`;
+             * notificationElement.type = 'warning';
+             * await notificationElement.show();
              * });
-             * // Dismiss programmatically
-             * await notification.dismiss();
-             * // Show notification programmatically
-             * await notification.show();
              * ```
              */
             "ui-notification": LocalJSX.UiNotification & JSXBase.HTMLAttributes<HTMLUiNotificationElement>;
@@ -3129,74 +2767,47 @@ declare module "@stencil/core" {
              */
             "ui-number-picker": LocalJSX.UiNumberPicker & JSXBase.HTMLAttributes<HTMLUiNumberPickerElement>;
             /**
-             * Advanced slider component with reactive state management and multiple visual styles.
+             * A versatile slider component designed for WoT device control and monitoring.
+             * It supports continuous value selection with multiple visual styles, orientations, and different thumb shapes.
+             * Supports both interactive control and read-only monitoring modes with customizable ranges.
              * @example Basic Usage
              * ```html
-             * <ui-slider variant="narrow" min="0" max="100" value="50" label="Brightness"></ui-slider>
+             * <ui-slider variant="narrow" value="50" label="Brightness"></ui-slider>
+             * <ui-slider variant="wide" value="75" min="0" max="100"></ui-slider>
+             * <ui-slider readonly="true" label="Sensor" show-last-updated="true"></ui-slider>
              * ```
-             * @example Different Variants
-             * ```html
-             * <ui-slider variant="narrow" min="0" max="100" value="30" label="Narrow Style"></ui-slider>
-             * <ui-slider variant="wide" min="0" max="100" value="60" label="Wide Style"></ui-slider>
-             * <ui-slider variant="rainbow" min="0" max="360" value="180" label="Rainbow Hue"></ui-slider>
-             * <ui-slider variant="neon" min="0" max="100" value="80" label="Neon Glow"></ui-slider>
-             * <ui-slider variant="stepped" step="10" min="0" max="100" value="50" label="Stepped Control"></ui-slider>
-             * ```
-             * @example Read-Only Mode
-             * ```html
-             * <ui-slider readonly="true" value="75" min="0" max="100" label="Sensor Reading"></ui-slider>
-             * ```
-             * @example JavaScript Integration with Multiple Sliders
+             * @example JS integration with node-wot browser bundle
              * ```javascript
-             * // For single slider
-             * const slider = document.querySelector('#my-slider');
-             * // For multiple sliders
-             * const sliders = document.querySelectorAll('ui-slider');
-             * sliders.forEach(slider => {
-             * slider.addEventListener('valueMsg', (e) => {
-             * console.log('Slider ID:', e.detail.source);
-             * console.log('New value:', e.detail.payload);
+             * const slider = document.getElementById('device-brightness');
+             * const initialValue = Number(await (await thing.readProperty('brightness')).value());
+             * await slider.setValue(initialValue, {
+             * writeOperation: async value => {
+             * await thing.writeProperty('brightness', value);
+             * }
              * });
-             * });
-             * // Set value by ID
-             * const brightnessSlider = document.getElementById('brightness-slider');
-             * await brightnessSlider.setValue(75);
-             * ```
-             * @example HTML with IDs
-             * ```html
-             * <ui-slider id="brightness-slider" label="Brightness" variant="narrow" min="0" max="100"></ui-slider>
-             * <ui-slider id="volume-slider" label="Volume" variant="wide" min="0" max="100"></ui-slider>
              * ```
              */
             "ui-slider": LocalJSX.UiSlider & JSXBase.HTMLAttributes<HTMLUiSliderElement>;
             /**
-             * TextDisplay component supports multiple variants for text-heavy data display and editing.
+             * A versatile Text-Display component designed for WoT device control and monitoring
+             * It has various features, visual styles and supports text-heavy data display.
              * Provides field, area, structured, unstructured, and editable modes with consistent styling.
-             * @example Basic Field Display
+             * @example Basic Usage
              * ```html
              * <ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
-             * ```
-             * @example Multi-line Area
-             * ```html
              * <ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
-             * ```
-             * @example Structured Data Display
-             * ```html
              * <ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
-             * ```
-             * @example Editable Mode
-             * ```html
              * <ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
              * ```
-             * @example JavaScript Integration
+             * @example JS integration with node-wot browser bundle
              * ```javascript
-             * const textDisplay = document.querySelector('#notes-field');
-             * // Listen for value changes in editable mode
-             * textDisplay.addEventListener('valueMsg', (e) => {
-             * console.log('Text changed to:', e.detail.payload);
+             * const textElement = document.getElementById('text-field');
+             * const value = await (await thing.readProperty('string')).value();
+             * await textElement.setValue(value, {
+             * writeOperation: async newValue => {
+             * await thing.writeProperty('string', String(newValue));
+             * },
              * });
-             * // Set value programmatically
-             * await textDisplay.setValue('New content');
              * ```
              */
             "ui-text": LocalJSX.UiText & JSXBase.HTMLAttributes<HTMLUiTextElement>;
