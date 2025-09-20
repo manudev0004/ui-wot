@@ -74,10 +74,10 @@
       "types": "./dist/components/ui-file-picker.d.ts",
       "require": "./dist/components/ui-file-picker.js"
     },
-    "./components/ui-object-editor": {
-      "import": "./dist/components/ui-object-editor.js",
-      "types": "./dist/components/ui-object-editor.d.ts",
-      "require": "./dist/components/ui-object-editor.js"
+    "./components/ui-object": {
+      "import": "./dist/components/ui-object.js",
+      "types": "./dist/components/ui-object.d.ts",
+      "require": "./dist/components/ui-object.js"
     },
     "./services": {
       "import": "./dist/services.js",

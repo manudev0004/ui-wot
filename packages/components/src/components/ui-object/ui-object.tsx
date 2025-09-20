@@ -12,11 +12,11 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
  */
 
 @Component({
-  tag: 'ui-object-editor',
-  styleUrl: 'ui-object-editor.css',
+  tag: 'ui-object',
+  styleUrl: 'ui-object.css',
   shadow: true,
 })
-export class UiObjectEditor {
+export class UiObject {
   @Element() el!: HTMLElement;
 
   // ============================== COMPONENT PROPERTIES ==============================
@@ -78,7 +78,7 @@ export class UiObjectEditor {
       readOperation?: () => Promise<any>;
       optimistic?: boolean;
       _isRevert?: boolean;
-    }
+    },
   ): Promise<boolean> {
     // Clear error on fresh attempt
     if (this.operationStatus === 'error' && !options?._isRevert) {
@@ -140,7 +140,7 @@ export class UiObjectEditor {
       this.setStatus('loading');
       const payload: any = {};
       if (this.fields.length === 0) {
-        const source = (this.editing && Object.keys(this.editing).length) ? this.editing : this.value;
+        const source = this.editing && Object.keys(this.editing).length ? this.editing : this.value;
         if (source && typeof source === 'object') {
           for (const k of Object.keys(source)) payload[k] = (source as any)[k];
         }
@@ -174,11 +174,15 @@ export class UiObjectEditor {
     const v = value && typeof value === 'object' ? value : {};
     const prev = this.value;
     const wasDirty = (() => {
-      try { return JSON.stringify(prev) !== JSON.stringify(this.editing); } catch { return true; }
+      try {
+        return JSON.stringify(prev) !== JSON.stringify(this.editing);
+      } catch {
+        return true;
+      }
     })();
     this.value = v;
     // Derive fields from current value shape and JS types
-    this.fields = Object.keys(v).map((name) => {
+    this.fields = Object.keys(v).map(name => {
       const t = typeof v[name];
       let type: string = t;
       if (t === 'number' && Number.isInteger(v[name])) type = 'integer';
@@ -194,7 +198,7 @@ export class UiObjectEditor {
   private async ensureLocalWriteOps() {
     const root = this.el.shadowRoot;
     if (!root) return;
-  const elems = root.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-text');
+    const elems = root.querySelectorAll('ui-toggle, ui-slider, ui-number-picker, ui-text');
     const tasks: Promise<any>[] = [];
     elems.forEach((el: any) => {
       if (this.boundElements.has(el)) return;
@@ -226,20 +230,14 @@ export class UiObjectEditor {
     const common = {
       'show-last-updated': false,
       'show-status': false,
-      disabled: this.disabled,
-      readonly: this.readonly,
-      color: this.color,
-      dark: this.dark,
+      'disabled': this.disabled,
+      'readonly': this.readonly,
+      'color': this.color,
+      'dark': this.dark,
     } as any;
 
     if (f.type === 'boolean') {
-      return (
-        <ui-toggle
-          {...common}
-          value={!!val}
-          onValueMsg={(e: CustomEvent<any>) => this.onFieldChange(f.name, e.detail?.newVal)}
-        />
-      );
+      return <ui-toggle {...common} value={!!val} onValueMsg={(e: CustomEvent<any>) => this.onFieldChange(f.name, e.detail?.newVal)} />;
     }
 
     if (f.type === 'integer') {
@@ -285,18 +283,17 @@ export class UiObjectEditor {
     );
   }
 
-
   render() {
     return (
       <div class="w-full">
-        {this.label && (
-          <label class={`header text-sm font-semibold mb-2 block ${this.dark ? 'text-neutral-light' : ''}`}>{this.label}</label>
-        )}
+        {this.label && <label class={`header text-sm font-semibold mb-2 block ${this.dark ? 'text-neutral-light' : ''}`}>{this.label}</label>}
         <div class={`container ${this.variant === 'filled' ? 'bg-neutral-light border border-neutral rounded-lg p-4' : 'border border-neutral rounded-lg p-4'}`}>
           <div class="fields grid grid-cols-1 gap-3">
             {this.fields.map(f => (
               <div class="field flex flex-col gap-1.5">
-                <div class={`field-label text-xs text-neutral ${this.dark ? 'text-neutral-light' : ''}`}>{f.name} ({f.type})</div>
+                <div class={`field-label text-xs text-neutral ${this.dark ? 'text-neutral-light' : ''}`}>
+                  {f.name} ({f.type})
+                </div>
                 {this.renderField(f)}
               </div>
             ))}

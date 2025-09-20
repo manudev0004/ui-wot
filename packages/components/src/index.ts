@@ -17,6 +17,7 @@ export { UiText } from './components/ui-text/ui-text';
 export { UiEvent } from './components/ui-event/ui-event';
 export { UiColorPicker } from './components/ui-color-picker/ui-color-picker';
 export { UiFilePicker } from './components/ui-file-picker/ui-file-picker';
+export { UiObject } from './components/ui-object/ui-object';
 
 // Export utility types
 export * from './utils/types';
@@ -25,16 +26,8 @@ export * from './utils/types';
 export * as Services from './services';
 
 // Also export browser-client helpers as top-level named exports for convenience
-export {
-  createHttpThing as createBrowserHttpThing,
-  consumeFromUrl as consumeFromUrlBrowser,
-  connectProperty as connectPropertyBrowser,
-  connectAction as connectActionBrowser,
-  connectEvent as connectEventBrowser,
-} from './services/browser-client';
 
-// Auto-connect, Node-WoT aware helpers (one-liner support)
-export { connectAllAuto, connectPropertyAuto, connectActionAuto, connectEventAuto } from './services/auto-connect';
+// (Auto-connect helpers omitted in this build)
 
 // Browser bundle helpers (dynamic WoT loader + one-liners)
 export {

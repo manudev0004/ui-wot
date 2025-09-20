@@ -19,7 +19,7 @@ export default function App() {
         });
 
         // Wait for custom elements to be defined
-        const tags = ['ui-toggle', 'ui-slider', 'ui-text', 'ui-button', 'ui-event', 'ui-object-editor', 'ui-number-picker'];
+        const tags = ['ui-toggle', 'ui-slider', 'ui-text', 'ui-button', 'ui-event', 'ui-object', 'ui-number-picker'];
         await Promise.all(tags.map(t => customElements.whenDefined(t)));
 
         // Initialize WoT (uses the Node-WoT browser bundle on window.WoT) and wire components
@@ -61,7 +61,7 @@ export default function App() {
           <ui-text data-td-property="string" label="Text" mode="editable" show-last-updated="true" show-status="true"></ui-text>
         </div>
         <div>
-          <label>Action</label>
+            <label style={{ display: 'block', marginBottom: 12 }}>Action</label>
           <ui-button data-td-action="void-void" label="Invoke"></ui-button>
         </div>
         <div>
@@ -70,7 +70,7 @@ export default function App() {
         </div>
         <div style={{ gridColumn: '1 / -1' }}>
           <label>Object Property Editor (multiValue)</label>
-          <ui-object-editor
+          <ui-object
             label="Multi-Value Editor"
             variant="outlined"
             color="primary"
@@ -78,7 +78,20 @@ export default function App() {
             data-td-property="multiValue"
             show-last-updated="true"
             show-status="true"
-          ></ui-object-editor>
+          ></ui-object>
+        </div>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label>Object Property Editor (multiValue)</label>
+          <ui-object
+            label="Multi-Value Editor"
+            url="http://plugfest.thingweb.io/http-advanced-coffee-machine"
+            property="allAvailableResources"
+            variant="outlined"
+            color="primary"
+            style={{ width: '50%' }}
+            show-last-updated="true"
+            show-status="true"
+          ></ui-object>
         </div>
       </div>
     </div>

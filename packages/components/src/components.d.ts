@@ -800,6 +800,63 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
+     * Auto-generates an editor for a TD object-type property and persists the full
+     * object on Save. Designed to behave like other UI components with consistent
+     * status and last-updated indicators, while sub-fields operate in local-edit mode.
+     * Usage: Map boolean/number/integer/string fields to child inputs (ui-toggle,
+     * ui-slider, ui-number-picker, ui-text). Child fields do not perform device writes;
+     * only the parent Save writes the entire object, avoiding partial updates.
+     */
+    interface UiObject {
+        /**
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Enable dark mode theme styling when true
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Get current server value or metadata, mirroring other components.
+         */
+        "getValue": (includeMetadata?: boolean) => Promise<any | { value: any; lastUpdated?: number; status: string; error?: string; }>;
+        /**
+          * Optional label shown above the editor
+         */
+        "label"?: string;
+        /**
+          * @default false
+         */
+        "readonly": boolean;
+        "save": () => Promise<boolean>;
+        /**
+          * Set the object value (from connector) and optionally bind device write op.
+         */
+        "setValue": (value: any, options?: { writeOperation?: (value: any) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; _isRevert?: boolean; }) => Promise<boolean>;
+        /**
+          * Silent update from connector (observe/poll) without event emission.
+         */
+        "setValueSilent": (value: any) => Promise<void>;
+        /**
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * @default true
+         */
+        "showStatus": boolean;
+        /**
+          * Visual style for the editor container
+          * @default 'outlined'
+         */
+        "variant": 'outlined' | 'filled';
+    }
+    /**
      * A versatile slider component designed for WoT device control and monitoring.
      * It supports continuous value selection with multiple visual styles, orientations, and different thumb shapes.
      * Supports both interactive control and read-only monitoring modes with customizable ranges.
@@ -1525,6 +1582,20 @@ declare global {
         prototype: HTMLUiNumberPickerElement;
         new (): HTMLUiNumberPickerElement;
     };
+    /**
+     * Auto-generates an editor for a TD object-type property and persists the full
+     * object on Save. Designed to behave like other UI components with consistent
+     * status and last-updated indicators, while sub-fields operate in local-edit mode.
+     * Usage: Map boolean/number/integer/string fields to child inputs (ui-toggle,
+     * ui-slider, ui-number-picker, ui-text). Child fields do not perform device writes;
+     * only the parent Save writes the entire object, avoiding partial updates.
+     */
+    interface HTMLUiObjectElement extends Components.UiObject, HTMLStencilElement {
+    }
+    var HTMLUiObjectElement: {
+        prototype: HTMLUiObjectElement;
+        new (): HTMLUiObjectElement;
+    };
     interface HTMLUiSliderElementEventMap {
         "valueMsg": UiMsg<number>;
     }
@@ -1649,6 +1720,7 @@ declare global {
         "ui-file-picker": HTMLUiFilePickerElement;
         "ui-notification": HTMLUiNotificationElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
+        "ui-object": HTMLUiObjectElement;
         "ui-slider": HTMLUiSliderElement;
         "ui-text": HTMLUiTextElement;
         "ui-toggle": HTMLUiToggleElement;
@@ -2280,6 +2352,50 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
+     * Auto-generates an editor for a TD object-type property and persists the full
+     * object on Save. Designed to behave like other UI components with consistent
+     * status and last-updated indicators, while sub-fields operate in local-edit mode.
+     * Usage: Map boolean/number/integer/string fields to child inputs (ui-toggle,
+     * ui-slider, ui-number-picker, ui-text). Child fields do not perform device writes;
+     * only the parent Save writes the entire object, avoiding partial updates.
+     */
+    interface UiObject {
+        /**
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Enable dark mode theme styling when true
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Optional label shown above the editor
+         */
+        "label"?: string;
+        /**
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * @default true
+         */
+        "showStatus"?: boolean;
+        /**
+          * Visual style for the editor container
+          * @default 'outlined'
+         */
+        "variant"?: 'outlined' | 'filled';
+    }
+    /**
      * A versatile slider component designed for WoT device control and monitoring.
      * It supports continuous value selection with multiple visual styles, orientations, and different thumb shapes.
      * Supports both interactive control and read-only monitoring modes with customizable ranges.
@@ -2585,6 +2701,7 @@ declare namespace LocalJSX {
         "ui-file-picker": UiFilePicker;
         "ui-notification": UiNotification;
         "ui-number-picker": UiNumberPicker;
+        "ui-object": UiObject;
         "ui-slider": UiSlider;
         "ui-text": UiText;
         "ui-toggle": UiToggle;
@@ -2766,6 +2883,15 @@ declare module "@stencil/core" {
              * ```
              */
             "ui-number-picker": LocalJSX.UiNumberPicker & JSXBase.HTMLAttributes<HTMLUiNumberPickerElement>;
+            /**
+             * Auto-generates an editor for a TD object-type property and persists the full
+             * object on Save. Designed to behave like other UI components with consistent
+             * status and last-updated indicators, while sub-fields operate in local-edit mode.
+             * Usage: Map boolean/number/integer/string fields to child inputs (ui-toggle,
+             * ui-slider, ui-number-picker, ui-text). Child fields do not perform device writes;
+             * only the parent Save writes the entire object, avoiding partial updates.
+             */
+            "ui-object": LocalJSX.UiObject & JSXBase.HTMLAttributes<HTMLUiObjectElement>;
             /**
              * A versatile slider component designed for WoT device control and monitoring.
              * It supports continuous value selection with multiple visual styles, orientations, and different thumb shapes.
