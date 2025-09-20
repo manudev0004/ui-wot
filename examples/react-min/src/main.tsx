@@ -7,7 +7,7 @@ import { defineCustomElement as defineUiButton } from '@thingweb/ui-wot-componen
 // Note: ui-event is part of the library; add export if you want to tree-shake it similarly
 import App from './App';
 import { defineCustomElement as defineUiEvent } from '@thingweb/ui-wot-components/components/ui-event';
-import { defineCustomElement as defineUiObjectEditor } from '@thingweb/ui-wot-components/components/ui-object-editor';
+import { defineCustomElement as defineUiObject } from '@thingweb/ui-wot-components/components/ui-object';
 
 // Register only the components you need (tree-shakable)
 defineUiToggle();
@@ -15,6 +15,6 @@ defineUiSlider();
 defineUiText();
 defineUiButton();
 defineUiEvent();
-defineUiObjectEditor();
+defineUiObject();
 
 createRoot(document.getElementById('root')!).render(<App />);

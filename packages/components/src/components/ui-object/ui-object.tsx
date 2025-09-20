@@ -12,8 +12,8 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
  */
 
 @Component({
-  tag: 'ui-object-editor',
-  styleUrl: 'ui-object-editor.css',
+  tag: 'ui-object',
+  styleUrl: 'ui-object.css',
   shadow: true,
 })
 export class UiObjectEditor {

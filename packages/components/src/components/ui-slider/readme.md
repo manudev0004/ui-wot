@@ -7,35 +7,38 @@
 
 ## Overview
 
-Advanced slider component with reactive state management and multiple visual styles.
+A versatile slider component designed for WoT device control and monitoring.
+
+It supports continuous value selection with multiple visual styles, orientations, and different thumb shapes.
+Supports both interactive control and read-only monitoring modes with customizable ranges.
 
 ## Properties
 
-| Property          | Attribute           | Description                                                                          | Type                                                         | Default        |
-| ----------------- | ------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------ | -------------- |
-| `color`           | `color`             | Color theme variant.                                                                 | `"neutral" \| "primary" \| "secondary"`                      | `'primary'`    |
-| `connected`       | `connected`         | Connection state for readonly mode                                                   | `boolean`                                                    | `true`         |
-| `dark`            | `dark`              | Enable dark theme for the component. When true, uses light text on dark backgrounds. | `boolean`                                                    | `false`        |
-| `disabled`        | `disabled`          | Whether the slider is disabled (cannot be interacted with).                          | `boolean`                                                    | `false`        |
-| `keyboard`        | `keyboard`          | Enable keyboard navigation (Arrow keys, Home, End, PageUp, PageDown). Default: true  | `boolean`                                                    | `true`         |
-| `label`           | `label`             | Text label displayed above the slider.                                               | `string`                                                     | `undefined`    |
-| `max`             | `max`               | Maximum value of the slider.                                                         | `number`                                                     | `100`          |
-| `min`             | `min`               | Minimum value of the slider.                                                         | `number`                                                     | `0`            |
-| `orientation`     | `orientation`       | Orientation of the slider.                                                           | `"horizontal" \| "vertical"`                                 | `'horizontal'` |
-| `readonly`        | `readonly`          | Whether the slider is read-only (displays value but cannot be changed).              | `boolean`                                                    | `false`        |
-| `showLastUpdated` | `show-last-updated` | Show last updated timestamp when true                                                | `boolean`                                                    | `false`        |
-| `showStatus`      | `show-status`       | Show status badge when true                                                          | `boolean`                                                    | `true`         |
-| `step`            | `step`              | Step increment for the slider.                                                       | `number`                                                     | `1`            |
-| `thumbShape`      | `thumb-shape`       | Shape of the slider thumb.                                                           | `"arrow" \| "circle" \| "diamond" \| "square" \| "triangle"` | `'circle'`     |
-| `value`           | `value`             | Current numeric value of the slider.                                                 | `number`                                                     | `0`            |
-| `variant`         | `variant`           | Visual style variant of the slider.                                                  | `"narrow" \| "neon" \| "rainbow" \| "stepped" \| "wide"`     | `'narrow'`     |
+| Property          | Attribute           | Description                                                                                                                                                                                                          | Type                                                         | Default        |
+| ----------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | -------------- |
+| `color`           | `color`             | Color theme for the active state matching to thingsweb theme                                                                                                                                                         | `"neutral" \| "primary" \| "secondary"`                      | `'primary'`    |
+| `connected`       | `connected`         | Connection state for read-only monitoring                                                                                                                                                                            | `boolean`                                                    | `true`         |
+| `dark`            | `dark`              | Enable dark mode theme styling when true                                                                                                                                                                             | `boolean`                                                    | `false`        |
+| `disabled`        | `disabled`          | Disable user interaction when true                                                                                                                                                                                   | `boolean`                                                    | `false`        |
+| `keyboard`        | `keyboard`          | Enable keyboard navigation so user can change value using 'Arrow Up' and 'Arrow Down' keys) when true                                                                                                                | `boolean`                                                    | `true`         |
+| `label`           | `label`             | Text label displayed above the slider (optional)                                                                                                                                                                     | `string`                                                     | `undefined`    |
+| `max`             | `max`               | Maximum allowed value (optional)                                                                                                                                                                                     | `number`                                                     | `100`          |
+| `min`             | `min`               | Minimum allowed value (optional)                                                                                                                                                                                     | `number`                                                     | `0`            |
+| `orientation`     | `orientation`       | Orientation of the slider                                                                                                                                                                                            | `"horizontal" \| "vertical"`                                 | `'horizontal'` |
+| `readonly`        | `readonly`          | Read only mode, display value but prevent changes when true. Just to monitor changes                                                                                                                                 | `boolean`                                                    | `false`        |
+| `showLastUpdated` | `show-last-updated` | Show last updated timestamp below the component                                                                                                                                                                      | `boolean`                                                    | `false`        |
+| `showStatus`      | `show-status`       | Show visual operation status indicators (loading, success, failed) right to the component                                                                                                                            | `boolean`                                                    | `false`        |
+| `step`            | `step`              | Step increment/decrement amount (optional)                                                                                                                                                                           | `number`                                                     | `1`            |
+| `thumbShape`      | `thumb-shape`       | Shape of the slider thumb                                                                                                                                                                                            | `"arrow" \| "circle" \| "diamond" \| "square" \| "triangle"` | `'circle'`     |
+| `value`           | `value`             | Current numeric value of the slider                                                                                                                                                                                  | `number`                                                     | `0`            |
+| `variant`         | `variant`           | Visual style variant of the slider. - narrow: Thin track with minimal styling (default) - wide: Thicker track - rainbow: Multi-color gradient track - neon: Glowing effect styling - stepped: Visual step indicators | `"narrow" \| "neon" \| "rainbow" \| "stepped" \| "wide"`     | `'narrow'`     |
 
 
 ## Events
 
-| Event      | Description                                          | Type                         |
-| ---------- | ---------------------------------------------------- | ---------------------------- |
-| `valueMsg` | Primary event emitted when the slider value changes. | `CustomEvent<UiMsg<number>>` |
+| Event      | Description                                                                                                                                              | Type                         |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `valueMsg` | Emitted when slider value changes through user interaction or setValue calls. Contains the new value, previous value, timestamp, and source information. | `CustomEvent<UiMsg<number>>` |
 
 
 ## Methods
@@ -46,55 +49,62 @@ Get the current slider value with optional metadata.
 
 #### Parameters
 
-| Name              | Type      | Description                                             |
-| ----------------- | --------- | ------------------------------------------------------- |
-| `includeMetadata` | `boolean` | - Include last updated timestamp and status information |
+| Name              | Type      | Description                                                  |
+| ----------------- | --------- | ------------------------------------------------------------ |
+| `includeMetadata` | `boolean` | - Whether to include status, timestamp and other information |
 
 #### Returns
 
 Type: `Promise<number | { value: number; lastUpdated?: number; status: string; error?: string; }>`
 
-Promise that resolves to the current value or value with metadata
+Current value or detailed metadata object
 
 ### `setStatus(status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>`
 
-Set operation status for external status management.
+(Advance) to manually set the operation status indicator.
+
+Useful when managing device communication externally and you want to show loading/success/error states.
 
 #### Parameters
 
-| Name           | Type                                          | Description                                                 |
-| -------------- | --------------------------------------------- | ----------------------------------------------------------- |
-| `status`       | `"error" \| "loading" \| "success" \| "idle"` | - The status to set ('idle', 'loading', 'success', 'error') |
-| `errorMessage` | `string`                                      | - Optional error message for error status                   |
+| Name           | Type                                          | Description                                 |
+| -------------- | --------------------------------------------- | ------------------------------------------- |
+| `status`       | `"error" \| "loading" \| "success" \| "idle"` | - The status to display                     |
+| `errorMessage` | `string`                                      | - (Optional) error message for error status |
 
 #### Returns
 
 Type: `Promise<void>`
 
-Promise<void>
 
-### `setValue(value: number, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>`
 
-Set the slider value with automatic device communication and status management.
+### `setValue(value: number, options?: { writeOperation?: (value: number) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }) => Promise<boolean>`
+
+Set the slider value with optional device api and other options.
+
+This is the primary method for connecting slider to real devices.
+It supports optimistic updates, error handling, and automatic retries.
 Values are automatically clamped to the min/max range.
 
 #### Parameters
 
-| Name      | Type                                                                                                                                                                                                                                                 | Description                                                   |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `value`   | `number`                                                                                                                                                                                                                                             | - The numeric value to set (will be clamped to min/max range) |
-| `options` | `{ writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "error" \| "loading" \| "success"; errorMessage?: string; _isRevert?: boolean; }` | - Configuration options for the operation                     |
+| Name      | Type                                                                                                                                                                                     | Description                                                   |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `value`   | `number`                                                                                                                                                                                 | - The numeric value to set (will be clamped to min/max range) |
+| `options` | `{ writeOperation?: (value: number) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }` | - Optional configuration options for the operation            |
 
 #### Returns
 
 Type: `Promise<boolean>`
 
-Promise<boolean> - true if successful, false if failed
+Promise resolving to true if successful, false if failed
 
 ### `setValueSilent(value: number) => Promise<void>`
 
-Set value programmatically without triggering events (for external updates).
-Values are automatically clamped to the min/max range.
+This method updates the value silently without triggering events.
+
+Use this for external data synchronization to prevent event loops.
+Perfect for WebSocket updates or polling from remote devices.
 
 #### Parameters
 
@@ -106,29 +116,44 @@ Values are automatically clamped to the min/max range.
 
 Type: `Promise<void>`
 
-Promise<void>
+
 
 ### `triggerReadPulse() => Promise<void>`
 
-Trigger a read pulse indicator for readonly mode when data is actually fetched.
-Provides visual feedback for data refresh operations.
+This triggers a visual pulse for read-only mode.
+
+Useful to shows users when data has been refreshed from an external source.
+The pulse automatically fades after 1.5 seconds.
 
 #### Returns
 
 Type: `Promise<void>`
 
-Promise<void>
+
 
 
 ## Shadow Parts
 
-| Part                   | Description |
-| ---------------------- | ----------- |
-| `"container"`          |             |
-| `"label"`              |             |
-| `"readonly-indicator"` |             |
-| `"readonly-pulse"`     |             |
+| Part                       | Description |
+| -------------------------- | ----------- |
+| `"container"`              |             |
+| `"label"`                  |             |
+| `"readonly-indicator"`     |             |
+| `"readonly-pulse-sibling"` |             |
 
+
+## Dependencies
+
+### Used by
+
+ - [ui-object](../ui-object)
+
+### Graph
+```mermaid
+graph TD;
+  ui-object --> ui-slider
+  style ui-slider fill:#f9f,stroke:#333,stroke-width:4px
+```
 
 ----------------------------------------------
 

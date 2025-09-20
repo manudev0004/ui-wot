@@ -19,7 +19,7 @@ export default function App() {
         });
 
         // Wait for custom elements to be defined
-        const tags = ['ui-toggle', 'ui-slider', 'ui-text', 'ui-button', 'ui-event', 'ui-object-editor', 'ui-number-picker'];
+        const tags = ['ui-toggle', 'ui-slider', 'ui-text', 'ui-button', 'ui-event', 'ui-object', 'ui-number-picker'];
         await Promise.all(tags.map(t => customElements.whenDefined(t)));
 
         // Initialize WoT (uses the Node-WoT browser bundle on window.WoT) and wire components
@@ -70,7 +70,7 @@ export default function App() {
         </div>
         <div style={{ gridColumn: '1 / -1' }}>
           <label>Object Property Editor (multiValue)</label>
-          <ui-object-editor
+          <ui-object
             label="Multi-Value Editor"
             variant="outlined"
             color="primary"
@@ -78,7 +78,7 @@ export default function App() {
             data-td-property="multiValue"
             show-last-updated="true"
             show-status="true"
-          ></ui-object-editor>
+          ></ui-object>
         </div>
       </div>
     </div>
