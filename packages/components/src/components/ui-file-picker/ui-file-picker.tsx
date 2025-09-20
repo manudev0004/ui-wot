@@ -126,7 +126,7 @@ export class UiFilePicker {
    * @param options - Optional configuration for device communication and behavior
    * @returns Promise resolving to true if successful, false if failed
    *
-   * @example Single file upload
+   * @example Single file upload 
    * ```javascript
    * const file = document.getElementById('file');
    * await file.setUpload(async (fileData) => {
@@ -522,7 +522,10 @@ export class UiFilePicker {
         <div class="space-y-2">
           {/* Label */}
           {this.label && (
-            <label class={`block text-sm font-medium transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed opacity-50' : ''} ${textColor}`} part="label">
+            <label
+              class={`block text-sm font-medium transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed opacity-50' : ''} ${textColor}`}
+              part="label"
+            >
               {this.label}
             </label>
           )}
@@ -530,9 +533,9 @@ export class UiFilePicker {
           <div class="inline-flex items-center space-x-2 relative">
             {/* File Drop Zone */}
             <div
-              class={`file-picker-drop-zone ${variantStyles.classes} ${this.isDragOver ? 'drag-over' : ''} ${
-                canInteract ? 'hover:border-opacity-80 cursor-pointer' : 'cursor-not-allowed opacity-50'
-              }`}
+              class={`file-picker-drop-zone ${variantStyles.classes} ${
+                this.isDragOver ? 'drag-over' : ''
+              } ${canInteract ? 'hover:border-opacity-80 cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
               style={{
                 ...variantStyles.style,
                 borderColor: this.isDragOver ? this.getActiveColor() : variantStyles.style.borderColor,
@@ -595,10 +598,10 @@ export class UiFilePicker {
                         </button>
                         <button
                           class="px-3 py-1 text-sm border rounded hover:opacity-80 transition-all"
-                          style={{
-                            borderColor: 'var(--color-danger)',
+                          style={{ 
+                            borderColor: 'var(--color-danger)', 
                             color: 'var(--color-danger)',
-                            backgroundColor: 'transparent',
+                            backgroundColor: 'transparent'
                           }}
                           onClick={e => {
                             e.stopPropagation();
@@ -626,9 +629,15 @@ export class UiFilePicker {
 
           {/* File List */}
           {this.selectedFiles.length > 0 && (
-            <div class={`mt-3 max-h-32 overflow-y-auto border rounded p-2 ${this.dark ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-gray-50'}`}>
+            <div class={`mt-3 max-h-32 overflow-y-auto border rounded p-2 ${
+              this.dark 
+                ? 'border-gray-600 bg-gray-800' 
+                : 'border-gray-200 bg-gray-50'
+            }`}>
               {this.selectedFiles.map((file, index) => (
-                <div key={index} class={`flex justify-between items-center py-1 border-b last:border-0 ${this.dark ? 'border-gray-600' : 'border-gray-200'}`}>
+                <div key={index} class={`flex justify-between items-center py-1 border-b last:border-0 ${
+                  this.dark ? 'border-gray-600' : 'border-gray-200'
+                }`}>
                   <span class={`text-sm truncate flex-1 mr-2 ${secondaryTextColor}`}>{file.name}</span>
                   <span class={`text-xs flex-shrink-0 ${mutedTextColor}`}>{this.formatFileSize(file.size)}</span>
                 </div>

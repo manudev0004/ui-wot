@@ -452,6 +452,24 @@ export class UiToggle {
     return StatusIndicator.renderTimestamp(lastUpdatedDate, this.dark ? 'dark' : 'light', h);
   }
 
+  /** Renders a small transient read pulse indicator next to readonly UI */
+  private renderReadPulseIndicator() {
+    if (!(this.readonly && this.readPulseTs && Date.now() - this.readPulseTs < 1500)) return null;
+    return (
+      <span class="ml-1 flex items-center" part="readonly-pulse-sibling">
+        <span
+          class="w-3 h-3 rounded-full shadow-md"
+          title="Updated"
+          aria-hidden="true"
+          style={{
+            backgroundColor: 'var(--color-info)',
+            animation: 'ui-read-pulse 1.4s ease-in-out forwards',
+          }}
+        ></span>
+      </span>
+    );
+  }
+
   // ============================== STYLING HELPERS ==============================
 
   /** Generates CSS classes for the toggle container based on variant,color and state */
@@ -618,19 +636,7 @@ export class UiToggle {
           )}
 
           {/* Read Pulse Indicator */}
-          {this.readonly && this.readPulseTs && Date.now() - this.readPulseTs < 1500 && (
-            <span class="ml-1 flex items-center" part="readonly-pulse-sibling">
-              <span
-                class="w-3 h-3 rounded-full shadow-md"
-                title="Updated"
-                aria-hidden="true"
-                style={{
-                  backgroundColor: 'var(--color-info)',
-                  animation: 'ui-read-pulse 1.4s ease-in-out forwards',
-                }}
-              ></span>
-            </span>
-          )}
+          {this.renderReadPulseIndicator()}
 
           {/* Status Badge */}
           {this.renderStatusBadge()}

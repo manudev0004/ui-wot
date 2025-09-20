@@ -40,7 +40,7 @@ input[type='range']:focus {
   background: linear-gradient(to top, #ef4444, #eab308, #22c55e, #3b82f6);
 }
 
-/* Vertical slider support */
+/* Vertical slider*/
 :host([orientation='vertical']) {
   display: inline-block;
   width: auto;
