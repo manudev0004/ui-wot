@@ -41,8 +41,10 @@ export function ComponentCanvasPage() {
   // Hide state
   const [hiddenCards, _setHiddenCards] = useState<Set<string>>(new Set());
   const [sectionNames, setSectionNames] = useState<Record<string, string>>({});
+  const [sectionStyles, setSectionStyles] = useState<Record<string, { bgColor: string; border: 'dashed' | 'solid' | 'none' }>>({});
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editComponentId, setEditComponentId] = useState<string | null>(null);
+  const [editSectionId, setEditSectionId] = useState<string | null>(null);
   const [editMode, setEditMode] = useState<boolean>(false);
   // Grid container width for computing section overlays
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
@@ -109,6 +111,18 @@ export function ComponentCanvasPage() {
       // drop missing
       Object.keys(next).forEach(k => {
         if (!state.components.some(c => c.id === k)) delete next[k];
+      });
+      return next;
+    });
+    // Ensure section styles have defaults for known sections
+    setSectionStyles(prev => {
+      const next = { ...prev } as Record<string, { bgColor: string; border: 'dashed' | 'solid' | 'none' }>;
+      state.tdInfos.forEach(td => {
+        if (!next[td.id]) next[td.id] = { bgColor: 'transparent', border: 'dashed' };
+      });
+      // Cleanup removed TDs
+      Object.keys(next).forEach(id => {
+        if (!state.tdInfos.find(t => t.id === id)) delete next[id];
       });
       return next;
     });
@@ -494,8 +508,10 @@ export function ComponentCanvasPage() {
                   const top = base.top;
                   const width = base.width + MARGIN[0];
                   const height = base.height + MARGIN[1];
+                  const styles = sectionStyles[tdId] || { bgColor: 'transparent', border: 'dashed' as const };
+                  const outline = styles.border === 'none' ? 'none' : `1px ${styles.border} #cbd5e1`;
                   return (
-                    <div key={tdId} style={{ position: 'absolute', left, top, width, height, outline: '1px dashed #cbd5e1', background: 'transparent' }}>
+                    <div key={tdId} data-section-id={tdId} style={{ position: 'absolute', left, top, width, height, outline, background: styles.bgColor }}>
                       {editMode && (
                         <>
                           {/* Interactive resize handle (bottom-right) */}
@@ -607,6 +623,24 @@ export function ComponentCanvasPage() {
                             strokeLinejoin="round"
                             strokeWidth={2}
                             d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                      </span>
+                      <span
+                        className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
+                        title="Section settings"
+                        onClick={e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setEditSectionId(tdId);
+                        }}
+                      >
+                        <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35.74-.18 1.28-.72 1.46-1.46.94-1.543 3.11-1.543 4.05 0 .18.74.72 1.28 1.46 1.46z"
                           />
                         </svg>
                       </span>
@@ -767,6 +801,7 @@ export function ComponentCanvasPage() {
                   const affordance = state.availableAffordances.find(a => a.key === comp.affordanceKey);
                   return (
                     <SmartEditPopup
+                      mode="component"
                       component={comp}
                       affordance={affordance}
                       onClose={() => setEditComponentId(null)}
@@ -778,6 +813,38 @@ export function ComponentCanvasPage() {
                       }}
                       onVariantChange={(componentId, variant) => dispatch({ type: 'UPDATE_COMPONENT', payload: { id: componentId, updates: { variant } } })}
                       onComponentClose={componentId => removeComponent(componentId)}
+                    />
+                  );
+                })()}
+
+              {editSectionId &&
+                (() => {
+                  const sectionId = editSectionId!;
+                  const name = sectionNames[sectionId] ?? state.tdInfos.find(t => t.id === sectionId)?.title ?? 'Section';
+                  const styles = sectionStyles[sectionId] || { bgColor: 'transparent', border: 'dashed' as const };
+                  const onSectionChange = (sid: string, updates: { name?: string; styles?: { bgColor?: string; border?: 'dashed' | 'solid' | 'none' } }) => {
+                    if (updates.name !== undefined) setSectionNames(prev => ({ ...prev, [sid]: updates.name! }));
+                    if (updates.styles) setSectionStyles(prev => ({ ...prev, [sid]: { ...prev[sid], ...updates.styles } }));
+                  };
+                  const onBulkAction = (sid: string, action: 'hideWrappers' | 'showWrappers' | 'setVariant', payload?: { variant?: string }) => {
+                    const ids = layout.filter(l => membership[l.i] === sid).map(l => l.i);
+                    if (action === 'hideWrappers') {
+                      ids.forEach(id => dispatch({ type: 'UPDATE_COMPONENT', payload: { id, updates: { hideCard: true } } }));
+                    } else if (action === 'showWrappers') {
+                      ids.forEach(id => dispatch({ type: 'UPDATE_COMPONENT', payload: { id, updates: { hideCard: false } } }));
+                    } else if (action === 'setVariant' && payload?.variant) {
+                      ids.forEach(id => dispatch({ type: 'UPDATE_COMPONENT', payload: { id, updates: { variant: payload.variant } } }));
+                    }
+                  };
+                  return (
+                    <SmartEditPopup
+                      mode="section"
+                      sectionId={sectionId}
+                      sectionName={name}
+                      sectionStyles={styles}
+                      onClose={() => setEditSectionId(null)}
+                      onSectionChange={onSectionChange}
+                      onBulkAction={onBulkAction}
                     />
                   );
                 })()}
