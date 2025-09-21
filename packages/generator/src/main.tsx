@@ -2,6 +2,20 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 // Global styles are imported via App.tsx -> styles/theme.css
 import App from './App.tsx'
+// Define all UI-WoT custom elements
+import { defineCustomElement as UiButton } from '@thingweb/ui-wot-components/components/ui-button';
+import { defineCustomElement as UiToggle } from '@thingweb/ui-wot-components/components/ui-toggle';
+import { defineCustomElement as UiSlider } from '@thingweb/ui-wot-components/components/ui-slider';
+import { defineCustomElement as UiText } from '@thingweb/ui-wot-components/components/ui-text';
+import { defineCustomElement as UiNumberPicker } from '@thingweb/ui-wot-components/components/ui-number-picker';
+import { defineCustomElement as UiCalendar } from '@thingweb/ui-wot-components/components/ui-calendar';
+import { defineCustomElement as UiCheckbox } from '@thingweb/ui-wot-components/components/ui-checkbox';
+import { defineCustomElement as UiColorPicker } from '@thingweb/ui-wot-components/components/ui-color-picker';
+import { defineCustomElement as UiFilePicker } from '@thingweb/ui-wot-components/components/ui-file-picker';
+import { defineCustomElement as UiEvent } from '@thingweb/ui-wot-components/components/ui-event';
+import { defineCustomElement as UiNotification } from '@thingweb/ui-wot-components/components/ui-notification';
+import { defineCustomElement as UiObject } from '@thingweb/ui-wot-components/components/ui-object';
+import { initializeWot } from '@thingweb/ui-wot-components/services';
 
 // Helper to dynamically load external script and wait for it to be ready
 function loadScript(src: string): Promise<void> {
@@ -32,23 +46,38 @@ async function bootstrap() {
     // Try to load Node-WoT browser bundle from CDN so `WoT` global becomes available
     await loadScript('https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js');
   } catch (err) {
-    // If loading fails, continue — wotService will fall back to mock mode
-    console.warn('Could not load node-wot browser bundle, continuing with mock WoT:', err);
+    // If loading fails, continue — components will gracefully skip wiring until WoT is available
+    console.warn('Could not load node-wot browser bundle; continuing without WoT:', err);
   }
 
-  // Register UI web components (ESM bundle)
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    await import('../../components/dist/ui-wot-components/ui-wot-components.esm.js');
-  } catch (err) {
-    console.warn('Failed to import UI components bundle:', err);
-  }
+  // Define all custom elements for use in React rendering
+  UiButton();
+  UiToggle();
+  UiSlider();
+  UiText();
+  UiNumberPicker();
+  UiCalendar();
+  UiCheckbox();
+  UiColorPicker();
+  UiFilePicker();
+  UiEvent();
+  UiNotification();
+  UiObject();
 
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />
     </StrictMode>,
   );
+
+  // Initialize WoT and prepare one-liner auto-wiring capability
+  try {
+    await initializeWot();
+    // Note: actual connectAll will be called after TD is chosen and components are in DOM.
+    // We leave this initialized so later pages can call connectAll with the selected TD URL.
+  } catch (err) {
+    console.warn('initializeWot failed; TD wiring will be skipped until WoT available:', err);
+  }
 }
 
 bootstrap();

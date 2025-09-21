@@ -3,8 +3,8 @@ import { useDropzone } from 'react-dropzone';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { wotService } from '../services/wotService';
 import { dashboardService } from '../services/dashboardService';
+import { parseTDFromSource, parseAffordances } from '../services/tdService';
 
 export function TDInputPage() {
   const { state, dispatch } = useAppContext();
@@ -38,10 +38,10 @@ export function TDInputPage() {
 
       try {
         const tdSource = { type: 'file' as const, content: file };
-        const parsedTD = await wotService.parseTDFromSource(tdSource);
+  const parsedTD = await parseTDFromSource(tdSource);
         // Optionally host via local TD servient
         const servedUrl = USE_TD_HOST ? await postTDToHost(parsedTD) : null;
-        const affordances = wotService.parseAffordances(parsedTD);
+  const affordances = parseAffordances(parsedTD);
 
         // Create TD info object
         const tdInfo = {
@@ -93,10 +93,10 @@ export function TDInputPage() {
     try {
       const originalUrl = urlInput.trim();
       const tdSource = { type: 'url' as const, content: originalUrl };
-      const parsedTD = await wotService.parseTDFromSource(tdSource);
+  const parsedTD = await parseTDFromSource(tdSource);
       // Optionally rehost via Node‑WoT to normalize path/security and ensure liveness
       const servedUrl = USE_TD_HOST ? await postTDToHost(parsedTD) : originalUrl;
-      const affordances = wotService.parseAffordances(parsedTD);
+  const affordances = parseAffordances(parsedTD);
 
       // Create TD info object
       const tdInfo = {
@@ -110,7 +110,7 @@ export function TDInputPage() {
       dispatch({ type: 'SET_TD_SOURCE', payload: { type: 'url', content: servedUrl } });
       dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
       dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
-      dispatch({ type: 'ADD_TD', payload: { ...tdInfo, source: { type: 'url', content: servedUrl } } });
+  dispatch({ type: 'ADD_TD', payload: { ...tdInfo, source: { type: 'url', content: servedUrl } } });
 
       navigate('/affordances');
     } catch (err) {

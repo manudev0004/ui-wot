@@ -85,10 +85,10 @@ It supports optimistic updates, error handling, and automatic retries.
 
 #### Parameters
 
-| Name      | Type                                                                                                                                                                                     | Description                                           |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `value`   | `number`                                                                                                                                                                                 | - The numeric value to set                            |
-| `options` | `{ writeOperation?: (value: number) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }` | - Configuration for device communication and behavior |
+| Name      | Type                                                                                                                                                                                     | Description                                                    |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `value`   | `number`                                                                                                                                                                                 | - The numeric value to set                                     |
+| `options` | `{ writeOperation?: (value: number) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }` | - Optional configuration for device communication and behavior |
 
 #### Returns
 
@@ -142,6 +142,19 @@ Type: `Promise<void>`
 | `"readonly-pulse-sibling"` |             |
 | `"value-display"`          |             |
 
+
+## Dependencies
+
+### Used by
+
+ - [ui-object](../ui-object)
+
+### Graph
+```mermaid
+graph TD;
+  ui-object --> ui-number-picker
+  style ui-number-picker fill:#f9f,stroke:#333,stroke-width:4px
+```
 
 ----------------------------------------------
 

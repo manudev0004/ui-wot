@@ -19,11 +19,15 @@ export interface WoTComponent {
   schema?: any;
   uiComponent: string; // The stencil component to use
   variant?: string; // Component variant
+  /** Arbitrary UI component attributes (kebab-case keys) */
+  attributes?: Record<string, string>;
   layout: ComponentLayout;
-  thing: any; // Reference to the WoT thing
+  thing: any; // Reference to the WoT thing (deprecated; no longer used)
   affordanceKey: string; // Key of the affordance in TD
   tdId: string; // Reference to the TD this component belongs to
   hideCard?: boolean; // Whether to hide the card wrapper and show only the component
+  /** Optional TD URL used for one-line services wiring */
+  tdUrl?: string;
 }
 
 export interface TDSource {

@@ -9,6 +9,7 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import './rgl-overrides.css';
 import { EditPopup } from '../components/EditPopup';
+import { connectAll } from '@thingweb/ui-wot-components/services';
 
 const ReactGridLayout = WidthProvider(ReactGridLayoutLib as unknown as React.ComponentType<any>);
 
@@ -29,6 +30,89 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number; minW?: number; minH?
   'ui-checkbox': { w: 3, h: 2, minW: 2, minH: 2 },
   'ui-event': { w: 7, h: 6, minW: 6, minH: 5 },
 };
+
+// Attribute schemas for each UI component (kebab-case)
+const ATTRIBUTE_SCHEMAS: Record<string, Record<string, 'string' | 'number' | 'boolean'>> = {
+  'ui-button': {
+    'disabled': 'boolean',
+    'show-status': 'boolean',
+    'show-last-updated': 'boolean',
+    'label': 'string',
+  },
+  'ui-toggle': {
+    'disabled': 'boolean',
+    'readonly': 'boolean',
+    'show-status': 'boolean',
+    'show-last-updated': 'boolean',
+  },
+  'ui-checkbox': {
+    'disabled': 'boolean',
+    'readonly': 'boolean',
+    'show-status': 'boolean',
+    'show-last-updated': 'boolean',
+  },
+  'ui-slider': {
+    'min': 'number',
+    'max': 'number',
+    'step': 'number',
+    'show-min-max': 'boolean',
+    'disabled': 'boolean',
+    'readonly': 'boolean',
+    'show-status': 'boolean',
+  },
+  'ui-number-picker': {
+    'min': 'number',
+    'max': 'number',
+    'step': 'number',
+    'precision': 'number',
+    'disabled': 'boolean',
+    'readonly': 'boolean',
+    'show-status': 'boolean',
+  },
+  'ui-text': {
+    'mode': 'string', // e.g. editable|readonly
+    'placeholder': 'string',
+    'debounce-ms': 'number',
+    'readonly': 'boolean',
+    'show-status': 'boolean',
+  },
+  'ui-calendar': {
+    'include-time': 'boolean',
+    'readonly': 'boolean',
+    'disabled': 'boolean',
+    'show-status': 'boolean',
+  },
+  'ui-color-picker': {
+    'readonly': 'boolean',
+    'disabled': 'boolean',
+    'show-status': 'boolean',
+  },
+  'ui-file-picker': {
+    'accept': 'string',
+    'multiple': 'boolean',
+    'show-status': 'boolean',
+  },
+  'ui-event': {
+    'max-events': 'number',
+    'show-timestamps': 'boolean',
+    'auto-scroll': 'boolean',
+    'show-status': 'boolean',
+    'label': 'string',
+  },
+  'ui-notification': {
+    'type': 'string', // info|success|warning|error
+    'duration': 'number',
+    'show-status': 'boolean',
+  },
+  'ui-object': {
+    'show-status': 'boolean',
+    'show-last-updated': 'boolean',
+  },
+};
+
+function getAttributeSchema(componentType: string) {
+  return ATTRIBUTE_SCHEMAS[componentType] || {};
+}
 
 export function ComponentCanvasPage() {
   const { state, dispatch } = useAppContext();
@@ -442,22 +526,34 @@ export function ComponentCanvasPage() {
       if (!elHost) return;
       elHost.innerHTML = '';
       try {
-        // Container that constrains max size and allows centering
-        const box = document.createElement('div');
-        box.style.display = 'inline-block';
-        box.style.maxWidth = '100%';
-        box.style.maxHeight = '100%';
+        // Create the custom element and apply base attributes
+        const el = document.createElement(component.uiComponent);
+        el.setAttribute('variant', component.variant || 'outlined');
+        el.setAttribute('label', component.title);
+        el.setAttribute('color', 'primary');
 
-        const element = document.createElement(component.uiComponent);
-        element.setAttribute('variant', component.variant || 'minimal');
-        element.setAttribute('label', component.title);
-        element.setAttribute('color', 'primary');
-        // Do not force width/height; let the component size itself, but cap it
-        (element as HTMLElement).style.maxWidth = '100%';
-        (element as HTMLElement).style.maxHeight = '100%';
+        // Apply per-component attributes if present
+        if (component.attributes) {
+          Object.entries(component.attributes).forEach(([k, v]) => {
+            if (v != null) el.setAttribute(k, String(v));
+          });
+        }
 
-        box.appendChild(element);
-        elHost.appendChild(box);
+        // TD wiring via data attributes
+        const tdInfo = state.tdInfos.find(t => t.id === component.tdId);
+        const tdUrl = (tdInfo?.source.type === 'url' ? (tdInfo.source.content as string) : undefined) || component.tdUrl || '';
+        if (tdUrl) {
+          el.setAttribute('data-td-url', tdUrl);
+          if (component.type === 'property') el.setAttribute('data-td-property', component.name);
+          else if (component.type === 'action') el.setAttribute('data-td-action', component.name);
+          else if (component.type === 'event') el.setAttribute('data-td-event', component.name);
+        }
+
+        // Sizing behavior
+        (el as HTMLElement).style.maxWidth = '100%';
+        (el as HTMLElement).style.maxHeight = '100%';
+
+        elHost.appendChild(el);
       } catch (e) {
         const fallback = document.createElement('div');
         fallback.className = 'p-4 bg-gray-100 rounded border-2 border-dashed border-gray-300 text-center text-gray-500';
@@ -467,7 +563,7 @@ export function ComponentCanvasPage() {
       return () => {
         if (elHost) elHost.innerHTML = '';
       };
-    }, [component.id, component.title, component.uiComponent, component.variant]);
+    }, [component.id, component.title, component.uiComponent, component.variant, component.attributes, component.type, component.name, component.tdId, state.tdInfos]);
     return (
       <div
         ref={hostRef}
@@ -481,6 +577,27 @@ export function ComponentCanvasPage() {
       />
     );
   }
+
+  // Auto-wire all elements to the current TD via data attributes when components or TDs change
+  useEffect(() => {
+    let stops: Array<() => void> | undefined;
+    const root = document.querySelector('.canvas-page');
+    const tdUrls = state.tdInfos.map(t => (t.source.type === 'url' ? (t.source.content as string) : null)).filter(Boolean) as string[];
+    const baseUrl = tdUrls[0];
+    if (!root || !baseUrl) return;
+    (async () => {
+      try {
+        stops = await connectAll({ baseUrl, container: root });
+      } catch (err) {
+        console.warn('connectAll failed:', err);
+      }
+    })();
+    return () => {
+      if (stops) {
+        for (const stop of stops) try { stop(); } catch {}
+      }
+    };
+  }, [state.tdInfos, state.components]);
 
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
@@ -806,17 +923,38 @@ export function ComponentCanvasPage() {
                   const comp = state.components.find(c => c.id === editComponentId);
                   if (!comp) return null;
                   const affordance = state.availableAffordances.find(a => a.key === comp.affordanceKey);
+                  const schema = getAttributeSchema(comp.uiComponent);
+                  const attributesList = Object.keys(schema);
+                  const attributesTypes = schema;
+                  const attributesValues: Record<string, string> = {};
+                  attributesList.forEach(k => {
+                    const raw = comp.attributes?.[k];
+                    if (raw == null) {
+                      attributesValues[k] = schema[k] === 'boolean' ? 'false' : '';
+                    } else {
+                      attributesValues[k] = String(raw);
+                    }
+                  });
                   return (
                     <EditPopup
                       mode="component"
                       component={comp}
                       affordance={affordance}
                       onClose={() => setEditComponentId(null)}
-                      attributesList={[]}
-                      attributesValues={{}}
-                      attributesTypes={{}}
-                      onAttributeChange={() => {
-                        /* minimal no-op for now */
+                      attributesList={attributesList}
+                      attributesValues={attributesValues}
+                      attributesTypes={attributesTypes as any}
+                      onAttributeChange={(componentId, attrName, value) => {
+                        // Persist to state as strings (kebab-case)
+                        const target = state.components.find(c => c.id === componentId);
+                        if (!target) return;
+                        const nextAttrs = { ...(target.attributes || {}) };
+                        nextAttrs[attrName] = value;
+                        dispatch({ type: 'UPDATE_COMPONENT', payload: { id: componentId, updates: { attributes: nextAttrs } } });
+                        // Also apply live to the element in DOM if present
+                        const elHost = document.querySelector(`[data-component-id="${componentId}"]`);
+                        const el = elHost?.querySelector(target.uiComponent) as HTMLElement | null;
+                        if (el) el.setAttribute(attrName, value);
                       }}
                       onVariantChange={(componentId, variant) => dispatch({ type: 'UPDATE_COMPONENT', payload: { id: componentId, updates: { variant } } })}
                       onComponentClose={componentId => removeComponent(componentId)}

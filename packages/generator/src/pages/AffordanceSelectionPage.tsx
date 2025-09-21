@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { wotService } from '../services/wotService';
 import { WoTComponent } from '../types';
 import { useNavbar } from '../context/NavbarContext';
 
@@ -43,24 +42,12 @@ export function AffordanceSelectionPage() {
       dispatch({ type: 'SELECT_AFFORDANCES', payload: [] });
       // Reset local map for component choice
       setSelectedComponentMap({});
-      // Create WoT thing
-      const thing = await wotService.createThing(state.parsedTD);
-
-      // Register the created thing under the existing tdInfo id when possible so components can resolve it
-      // Try to find the tdInfo that corresponds to the currently parsed TD
+      // Determine active TD URL for components wiring
       const foundTdInfo = state.tdInfos.find(t => t.td === state.parsedTD) || state.tdInfos[0];
-      const registerKey = foundTdInfo?.id || state.parsedTD.id || 'default';
-
-      if (state.parsedTD.id) wotService.registerThing(state.parsedTD.id, thing);
-      wotService.registerThing(registerKey, thing);
-
-      dispatch({
-        type: 'SET_THING',
-        payload: { id: state.parsedTD.id || registerKey, thing },
-      });
+      const tdUrl = (foundTdInfo?.source.type === 'url' ? (foundTdInfo.source.content as string) : undefined) || undefined;
 
       // Get the active TD ID (prefer existing tdInfo id, fallback to parsedTD.id)
-      const activeTdId = state.activeTdId || registerKey || (state.tdInfos.length > 0 ? state.tdInfos[0].id : 'default');
+  const activeTdId = state.activeTdId || foundTdInfo?.id || (state.tdInfos.length > 0 ? state.tdInfos[0].id : 'default');
       const activeTdInfo = state.tdInfos.find(td => td.id === activeTdId);
 
       // Create components for selected affordances
@@ -88,9 +75,10 @@ export function AffordanceSelectionPage() {
               minW: 2,
               minH: 2,
             },
-            thing,
+            thing: undefined,
             affordanceKey,
             tdId: activeTdId, // Assign the correct TD ID
+            tdUrl: tdUrl,
           };
         })
         .filter(Boolean) as WoTComponent[];

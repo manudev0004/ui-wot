@@ -1,27 +1,3 @@
-declare module '@node-wot/browser-bundle' {
-  export class Servient {
-    addClientFactory(factory: any): void;
-    start(): Promise<void>;
-    addThing(td: any): Promise<any>;
-    shutdown(): Promise<void>;
-  }
-}
-
-declare module '@node-wot/core' {
-  export interface WoTThing {
-    readProperty(propertyName: string): Promise<any>;
-    writeProperty(propertyName: string, value: any): Promise<void>;
-    invokeAction(actionName: string, input?: any): Promise<any>;
-    subscribeEvent(eventName: string, callback: (data: any) => void): Promise<void>;
-  }
-}
-
-declare global {
-  interface Window {
-    HttpClientFactory: any;
-  }
-}
-
 declare module 'react-grid-layout' {
   import * as React from 'react';
 

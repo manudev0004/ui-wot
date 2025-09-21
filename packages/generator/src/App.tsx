@@ -5,7 +5,6 @@ import { HomePage } from './pages/HomePage';
 import { TDInputPage } from './pages/TDInputPage';
 import { AffordanceSelectionPage } from './pages/AffordanceSelectionPage';
 import { ComponentCanvasPage } from './pages/ComponentCanvasPage';
-import { wotService } from './services/wotService';
 import './styles/theme.css';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useAppContext as useCtx } from './context/AppContext';
@@ -16,10 +15,7 @@ function RouterSync() {
   const { dispatch } = useCtx();
   const location = useLocation();
 
-  // Initialize WoT service once
-  useEffect(() => {
-    wotService.start();
-  }, []);
+  // WoT is initialized in main.tsx via components services
 
   // Only sync URL changes to context, never context to URL
   useEffect(() => {
