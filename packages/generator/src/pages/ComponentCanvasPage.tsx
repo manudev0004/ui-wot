@@ -7,26 +7,28 @@ import ReactGridLayoutLib, { WidthProvider, Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import './rgl-overrides.css';
+import { SmartEditPopup } from '../components/SmartEditPopup';
 
 const ReactGridLayout = WidthProvider(ReactGridLayoutLib as unknown as React.ComponentType<any>);
 
 // Basic grid constants
 const COLS = 24;
-const ROW_H = 70;
-const MARGIN: [number, number] = [16, 16];
-const PADDING: [number, number] = [16, 16];
-const MIN_CARD_H = 120; // px minimum visual height for content zone
+const ROW_H = 56; // smaller row height for tighter fit
+const MARGIN: [number, number] = [12, 12];
+const PADDING: [number, number] = [12, 12];
+const MIN_CARD_H = 88; // smaller minimum visual height
 // const MIN_HIDE_CARD_H = 100; // px when header hidden (not used for minimal version)
 
 // Minimal default sizes per component type (grid units)
 const DEFAULT_SIZES: Record<string, { w: number; h: number; minW?: number; minH?: number }> = {
-  'ui-button': { w: 4, h: 3, minW: 3, minH: 2 },
-  'ui-toggle': { w: 4, h: 3, minW: 3, minH: 2 },
-  'ui-slider': { w: 6, h: 3, minW: 5, minH: 3 },
-  'ui-text': { w: 4, h: 3, minW: 3, minH: 2 },
-  'ui-number-picker': { w: 4, h: 3, minW: 3, minH: 2 },
-  'ui-calendar': { w: 6, h: 4, minW: 5, minH: 3 },
-  'ui-checkbox': { w: 4, h: 3, minW: 3, minH: 2 },
+  'ui-button': { w: 3, h: 2, minW: 2, minH: 1 },
+  'ui-toggle': { w: 3, h: 2, minW: 2, minH: 2 },
+  'ui-slider': { w: 5, h: 2, minW: 4, minH: 2 },
+  'ui-text': { w: 3, h: 2, minW: 2, minH: 2 },
+  'ui-number-picker': { w: 3, h: 2, minW: 2, minH: 2 },
+  'ui-calendar': { w: 5, h: 3, minW: 4, minH: 3 },
+  'ui-checkbox': { w: 3, h: 2, minW: 2, minH: 2 },
+  'ui-event': { w: 3.5, h: 3.5, minW: 2, minH: 2.6 },
 };
 
 export function ComponentCanvasPage() {
@@ -39,8 +41,11 @@ export function ComponentCanvasPage() {
   // Membership of cards to visual section (defaults to their TD id)
   const [membership, setMembership] = useState<Record<string, string | null>>({});
   // Hide state
-  const [hiddenCards, setHiddenCards] = useState<Set<string>>(new Set());
+  const [hiddenCards, _setHiddenCards] = useState<Set<string>>(new Set());
   const [hiddenSections, setHiddenSections] = useState<Set<string>>(new Set());
+  const [sectionTitles, setSectionTitles] = useState<Record<string, string>>({});
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [editComponentId, setEditComponentId] = useState<string | null>(null);
   // Grid container width for computing section overlays
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -56,6 +61,21 @@ export function ComponentCanvasPage() {
     ro.observe(gridWrapRef.current);
     return () => ro.disconnect();
   }, []);
+
+  // Initialize or sync section titles from TD infos
+  useEffect(() => {
+    setSectionTitles(prev => {
+      const next = { ...prev } as Record<string, string>;
+      state.tdInfos.forEach(td => {
+        if (!next[td.id]) next[td.id] = td.title || 'Section';
+      });
+      // Remove titles for TDs no longer present
+      Object.keys(next).forEach(k => {
+        if (!state.tdInfos.some(td => td.id === k)) delete next[k];
+      });
+      return next;
+    });
+  }, [state.tdInfos]);
 
   // Seed or update layout when components list changes
   useEffect(() => {
@@ -267,17 +287,11 @@ export function ComponentCanvasPage() {
     (tdId: string, minX: number, minY: number, targetW: number) => {
       if (targetW < 1) targetW = 1;
       // Collect visible items in this section
-      const items = layout
-        .filter(
-          it =>
-            (membership[it.i] ?? state.components.find(c => c.id === it.i)?.tdId) === tdId &&
-            !hiddenCards.has(it.i),
-        )
-        .map(it => ({ ...it }));
+      const items = layout.filter(it => (membership[it.i] ?? state.components.find(c => c.id === it.i)?.tdId) === tdId && !hiddenCards.has(it.i)).map(it => ({ ...it }));
       if (items.length === 0) return;
 
       // Stable order by current (y,x)
-      items.sort((a, b) => (a.y - b.y) || (a.x - b.x));
+      items.sort((a, b) => a.y - b.y || a.x - b.x);
 
       let cursorX = 0;
       let cursorY = 0;
@@ -321,9 +335,7 @@ export function ComponentCanvasPage() {
       e.preventDefault();
       e.stopPropagation();
       // Determine the minimum allowed width so we don't force-resize children
-      const sectionItems = layout.filter(
-        it => (membership[it.i] ?? state.components.find(c => c.id === it.i)?.tdId) === tdId && !hiddenCards.has(it.i),
-      );
+      const sectionItems = layout.filter(it => (membership[it.i] ?? state.components.find(c => c.id === it.i)?.tdId) === tdId && !hiddenCards.has(it.i));
       const minAllowedW = sectionItems.length > 0 ? Math.max(...sectionItems.map(it => it.w)) : 1;
       sectionResizeRef.current = {
         tdId,
@@ -379,14 +391,7 @@ export function ComponentCanvasPage() {
     }
   };
 
-  const toggleCardHidden = (id: string) => {
-    setHiddenCards(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  // Card-level hide control removed from UI; keep hiddenCards support if needed later
 
   const toggleSectionHidden = (tdId: string) => {
     setHiddenSections(prev => {
@@ -399,6 +404,26 @@ export function ComponentCanvasPage() {
 
   const removeComponent = (id: string) => {
     dispatch({ type: 'REMOVE_COMPONENT', payload: id });
+    if (editComponentId === id) setEditComponentId(null);
+  };
+
+  const deleteSectionWithChildren = (tdId: string) => {
+    // Remove only components currently in this section (membership === tdId)
+    const idsToRemove = layout
+      .filter(l => (membership[l.i] ?? state.components.find(c => c.id === l.i)?.tdId) === tdId)
+      .map(l => l.i);
+    idsToRemove.forEach(id => dispatch({ type: 'REMOVE_COMPONENT', payload: id }));
+    // Clean up local state
+    setMembership(prev => {
+      const next = { ...prev };
+      idsToRemove.forEach(id => delete next[id]);
+      return next;
+    });
+    setHiddenSections(prev => {
+      const next = new Set(prev);
+      next.delete(tdId);
+      return next;
+    });
   };
 
   // Simple card content mounting for custom elements
@@ -444,7 +469,18 @@ export function ComponentCanvasPage() {
                       {/* Interactive resize handle (bottom-right) */}
                       <div
                         className="section-resize-handle"
-                        style={{ position: 'absolute', right: -6, bottom: -6, width: 14, height: 14, borderRadius: 4, background: 'white', border: '1px solid #64748b', cursor: 'nwse-resize', pointerEvents: 'auto' }}
+                        style={{
+                          position: 'absolute',
+                          right: -6,
+                          bottom: -6,
+                          width: 14,
+                          height: 14,
+                          borderRadius: 4,
+                          background: 'white',
+                          border: '1px solid #64748b',
+                          cursor: 'nwse-resize',
+                          pointerEvents: 'auto',
+                        }}
                         onMouseDown={e => onSectionResizeMouseDown(tdId, box, e)}
                       />
                       {/* Draggable edges for moving whole section */}
@@ -475,6 +511,7 @@ export function ComponentCanvasPage() {
                 if (colWidth === 0) return null;
                 const { left, top, width } = unitToPx(box.minX, box.minY, box.maxX - box.minX, box.maxY - box.minY);
                 const tdInfo = state.tdInfos.find(t => t.id === tdId);
+                const title = sectionTitles[tdId] ?? tdInfo?.title ?? 'Section';
                 return (
                   <div
                     key={`bar-${tdId}`}
@@ -493,17 +530,54 @@ export function ComponentCanvasPage() {
                     }}
                     onMouseDown={e => onSectionMouseDown(tdId, e)}
                   >
-                    <span className="px-2 py-0.5 bg-white/90 text-primary text-xs font-heading rounded shadow border border-primary/30">{tdInfo?.title || 'Section'}</span>
-                    <button
-                      className="text-xs px-2 py-0.5 rounded bg-white border text-blue-600 hover:bg-blue-50 rgl-no-drag"
-                      onClick={e => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleSectionHidden(tdId);
-                      }}
+                    {editingSectionId === tdId ? (
+                      <input
+                        className="rgl-no-drag text-xs px-2 py-0.5 bg-white border border-primary rounded"
+                        style={{ cursor: 'text' }}
+                        autoFocus
+                        defaultValue={title}
+                        onClick={e => { e.stopPropagation(); }}
+                        onMouseDown={e => { e.stopPropagation(); }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const value = (e.target as HTMLInputElement).value.trim() || 'Section';
+                            setSectionTitles(prev => ({ ...prev, [tdId]: value }));
+                            setEditingSectionId(null);
+                          } else if (e.key === 'Escape') {
+                            setEditingSectionId(null);
+                          }
+                        }}
+                        onBlur={e => {
+                          const value = e.target.value.trim() || 'Section';
+                          setSectionTitles(prev => ({ ...prev, [tdId]: value }));
+                          setEditingSectionId(null);
+                        }}
+                      />
+                    ) : (
+                      <span className="px-2 py-0.5 bg-white/90 text-primary text-xs font-heading rounded shadow border border-primary/30 rgl-no-drag" onDoubleClick={e => { e.stopPropagation(); setEditingSectionId(tdId); }}>{title}</span>
+                    )}
+                    {/* Icons: edit name, hide, delete section */}
+                    <span
+                      className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
+                      title="Rename"
+                      onClick={e => { e.preventDefault(); e.stopPropagation(); setEditingSectionId(tdId); }}
                     >
-                      Hide
-                    </button>
+                      <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </span>
+                    <span
+                      className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
+                      title="Hide section"
+                      onClick={e => { e.preventDefault(); e.stopPropagation(); toggleSectionHidden(tdId); }}
+                    >
+                      <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.016.152-1.996.436-2.922m2.063-3.48C6.349 1.866 9.061 1 12 1c5.523 0 10 4.477 10 10 0 2.353-.808 4.516-2.162 6.227M3 3l18 18"/></svg>
+                    </span>
+                    <span
+                      className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
+                      title="Delete section"
+                      onClick={e => { e.preventDefault(); e.stopPropagation(); deleteSectionWithChildren(tdId); }}
+                    >
+                      <svg className="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </span>
                   </div>
                 );
               })}
@@ -533,36 +607,43 @@ export function ComponentCanvasPage() {
                       if (!comp) return null;
                       return (
                         <div key={l.i} className="rgl-card">
-                          <div className="bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative group w-full h-full">
-                            <div className="bg-neutral-light px-3 h-9 flex items-center justify-between border-b border-primary">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm font-heading font-medium text-primary truncate">{comp.title}</span>
-                                <span className="text-xs text-gray-600 bg-white px-2 py-0.5 rounded">{comp.type}</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  className="text-xs px-2 py-1 rounded bg-white border text-gray-700 hover:bg-gray-50 rgl-no-drag"
-                                  onClick={e => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    toggleCardHidden(comp.id);
-                                  }}
-                                >
-                                  {hiddenCards.has(comp.id) ? 'Show' : 'Hide'}
-                                </button>
-                                <button
-                                  className="text-xs px-2 py-1 rounded bg-white border text-red-600 hover:bg-red-50 rgl-no-drag"
-                                  onClick={e => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    removeComponent(comp.id);
-                                  }}
-                                >
-                                  ×
-                                </button>
-                              </div>
+                          <div className="bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative w-full h-full" data-component-id={comp.id}>
+                            {/* Top-right icon actions: edit (pencil) and remove (×) */}
+                            <div className="absolute top-1 right-1 flex items-center gap-2 z-10">
+                              <span
+                                className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
+                                title="Edit"
+                                onClick={e => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setEditComponentId(comp.id);
+                                }}
+                              >
+                                <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
+                                </svg>
+                              </span>
+                              <span
+                                className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
+                                title="Remove"
+                                onClick={e => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  removeComponent(comp.id);
+                                }}
+                              >
+                                <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </span>
                             </div>
-                            <div className="relative" style={{ width: '100%', height: 'calc(100% - 36px)', minHeight: MIN_CARD_H - 36 }}>
+
+                            <div className="relative" style={{ width: '100%', height: '100%', minHeight: MIN_CARD_H }}>
                               <CardContent component={comp} />
                             </div>
                           </div>
@@ -571,6 +652,39 @@ export function ComponentCanvasPage() {
                     })}
                 </ReactGridLayout>
               </div>
+              {/* Hidden Sections Dock */}
+              {hiddenSections.size > 0 && (
+                <div className="absolute left-2 top-2 flex flex-wrap gap-2 z-30">
+                  {Array.from(hiddenSections).map(tdId => (
+                    <div key={`hidden-${tdId}`} className="rgl-no-drag flex items-center gap-1 px-2 py-1 bg-white/90 border border-primary/30 rounded shadow cursor-pointer" onClick={e => { e.preventDefault(); e.stopPropagation(); toggleSectionHidden(tdId); }}>
+                      <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      <span className="text-xs text-primary font-heading">{sectionTitles[tdId] || state.tdInfos.find(t => t.id === tdId)?.title || 'Section'}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Smart Edit Popup */}
+              {editComponentId &&
+                (() => {
+                  const comp = state.components.find(c => c.id === editComponentId);
+                  if (!comp) return null;
+                  const affordance = state.availableAffordances.find(a => a.key === comp.affordanceKey);
+                  return (
+                    <SmartEditPopup
+                      component={comp}
+                      affordance={affordance}
+                      onClose={() => setEditComponentId(null)}
+                      attributesList={[]}
+                      attributesValues={{}}
+                      attributesTypes={{}}
+                      onAttributeChange={() => {
+                        /* minimal no-op for now */
+                      }}
+                      onVariantChange={(componentId, variant) => dispatch({ type: 'UPDATE_COMPONENT', payload: { id: componentId, updates: { variant } } })}
+                      onComponentClose={componentId => removeComponent(componentId)}
+                    />
+                  );
+                })()}
             </div>
           ) : (
             <div className="text-center py-12">
