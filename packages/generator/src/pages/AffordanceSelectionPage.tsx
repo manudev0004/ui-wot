@@ -258,7 +258,12 @@ export function AffordanceSelectionPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center">
                     <div>
-                      <h3 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'} transition-colors duration-300`}>{affordance.title}</h3>
+                      <h3 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'} transition-colors duration-300`}>
+                        {affordance.title}
+                        {affordance.type === 'property' && (affordance as any).schema && (affordance as any).schema.type ? (
+                          <span className={`ml-2 text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>({(affordance as any).schema.type})</span>
+                        ) : null}
+                      </h3>
                       <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} capitalize transition-colors duration-300`}>{affordance.type}</p>
                     </div>
                   </div>
@@ -284,37 +289,58 @@ export function AffordanceSelectionPage() {
                   <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-3 transition-colors duration-300`}>{affordance.description}</p>
                 )}
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-start">
                   <div className="flex items-center space-x-2">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors duration-300 ${getComponentBadgeColor(
-                        selectedComponentMap[affordance.key] || affordance.suggestedComponent,
-                      )}`}
-                    >
-                      {selectedComponentMap[affordance.key] || affordance.suggestedComponent}
-                    </span>
-                    {affordance.possibleComponents && affordance.possibleComponents.length > 1 && (
-                      <select
-                        value={selectedComponentMap[affordance.key] || affordance.suggestedComponent}
-                        onChange={e => handleComponentChoice(affordance.key, e.target.value)}
-                        className={`text-sm border rounded px-2 py-1 transition-colors duration-300 ${
-                          theme === 'dark' ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-200 bg-white text-gray-900'
-                        }`}
-                        onClick={e => e.stopPropagation()}
-                      >
-                        {affordance.possibleComponents.map(pc => (
-                          <option key={pc} value={pc}>
-                            {pc}
-                          </option>
-                        ))}
-                      </select>
-                    )}
+                    {(() => {
+                      // Build options based on affordance type with stricter rules
+                      let opts: string[] = [];
+                      if (affordance.type === 'property') {
+                        const schemaType = (affordance as any).schema?.type as string | undefined;
+                        switch (schemaType) {
+                          case 'boolean':
+                            opts = ['ui-toggle', 'ui-checkbox'];
+                            break;
+                          case 'integer':
+                          case 'number':
+                            opts = ['ui-number-picker', 'ui-slider'];
+                            break;
+                          case 'array':
+                            opts = ['ui-text'];
+                            break;
+                          case 'object':
+                            opts = ['ui-object', 'ui-text', 'ui-color-picker', 'ui-file-picker', 'ui-calendar'];
+                            break;
+                          default:
+                            // default for string/unknown
+                            opts = ['ui-text', 'ui-calendar', 'ui-color-picker'];
+                            break;
+                        }
+                      } else if (affordance.type === 'action') {
+                        opts = ['ui-button'];
+                      } else if (affordance.type === 'event') {
+                        opts = ['ui-event', 'ui-notification'];
+                      }
+
+                      const suggested = affordance.suggestedComponent;
+                      const unique = affordance.type === 'property' ? Array.from(new Set([suggested, ...opts])) : opts;
+                      return (
+                        <select
+                          value={selectedComponentMap[affordance.key] || suggested}
+                          onChange={e => handleComponentChoice(affordance.key, e.target.value)}
+                          className={`text-sm border rounded px-2 py-1 transition-colors duration-300 ${
+                            theme === 'dark' ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-200 bg-white text-gray-900'
+                          }`}
+                          onClick={e => e.stopPropagation()}
+                        >
+                          {unique.map(pc => (
+                            <option key={pc} value={pc}>
+                              {pc}
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    })()}
                   </div>
-                  {affordance.availableVariants.length > 1 && (
-                    <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'} transition-colors duration-300`}>
-                      +{affordance.availableVariants.length - 1} variants
-                    </span>
-                  )}
                 </div>
               </div>
             </div>
