@@ -148,37 +148,107 @@ export function ComponentCanvasPage() {
     return () => ro.disconnect();
   }, []);
 
-  // Seed or update layout when components list changes
+  // Seed or update layout when components list changes (section-aware placement)
   useEffect(() => {
     setLayout(prev => {
-      // Start from existing layout to preserve user positions
       const next: Layout[] = [...prev];
       const existingIds = new Set(next.map(l => l.i));
+      const idToComp = new Map(state.components.map(c => [c.id, c] as const));
 
-      // Compute baseline row (place new items on new rows below existing ones)
-      const baseY = next.length > 0 ? next.reduce((m, l) => Math.max(m, l.y + l.h), 0) : 0;
-      let cursorX = 0;
-      let cursorY = baseY;
-      let rowH = 0;
-
-      const place = (w: number, h: number) => {
-        if (cursorX + w > COLS) {
-          cursorX = 0;
-          cursorY += rowH;
-          rowH = 0;
+      // Helper: current bounding box for a TD (by comp.tdId) from `next`
+      const getSectionBox = (tdId?: string | null) => {
+        if (!tdId) return null as null | { minX: number; maxX: number; minY: number; maxY: number };
+        let minX = Number.POSITIVE_INFINITY;
+        let maxX = Number.NEGATIVE_INFINITY;
+        let minY = Number.POSITIVE_INFINITY;
+        let maxY = Number.NEGATIVE_INFINITY;
+        let found = false;
+        for (const l of next) {
+          const comp = idToComp.get(l.i);
+          if (!comp || comp.tdId !== tdId) continue;
+          found = true;
+          minX = Math.min(minX, l.x);
+          minY = Math.min(minY, l.y);
+          maxX = Math.max(maxX, l.x + l.w);
+          maxY = Math.max(maxY, l.y + l.h);
         }
-        const pos = { x: cursorX, y: cursorY };
-        cursorX += w;
-        rowH = Math.max(rowH, h);
-        return pos;
+        return found ? { minX, maxX, minY, maxY } : null;
       };
 
-      // Add any new components using simple row-wise placement
+      // Helper: bottom Y for any items overlapping a horizontal span [startX, startX+span)
+      const regionBottom = (startX: number, span: number) => {
+        let bottom = 0;
+        for (const l of next) {
+          const lStart = l.x;
+          const lEnd = l.x + l.w;
+          const rStart = startX;
+          const rEnd = startX + span;
+          const overlaps = lStart < rEnd && lEnd > rStart;
+          if (overlaps) bottom = Math.max(bottom, l.y + l.h);
+        }
+        return bottom;
+      };
+
+      const targetSpan = Math.max(1, Math.floor(COLS / 2));
+
+      // Group new components by TD id
+      const newByTd = new Map<string | null, typeof state.components>();
       for (const comp of state.components) {
         if (existingIds.has(comp.id)) continue;
-        const def = DEFAULT_SIZES[comp.uiComponent] || { w: 4, h: 3 };
-        const { x, y } = place(def.w, def.h);
-        next.push({ i: comp.id, x, y, w: def.w, h: def.h, minW: def.minW, minH: def.minH });
+        const key: string | null = comp.tdId || null;
+        const arr = newByTd.get(key) || ([] as any);
+        arr.push(comp);
+        newByTd.set(key, arr);
+      }
+
+      // For each TD group, decide section placement and pack items horizontally within the span
+      for (const [tdId, comps] of newByTd) {
+        if (!comps || comps.length === 0) continue;
+        const defOf = (c: any) => DEFAULT_SIZES[c.uiComponent] || { w: 4, h: 3 };
+
+        // Existing section bounds or allocate a new half-width column
+        const sec = getSectionBox(tdId);
+        let startX: number;
+        let span: number;
+        let baseY: number;
+        if (!sec) {
+          const leftSpan = targetSpan;
+          const rightSpan = COLS - targetSpan;
+          const leftBottom = regionBottom(0, leftSpan);
+          const rightBottom = rightSpan > 0 ? regionBottom(targetSpan, rightSpan) : Number.POSITIVE_INFINITY;
+          const placeRight = rightBottom < leftBottom;
+          startX = placeRight ? targetSpan : 0;
+          span = placeRight ? rightSpan : leftSpan;
+          baseY = Math.min(leftBottom, rightBottom);
+        } else {
+          startX = sec.minX;
+          span = Math.max(1, sec.maxX - sec.minX);
+          baseY = sec.maxY;
+        }
+
+        // Row-wise pack for just the new items in this section
+        let cursorX = 0;
+        let cursorY = baseY;
+        let rowMaxH = 0;
+        const pickPerRow = (s: number) => (s >= 8 ? 4 : s >= 6 ? 3 : 2);
+        const perRow = pickPerRow(span);
+        const unitW = Math.max(1, Math.floor(span / perRow));
+        for (const comp of comps) {
+          const def = defOf(comp);
+          const desired = unitW;
+          const w = Math.max(1, Math.min(desired, span));
+          const h = def.h || 3;
+          if (cursorX + w > span && cursorX > 0) {
+            cursorX = 0;
+            cursorY += rowMaxH;
+            rowMaxH = 0;
+          }
+          const x = startX + cursorX;
+          const y = cursorY;
+          next.push({ i: comp.id, x, y, w, h, minW: def.minW, minH: def.minH });
+          cursorX += w;
+          rowMaxH = Math.max(rowMaxH, h);
+        }
       }
 
       // Remove stale entries
@@ -188,11 +258,11 @@ export function ComponentCanvasPage() {
 
       return next;
     });
-    // Initialize membership defaults
+    // Initialize membership defaults: auto-assign to TD sections so users see sections initially
     setMembership(prev => {
       const next: Record<string, string | null> = { ...prev };
       state.components.forEach(c => {
-        if (next[c.id] === undefined) next[c.id] = c.tdId || null;
+        if (next[c.id] === undefined) next[c.id] = c.tdId ?? null;
       });
       // drop missing
       Object.keys(next).forEach(k => {
