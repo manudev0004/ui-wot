@@ -165,6 +165,9 @@ export function ComponentCanvasPage() {
     [colWidth],
   );
 
+  // Force RGL to remount when hidden sections set changes to avoid stale internal layout cache
+  const gridKey = useMemo(() => `rgl-${state.components.length}-${Array.from(hiddenSections).sort().join('-')}`,[state.components.length, hiddenSections]);
+
   // Compute per-TD section boxes in grid units
   const sectionBoxes = useMemo(() => {
     const byTd: Record<string, { minX: number; minY: number; maxX: number; maxY: number }> = {};
@@ -195,6 +198,31 @@ export function ComponentCanvasPage() {
     return { byTd, byTdItems };
   }, [layout, membership, hiddenCards, state.components]);
 
+  // Effective section for visibility decisions (falls back to TD id unless explicitly outside/null)
+  const effectiveSection = useCallback(
+    (id: string): string | null => {
+      if (Object.prototype.hasOwnProperty.call(membership, id)) {
+        return membership[id];
+      }
+      const comp = state.components.find(c => c.id === id);
+      return comp?.tdId ?? null;
+    },
+    [membership, state.components],
+  );
+
+  const hideSection = (tdId: string) => {
+    setHiddenSections(prev => new Set(prev).add(tdId));
+  };
+  const unhideSection = (tdId: string) => {
+    setHiddenSections(prev => {
+      const next = new Set(prev);
+      next.delete(tdId);
+      return next;
+    });
+    // Force RGL to reevaluate children by changing layout reference
+    setLayout(prev => prev.map(it => ({ ...it })));
+  };
+
   // SECTION DRAG: allow dragging the whole section box to move all child items together
   const sectionDragRef = useRef<{
     tdId: string;
@@ -211,8 +239,8 @@ export function ComponentCanvasPage() {
       if (colWidth === 0) return;
       e.preventDefault();
       e.stopPropagation();
-  // Collect members (only those explicitly inside this section)
-  const members = layout.filter(l => membership[l.i] === tdId);
+      // Collect members (only those explicitly inside this section)
+      const members = layout.filter(l => membership[l.i] === tdId);
       const original = new Map<string, { x: number; y: number; w: number }>();
       members.forEach(m => original.set(m.i, { x: m.x, y: m.y, w: m.w }));
       sectionDragRef.current = {
@@ -271,8 +299,8 @@ export function ComponentCanvasPage() {
   const reflowSectionItems = useCallback(
     (tdId: string, minX: number, minY: number, targetW: number) => {
       if (targetW < 1) targetW = 1;
-  // Collect visible items in this section (explicit membership only)
-  const items = layout.filter(it => membership[it.i] === tdId && !hiddenCards.has(it.i)).map(it => ({ ...it }));
+      // Collect visible items in this section (explicit membership only)
+      const items = layout.filter(it => membership[it.i] === tdId && !hiddenCards.has(it.i)).map(it => ({ ...it }));
       if (items.length === 0) return;
 
       // Stable order by current (y,x)
@@ -319,8 +347,8 @@ export function ComponentCanvasPage() {
       if (colWidth === 0) return;
       e.preventDefault();
       e.stopPropagation();
-  // Determine the minimum allowed width so we don't force-resize children
-  const sectionItems = layout.filter(it => membership[it.i] === tdId && !hiddenCards.has(it.i));
+      // Determine the minimum allowed width so we don't force-resize children
+      const sectionItems = layout.filter(it => membership[it.i] === tdId && !hiddenCards.has(it.i));
       const minAllowedW = sectionItems.length > 0 ? Math.max(...sectionItems.map(it => it.w)) : 1;
       sectionResizeRef.current = {
         tdId,
@@ -360,10 +388,10 @@ export function ComponentCanvasPage() {
     // If the item belongs to a section, drop out when it exits the bounding box of remaining items
     const comp = state.components.find(c => c.id === item.i);
     if (!comp) return;
-  const currentSec = membership[item.i] ?? comp.tdId ?? null;
+    const currentSec = membership[item.i] ?? comp.tdId ?? null;
     if (!currentSec) return;
     // Compute bounding box of other items in same section
-  const others = layout.filter(l => l.i !== item.i && membership[l.i] === currentSec);
+    const others = layout.filter(l => l.i !== item.i && membership[l.i] === currentSec);
     if (others.length === 0) return; // nothing to compare
     const box = others.reduce(
       (acc, l) => ({ minX: Math.min(acc.minX, l.x), minY: Math.min(acc.minY, l.y), maxX: Math.max(acc.maxX, l.x + l.w), maxY: Math.max(acc.maxY, l.y + l.h) }),
@@ -378,14 +406,7 @@ export function ComponentCanvasPage() {
 
   // Card-level hide control removed from UI; keep hiddenCards support if needed later
 
-  const toggleSectionHidden = (tdId: string) => {
-    setHiddenSections(prev => {
-      const next = new Set(prev);
-      if (next.has(tdId)) next.delete(tdId);
-      else next.add(tdId);
-      return next;
-    });
-  };
+  // Section hide feature removed
 
   const removeComponent = (id: string) => {
     dispatch({ type: 'REMOVE_COMPONENT', payload: id });
@@ -515,48 +536,77 @@ export function ComponentCanvasPage() {
                         style={{ width: Math.min(240, Math.max(90, currentName.length * 8)) }}
                         autoFocus
                         value={currentName}
-                        onClick={e => { e.stopPropagation(); }}
+                        onClick={e => {
+                          e.stopPropagation();
+                        }}
                         onChange={e => setSectionNames(prev => ({ ...prev, [tdId]: e.target.value }))}
                         onBlur={() => setEditingSectionId(null)}
-                        onKeyDown={e => { if (e.key === 'Enter') setEditingSectionId(null); if (e.key === 'Escape') setEditingSectionId(null); }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') setEditingSectionId(null);
+                          if (e.key === 'Escape') setEditingSectionId(null);
+                        }}
                       />
                     ) : (
                       <span
                         className="px-2 py-0.5 bg-white/90 text-primary text-xs font-heading rounded shadow border border-primary/30 rgl-no-drag"
-                        onClick={e => { e.stopPropagation(); setEditingSectionId(tdId); }}
+                        onClick={e => {
+                          e.stopPropagation();
+                          setEditingSectionId(tdId);
+                        }}
                         title="Rename section"
                       >
                         {currentName}
                       </span>
                     )}
                     <span
+                      className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
+                      title="Hide section"
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        hideSection(tdId);
+                      }}
+                    >
+                      <svg className="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9.27-3.11-10.5-7.5a10.52 10.52 0 013.84-5.46m3.53-1.88A10.05 10.05 0 0112 5c5 0 9.27 3.11 10.5 7.5a10.52 10.52 0 01-2.22 3.86M3 3l18 18"
+                        />
+                      </svg>
+                    </span>
+                    <span
                       className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer ml-1"
                       title="Rename"
-                      onClick={e => { e.preventDefault(); e.stopPropagation(); setEditingSectionId(tdId); }}
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditingSectionId(tdId);
+                      }}
                     >
                       <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
                       </svg>
                     </span>
                     <span
                       className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
                       title="Delete section"
-                      onClick={e => { e.preventDefault(); e.stopPropagation(); removeSection(tdId); }}
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        removeSection(tdId);
+                      }}
                     >
                       <svg className="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </span>
-                    <button
-                      className="text-xs px-2 py-0.5 rounded bg-white border text-blue-600 hover:bg-blue-50 rgl-no-drag ml-1"
-                      onClick={e => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleSectionHidden(tdId);
-                      }}
-                    >
-                      Hide
-                    </button>
                   </div>
                 );
               })}
@@ -564,6 +614,7 @@ export function ComponentCanvasPage() {
               {/* Grid */}
               <div ref={gridWrapRef} className="p-2">
                 <ReactGridLayout
+                  key={gridKey}
                   cols={COLS}
                   rowHeight={ROW_H}
                   margin={MARGIN}
@@ -573,14 +624,15 @@ export function ComponentCanvasPage() {
                   isDraggable
                   preventCollision={false}
                   autoSize
+                  measureBeforeMount
                   useCSSTransforms
                   draggableCancel=".rgl-no-drag"
-                  layout={layout.filter(l => !hiddenCards.has(l.i) && !(membership[l.i] && hiddenSections.has(membership[l.i]!)))}
+                  layout={layout.filter(l => !hiddenCards.has(l.i) && !(effectiveSection(l.i) && hiddenSections.has(effectiveSection(l.i)!)))}
                   onLayoutChange={handleLayoutChange}
                   onDragStop={handleDragStop}
                 >
                   {layout
-                    .filter(l => !hiddenCards.has(l.i) && !(membership[l.i] && hiddenSections.has(membership[l.i]!)))
+                    .filter(l => !hiddenCards.has(l.i) && !(effectiveSection(l.i) && hiddenSections.has(effectiveSection(l.i)!)))
                     .map(l => {
                       const comp = state.components.find(c => c.id === l.i);
                       if (!comp) return null;
@@ -631,6 +683,34 @@ export function ComponentCanvasPage() {
                     })}
                 </ReactGridLayout>
               </div>
+              {/* Hidden sections dock */}
+              {hiddenSections.size > 0 && (
+                <div className="absolute left-2 top-2 flex flex-col gap-2 z-30" style={{ pointerEvents: 'auto' }}>
+                  {Array.from(hiddenSections).map(tdId => {
+                    const tdInfo = state.tdInfos.find(t => t.id === tdId);
+                    const name = sectionNames[tdId] ?? tdInfo?.title ?? 'Section';
+                    return (
+                      <div
+                        key={`hidden-${tdId}`}
+                        className="rgl-no-drag inline-flex items-center gap-1 px-2 py-1 rounded border bg-white shadow cursor-pointer hover:bg-gray-50"
+                        onClick={() => unhideSection(tdId)}
+                        title="Show section"
+                      >
+                        <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M2.25 12s3.75-6.75 9.75-6.75 9.75 6.75 9.75 6.75-3.75 6.75-9.75 6.75S2.25 12 2.25 12z"
+                          />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <span className="text-xs font-heading text-primary">{name}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               {/* Smart Edit Popup */}
               {editComponentId &&
                 (() => {
