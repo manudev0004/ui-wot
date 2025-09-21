@@ -43,6 +43,7 @@ export function ComponentCanvasPage() {
   const [sectionNames, setSectionNames] = useState<Record<string, string>>({});
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editComponentId, setEditComponentId] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState<boolean>(false);
   // Grid container width for computing section overlays
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -126,6 +127,17 @@ export function ComponentCanvasPage() {
       info: <span>{tdSummary}</span>,
       actions: (
         <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1 bg-white border rounded-lg px-2 py-1 rgl-no-drag cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={editMode}
+              onChange={e => {
+                setEditMode(e.target.checked);
+                if (!e.target.checked) setEditComponentId(null);
+              }}
+            />
+            <span className="text-xs font-heading">Edit</span>
+          </label>
           <button onClick={() => navigate('/td-input')} className="bg-accent hover:bg-accent-light text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors">
             Add TD
           </button>
@@ -142,7 +154,12 @@ export function ComponentCanvasPage() {
       ),
     });
     return () => clear();
-  }, [tdSummary, navigate, dispatch, setContent, clear]);
+  }, [tdSummary, navigate, dispatch, setContent, clear, editMode]);
+
+  // Close any open editor when edit mode turns off
+  useEffect(() => {
+    if (!editMode) setEditComponentId(null);
+  }, [editMode]);
   // Helpers to compute pixel positions from grid units
   const colWidth = useMemo(() => {
     if (!containerWidth) return 0;
@@ -211,7 +228,7 @@ export function ComponentCanvasPage() {
 
   const onSectionMouseDown = useCallback(
     (tdId: string, e: React.MouseEvent<HTMLDivElement>) => {
-      if (colWidth === 0) return;
+      if (colWidth === 0 || !editMode) return;
       e.preventDefault();
       e.stopPropagation();
       // Collect members (only those explicitly inside this section)
@@ -319,7 +336,7 @@ export function ComponentCanvasPage() {
 
   const onSectionResizeMouseDown = useCallback(
     (tdId: string, box: { minX: number; minY: number; maxX: number; maxY: number }, e: React.MouseEvent<HTMLDivElement>) => {
-      if (colWidth === 0) return;
+      if (colWidth === 0 || !editMode) return;
       e.preventDefault();
       e.stopPropagation();
       // Determine the minimum allowed width so we don't force-resize children
@@ -455,17 +472,19 @@ export function ComponentCanvasPage() {
         <div className="page-container canvas-page py-2" style={{ minHeight: 'inherit' }}>
           {state.components.length > 0 ? (
             <div className="relative w-full bg-white border border-gray-200 rounded-lg overflow-hidden" style={{ minHeight: 'calc(100vh - var(--navbar-height) - 1rem)' }}>
-              {/* Full-canvas background grid */}
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  backgroundImage: colWidth
-                    ? `linear-gradient(to right, rgba(99,102,241,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(99,102,241,0.08) 1px, transparent 1px)`
-                    : undefined,
-                  backgroundSize: colWidth ? `${colWidth + MARGIN[0]}px ${rowH + MARGIN[1]}px` : undefined,
-                  backgroundPosition: `${PADDING[0]}px ${PADDING[1]}px`,
-                }}
-              />
+              {/* Full-canvas background grid (visible only in edit mode) */}
+              {editMode && (
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    backgroundImage: colWidth
+                      ? `linear-gradient(to right, rgba(99,102,241,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(99,102,241,0.08) 1px, transparent 1px)`
+                      : undefined,
+                    backgroundSize: colWidth ? `${colWidth + MARGIN[0]}px ${rowH + MARGIN[1]}px` : undefined,
+                    backgroundPosition: `${PADDING[0]}px ${PADDING[1]}px`,
+                  }}
+                />
+              )}
               {/* Section overlays (non-interactive dashed boxes with draggable edges) */}
               <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
                 {Object.entries(sectionBoxes.byTd).map(([tdId, box]) => {
@@ -477,128 +496,151 @@ export function ComponentCanvasPage() {
                   const height = base.height + MARGIN[1];
                   return (
                     <div key={tdId} style={{ position: 'absolute', left, top, width, height, outline: '1px dashed #cbd5e1', background: 'transparent' }}>
-                      {/* Interactive resize handle (bottom-right) */}
-                      <div
-                        className="section-resize-handle"
-                        style={{
-                          position: 'absolute',
-                          right: -6,
-                          bottom: -6,
-                          width: 14,
-                          height: 14,
-                          borderRadius: 4,
-                          background: 'white',
-                          border: '1px solid #64748b',
-                          cursor: 'nwse-resize',
-                          pointerEvents: 'auto',
-                        }}
-                        onMouseDown={e => onSectionResizeMouseDown(tdId, box, e)}
-                      />
-                      {/* Draggable edges for moving whole section */}
-                      <div
-                        style={{ position: 'absolute', left: -6, top: 0, width: 12, height, cursor: 'move', pointerEvents: 'auto', zIndex: 20 }}
-                        onMouseDown={e => onSectionMouseDown(tdId, e)}
-                      />
-                      <div
-                        style={{ position: 'absolute', right: -6, top: 0, width: 12, height, cursor: 'move', pointerEvents: 'auto', zIndex: 20 }}
-                        onMouseDown={e => onSectionMouseDown(tdId, e)}
-                      />
-                      <div
-                        style={{ position: 'absolute', left: 0, top: -6, width, height: 12, cursor: 'move', pointerEvents: 'auto', zIndex: 20 }}
-                        onMouseDown={e => onSectionMouseDown(tdId, e)}
-                      />
-                      <div
-                        style={{ position: 'absolute', left: 0, bottom: -6, width, height: 12, cursor: 'move', pointerEvents: 'auto', zIndex: 20 }}
-                        onMouseDown={e => onSectionMouseDown(tdId, e)}
-                      />
+                      {editMode && (
+                        <>
+                          {/* Interactive resize handle (bottom-right) */}
+                          <div
+                            className="section-resize-handle"
+                            style={{
+                              position: 'absolute',
+                              right: -6,
+                              bottom: -6,
+                              width: 14,
+                              height: 14,
+                              borderRadius: 4,
+                              background: 'white',
+                              border: '1px solid #64748b',
+                              cursor: 'nwse-resize',
+                              pointerEvents: 'auto',
+                            }}
+                            onMouseDown={e => onSectionResizeMouseDown(tdId, box, e)}
+                          />
+                          {/* Draggable edges for moving whole section */}
+                          <div
+                            style={{ position: 'absolute', left: -6, top: 0, width: 12, height, cursor: 'move', pointerEvents: 'auto', zIndex: 20 }}
+                            onMouseDown={e => onSectionMouseDown(tdId, e)}
+                          />
+                          <div
+                            style={{ position: 'absolute', right: -6, top: 0, width: 12, height, cursor: 'move', pointerEvents: 'auto', zIndex: 20 }}
+                            onMouseDown={e => onSectionMouseDown(tdId, e)}
+                          />
+                          <div
+                            style={{ position: 'absolute', left: 0, top: -6, width, height: 12, cursor: 'move', pointerEvents: 'auto', zIndex: 20 }}
+                            onMouseDown={e => onSectionMouseDown(tdId, e)}
+                          />
+                          <div
+                            style={{ position: 'absolute', left: 0, bottom: -6, width, height: 12, cursor: 'move', pointerEvents: 'auto', zIndex: 20 }}
+                            onMouseDown={e => onSectionMouseDown(tdId, e)}
+                          />
+                        </>
+                      )}
                     </div>
                   );
                 })}
               </div>
 
-              {/* Section drag bars (interactive, small hit area) */}
+              {/* Section labels / drag bars */}
               {Object.entries(sectionBoxes.byTd).map(([tdId, box]) => {
                 if (colWidth === 0) return null;
                 const { left, top, width } = unitToPx(box.minX, box.minY, box.maxX - box.minX, box.maxY - box.minY);
                 const tdInfo = state.tdInfos.find(t => t.id === tdId);
                 const currentName = sectionNames[tdId] ?? tdInfo?.title ?? 'Section';
-                return (
-                  <div
-                    key={`bar-${tdId}`}
-                    className="section-drag-bar"
-                    style={{
-                      position: 'absolute',
-                      left,
-                      top: Math.max(0, top - 24),
-                      width,
-                      height: 24,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '0 8px',
-                      cursor: 'move',
-                    }}
-                    onMouseDown={e => onSectionMouseDown(tdId, e)}
-                  >
-                    {editingSectionId === tdId ? (
-                      <input
-                        className="rgl-no-drag text-xs font-heading px-1 py-0.5 rounded border border-primary/30 bg-white/95"
-                        style={{ width: Math.min(240, Math.max(90, currentName.length * 8)) }}
-                        autoFocus
-                        value={currentName}
-                        onClick={e => {
-                          e.stopPropagation();
-                        }}
-                        onChange={e => setSectionNames(prev => ({ ...prev, [tdId]: e.target.value }))}
-                        onBlur={() => setEditingSectionId(null)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') setEditingSectionId(null);
-                          if (e.key === 'Escape') setEditingSectionId(null);
-                        }}
-                      />
-                    ) : (
+                if (editMode) {
+                  return (
+                    <div
+                      key={`bar-${tdId}`}
+                      className="section-drag-bar"
+                      style={{
+                        position: 'absolute',
+                        left,
+                        top: Math.max(0, top - 24),
+                        width,
+                        height: 24,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '0 8px',
+                        cursor: 'move',
+                      }}
+                      onMouseDown={e => onSectionMouseDown(tdId, e)}
+                    >
+                      {editingSectionId === tdId ? (
+                        <input
+                          className="rgl-no-drag text-xs font-heading px-1 py-0.5 rounded border border-primary/30 bg-white/95"
+                          style={{ width: Math.min(240, Math.max(90, currentName.length * 8)) }}
+                          autoFocus
+                          value={currentName}
+                          onClick={e => {
+                            e.stopPropagation();
+                          }}
+                          onChange={e => setSectionNames(prev => ({ ...prev, [tdId]: e.target.value }))}
+                          onBlur={() => setEditingSectionId(null)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') setEditingSectionId(null);
+                            if (e.key === 'Escape') setEditingSectionId(null);
+                          }}
+                        />
+                      ) : (
+                        <span
+                          className="px-2 py-0.5 bg-white/90 text-primary text-xs font-heading rounded shadow border border-primary/30 rgl-no-drag"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setEditingSectionId(tdId);
+                          }}
+                          title="Rename section"
+                        >
+                          {currentName}
+                        </span>
+                      )}
                       <span
-                        className="px-2 py-0.5 bg-white/90 text-primary text-xs font-heading rounded shadow border border-primary/30 rgl-no-drag"
+                        className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer ml-1"
+                        title="Rename"
                         onClick={e => {
+                          e.preventDefault();
                           e.stopPropagation();
                           setEditingSectionId(tdId);
                         }}
-                        title="Rename section"
                       >
-                        {currentName}
+                        <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
                       </span>
-                    )}
-                    <span
-                      className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer ml-1"
-                      title="Rename"
-                      onClick={e => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setEditingSectionId(tdId);
-                      }}
-                    >
-                      <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                        />
-                      </svg>
-                    </span>
-                    <span
-                      className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
-                      title="Delete section"
-                      onClick={e => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        removeSection(tdId);
-                      }}
-                    >
-                      <svg className="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </span>
+                      <span
+                        className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
+                        title="Delete section"
+                        onClick={e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          removeSection(tdId);
+                        }}
+                      >
+                        <svg className="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </span>
+                    </div>
+                  );
+                }
+                // View mode: non-interactive label only
+                return (
+                  <div
+                    key={`label-${tdId}`}
+                    style={{
+                      position: 'absolute',
+                      left,
+                      top: Math.max(0, top - 22),
+                      height: 22,
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0 6px',
+                    }}
+                  >
+                    <span className="px-2 py-0.5 bg-white/90 text-primary text-xs font-heading rounded shadow border border-primary/30">{currentName}</span>
                   </div>
                 );
               })}
@@ -611,8 +653,8 @@ export function ComponentCanvasPage() {
                   margin={MARGIN}
                   containerPadding={PADDING}
                   compactType={null}
-                  isResizable
-                  isDraggable
+                  isResizable={editMode}
+                  isDraggable={editMode}
                   preventCollision={false}
                   autoSize
                   useCSSTransforms
@@ -630,39 +672,41 @@ export function ComponentCanvasPage() {
                         <div key={l.i} className="rgl-card" style={{ padding: 1 }}>
                           <div className="bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative w-full h-full" data-component-id={comp.id}>
                             {/* Top-right icon actions: edit (pencil) and remove (×) */}
-                            <div className="absolute top-1 right-1 flex items-center gap-2 z-10">
-                              <span
-                                className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
-                                title="Edit"
-                                onClick={e => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setEditComponentId(comp.id);
-                                }}
-                              >
-                                <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                  />
-                                </svg>
-                              </span>
-                              <span
-                                className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
-                                title="Remove"
-                                onClick={e => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  removeComponent(comp.id);
-                                }}
-                              >
-                                <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </span>
-                            </div>
+                            {editMode && (
+                              <div className="absolute top-1 right-1 flex items-center gap-2 z-10">
+                                <span
+                                  className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
+                                  title="Edit"
+                                  onClick={e => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setEditComponentId(comp.id);
+                                  }}
+                                >
+                                  <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                    />
+                                  </svg>
+                                </span>
+                                <span
+                                  className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
+                                  title="Remove"
+                                  onClick={e => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    removeComponent(comp.id);
+                                  }}
+                                >
+                                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </span>
+                              </div>
+                            )}
 
                             <div className="relative" style={{ width: '100%', height: '100%' }}>
                               <CardContent component={comp} />
