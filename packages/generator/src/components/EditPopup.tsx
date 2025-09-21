@@ -189,7 +189,7 @@ export function EditPopup(props: EditPopupProps) {
               <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                 <h5 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-4">Basic Settings</h5>
                 <div className="mb-4">
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Title</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Label (Title)</label>
                   <input
                     type="text"
                     value={props.component.title}
@@ -286,71 +286,73 @@ export function EditPopup(props: EditPopupProps) {
                 <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                   <h5 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-4">Attributes</h5>
                   <div className="space-y-3">
-                    {props.attributesList.map(name => {
-                      const attrType = props.attributesTypes[name];
-                      const currentValue = props.attributesValues[name] ?? '';
-                      const displayLabel = attrType.description ? attrType.description : name.replace(/([A-Z])/g, ' $1').trim();
-                      return (
-                        <div key={name}>
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1 capitalize">{displayLabel}</label>
-                          {attrType.type === 'boolean' ? (
-                            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                    {props.attributesList
+                      .filter(name => name !== 'label')
+                      .map(name => {
+                        const attrType = props.attributesTypes[name];
+                        const currentValue = props.attributesValues[name] ?? '';
+                        const displayLabel = attrType.description ? attrType.description : name.replace(/([A-Z])/g, ' $1').trim();
+                        return (
+                          <div key={name}>
+                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1 capitalize">{displayLabel}</label>
+                            {attrType.type === 'boolean' ? (
+                              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={currentValue === 'true'}
+                                  onChange={e => props.onAttributeChange(props.component.id, name, e.target.checked ? 'true' : 'false')}
+                                  className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 cursor-pointer"
+                                  style={{ accentColor: 'var(--color-primary)' }}
+                                />
+                                <span className="text-xs text-gray-500 dark:text-gray-400">{currentValue === 'true' ? 'enabled' : 'disabled'}</span>
+                              </label>
+                            ) : attrType.type === 'number' ? (
                               <input
-                                type="checkbox"
-                                checked={currentValue === 'true'}
-                                onChange={e => props.onAttributeChange(props.component.id, name, e.target.checked ? 'true' : 'false')}
-                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 cursor-pointer"
-                                style={{ accentColor: 'var(--color-primary)' }}
+                                type="number"
+                                value={currentValue}
+                                onChange={e => props.onAttributeChange(props.component.id, name, e.target.value)}
+                                className="w-full px-3 py-2 text-sm border rounded-md"
+                                style={{
+                                  borderColor: 'var(--color-border)',
+                                  backgroundColor: theme === 'dark' ? '#374151' : 'white',
+                                  color: theme === 'dark' ? '#f9fafb' : '#1f2937',
+                                }}
+                                step={name === 'step' ? '0.01' : '1'}
                               />
-                              <span className="text-xs text-gray-500 dark:text-gray-400">{currentValue === 'true' ? 'enabled' : 'disabled'}</span>
-                            </label>
-                          ) : attrType.type === 'number' ? (
-                            <input
-                              type="number"
-                              value={currentValue}
-                              onChange={e => props.onAttributeChange(props.component.id, name, e.target.value)}
-                              className="w-full px-3 py-2 text-sm border rounded-md"
-                              style={{
-                                borderColor: 'var(--color-border)',
-                                backgroundColor: theme === 'dark' ? '#374151' : 'white',
-                                color: theme === 'dark' ? '#f9fafb' : '#1f2937',
-                              }}
-                              step={name === 'step' ? '0.01' : '1'}
-                            />
-                          ) : attrType.type === 'enum' && attrType.options ? (
-                            <select
-                              value={currentValue}
-                              onChange={e => props.onAttributeChange(props.component.id, name, e.target.value)}
-                              className="w-full px-3 py-2 text-sm border rounded-md cursor-pointer"
-                              style={{
-                                borderColor: 'var(--color-border)',
-                                backgroundColor: theme === 'dark' ? '#374151' : 'white',
-                                color: theme === 'dark' ? '#f9fafb' : '#1f2937',
-                              }}
-                            >
-                              {attrType.options.map(option => (
-                                <option key={option} value={option}>
-                                  {option.charAt(0).toUpperCase() + option.slice(1)}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input
-                              type="text"
-                              value={currentValue}
-                              onChange={e => props.onAttributeChange(props.component.id, name, e.target.value)}
-                              className="w-full px-3 py-2 text-sm border rounded-md"
-                              style={{
-                                borderColor: 'var(--color-border)',
-                                backgroundColor: theme === 'dark' ? '#374151' : 'white',
-                                color: theme === 'dark' ? '#f9fafb' : '#1f2937',
-                              }}
-                              placeholder={attrType.description || `Enter ${name}...`}
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
+                            ) : attrType.type === 'enum' && attrType.options ? (
+                              <select
+                                value={currentValue}
+                                onChange={e => props.onAttributeChange(props.component.id, name, e.target.value)}
+                                className="w-full px-3 py-2 text-sm border rounded-md cursor-pointer"
+                                style={{
+                                  borderColor: 'var(--color-border)',
+                                  backgroundColor: theme === 'dark' ? '#374151' : 'white',
+                                  color: theme === 'dark' ? '#f9fafb' : '#1f2937',
+                                }}
+                              >
+                                {attrType.options.map(option => (
+                                  <option key={option} value={option}>
+                                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                value={currentValue}
+                                onChange={e => props.onAttributeChange(props.component.id, name, e.target.value)}
+                                className="w-full px-3 py-2 text-sm border rounded-md"
+                                style={{
+                                  borderColor: 'var(--color-border)',
+                                  backgroundColor: theme === 'dark' ? '#374151' : 'white',
+                                  color: theme === 'dark' ? '#f9fafb' : '#1f2937',
+                                }}
+                                placeholder={attrType.description || `Enter ${name}...`}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
               )}
