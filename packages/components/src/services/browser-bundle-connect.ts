@@ -1,32 +1,51 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * Browser helpers for wiring Web Components to a WoT Thing using the Node‑WoT browser bundle.
+ *
+ * Expectations:
+ * - The Node‑WoT browser bundle exposes `window.WoT` (either a Servient constructor with HttpClientFactory
+ *   or a direct `consume()` function).
+ * - Functions here do not alter component public APIs. They only call existing methods like `setValue`,
+ *   `setValueSilent`, `setAction`, `startListening`, and `addEvent` when present.
+ *
+ * Design:
+ * - Keep external props untouched; update internal component state via provided methods.
+ * - Properties support strategies: observe, poll, or auto. Default is no continuous updates.
+ * - Events are started by the component via `startListening()`; this module wires WoT subscribe/unsubscribe.
+ */
 
-// Simple, strict Node-WoT helpers: require the browser bundle (window.WoT)
-// No dynamic loading, no polling fallbacks — Node-WoT only.
-
+/** Cleanup callback for a connection (properties/events). */
 type Cleanup = () => void | Promise<void>;
 
+/** Continuous update strategies for properties. */
 type ObserveStrategy = 'observe' | 'poll' | 'auto';
 
+/** Options for initializing the global WoT instance. */
 export type InitializeWotOptions = { reuseExisting?: boolean };
 
 let sharedWot: any | null = null;
 const thingCache = new Map<string, any>();
 
+/**
+ * Initialize and cache a WoT instance from the Node‑WoT browser bundle.
+ * - If a Servient is available, start it with an Http client factory.
+ * - Otherwise, if `consume()` exists directly, use that object as WoT.
+ */
 export async function initializeWot(options?: InitializeWotOptions): Promise<{ wot: any }> {
-  const reuse = options?.reuseExisting !== false;
-  if (reuse && sharedWot) return { wot: sharedWot };
+  const reuseExisting = options?.reuseExisting !== false;
+  if (reuseExisting && sharedWot) return { wot: sharedWot };
 
-  const WoTGlobal: any = (window as any).WoT;
-  if (!WoTGlobal) {
+  const wotGlobal: any = (window as any).WoT;
+  if (!wotGlobal) {
     throw new Error('Node-WoT browser bundle not found. Include wot-bundle.min.js before using initializeWot().');
   }
 
-  if (WoTGlobal.Core && WoTGlobal.Core.Servient && WoTGlobal.Http && typeof WoTGlobal.Core.Servient === 'function') {
-    const servient = new WoTGlobal.Core.Servient();
-    servient.addClientFactory(new WoTGlobal.Http.HttpClientFactory());
+  if (wotGlobal.Core && wotGlobal.Core.Servient && wotGlobal.Http && typeof wotGlobal.Core.Servient === 'function') {
+    const servient = new wotGlobal.Core.Servient();
+    servient.addClientFactory(new wotGlobal.Http.HttpClientFactory());
     sharedWot = await servient.start();
-  } else if (typeof WoTGlobal.consume === 'function') {
-    sharedWot = WoTGlobal;
+  } else if (typeof wotGlobal.consume === 'function') {
+    sharedWot = wotGlobal;
   } else {
     throw new Error('Unsupported WoT global shape: expected Core.Servient + HttpClientFactory or consume().');
   }
@@ -34,235 +53,274 @@ export async function initializeWot(options?: InitializeWotOptions): Promise<{ w
   return { wot: sharedWot };
 }
 
-// Alias for misspelling tolerance
+/** Alias for a common misspelling of `initializeWot`. */
 export const initiliseWot = initializeWot;
 
-async function ensureThing(tdUrl: string): Promise<any> {
-  if (thingCache.has(tdUrl)) return thingCache.get(tdUrl);
+/** Fetch and consume a Thing Description, with simple in-memory caching by URL. */
+async function ensureThing(thingDescriptionUrl: string): Promise<any> {
+  if (thingCache.has(thingDescriptionUrl)) return thingCache.get(thingDescriptionUrl);
   if (!sharedWot) await initializeWot();
-  const res = await fetch(tdUrl);
-  if (!res.ok) throw new Error(`Failed to fetch TD: ${res.status} ${res.statusText}`);
-  const td = await res.json();
+  const response = await fetch(thingDescriptionUrl);
+  if (!response.ok) throw new Error(`Failed to fetch TD: ${response.status} ${response.statusText}`);
+  const td = await response.json();
   const thing = await (sharedWot as any).consume(td);
-  thingCache.set(tdUrl, thing);
+  thingCache.set(thingDescriptionUrl, thing);
   return thing;
 }
 
+/** Normalize Node‑WoT results that expose a `.value()` function. */
 async function readOutputValue(output: any): Promise<any> {
   if (output && typeof output.value === 'function') return output.value();
   return output;
 }
 
-export async function connectProperty(el: HTMLElement, opts: { baseUrl: string; name: string; observe?: boolean; strategy?: ObserveStrategy; pollMs?: number }): Promise<Cleanup> {
-  const comp: any = el as any;
-  const { baseUrl, name } = opts;
-  // Default: disabled (no continuous updates) unless strategy is provided.
-  // Legacy support: if observe === false and no strategy, use 'poll'.
-  const strategy: ObserveStrategy | undefined = opts.strategy ?? (opts.observe === false ? 'poll' : undefined);
-  const pollMs = Number.isFinite(opts.pollMs as any) && (opts.pollMs as number) > 0 ? (opts.pollMs as number) : 3000;
-  const thing = await ensureThing(baseUrl);
+/** Get the first present attribute value from a list of attribute names. */
+function getAttr(element: Element, ...names: string[]): string | null {
+  for (const name of names) {
+    const v = element.getAttribute(name);
+    if (v != null) return v;
+  }
+  return null;
+}
+
+/** Parse a positive integer from a string; return undefined if invalid/non-positive. */
+function parsePositiveInt(value?: string | null): number | undefined {
+  if (!value) return undefined;
+  const parsed = parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+/**
+ * Connect a property element to a WoT Thing property.
+ * - Sets initial value (if available) and wires a write operation.
+ * - Optional continuous updates via observe, poll, or auto strategy.
+ */
+export async function connectProperty(element: HTMLElement, options: { baseUrl: string; name: string; observe?: boolean; strategy?: ObserveStrategy; pollMs?: number }): Promise<Cleanup> {
+  const component: any = element as any;
+  const { baseUrl: thingUrl, name: propertyName } = options;
+  // Default: disabled continuous updates unless a strategy is provided.
+  // Back-compat: if observe === false and no strategy is provided, fallback to 'poll'.
+  const strategy: ObserveStrategy | undefined = options.strategy ?? (options.observe === false ? 'poll' : undefined);
+  const pollMs = Number.isFinite(options.pollMs as any) && (options.pollMs as number) > 0 ? (options.pollMs as number) : 3000;
+  const thing = await ensureThing(thingUrl);
 
   try {
-    const initialOut = await thing.readProperty(name);
-    const initial = await readOutputValue(initialOut);
-    await comp.setValue?.(initial, { writeOperation: async (v: any) => thing.writeProperty(name, v) });
-  } catch (e) {
-    console.warn('[ui-wot][connectProperty] initial read failed', { name, error: String(e) });
+    const initialOut = await thing.readProperty(propertyName);
+    const initialValue = await readOutputValue(initialOut);
+    await component.setValue?.(initialValue, { writeOperation: async (next: any) => thing.writeProperty(propertyName, next) });
+  } catch (err) {
+    console.warn('[ui-wot][connectProperty] initial read failed', { propertyName, error: String(err) });
     try {
-      // Still set the writeOperation so UI can Save even if initial read failed
-      await comp.setValue?.({}, { writeOperation: async (v: any) => thing.writeProperty(name, v) });
+      // Ensure write support even if the initial read fails
+      await component.setValue?.({}, { writeOperation: async (next: any) => thing.writeProperty(propertyName, next) });
     } catch {}
   }
 
   const cleanups: Cleanup[] = [];
-  const doObserve = async () => {
-    const sub = await thing.observeProperty(name, async (data: any) => {
-      const v = await readOutputValue(data);
-      if (typeof comp.setValueSilent === 'function') await comp.setValueSilent(v);
-      else await comp.setValue?.(v);
+  const startObserve = async () => {
+    const subscription = await thing.observeProperty(propertyName, async (data: any) => {
+      const value = await readOutputValue(data);
+      if (typeof component.setValueSilent === 'function') await component.setValueSilent(value);
+      else await component.setValue?.(value);
     });
-    cleanups.push(() => sub?.unsubscribe?.());
+    cleanups.push(() => subscription?.unsubscribe?.());
     return true;
   };
-  const doPoll = () => {
-    const id = setInterval(async () => {
+  const startPoll = () => {
+    const timerId = setInterval(async () => {
       try {
-        const out = await thing.readProperty(name);
-        const v = await readOutputValue(out);
-        if (typeof comp.setValueSilent === 'function') await comp.setValueSilent(v);
-        else await comp.setValue?.(v);
+        const out = await thing.readProperty(propertyName);
+        const value = await readOutputValue(out);
+        if (typeof component.setValueSilent === 'function') await component.setValueSilent(value);
+        else await component.setValue?.(value);
       } catch {
-        /* ignore poll errors */
+        // ignore transient poll errors
       }
     }, pollMs);
-    cleanups.push(() => clearInterval(id));
+    cleanups.push(() => clearInterval(timerId));
   };
 
   if (strategy === 'observe') {
-    if (typeof thing.observeProperty !== 'function') throw new Error('observeProperty not supported for ' + name);
-    await doObserve();
+    if (typeof thing.observeProperty !== 'function') throw new Error('observeProperty not supported for ' + propertyName);
+    await startObserve();
   } else if (strategy === 'poll') {
-    doPoll();
+    startPoll();
   } else if (strategy === 'auto') {
-    let observed = false;
+    let isObserved = false;
     if (typeof thing.observeProperty === 'function') {
       try {
-        observed = await doObserve();
+        isObserved = await startObserve();
       } catch {
-        observed = false;
+        isObserved = false;
       }
     }
-    if (!observed) doPoll();
+    if (!isObserved) startPoll();
   } else {
-    // strategy disabled/undefined: no observe/poll
+    // no continuous updates
   }
 
   return () => {
-    cleanups.forEach(fn => {
+    for (const fn of cleanups) {
       try {
         fn();
       } catch {}
-    });
+    }
   };
 }
 
-export async function connectAction(el: HTMLElement, opts: { baseUrl: string; name: string }): Promise<void> {
-  const comp: any = el as any;
-  const { baseUrl, name } = opts;
-  const thing = await ensureThing(baseUrl);
-  if (typeof comp.setAction === 'function') {
-    await comp.setAction(async (input?: any) => thing.invokeAction(name, input));
+/** Wire a button-like component to invoke a WoT Thing action. */
+export async function connectAction(element: HTMLElement, options: { baseUrl: string; name: string }): Promise<void> {
+  const component: any = element as any;
+  const { baseUrl: thingUrl, name: actionName } = options;
+  const thing = await ensureThing(thingUrl);
+  if (typeof component.setAction === 'function') {
+    await component.setAction(async (input?: any) => thing.invokeAction(actionName, input));
   }
 }
 
-export async function connectEvent(el: HTMLElement, opts: { baseUrl: string; name: string }): Promise<Cleanup> {
-  const comp: any = el as any;
-  const { baseUrl, name } = opts;
-  const thing = await ensureThing(baseUrl);
-  const handler = async (data: any) => {
-    if (paused) return;
-    const v = await readOutputValue(data);
-    comp.addEvent?.(v);
+/**
+ * Wire an event component to a WoT Thing event.
+ * The component is expected to call `startListening()` / `stopListening()`; we hook those to manage subscriptions.
+ */
+export async function connectEvent(element: HTMLElement, options: { baseUrl: string; name: string }): Promise<Cleanup> {
+  const component: any = element as any;
+  const { baseUrl: thingUrl, name: eventName } = options;
+  const thing = await ensureThing(thingUrl);
+
+  let subscription: any | undefined;
+  let isSubscribed = false;
+  let isPaused = true;
+
+  const onEvent = async (data: any) => {
+    if (isPaused) return;
+    const value = await readOutputValue(data);
+    component.addEvent?.(value);
   };
-  let sub: any | undefined;
-  let subscribed = false;
-  let paused = true;
+
   const subscribe = async () => {
-    if (subscribed) return;
+    if (isSubscribed) return;
     if (typeof thing.subscribeEvent === 'function') {
-      sub = await thing.subscribeEvent(name, handler);
-      subscribed = true;
+      subscription = await thing.subscribeEvent(eventName, onEvent);
+      isSubscribed = true;
     }
   };
+
   const unsubscribe = async () => {
-    if (!subscribed) return;
+    if (!isSubscribed) return;
     try {
-      if (sub && typeof sub.unsubscribe === 'function') {
-        const ret = sub.unsubscribe();
+      if (subscription && typeof subscription.unsubscribe === 'function') {
+        const ret = subscription.unsubscribe();
         if (ret && typeof (ret as Promise<any>).then === 'function') await ret;
       } else if (typeof (thing as any).unsubscribeEvent === 'function') {
-        // Try with (name, handler) first, then (name)
         try {
-          await (thing as any).unsubscribeEvent(name, handler);
+          await (thing as any).unsubscribeEvent(eventName, onEvent);
         } catch {
           try {
-            await (thing as any).unsubscribeEvent(name);
+            await (thing as any).unsubscribeEvent(eventName);
           } catch {
-            /* ignore */
+            // best-effort only
           }
         }
       } else if (typeof (thing as any).removeEventListener === 'function') {
         try {
-          (thing as any).removeEventListener(name, handler);
+          (thing as any).removeEventListener(eventName, onEvent);
         } catch {
-          /* ignore */
+          // ignore
         }
       }
     } catch {
-      /* ignore */
+      // ignore
     }
-    sub = undefined;
-    subscribed = false;
+    subscription = undefined;
+    isSubscribed = false;
   };
 
   // Wrap component methods to control WoT subscription lifecycle.
-  const origStart = typeof comp.startListening === 'function' ? comp.startListening.bind(comp) : undefined;
-  const origStop = typeof comp.stopListening === 'function' ? comp.stopListening.bind(comp) : undefined;
+  const originalStartListening = typeof component.startListening === 'function' ? component.startListening.bind(component) : undefined;
+  const originalStopListening = typeof component.stopListening === 'function' ? component.stopListening.bind(component) : undefined;
 
-  if (origStop) {
-    comp.stopListening = async () => {
-      await origStop();
-      paused = true;
+  if (originalStopListening) {
+    component.stopListening = async () => {
+      await originalStopListening();
+      isPaused = true;
     };
   }
-  if (origStart) {
-    comp.startListening = async () => {
-      await origStart();
-      paused = false;
+  if (originalStartListening) {
+    component.startListening = async () => {
+      await originalStartListening();
+      isPaused = false;
       await subscribe();
     };
   }
 
   // Do NOT auto-start; let the component/user trigger startListening.
   return () => {
-    // best-effort cleanup
-    paused = true;
+    isPaused = true;
     void unsubscribe();
-    if (origStart) comp.startListening = origStart;
-    if (origStop) comp.stopListening = origStop;
+    if (originalStartListening) component.startListening = originalStartListening;
+    if (originalStopListening) component.stopListening = originalStopListening;
   };
 }
 
-export async function connectAll(opts: { baseUrl: string; container?: ParentNode }): Promise<Cleanup[]> {
-  const root = opts.container || document;
-  const tdUrl = opts.baseUrl;
+/**
+ * Connect all matching UI elements within a container to a Thing at `baseUrl`.
+ * - Properties: `[data-td-property] | [td-property] | [property]`
+ * - Actions:    `[data-td-action] | [td-action] | [action]`
+ * - Events:     `[data-td-event] | [td-event] | [event]`
+ */
+export async function connectAll(options: { baseUrl: string; container?: ParentNode }): Promise<Cleanup[]> {
+  const searchRoot = options.container || document;
+  const defaultThingUrl = options.baseUrl;
   const cleanups: Cleanup[] = [];
-  const propEls = Array.from(root.querySelectorAll<HTMLElement>('[data-td-property],[td-property],[property]'));
-  for (const el of propEls) {
-    const name = el.getAttribute('data-td-property') || el.getAttribute('td-property') || el.getAttribute('property');
-    if (!name) continue;
-    const perElUrl = el.getAttribute('data-td-url') || el.getAttribute('td-url') || el.getAttribute('url') || tdUrl;
-    const anyEl: any = el as any;
-    if (typeof anyEl.setValue === 'function' || typeof anyEl.setValueSilent === 'function') {
+
+  // Properties
+  const propertyElements = Array.from(searchRoot.querySelectorAll<HTMLElement>('[data-td-property],[td-property],[property]'));
+  for (const element of propertyElements) {
+    const propertyName = getAttr(element, 'data-td-property', 'td-property', 'property');
+    if (!propertyName) continue;
+    const thingUrl = getAttr(element, 'data-td-url', 'td-url', 'url') || defaultThingUrl;
+    const anyElement: any = element as any;
+    if (typeof anyElement.setValue === 'function' || typeof anyElement.setValueSilent === 'function') {
       try {
-        const strategyAttr = (el.getAttribute('data-td-strategy') || el.getAttribute('td-strategy') || el.getAttribute('strategy')) as ObserveStrategy | null;
-        const pollMsAttr = el.getAttribute('data-td-poll-ms') || el.getAttribute('td-poll-ms') || el.getAttribute('poll-ms');
-        const pollMsParsed = pollMsAttr ? parseInt(pollMsAttr, 10) : undefined;
-        const stop = await connectProperty(el, {
-          baseUrl: perElUrl,
-          name,
+        const strategyAttr = getAttr(element, 'data-td-strategy', 'td-strategy', 'strategy') as ObserveStrategy | null;
+        const pollMs = parsePositiveInt(getAttr(element, 'data-td-poll-ms', 'td-poll-ms', 'poll-ms'));
+        const stop = await connectProperty(element, {
+          baseUrl: thingUrl,
+          name: propertyName,
           strategy: strategyAttr ?? undefined,
-          pollMs: Number.isFinite(pollMsParsed as any) && (pollMsParsed as number) > 0 ? pollMsParsed : undefined,
+          pollMs,
         });
         if (stop) cleanups.push(stop);
-      } catch (e) {
-        console.warn('[ui-wot][connectAll] property wire failed', { name, error: String(e) });
+      } catch (err) {
+        console.warn('[ui-wot][connectAll] property wire failed', { propertyName, error: String(err) });
       }
     }
   }
 
-  const actionEls = Array.from(root.querySelectorAll<HTMLElement>('[data-td-action],[td-action],[action]'));
-  for (const el of actionEls) {
-    const name = el.getAttribute('data-td-action') || el.getAttribute('td-action') || el.getAttribute('action');
-    if (!name) continue;
-    const anyEl: any = el as any;
-    if (typeof anyEl.setAction === 'function') {
+  // Actions
+  const actionElements = Array.from(searchRoot.querySelectorAll<HTMLElement>('[data-td-action],[td-action],[action]'));
+  for (const element of actionElements) {
+    const actionName = getAttr(element, 'data-td-action', 'td-action', 'action');
+    if (!actionName) continue;
+    const anyElement: any = element as any;
+    if (typeof anyElement.setAction === 'function') {
       try {
-        const perElUrl = el.getAttribute('data-td-url') || el.getAttribute('td-url') || el.getAttribute('url') || tdUrl;
-        await connectAction(el, { baseUrl: perElUrl, name });
+        const thingUrl = getAttr(element, 'data-td-url', 'td-url', 'url') || defaultThingUrl;
+        await connectAction(element, { baseUrl: thingUrl, name: actionName });
       } catch {}
     }
   }
 
-  const eventEls = Array.from(root.querySelectorAll<HTMLElement>('[data-td-event],[td-event],[event]'));
-  for (const el of eventEls) {
-    const name = el.getAttribute('data-td-event') || el.getAttribute('td-event') || el.getAttribute('event');
-    if (!name) continue;
-    const anyEl: any = el as any;
-    if (typeof anyEl.startListening === 'function' && typeof anyEl.addEvent === 'function') {
+  // Events
+  const eventElements = Array.from(searchRoot.querySelectorAll<HTMLElement>('[data-td-event],[td-event],[event]'));
+  for (const element of eventElements) {
+    const eventName = getAttr(element, 'data-td-event', 'td-event', 'event');
+    if (!eventName) continue;
+    const anyElement: any = element as any;
+    if (typeof anyElement.startListening === 'function' && typeof anyElement.addEvent === 'function') {
       try {
-        const perElUrl = el.getAttribute('data-td-url') || el.getAttribute('td-url') || el.getAttribute('url') || tdUrl;
-        const stop = await connectEvent(el, { baseUrl: perElUrl, name });
+        const thingUrl = getAttr(element, 'data-td-url', 'td-url', 'url') || defaultThingUrl;
+        const stop = await connectEvent(element, { baseUrl: thingUrl, name: eventName });
         if (stop) cleanups.push(stop);
       } catch {}
     }
