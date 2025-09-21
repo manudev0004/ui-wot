@@ -47,7 +47,7 @@ export function AffordanceSelectionPage() {
       const tdUrl = (foundTdInfo?.source.type === 'url' ? (foundTdInfo.source.content as string) : undefined) || undefined;
 
       // Get the active TD ID (prefer existing tdInfo id, fallback to parsedTD.id)
-  const activeTdId = state.activeTdId || foundTdInfo?.id || (state.tdInfos.length > 0 ? state.tdInfos[0].id : 'default');
+      const activeTdId = state.activeTdId || foundTdInfo?.id || (state.tdInfos.length > 0 ? state.tdInfos[0].id : 'default');
       const activeTdInfo = state.tdInfos.find(td => td.id === activeTdId);
 
       // Create components for selected affordances

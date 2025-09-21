@@ -9,7 +9,7 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import './rgl-overrides.css';
 import { EditPopup } from '../components/EditPopup';
-import { connectAll } from '@thingweb/ui-wot-components/services';
+import { connectAll, initializeWot } from '@thingweb/ui-wot-components/services';
 
 const ReactGridLayout = WidthProvider(ReactGridLayoutLib as unknown as React.ComponentType<any>);
 
@@ -22,11 +22,11 @@ const PADDING: [number, number] = [12, 12];
 // Minimal default sizes per component type (grid units)
 const DEFAULT_SIZES: Record<string, { w: number; h: number; minW?: number; minH?: number }> = {
   'ui-button': { w: 4, h: 2, minW: 4, minH: 2 },
-  'ui-toggle': { w: 3, h: 2, minW: 2, minH: 2 },
+  'ui-toggle': { w: 4, h: 2, minW: 4, minH: 2 },
   'ui-slider': { w: 5, h: 2, minW: 4, minH: 2 },
   'ui-text': { w: 6, h: 3, minW: 6, minH: 3 },
-  'ui-number-picker': { w: 5, h: 3, minW: 5, minH: 3 },
-  'ui-calendar': { w: 5, h: 3, minW: 4, minH: 3 },
+  'ui-number-picker': { w: 6, h: 3, minW: 6, minH: 3 },
+  'ui-calendar': { w: 7, h: 2, minW: 7, minH: 2 },
   'ui-checkbox': { w: 3, h: 2, minW: 2, minH: 2 },
   'ui-event': { w: 7, h: 6, minW: 6, minH: 5 },
 };
@@ -542,18 +542,27 @@ export function ComponentCanvasPage() {
         // TD wiring via data attributes
         const tdInfo = state.tdInfos.find(t => t.id === component.tdId);
         const tdUrl = (tdInfo?.source.type === 'url' ? (tdInfo.source.content as string) : undefined) || component.tdUrl || '';
-        if (tdUrl) {
-          el.setAttribute('data-td-url', tdUrl);
-          if (component.type === 'property') el.setAttribute('data-td-property', component.name);
-          else if (component.type === 'action') el.setAttribute('data-td-action', component.name);
-          else if (component.type === 'event') el.setAttribute('data-td-event', component.name);
-        }
+        if (tdUrl) el.setAttribute('data-td-url', tdUrl);
+        if (component.type === 'property') el.setAttribute('data-td-property', component.name);
+        else if (component.type === 'action') el.setAttribute('data-td-action', component.name);
+        else if (component.type === 'event') el.setAttribute('data-td-event', component.name);
 
         // Sizing behavior
         (el as HTMLElement).style.maxWidth = '100%';
         (el as HTMLElement).style.maxHeight = '100%';
 
         elHost.appendChild(el);
+        try {
+          const tdInfo = state.tdInfos.find(t => t.id === component.tdId);
+          const tdUrlLog = (tdInfo?.source.type === 'url' ? (tdInfo.source.content as string) : undefined) || component.tdUrl || '';
+          console.log('[generator][card] appended', {
+            id: component.id,
+            tag: component.uiComponent,
+            type: component.type,
+            name: component.name,
+            hasTdUrl: Boolean(tdUrlLog),
+          });
+        } catch {}
       } catch (e) {
         const fallback = document.createElement('div');
         fallback.className = 'p-4 bg-gray-100 rounded border-2 border-dashed border-gray-300 text-center text-gray-500';
@@ -578,26 +587,186 @@ export function ComponentCanvasPage() {
     );
   }
 
+  // Keep last connections to allow explicit cleanup before reconnect
+  const connectionStopsRef = useRef<Array<() => void>>([]);
+  // Sequence guard to avoid races across overlapping effect runs
+  const wiringSeqRef = useRef(0);
+  // Signal to trigger rewiring after edit mode ends
+  const [rewireTick, setRewireTick] = useState(0);
+
+  // When edit mode turns off, trigger a single rewire
+  useEffect(() => {
+    if (!editMode) {
+      setRewireTick(t => t + 1);
+    }
+  }, [editMode]);
+
   // Auto-wire all elements to the current TD via data attributes when components or TDs change
   useEffect(() => {
     let stops: Array<() => void> | undefined;
     const root = document.querySelector('.canvas-page');
-    const tdUrls = state.tdInfos.map(t => (t.source.type === 'url' ? (t.source.content as string) : null)).filter(Boolean) as string[];
-    const baseUrl = tdUrls[0];
-    if (!root || !baseUrl) return;
+    if (!root) return;
+    const seq = ++wiringSeqRef.current;
     (async () => {
       try {
+        console.log('[generator][wiring] components in state:', state.components.length);
+        // Let DOM settle so all UI elements are in place
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+        if (wiringSeqRef.current !== seq) return; // superseded
+
+        // Retry a few times for rendered UI elements to appear
+        const propSel = '[data-td-property],[td-property],[property]';
+        const actSel = '[data-td-action],[td-action],[action]';
+        const evtSel = '[data-td-event],[td-event],[event]';
+        let attempts = 0;
+        let targetNodes: HTMLElement[] = [];
+        while (attempts < 10) {
+          const allNodes = Array.from(root.querySelectorAll('*')) as HTMLElement[];
+          targetNodes = allNodes.filter(n => n.tagName.toLowerCase().startsWith('ui-')) as HTMLElement[];
+          const preProps = root.querySelectorAll(propSel).length;
+          const preActs = root.querySelectorAll(actSel).length;
+          const preEvts = root.querySelectorAll(evtSel).length;
+          if (targetNodes.length > 0 || preProps + preActs + preEvts > 0) break;
+          await new Promise(r => setTimeout(r, 100));
+          attempts++;
+        }
+        if (wiringSeqRef.current !== seq) return; // superseded
+        const presentTags = Array.from(new Set(targetNodes.map(n => n.tagName.toLowerCase())));
+        const tagsToWait =
+          presentTags.length > 0
+            ? presentTags
+            : [
+                'ui-button',
+                'ui-toggle',
+                'ui-slider',
+                'ui-text',
+                'ui-number-picker',
+                'ui-calendar',
+                'ui-checkbox',
+                'ui-color-picker',
+                'ui-file-picker',
+                'ui-event',
+                'ui-notification',
+                'ui-object',
+              ];
+        console.log('[generator][wiring] tags present:', presentTags, 'targets:', targetNodes.length);
+        await Promise.all(tagsToWait.map(t => ((window as any).customElements?.whenDefined ? customElements.whenDefined(t) : Promise.resolve())));
+        console.log('[generator][wiring] custom elements ready');
+        if (wiringSeqRef.current !== seq) return; // superseded
+
+        // Ensure each Stencil instance is upgraded so @Method proxies exist
+        try {
+          await Promise.all(
+            targetNodes.map(async n => {
+              const anyEl: any = n as any;
+              if (typeof anyEl.componentOnReady === 'function') {
+                try {
+                  await anyEl.componentOnReady();
+                } catch {}
+              }
+            }),
+          );
+          console.log('[generator][wiring] stencil instances upgraded');
+        } catch {}
+        if (wiringSeqRef.current !== seq) return; // superseded
+
+        // Ensure WoT is initialized (idempotent; reuses existing if available)
+        try {
+          await initializeWot();
+          console.log('[generator][wiring] initializeWot OK');
+        } catch (e) {
+          console.warn('[generator][wiring] initializeWot failed', e);
+        }
+        if (wiringSeqRef.current !== seq) return; // superseded
+
+        // Determine a baseUrl: prefer TD URL from state, else from any element's data-td-url
+        const tdUrls = state.tdInfos.map(t => (t.source.type === 'url' ? (t.source.content as string) : null)).filter(Boolean) as string[];
+        const fallbackFromElement = (root.querySelector('[data-td-url]') as HTMLElement | null)?.getAttribute('data-td-url') || undefined;
+        const baseUrl = tdUrls[0] ?? fallbackFromElement ?? '';
+        if (!baseUrl) {
+          console.warn('[generator][wiring] no global baseUrl; relying on per-element data-td-url');
+        }
+        console.log('[generator][wiring] baseUrl:', baseUrl || '(per-element)');
+
+        if (!baseUrl) {
+          const candidates = Array.from(root.querySelectorAll<HTMLElement>('[data-td-property],[data-td-action],[data-td-event]'));
+          const missingUrl = candidates.filter(el => !el.getAttribute('data-td-url')).length;
+          if (missingUrl > 0) {
+            console.warn('[generator][wiring] aborting: elements without data-td-url found and no global baseUrl', { missingUrl, total: candidates.length });
+            return;
+          }
+        }
+        if (wiringSeqRef.current !== seq) return; // superseded
+
+        // Sanity: how many elements match selectors that connectAll would use?
+        const preProps = root.querySelectorAll(propSel).length;
+        const preActs = root.querySelectorAll(actSel).length;
+        const preEvts = root.querySelectorAll(evtSel).length;
+        const docProps = document.querySelectorAll(propSel).length;
+        const docActs = document.querySelectorAll(actSel).length;
+        const docEvts = document.querySelectorAll(evtSel).length;
+        console.log('[generator][wiring] pre-connect counts', {
+          properties: preProps,
+          actions: preActs,
+          events: preEvts,
+          docProperties: docProps,
+          docActions: docActs,
+          docEvents: docEvts,
+        });
+
+        // Stop previous connections (e.g., after edit-mode DOM changes)
+        try {
+          if (wiringSeqRef.current === seq && connectionStopsRef.current?.length) {
+            console.log('[generator][wiring] stopping previous connections:', connectionStopsRef.current.length);
+            for (const stop of connectionStopsRef.current) {
+              try {
+                stop();
+              } catch {}
+            }
+            connectionStopsRef.current = [];
+          }
+        } catch {}
+
+        if (wiringSeqRef.current !== seq) return; // superseded
         stops = await connectAll({ baseUrl, container: root });
+        console.log('[generator][wiring] connectAll attached', { count: stops?.length ?? 0 });
+        if ((stops?.length ?? 0) === 0 && docProps + docActs + docEvts > 0) {
+          console.warn('[generator][wiring] retrying connectAll at document scope');
+          if (wiringSeqRef.current !== seq) return; // superseded
+          stops = await connectAll({ baseUrl, container: document });
+          console.log('[generator][wiring] document-scope connectAll attached', { count: stops?.length ?? 0 });
+        }
+        if ((stops?.length ?? 0) === 0) {
+          const sample = Array.from(root.querySelectorAll('[data-td-property],[data-td-action],[data-td-event]'))
+            .slice(0, 5)
+            .map(el => ({
+              tag: (el as HTMLElement).tagName.toLowerCase(),
+              property: (el as HTMLElement).getAttribute('data-td-property'),
+              action: (el as HTMLElement).getAttribute('data-td-action'),
+              event: (el as HTMLElement).getAttribute('data-td-event'),
+              url: (el as HTMLElement).getAttribute('data-td-url') || (el as HTMLElement).getAttribute('url') || (el as HTMLElement).getAttribute('td-url') || undefined,
+            }));
+          console.warn('[generator][wiring] zero connections; sample elements:', sample);
+        }
+        if (wiringSeqRef.current === seq && stops && stops.length) {
+          connectionStopsRef.current = stops;
+        }
       } catch (err) {
         console.warn('connectAll failed:', err);
       }
     })();
     return () => {
-      if (stops) {
-        for (const stop of stops) try { stop(); } catch {}
+      if (stops && stops.length) {
+        try {
+          console.log('[generator][wiring] cleanup connections:', stops.length);
+          for (const stop of stops)
+            try {
+              stop();
+            } catch {}
+        } catch {}
       }
     };
-  }, [state.tdInfos, state.components]);
+  }, [state.tdInfos, state.components, rewireTick]);
 
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>

@@ -1,7 +1,7 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
 // Global styles are imported via App.tsx -> styles/theme.css
-import App from './App.tsx'
+import App from './App.tsx';
 // Define all UI-WoT custom elements
 import { defineCustomElement as UiButton } from '@thingweb/ui-wot-components/components/ui-button';
 import { defineCustomElement as UiToggle } from '@thingweb/ui-wot-components/components/ui-toggle';
@@ -42,12 +42,26 @@ function loadScript(src: string): Promise<void> {
 }
 
 async function bootstrap() {
-  try {
-    // Try to load Node-WoT browser bundle from CDN so `WoT` global becomes available
-    await loadScript('https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js');
-  } catch (err) {
-    // If loading fails, continue — components will gracefully skip wiring until WoT is available
-    console.warn('Could not load node-wot browser bundle; continuing without WoT:', err);
+  // Try multiple CDNs for Node-WoT browser bundle so `window.WoT` exists
+  const cdnCandidates = [
+    'https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js',
+    'https://unpkg.com/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js',
+    'https://fastly.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js',
+  ];
+  let wotLoaded = false;
+  for (const url of cdnCandidates) {
+    try {
+      await loadScript(url);
+      wotLoaded = true;
+      console.log('[generator][bootstrap] WoT bundle loaded from', url);
+      console.log('[generator][bootstrap] window.WoT present:', typeof (window as any).WoT !== 'undefined');
+      break;
+    } catch (err) {
+      console.warn('[generator][bootstrap] WoT bundle failed from', url, err);
+    }
+  }
+  if (!wotLoaded) {
+    console.warn('[generator][bootstrap] No WoT bundle loaded; wiring will wait until available');
   }
 
   // Define all custom elements for use in React rendering
