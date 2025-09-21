@@ -179,7 +179,7 @@ export class UiObject {
   private updateFromValue(value: any) {
     const v = value && typeof value === 'object' ? value : {};
     const prev = this.value;
-    const wasDirty = (() => {
+    const hasLocalChanges = (() => {
       try {
         return JSON.stringify(prev) !== JSON.stringify(this.editing);
       } catch {
@@ -195,8 +195,8 @@ export class UiObject {
       if (t === 'object') type = 'string'; // fallback to text for nested/unknown types
       return { name, type };
     });
-    // If user hasn't edited (not dirty relative to previous value), sync editing to new value
-    if (!wasDirty) this.editing = { ...v };
+    // If user hasn't made local changes relative to previous value, sync editing to new value
+    if (!hasLocalChanges) this.editing = { ...v };
     this.lastUpdatedTs = Date.now();
     this.startTimestampUpdater();
   }
