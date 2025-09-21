@@ -19,14 +19,14 @@ const PADDING: [number, number] = [12, 12];
 
 // Minimal default sizes per component type (grid units)
 const DEFAULT_SIZES: Record<string, { w: number; h: number; minW?: number; minH?: number }> = {
-  'ui-button': { w: 3, h: 2, minW: 2, minH: 1 },
+  'ui-button': { w: 3, h: 2, minW: 4, minH: 2 },
   'ui-toggle': { w: 3, h: 2, minW: 2, minH: 2 },
   'ui-slider': { w: 5, h: 2, minW: 4, minH: 2 },
-  'ui-text': { w: 3, h: 2, minW: 2, minH: 2 },
-  'ui-number-picker': { w: 3, h: 2, minW: 2, minH: 2 },
+  'ui-text': { w: 6, h: 3, minW: 6, minH: 3 },
+  'ui-number-picker': { w: 5, h: 3, minW: 5, minH: 3 },
   'ui-calendar': { w: 5, h: 3, minW: 4, minH: 3 },
   'ui-checkbox': { w: 3, h: 2, minW: 2, minH: 2 },
-  'ui-event': { w: 4, h: 4, minW: 2, minH: 3 },
+  'ui-event': { w: 7, h: 6, minW: 6, minH: 5 },
 };
 
 export function ComponentCanvasPage() {
