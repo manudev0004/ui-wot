@@ -73,7 +73,7 @@ export function Navbar() {
 
             {title && (
               <div className="hidden sm:block">
-                <h1 className="text-lg font-semibold text-[var(--color-text-primary)] animate-slide-in" style={{ fontFamily: 'var(--font-family-heading)' }}>
+                <h1 className="text-2xl font-semibold text-[var(--color-text-primary)] animate-slide-in" style={{ fontFamily: 'var(--font-family-heading)' }}>
                   {title}
                 </h1>
               </div>

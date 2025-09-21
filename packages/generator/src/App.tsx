@@ -6,7 +6,6 @@ import { TDInputPage } from './pages/TDInputPage';
 import { AffordanceSelectionPage } from './pages/AffordanceSelectionPage';
 import { ComponentCanvasPage } from './pages/ComponentCanvasPage';
 import { wotService } from './services/wotService';
-import './App.css';
 import './styles/theme.css';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useAppContext as useCtx } from './context/AppContext';

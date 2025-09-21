@@ -8,7 +8,7 @@ import ReactGridLayoutLib, { WidthProvider, Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import './rgl-overrides.css';
-import { SmartEditPopup } from '../components/SmartEditPopup';
+import { EditPopup } from '../components/EditPopup';
 
 const ReactGridLayout = WidthProvider(ReactGridLayoutLib as unknown as React.ComponentType<any>);
 
@@ -807,7 +807,7 @@ export function ComponentCanvasPage() {
                   if (!comp) return null;
                   const affordance = state.availableAffordances.find(a => a.key === comp.affordanceKey);
                   return (
-                    <SmartEditPopup
+                    <EditPopup
                       mode="component"
                       component={comp}
                       affordance={affordance}
@@ -844,7 +844,7 @@ export function ComponentCanvasPage() {
                     }
                   };
                   return (
-                    <SmartEditPopup
+                    <EditPopup
                       mode="section"
                       sectionId={sectionId}
                       sectionName={name}

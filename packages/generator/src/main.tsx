@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
+// Global styles are imported via App.tsx -> styles/theme.css
 import App from './App.tsx'
 
 // Helper to dynamically load external script and wait for it to be ready
