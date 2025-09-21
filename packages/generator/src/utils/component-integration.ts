@@ -324,7 +324,7 @@ export class ComponentMapper {
                 min: minimum,
                 max: maximum,
                 readonly: readOnly,
-                precision: type === 'integer' ? 0 : undefined,
+                step: type === 'integer' ? 1 : undefined,
               },
             };
           }
@@ -336,7 +336,7 @@ export class ComponentMapper {
               min: minimum,
               max: maximum,
               readonly: readOnly,
-              precision: type === 'integer' ? 0 : undefined,
+              step: type === 'integer' ? 1 : undefined,
             },
           };
         }
@@ -348,7 +348,8 @@ export class ComponentMapper {
             componentName: 'ui-text',
             props: {
               readonly: readOnly,
-              mode: readOnly ? 'readonly' : 'editable',
+              // Use editable mode only when writable; otherwise leave default 'field'
+              ...(readOnly ? {} : { mode: 'editable' as const }),
             },
           };
         } else if (property.format === 'date-time' || property.format === 'date') {
@@ -371,7 +372,7 @@ export class ComponentMapper {
             componentName: 'ui-text',
             props: {
               readonly: readOnly,
-              mode: readOnly ? 'readonly' : 'editable',
+              ...(readOnly ? {} : { mode: 'editable' as const }),
             },
           };
         }
@@ -512,7 +513,7 @@ export class ComponentMapper {
             min: minimum,
             max: maximum,
             readonly: readOnly,
-            precision: type === 'integer' ? 0 : undefined,
+            step: type === 'integer' ? 1 : undefined,
           },
         });
         break;
@@ -541,7 +542,7 @@ export class ComponentMapper {
           componentName: 'ui-text',
           props: {
             readonly: readOnly,
-            mode: readOnly ? 'readonly' : 'editable',
+            ...(readOnly ? {} : { mode: 'editable' as const }),
           },
         });
         break;

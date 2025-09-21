@@ -10,9 +10,10 @@ export function CardContent({ component, tdInfos }: { component: WoTComponent; t
     elHost.innerHTML = '';
     try {
       const el = document.createElement(component.uiComponent);
-      el.setAttribute('variant', component.variant || 'outlined');
+      if (component.variant) {
+        el.setAttribute('variant', component.variant);
+      }
       el.setAttribute('label', component.title);
-      el.setAttribute('color', 'primary');
 
       if (component.attributes) {
         Object.entries(component.attributes).forEach(([k, v]) => {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { WoTComponent, ParsedAffordance } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
+import { AttributeSchema } from '../pages/canvas/attributeSchemas';
 
 interface EditPopupPropsBase {
   onClose: () => void;
@@ -13,7 +14,7 @@ interface ComponentModeProps extends EditPopupPropsBase {
   affordance: ParsedAffordance | undefined;
   attributesList: string[];
   attributesValues: Record<string, string>;
-  attributesTypes: Record<string, 'string' | 'number' | 'boolean'>;
+  attributesTypes: Record<string, AttributeSchema>;
   onAttributeChange: (componentId: string, attrName: string, value: string) => void;
   onVariantChange: (componentId: string, variant: string) => void;
   onComponentClose: (componentId: string) => void;
@@ -54,7 +55,7 @@ export function EditPopup(props: EditPopupProps) {
     const popupRect = popupRef.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-  // Using fixed positioning for the popup, so coordinates are viewport-relative
+    // Using fixed positioning for the popup, so coordinates are viewport-relative
 
     // Popup dimensions (estimated if not rendered yet)
     const popupWidth = popupRect.width || 350;
@@ -73,23 +74,23 @@ export function EditPopup(props: EditPopupProps) {
     if (spaceRight >= popupWidth) {
       // Place to the right
       placement = 'right';
-  left = componentRect.right + 16;
-  top = Math.max(16, Math.min(componentRect.top, viewportHeight - popupHeight - 16));
+      left = componentRect.right + 16;
+      top = Math.max(16, Math.min(componentRect.top, viewportHeight - popupHeight - 16));
     } else if (spaceLeft >= popupWidth) {
       // Place to the left
       placement = 'left';
-  left = componentRect.left - popupWidth - 16;
-  top = Math.max(16, Math.min(componentRect.top, viewportHeight - popupHeight - 16));
+      left = componentRect.left - popupWidth - 16;
+      top = Math.max(16, Math.min(componentRect.top, viewportHeight - popupHeight - 16));
     } else if (spaceBottom >= popupHeight) {
       // Place below
       placement = 'bottom';
-  left = Math.max(16, Math.min(componentRect.left, viewportWidth - popupWidth - 16));
-  top = componentRect.bottom + 16;
+      left = Math.max(16, Math.min(componentRect.left, viewportWidth - popupWidth - 16));
+      top = componentRect.bottom + 16;
     } else {
       // Place above (fallback)
       placement = 'top';
-  left = Math.max(16, Math.min(componentRect.left, viewportWidth - popupWidth - 16));
-  top = Math.max(16, componentRect.top - popupHeight - 16);
+      left = Math.max(16, Math.min(componentRect.left, viewportWidth - popupWidth - 16));
+      top = Math.max(16, componentRect.top - popupHeight - 16);
     }
 
     setPosition({ top, left, placement });
@@ -288,10 +289,11 @@ export function EditPopup(props: EditPopupProps) {
                     {props.attributesList.map(name => {
                       const attrType = props.attributesTypes[name];
                       const currentValue = props.attributesValues[name] ?? '';
+                      const displayLabel = attrType.description ? attrType.description : name.replace(/([A-Z])/g, ' $1').trim();
                       return (
                         <div key={name}>
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1 capitalize">{name.replace(/([A-Z])/g, ' $1').trim()}</label>
-                          {attrType === 'boolean' ? (
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1 capitalize">{displayLabel}</label>
+                          {attrType.type === 'boolean' ? (
                             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
                               <input
                                 type="checkbox"
@@ -302,7 +304,7 @@ export function EditPopup(props: EditPopupProps) {
                               />
                               <span className="text-xs text-gray-500 dark:text-gray-400">{currentValue === 'true' ? 'enabled' : 'disabled'}</span>
                             </label>
-                          ) : attrType === 'number' ? (
+                          ) : attrType.type === 'number' ? (
                             <input
                               type="number"
                               value={currentValue}
@@ -315,7 +317,7 @@ export function EditPopup(props: EditPopupProps) {
                               }}
                               step={name === 'step' ? '0.01' : '1'}
                             />
-                          ) : name === 'color' ? (
+                          ) : attrType.type === 'enum' && attrType.options ? (
                             <select
                               value={currentValue}
                               onChange={e => props.onAttributeChange(props.component.id, name, e.target.value)}
@@ -326,41 +328,11 @@ export function EditPopup(props: EditPopupProps) {
                                 color: theme === 'dark' ? '#f9fafb' : '#1f2937',
                               }}
                             >
-                              <option value="primary">Primary</option>
-                              <option value="secondary">Secondary</option>
-                              <option value="neutral">Neutral</option>
-                              <option value="success">Success</option>
-                            </select>
-                          ) : name === 'orientation' ? (
-                            <select
-                              value={currentValue}
-                              onChange={e => props.onAttributeChange(props.component.id, name, e.target.value)}
-                              className="w-full px-3 py-2 text-sm border rounded-md cursor-pointer"
-                              style={{
-                                borderColor: 'var(--color-border)',
-                                backgroundColor: theme === 'dark' ? '#374151' : 'white',
-                                color: theme === 'dark' ? '#f9fafb' : '#1f2937',
-                              }}
-                            >
-                              <option value="horizontal">Horizontal</option>
-                              <option value="vertical">Vertical</option>
-                            </select>
-                          ) : name === 'thumbShape' ? (
-                            <select
-                              value={currentValue}
-                              onChange={e => props.onAttributeChange(props.component.id, name, e.target.value)}
-                              className="w-full px-3 py-2 text-sm border rounded-md cursor-pointer"
-                              style={{
-                                borderColor: 'var(--color-border)',
-                                backgroundColor: theme === 'dark' ? '#374151' : 'white',
-                                color: theme === 'dark' ? '#f9fafb' : '#1f2937',
-                              }}
-                            >
-                              <option value="circle">Circle</option>
-                              <option value="square">Square</option>
-                              <option value="arrow">Arrow</option>
-                              <option value="triangle">Triangle</option>
-                              <option value="diamond">Diamond</option>
+                              {attrType.options.map(option => (
+                                <option key={option} value={option}>
+                                  {option.charAt(0).toUpperCase() + option.slice(1)}
+                                </option>
+                              ))}
                             </select>
                           ) : (
                             <input
@@ -373,7 +345,7 @@ export function EditPopup(props: EditPopupProps) {
                                 backgroundColor: theme === 'dark' ? '#374151' : 'white',
                                 color: theme === 'dark' ? '#f9fafb' : '#1f2937',
                               }}
-                              placeholder={name === 'placeholder' ? 'Enter placeholder text...' : ''}
+                              placeholder={attrType.description || `Enter ${name}...`}
                             />
                           )}
                         </div>

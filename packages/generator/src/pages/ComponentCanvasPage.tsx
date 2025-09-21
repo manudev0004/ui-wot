@@ -830,7 +830,7 @@ export function ComponentCanvasPage() {
                   attributesList.forEach(k => {
                     const raw = comp.attributes?.[k];
                     if (raw == null) {
-                      attributesValues[k] = schema[k] === 'boolean' ? 'false' : '';
+                      attributesValues[k] = schema[k].type === 'boolean' ? 'false' : '';
                     } else {
                       attributesValues[k] = String(raw);
                     }
@@ -843,7 +843,7 @@ export function ComponentCanvasPage() {
                       onClose={() => setEditComponentId(null)}
                       attributesList={attributesList}
                       attributesValues={attributesValues}
-                      attributesTypes={attributesTypes as any}
+                      attributesTypes={attributesTypes}
                       onAttributeChange={(componentId, attrName, value) => {
                         // Persist to state as strings (kebab-case)
                         const target = state.components.find(c => c.id === componentId);

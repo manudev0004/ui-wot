@@ -64,7 +64,6 @@ export function AffordanceSelectionPage() {
             description: affordance.description,
             schema: affordance.schema,
             uiComponent: selectedComponentMap[affordance.key] || affordance.suggestedComponent,
-            variant: affordance.availableVariants[0],
             layout: {
               i: `${affordanceKey}-${Date.now()}-${index}`,
               // Start compact: two tiles wide, two tiles high; dense placement
