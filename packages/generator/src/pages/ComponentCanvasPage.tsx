@@ -1,385 +1,115 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { wotService } from '../services/wotService';
-import { GridStack } from 'gridstack';
-import 'gridstack/dist/dd-gridstack';
-import 'gridstack/dist/gridstack.min.css';
 import { useAppContext } from '../context/AppContext';
 import { WoTComponent } from '../types';
-import { GroupContainer } from '../components/GroupContainer';
-import { SmartEditPopup } from '../components/SmartEditPopup';
 import { useNavbar } from '../context/NavbarContext';
+import ReactGridLayoutLib, { WidthProvider, Layout } from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
+import './rgl-overrides.css';
 
-// Utility to interpret existing grid-ish numbers as pixels for display
-const toPx = (n: number, scale: number) => (n > 40 ? n : Math.round(n * scale));
-const layoutToRect = (layout: { x: number; y: number; w: number; h: number }) => ({
-  x: toPx(layout.x, 32),
-  y: toPx(layout.y, 32),
-  w: toPx(layout.w, 90),
-  h: toPx(layout.h, 70),
-});
+const ReactGridLayout = WidthProvider(ReactGridLayoutLib as unknown as React.ComponentType<any>);
 
-// Tile sizes for GridStack units
-const TILE_W = 90;
-const TILE_H = 70;
-const MIN_CARD_H = 120; // header + minimal content
-const MIN_HIDE_CARD_H = 100;
-// Note: snapping handled by GridStack
+// Basic grid constants
+const COLS = 24;
+const ROW_H = 70;
+const MARGIN: [number, number] = [16, 16];
+const PADDING: [number, number] = [16, 16];
+const MIN_CARD_H = 120; // px minimum visual height for content zone
+// const MIN_HIDE_CARD_H = 100; // px when header hidden (not used for minimal version)
 
-// gridToAbs no longer used in GridStack phase
-
-// absToGrid no longer used with GridStack-managed positions
+// Minimal default sizes per component type (grid units)
+const DEFAULT_SIZES: Record<string, { w: number; h: number; minW?: number; minH?: number }> = {
+  'ui-button': { w: 4, h: 3, minW: 3, minH: 2 },
+  'ui-toggle': { w: 4, h: 3, minW: 3, minH: 2 },
+  'ui-slider': { w: 6, h: 3, minW: 5, minH: 3 },
+  'ui-text': { w: 4, h: 3, minW: 3, minH: 2 },
+  'ui-number-picker': { w: 4, h: 3, minW: 3, minH: 2 },
+  'ui-calendar': { w: 6, h: 4, minW: 5, minH: 3 },
+  'ui-checkbox': { w: 4, h: 3, minW: 3, minH: 2 },
+};
 
 export function ComponentCanvasPage() {
   const { state, dispatch } = useAppContext();
   const navigate = useNavigate();
   const { setContent, clear } = useNavbar();
-  const [editingComponent, setEditingComponent] = useState<string | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
-  // GridStack based dragging will be handled via events
-  // Grid snapping
-  const [snapEnabled, setSnapEnabled] = useState(true);
-  // attributes state for the currently editing component
-  const [attributesList, setAttributesList] = useState<string[]>([]);
-  const [attributesValues, setAttributesValues] = useState<Record<string, string>>({});
-  const [attributesTypes, setAttributesTypes] = useState<Record<string, 'string' | 'number' | 'boolean'>>({});
 
-  // Save modal state
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [saveName, setSaveName] = useState('My Dashboard');
-  const [saveDescription, setSaveDescription] = useState('');
+  // Local, minimal layout state for RGL (no persistence)
+  const [layout, setLayout] = useState<Layout[]>([]);
+  // Membership of cards to visual section (defaults to their TD id)
+  const [membership, setMembership] = useState<Record<string, string | null>>({});
+  // Hide state
+  const [hiddenCards, setHiddenCards] = useState<Set<string>>(new Set());
+  const [hiddenSections, setHiddenSections] = useState<Set<string>>(new Set());
+  // Grid container width for computing section overlays
+  const gridWrapRef = useRef<HTMLDivElement | null>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
 
-  const handleSaveDashboard = () => {
-    try {
-      const data = {
-        name: saveName,
-        description: saveDescription,
-        components: state.components,
-        groups: state.groups,
-        tdInfos: state.tdInfos,
-      };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${saveName.replace(/\s+/g, '_')}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error('Failed to export dashboard', e);
-    }
-    setShowSaveModal(false);
-  };
-
-  // Initialize GridStack on root grid and wire change events
-  const gridRef = useRef<HTMLDivElement | null>(null);
+  // Observe width to position section overlays
   useEffect(() => {
-    if (!gridRef.current) return;
-    const grid = GridStack.init(
-      {
-        column: 24,
-        cellHeight: TILE_H,
-        margin: 20,
-        acceptWidgets: false,
-        disableResize: !isEditMode,
-        disableDrag: !isEditMode,
-        float: false,
-      },
-      gridRef.current,
-    );
-
-    // Compact layout after initial render to avoid overlaps
-    requestAnimationFrame(() => {
-      try {
-        grid.compact();
-      } catch {}
+    if (!gridWrapRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      for (const e of entries) {
+        setContainerWidth(e.contentRect.width);
+      }
     });
+    ro.observe(gridWrapRef.current);
+    return () => ro.disconnect();
+  }, []);
 
-    const onChange = (_: any, items: any[]) => {
-      if (!items) return;
-      items.forEach(it => {
-        const el = it.el as HTMLElement | null;
-        if (!el) return;
-        const itemId = el.getAttribute('data-item-id') || '';
-        if (!itemId) return;
-        const [kind, rawId] = itemId.split(':');
-        if (!rawId) return;
-        const rect = { x: it.x * TILE_W, y: it.y * TILE_H, w: it.w * TILE_W, h: it.h * TILE_H };
-        if (kind === 'comp') {
-          const comp = state.components.find(c => c.id === rawId);
-          if (comp) {
-            dispatch({ type: 'UPDATE_LAYOUT', payload: { id: comp.id, layout: { ...comp.layout, ...rect } } });
-          }
-        } else if (kind === 'group') {
-          const group = state.groups.find(g => g.id === rawId);
-          if (group) {
-            dispatch({ type: 'UPDATE_GROUP', payload: { id: group.id, updates: { layout: { ...group.layout, ...rect } } } });
-          }
+  // Seed or update layout when components list changes
+  useEffect(() => {
+    setLayout(prev => {
+      // Start from existing layout to preserve user positions
+      const next: Layout[] = [...prev];
+      const existingIds = new Set(next.map(l => l.i));
+
+      // Compute baseline row (place new items on new rows below existing ones)
+      const baseY = next.length > 0 ? next.reduce((m, l) => Math.max(m, l.y + l.h), 0) : 0;
+      let cursorX = 0;
+      let cursorY = baseY;
+      let rowH = 0;
+
+      const place = (w: number, h: number) => {
+        if (cursorX + w > COLS) {
+          cursorX = 0;
+          cursorY += rowH;
+          rowH = 0;
         }
-      });
-    };
+        const pos = { x: cursorX, y: cursorY };
+        cursorX += w;
+        rowH = Math.max(rowH, h);
+        return pos;
+      };
 
-    const onAdded = (_: any, items: any[]) => {
-      if (!items) return;
-      items.forEach(it => {
-        const el = it.el as HTMLElement | null;
-        if (!el) return;
-        const itemId = el.getAttribute('data-item-id') || '';
-        if (!itemId) return;
-        const [kind, rawId] = itemId.split(':');
-        if (kind !== 'comp' || !rawId) return;
-        // Ensure component is not in any group now
-        const currentGroup = state.groups.find(g => g.affordanceIds.includes(rawId));
-        if (currentGroup) {
-          dispatch({ type: 'REMOVE_COMPONENT_FROM_GROUP', payload: { groupId: currentGroup.id, componentId: rawId } });
-        }
-      });
-    };
+      // Add any new components using simple row-wise placement
+      for (const comp of state.components) {
+        if (existingIds.has(comp.id)) continue;
+        const def = DEFAULT_SIZES[comp.uiComponent] || { w: 4, h: 3 };
+        const { x, y } = place(def.w, def.h);
+        next.push({ i: comp.id, x, y, w: def.w, h: def.h, minW: def.minW, minH: def.minH });
+      }
 
-    grid.on('change', onChange);
-    grid.on('added', onAdded);
+      // Remove stale entries
+      for (let i = next.length - 1; i >= 0; i--) {
+        if (!state.components.some(c => c.id === next[i].i)) next.splice(i, 1);
+      }
 
-    return () => {
-      grid.off('change');
-      grid.off('added');
-      grid.destroy(false);
-    };
-  }, [dispatch, isEditMode, state.components, state.groups]);
-
-  const handleComponentEdit = (componentId: string) => {
-    console.log('[ComponentCanvas] handleComponentEdit called for', componentId, { isEditMode, editingComponent });
-    const nextId = editingComponent === componentId ? null : componentId;
-    if (!isEditMode) {
-      setIsEditMode(true);
-    }
-    if (nextId) {
-      populateAttributes(componentId);
-    }
-    setEditingComponent(nextId);
-  };
-
-  const handleComponentClose = (componentId: string) => {
-    console.log('[ComponentCanvas] handleComponentClose called for', componentId);
-    // Always ensure edit mode is enabled for removal
-    if (!isEditMode) {
-      setIsEditMode(true);
-    }
-    // Close any open editing panel first
-    setEditingComponent(null);
-    // Remove the component
-    dispatch({ type: 'REMOVE_COMPONENT', payload: componentId });
-  };
-
-  const handleVariantChange = (componentId: string, variant: string) => {
-    dispatch({
-      type: 'UPDATE_COMPONENT',
-      payload: { id: componentId, updates: { variant } },
+      return next;
     });
-    // also update the runtime element attribute immediately
-    applyAttributeChange(componentId, 'variant', variant);
-  };
-
-  // Helper: populate attributes from the actual DOM element for a component
-  const populateAttributes = (componentId: string) => {
-    try {
-      // find the rendered element container by matching data-component-id attribute on wrapper
-      const wrapper = document.querySelector(`[data-component-id="${componentId}"]`);
-      // If wrapper not found, try to find by component id in state
-      const comp = state.components.find(c => c.id === componentId);
-      if (!comp) {
-        console.warn('[ComponentCanvas] Component not found in state for id:', componentId);
-        return;
-      }
-
-      // look for the custom element inside the wrapper
-      let el: HTMLElement | null = null;
-      if (wrapper) {
-        el = wrapper.querySelector(comp.uiComponent) as HTMLElement | null;
-      } else {
-        // fallback: search document for first matching tag
-        el = document.querySelector(comp.uiComponent) as HTMLElement | null;
-      }
-
-      if (!el) {
-        console.warn('[ComponentCanvas] Element not found for component:', comp.uiComponent, 'in component:', componentId);
-        setAttributesList([]);
-        setAttributesValues({});
-        setAttributesTypes({});
-        return;
-      }
-
-      // Get all standard component attributes with their types
-      const componentAttributes = getComponentAttributes(comp.uiComponent);
-      const attrs = Object.keys(componentAttributes);
-      const vals: Record<string, string> = {};
-      const types: Record<string, 'string' | 'number' | 'boolean'> = {};
-
-      console.log('[ComponentCanvas] Populating attributes for', componentId, 'with attributes:', attrs);
-
-      attrs.forEach(name => {
-        const attrType = componentAttributes[name];
-        types[name] = attrType;
-
-        if (attrType === 'boolean') {
-          // For boolean attributes, check if they exist on the element
-          vals[name] = el!.hasAttribute(name) ? 'true' : 'false';
-        } else {
-          vals[name] = el!.getAttribute(name) || '';
-        }
+    // Initialize membership defaults
+    setMembership(prev => {
+      const next: Record<string, string | null> = { ...prev };
+      state.components.forEach(c => {
+        if (next[c.id] === undefined) next[c.id] = c.tdId || null;
       });
-
-      console.log('[ComponentCanvas] Populated values:', vals);
-
-      setAttributesList(attrs);
-      setAttributesValues(vals);
-      setAttributesTypes(types);
-    } catch (err) {
-      console.error('[ComponentCanvas] populateAttributes error for', componentId, err);
-      setAttributesList([]);
-      setAttributesValues({});
-      setAttributesTypes({});
-    }
-  };
-
-  // Helper: Get all available attributes for a component type with their types
-  const getComponentAttributes = (componentType: string): Record<string, 'string' | 'number' | 'boolean'> => {
-    const attributeMap: Record<string, Record<string, 'string' | 'number' | 'boolean'>> = {
-      'ui-button': {
-        label: 'string',
-        color: 'string',
-        disabled: 'boolean',
-        dark: 'boolean',
-        readonly: 'boolean',
-        keyboard: 'boolean',
-        showLastUpdated: 'boolean',
-      },
-      'ui-toggle': {
-        value: 'boolean',
-        label: 'string',
-        color: 'string',
-        disabled: 'boolean',
-        dark: 'boolean',
-        readonly: 'boolean',
-        keyboard: 'boolean',
-        showLastUpdated: 'boolean',
-      },
-      'ui-slider': {
-        value: 'number',
-        min: 'number',
-        max: 'number',
-        step: 'number',
-        label: 'string',
-        color: 'string',
-        disabled: 'boolean',
-        dark: 'boolean',
-        readonly: 'boolean',
-        keyboard: 'boolean',
-        showLastUpdated: 'boolean',
-        orientation: 'string',
-        thumbShape: 'string',
-        enableManualControl: 'boolean',
-      },
-      'ui-text': {
-        value: 'string',
-        placeholder: 'string',
-        label: 'string',
-        color: 'string',
-        disabled: 'boolean',
-        dark: 'boolean',
-        readonly: 'boolean',
-        keyboard: 'boolean',
-        showLastUpdated: 'boolean',
-      },
-      'ui-number-picker': {
-        value: 'number',
-        min: 'number',
-        max: 'number',
-        step: 'number',
-        label: 'string',
-        color: 'string',
-        disabled: 'boolean',
-        dark: 'boolean',
-        readonly: 'boolean',
-        keyboard: 'boolean',
-        showLastUpdated: 'boolean',
-      },
-      'ui-calendar': {
-        value: 'string',
-        label: 'string',
-        color: 'string',
-        disabled: 'boolean',
-        dark: 'boolean',
-        readonly: 'boolean',
-        keyboard: 'boolean',
-        showLastUpdated: 'boolean',
-      },
-      'ui-checkbox': {
-        value: 'boolean',
-        label: 'string',
-        color: 'string',
-        disabled: 'boolean',
-        dark: 'boolean',
-        readonly: 'boolean',
-        keyboard: 'boolean',
-        showLastUpdated: 'boolean',
-      },
-    };
-
-    return attributeMap[componentType] || {};
-  };
-
-  const applyAttributeChange = (componentId: string, name: string, value: string) => {
-    if (!isEditMode) return; // block edits when not in edit mode
-
-    // update local state
-    setAttributesValues(prev => ({ ...prev, [name]: value }));
-
-    // find the element within this card wrapper and apply attribute
-    const comp = state.components.find(c => c.id === componentId);
-    if (!comp) {
-      console.warn('[ComponentCanvas] Component not found for id:', componentId);
-      return;
-    }
-
-    // Try multiple ways to find the element
-    let el: HTMLElement | null = null;
-
-    // First, try to find by wrapper with data-component-id
-    const wrapper = document.querySelector(`[data-component-id="${componentId}"]`);
-    if (wrapper) {
-      el = wrapper.querySelector(comp.uiComponent) as HTMLElement | null;
-    }
-
-    // If not found, try direct query
-    if (!el) {
-      el = document.querySelector(comp.uiComponent) as HTMLElement | null;
-    }
-
-    if (!el) {
-      console.warn('[ComponentCanvas] Element not found for component:', comp.uiComponent, 'in component:', componentId);
-      return;
-    }
-
-    console.log('[ComponentCanvas] Applying attribute change:', { componentId, name, value, elementFound: !!el });
-
-    const attrType = attributesTypes[name];
-    if (attrType === 'boolean') {
-      // For boolean attributes, add/remove the attribute based on value
-      if (value === 'true') {
-        el.setAttribute(name, '');
-      } else {
-        el.removeAttribute(name);
-      }
-    } else {
-      el.setAttribute(name, value);
-    }
-
-    // Force a re-render or update of the element if needed
-    if (name === 'variant') {
-      // Dispatch a custom event to notify the component of variant change
-      el.dispatchEvent(new CustomEvent('variant-changed', { detail: { variant: value } }));
-    }
-  };
+      // drop missing
+      Object.keys(next).forEach(k => {
+        if (!state.components.some(c => c.id === k)) delete next[k];
+      });
+      return next;
+    });
+  }, [state.components]);
 
   const tdSummary = useMemo(() => {
     const tdCount = state.tdInfos.length;
@@ -388,338 +118,331 @@ export function ComponentCanvasPage() {
     return `DASHBOARD – ${tdText}, ${compCount} components`;
   }, [state.tdInfos.length, state.components.length]);
 
+  // Minimal navbar content
   useEffect(() => {
     setContent({
       info: <span>{tdSummary}</span>,
       actions: (
-        <>
-          <div className="flex items-center space-x-3">
-            <label className="flex items-center space-x-2 text-sm text-primary">
-              <input type="checkbox" checked={snapEnabled} onChange={e => setSnapEnabled(e.target.checked)} />
-              <span>Snap to grid</span>
-            </label>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="font-heading text-primary" style={{ fontSize: 'var(--font-size-sm)' }}>
-              Edit Mode:
-            </label>
-            <button
-              onClick={() => {
-                const next = !isEditMode;
-                setIsEditMode(next);
-                if (!next) setEditingComponent(null);
-              }}
-              aria-pressed={isEditMode}
-              aria-label={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
-              title={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
-                isEditMode ? 'bg-primary' : 'bg-gray-200'
-              }`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isEditMode ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
-            <span className="text-primary/30">|</span>
-
-            <button onClick={() => navigate('/td-input')} className="bg-accent hover:bg-accent-light text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors">
-              Add TD
-            </button>
-            <button
-              onClick={() => {
-                dispatch({ type: 'RESET_STATE' });
-                navigate('/');
-              }}
-              className="bg-primary hover:bg-primary-light text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors"
-            >
-              New
-            </button>
-            <button
-              onClick={() => setShowSaveModal(true)}
-              disabled={state.components.length === 0}
-              className="bg-primary hover:bg-primary-light disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors"
-              title={state.components.length === 0 ? 'Add components to save dashboard' : 'Save current dashboard'}
-            >
-              Save
-            </button>
-          </div>
-        </>
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate('/td-input')} className="bg-accent hover:bg-accent-light text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors">
+            Add TD
+          </button>
+          <button
+            onClick={() => {
+              dispatch({ type: 'RESET_STATE' });
+              navigate('/');
+            }}
+            className="bg-primary hover:bg-primary-light text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors"
+          >
+            New
+          </button>
+        </div>
       ),
     });
     return () => clear();
-  }, [tdSummary, isEditMode, state.components.length, navigate, dispatch, setContent, clear]);
+  }, [tdSummary, navigate, dispatch, setContent, clear]);
+  // Helpers to compute pixel positions from grid units
+  const colWidth = useMemo(() => {
+    if (!containerWidth) return 0;
+    const totalMargins = MARGIN[0] * (COLS - 1);
+    const totalPadding = PADDING[0] * 2;
+    return (containerWidth - totalMargins - totalPadding) / COLS;
+  }, [containerWidth]);
 
-  const renderComponent = (component: WoTComponent) => {
-    const isEditing = editingComponent === component.id;
-    const affordance = state.availableAffordances.find(a => a.key === component.affordanceKey);
+  const unitToPx = useCallback(
+    (x: number, y: number, w: number, h: number) => {
+      const left = PADDING[0] + x * (colWidth + MARGIN[0]);
+      const top = PADDING[1] + y * (ROW_H + MARGIN[1]);
+      const width = w * colWidth + (w - 1) * MARGIN[0];
+      const height = h * ROW_H + (h - 1) * MARGIN[1];
+      return { left, top, width, height };
+    },
+    [colWidth],
+  );
 
-    // Common component creation function
-    const createComponentElement = (el: HTMLElement | null) => {
-      if (el && !isEditing) {
-        el.innerHTML = '';
-
-        try {
-          const element = document.createElement(component.uiComponent);
-
-          // Prevent CSS @import errors by disabling adoptedStyleSheets
-          if (element.shadowRoot) {
-            try {
-              element.shadowRoot.adoptedStyleSheets = [];
-            } catch (e) {
-              // Ignore if not supported
-            }
-          }
-
-          // Set component attributes using your component's API
-          element.setAttribute('variant', component.variant || 'minimal');
-          element.setAttribute('label', component.title);
-          element.setAttribute('color', 'primary');
-
-          // Set value and change handler attributes
-          if (affordance?.schema) {
-            if (affordance.schema.default !== undefined) {
-              element.setAttribute('value', String(affordance.schema.default));
-            }
-            if (affordance.schema.minimum !== undefined) {
-              element.setAttribute('min', String(affordance.schema.minimum));
-            }
-            if (affordance.schema.maximum !== undefined) {
-              element.setAttribute('max', String(affordance.schema.maximum));
-            }
-          }
-
-          // Add change handler for interactivity
-          element.setAttribute('change-handler', `handle_${component.affordanceKey}_change`);
-
-          // Add click handler for buttons
-          if (component.uiComponent === 'ui-button') {
-            element.setAttribute('click-handler', `handle_${component.affordanceKey}_click`);
-          }
-
-          // Add TD URL for WoT integration
-          if (affordance?.forms?.[0]?.href) {
-            element.setAttribute('td-url', affordance.forms[0].href);
-          }
-
-          // attach runtime listeners to the created element so it talks to WoT
-          try {
-            const thing = state.things.get(component.tdId);
-
-            // If property, sync with current value and hook value updates
-            if (affordance?.type === 'property' && thing) {
-              // Set up periodic reading for properties
-              const readInterval = setInterval(async () => {
-                if (!el.isConnected) {
-                  clearInterval(readInterval);
-                  return;
-                }
-                try {
-                  const current = await wotService.interactWithProperty(thing, affordance.key);
-                  if (typeof current !== 'undefined') {
-                    element.setAttribute('value', String(current));
-                  }
-                } catch (err) {
-                  // ignore read errors
-                }
-              }, 2000);
-
-              // Also read once immediately
-              (async () => {
-                try {
-                  const current = await wotService.interactWithProperty(thing, affordance.key);
-                  if (typeof current !== 'undefined') {
-                    element.setAttribute('value', String(current));
-                  }
-                } catch (err) {
-                  // ignore read errors
-                }
-              })();
-            }
-
-            // If action, hook click to invoke action
-            if (affordance?.type === 'action') {
-              element.addEventListener('click', async () => {
-                try {
-                  if (thing) await wotService.invokeAction(thing, affordance.key);
-                } catch (err) {
-                  console.error('Failed to invoke action via WoT:', err);
-                }
-              });
-            }
-          } catch (listenerErr) {
-            console.warn('Failed to attach WoT listeners to element', listenerErr);
-          }
-
-          el.appendChild(element);
-        } catch (error) {
-          // Fallback when custom elements are not available
-          console.warn(`Could not create custom element ${component.uiComponent}:`, error);
-          const fallbackDiv = document.createElement('div');
-          fallbackDiv.className = 'p-4 bg-gray-100 rounded border-2 border-dashed border-gray-300 text-center text-gray-500';
-          fallbackDiv.innerHTML = `
-            <div class="text-sm font-medium">${component.title}</div>
-            <div class="text-xs mt-1">${component.uiComponent}</div>
-            <div class="text-xs mt-2 text-gray-400">Component not loaded</div>
-          `;
-          el.appendChild(fallbackDiv);
-        }
+  // Compute per-TD section boxes in grid units
+  const sectionBoxes = useMemo(() => {
+    const byTd: Record<string, { minX: number; minY: number; maxX: number; maxY: number }> = {};
+    const byTdItems: Record<string, Layout[]> = {};
+    const visibleLayout = layout.filter(l => {
+      if (hiddenCards.has(l.i)) return false;
+      if (membership[l.i] === null) return false;
+      // Skip items without resolved positions yet
+      if (!Number.isFinite(l.x) || !Number.isFinite(l.y) || !Number.isFinite(l.w) || !Number.isFinite(l.h)) return false;
+      return true;
+    });
+    visibleLayout.forEach(l => {
+      const comp = state.components.find(c => c.id === l.i);
+      if (!comp) return;
+      const sec = membership[l.i] || comp.tdId;
+      if (!sec) return;
+      if (!byTd[sec]) {
+        byTd[sec] = { minX: l.x, minY: l.y, maxX: l.x + l.w, maxY: l.y + l.h };
+        byTdItems[sec] = [l];
+      } else {
+        byTd[sec].minX = Math.min(byTd[sec].minX, l.x);
+        byTd[sec].minY = Math.min(byTd[sec].minY, l.y);
+        byTd[sec].maxX = Math.max(byTd[sec].maxX, l.x + l.w);
+        byTd[sec].maxY = Math.max(byTd[sec].maxY, l.y + l.h);
+        byTdItems[sec].push(l);
       }
-    };
+    });
+    return { byTd, byTdItems };
+  }, [layout, membership, hiddenCards, state.components]);
 
-    // Inner content for the card
-    const CardInner = (
-      <div
-        key={component.layout.i}
-        data-component-id={component.id}
-        className={
-          component.hideCard ? 'relative w-full h-full component-drag-handle' : 'bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative group w-full h-full'
-        }
-        onClick={e => {
-          if (isEditMode) {
-            e.stopPropagation();
-            handleComponentEdit(component.id);
-          }
-        }}
-        style={{ zIndex: isEditing ? 1000 : 1 }}
-      >
-        {!component.hideCard && (
-          <div
-            className="bg-neutral-light px-3 h-9 flex items-center justify-between border-b border-primary component-drag-handle"
-            style={{ cursor: isEditMode ? 'move' : 'default' }}
-          >
-            <div className="flex items-center space-x-2 flex-1">
-              <span className="text-sm font-heading font-medium text-primary truncate">{component.title}</span>
-              <span className="text-xs text-gray-600 bg-white px-2 py-0.5 rounded">{component.type}</span>
-            </div>
-            {isEditMode && (
-              <div className="flex items-center space-x-1 relative no-drag edit-controls" style={{ zIndex: 2000 }}>
-                <button
-                  type="button"
-                  onClick={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleComponentEdit(component.id);
-                  }}
-                  className={`p-1 rounded transition-colors ${isEditing ? 'bg-accent text-white' : 'text-primary hover:text-accent'}`}
-                  title="Edit component"
-                  style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2001 }}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                    />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleComponentClose(component.id);
-                  }}
-                  className="p-1 rounded text-primary hover:text-red-600 transition-colors"
-                  title="Remove component"
-                  style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2001 }}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-        <div
-          className="relative no-drag"
-          style={{ width: '100%', height: component.hideCard ? '100%' : 'calc(100% - 36px)', minHeight: component.hideCard ? MIN_HIDE_CARD_H : MIN_CARD_H - 36 }}
-        >
-          <div ref={createComponentElement} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} />
-        </div>
-      </div>
-    );
+  // SECTION DRAG: allow dragging the whole section box to move all child items together
+  const sectionDragRef = useRef<{
+    tdId: string;
+    startX: number;
+    startY: number;
+    // Snapshot of original positions for members
+    original: Map<string, { x: number; y: number; w: number }>;
+    lastDx: number;
+    lastDy: number;
+  } | null>(null);
 
-    return CardInner;
+  const onSectionMouseDown = useCallback(
+    (tdId: string, e: React.MouseEvent<HTMLDivElement>) => {
+      if (colWidth === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      // Collect members
+      const members = layout.filter(l => (membership[l.i] ?? state.components.find(c => c.id === l.i)?.tdId) === tdId);
+      const original = new Map<string, { x: number; y: number; w: number }>();
+      members.forEach(m => original.set(m.i, { x: m.x, y: m.y, w: m.w }));
+      sectionDragRef.current = {
+        tdId,
+        startX: e.clientX,
+        startY: e.clientY,
+        original,
+        lastDx: 0,
+        lastDy: 0,
+      };
+
+      const handleMove = (ev: MouseEvent) => {
+        const data = sectionDragRef.current;
+        if (!data) return;
+        const dxPx = ev.clientX - data.startX;
+        const dyPx = ev.clientY - data.startY;
+        const cellW = colWidth + MARGIN[0];
+        const cellH = ROW_H + MARGIN[1];
+        const dx = Math.round(dxPx / cellW);
+        const dy = Math.round(dyPx / cellH);
+        if (dx === data.lastDx && dy === data.lastDy) return;
+        data.lastDx = dx;
+        data.lastDy = dy;
+        // Move all member items by dx,dy
+        setLayout(prev =>
+          prev.map(it => {
+            if (!data.original.has(it.i)) return it;
+            const base = data.original.get(it.i)!;
+            const nextX = Math.max(0, Math.min(COLS - base.w, base.x + dx));
+            const nextY = Math.max(0, base.y + dy);
+            return { ...it, x: nextX, y: nextY };
+          }),
+        );
+      };
+      const handleUp = () => {
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleUp);
+        sectionDragRef.current = null;
+      };
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleUp);
+    },
+    [layout, membership, state.components, colWidth],
+  );
+
+  // Layout change handlers
+  const handleLayoutChange = (next: Layout[]) => {
+    setLayout(next);
   };
+
+  const handleDragStop = (_layout: Layout[], item: Layout) => {
+    // If the item belongs to a section, drop out when it exits the bounding box of remaining items
+    const comp = state.components.find(c => c.id === item.i);
+    if (!comp) return;
+    const currentSec = membership[item.i] ?? comp.tdId ?? null;
+    if (!currentSec) return;
+    // Compute bounding box of other items in same section
+    const others = layout.filter(l => l.i !== item.i && (membership[l.i] ?? state.components.find(c => c.id === l.i)?.tdId) === currentSec);
+    if (others.length === 0) return; // nothing to compare
+    const box = others.reduce(
+      (acc, l) => ({ minX: Math.min(acc.minX, l.x), minY: Math.min(acc.minY, l.y), maxX: Math.max(acc.maxX, l.x + l.w), maxY: Math.max(acc.maxY, l.y + l.h) }),
+      { minX: others[0].x, minY: others[0].y, maxX: others[0].x + others[0].w, maxY: others[0].y + others[0].h },
+    );
+    const itemCenter = { x: item.x + item.w / 2, y: item.y + item.h / 2 };
+    const inside = itemCenter.x >= box.minX && itemCenter.x <= box.maxX && itemCenter.y >= box.minY && itemCenter.y <= box.maxY;
+    if (!inside) {
+      setMembership(prev => ({ ...prev, [item.i]: null }));
+    }
+  };
+
+  const toggleCardHidden = (id: string) => {
+    setHiddenCards(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSectionHidden = (tdId: string) => {
+    setHiddenSections(prev => {
+      const next = new Set(prev);
+      if (next.has(tdId)) next.delete(tdId);
+      else next.add(tdId);
+      return next;
+    });
+  };
+
+  const removeComponent = (id: string) => {
+    dispatch({ type: 'REMOVE_COMPONENT', payload: id });
+  };
+
+  // Simple card content mounting for custom elements
+  function CardContent({ component }: { component: WoTComponent }) {
+    const hostRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+      const elHost = hostRef.current;
+      if (!elHost) return;
+      elHost.innerHTML = '';
+      try {
+        const element = document.createElement(component.uiComponent);
+        element.setAttribute('variant', component.variant || 'minimal');
+        element.setAttribute('label', component.title);
+        element.setAttribute('color', 'primary');
+        elHost.appendChild(element);
+      } catch (e) {
+        const fallback = document.createElement('div');
+        fallback.className = 'p-4 bg-gray-100 rounded border-2 border-dashed border-gray-300 text-center text-gray-500';
+        fallback.innerHTML = `<div class="text-sm font-medium">${component.title}</div><div class="text-xs mt-1">${component.uiComponent}</div>`;
+        elHost.appendChild(fallback);
+      }
+      return () => {
+        if (elHost) elHost.innerHTML = '';
+      };
+    }, [component.id, component.title, component.uiComponent, component.variant]);
+    return <div ref={hostRef} style={{ width: '100%', height: '100%' }} />;
+  }
 
   return (
     <div className="min-h-screen bg-neutral-light">
-      {/* Canvas - No sidebar padding needed anymore */}
       <div className="w-full transition-all duration-200" style={{ minHeight: 'calc(100vh - var(--navbar-height))' }}>
-        <div className="page-container canvas-page py-1" style={{ minHeight: 'inherit' }}>
-          {state.groups.length > 0 || state.components.length > 0 ? (
+        <div className="page-container canvas-page py-2" style={{ minHeight: 'inherit' }}>
+          {state.components.length > 0 ? (
             <div className="relative w-full bg-white border border-gray-200 rounded-lg overflow-hidden" style={{ minHeight: 'calc(100vh - var(--navbar-height) - 1rem)' }}>
-              <div className="grid-stack p-2" ref={gridRef}>
-                {state.groups.map(group => {
-                  const rect = layoutToRect(group.layout);
-                  const wUnitsRaw = Math.max(4, Math.round(rect.w / TILE_W));
-                  const hUnitsRaw = Math.max(2, Math.round(rect.h / TILE_H));
-                  const xUnits = Math.max(0, Math.round(rect.x / TILE_W));
-                  const yUnits = Math.max(0, Math.round(rect.y / TILE_H));
-                  const autoPos = xUnits === 0 && yUnits === 0;
-                  // Compute group min size from innerLayout extents
-                  const inner = group.innerLayout || [];
-                  const maxX = inner.reduce((m, i) => Math.max(m, (i.x || 0) + (i.w || 1)), 0);
-                  const maxY = inner.reduce((m, i) => Math.max(m, (i.y || 0) + (i.h || 1)), 0);
-                  const minWUnits = Math.max(6, maxX);
-                  const minHUnits = Math.max(4, maxY + 2);
-                  const wUnits = Math.max(wUnitsRaw, minWUnits);
-                  const hUnits = Math.max(hUnitsRaw, minHUnits);
-                  const groupChildren = state.components.filter(c => group.affordanceIds.includes(c.id));
-                  return (
-                    <div
-                      key={group.id}
-                      className="grid-stack-item"
-                      data-item-id={`group:${group.id}`}
-                      gs-x={(!autoPos ? (xUnits as any) : undefined) as any}
-                      gs-y={(!autoPos ? (yUnits as any) : undefined) as any}
-                      gs-w={wUnits as any}
-                      gs-h={hUnits as any}
-                      gs-min-w={minWUnits as any}
-                      gs-min-h={minHUnits as any}
-                      gs-auto-position={autoPos ? 'true' : 'false'}
-                    >
-                      <div className="grid-stack-item-content">
-                        <GroupContainer group={group} components={groupChildren} isEditMode={isEditMode} renderCard={renderComponent} />
-                      </div>
-                    </div>
-                  );
+              {/* Section overlays (non-interactive dashed boxes) */}
+              <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
+                {Object.entries(sectionBoxes.byTd).map(([tdId, box]) => {
+                  if (hiddenSections.has(tdId)) return null;
+                  if (colWidth === 0) return null;
+                  const { left, top, width, height } = unitToPx(box.minX, box.minY, box.maxX - box.minX, box.maxY - box.minY);
+                  return <div key={tdId} style={{ position: 'absolute', left, top, width, height, border: '2px dashed #cbd5e1', borderRadius: 12, background: 'transparent' }} />;
                 })}
-                {state.components
-                  .filter(c => !state.groups.some(g => g.affordanceIds.includes(c.id)))
-                  .map(component => {
-                    // ensure a reasonable default size for visibility
-                    const base = layoutToRect(component.layout);
-                    const rect = {
-                      w: Math.max(base.w || 360, 360),
-                      h: Math.max(base.h || 180, 180),
-                      x: base.x || 0,
-                      y: base.y || 0,
-                    };
-                    const wUnits = Math.max(4, Math.round(rect.w / TILE_W));
-                    const hUnits = Math.max(3, Math.round(rect.h / TILE_H));
-                    const xUnits = Math.max(0, Math.round(rect.x / TILE_W));
-                    const yUnits = Math.max(0, Math.round(rect.y / TILE_H));
-                    const autoPos = xUnits === 0 && yUnits === 0;
-                    return (
-                      <div
-                        key={component.id}
-                        className="grid-stack-item"
-                        data-item-id={`comp:${component.id}`}
-                        gs-x={(!autoPos ? (xUnits as any) : undefined) as any}
-                        gs-y={(!autoPos ? (yUnits as any) : undefined) as any}
-                        gs-w={wUnits as any}
-                        gs-h={hUnits as any}
-                        gs-min-w={4 as any}
-                        gs-min-h={3 as any}
-                        gs-auto-position={autoPos ? 'true' : 'false'}
-                      >
-                        <div className="grid-stack-item-content" style={{ minWidth: 360, minHeight: 180 }}>
-                          {renderComponent(component)}
+              </div>
+
+              {/* Section drag bars (interactive, small hit area) */}
+              {Object.entries(sectionBoxes.byTd).map(([tdId, box]) => {
+                if (hiddenSections.has(tdId)) return null;
+                if (colWidth === 0) return null;
+                const { left, top, width } = unitToPx(box.minX, box.minY, box.maxX - box.minX, box.maxY - box.minY);
+                const tdInfo = state.tdInfos.find(t => t.id === tdId);
+                return (
+                  <div
+                    key={`bar-${tdId}`}
+                    className="section-drag-bar"
+                    style={{
+                      position: 'absolute',
+                      left,
+                      top: Math.max(0, top - 24),
+                      width,
+                      height: 24,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '0 12px',
+                      cursor: 'move',
+                    }}
+                    onMouseDown={e => onSectionMouseDown(tdId, e)}
+                  >
+                    <span className="px-2 py-0.5 bg-white/90 text-primary text-xs font-heading rounded shadow border border-primary/30">{tdInfo?.title || 'Section'}</span>
+                    <button
+                      className="text-xs px-2 py-0.5 rounded bg-white border text-blue-600 hover:bg-blue-50 rgl-no-drag"
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleSectionHidden(tdId);
+                      }}
+                    >
+                      Hide
+                    </button>
+                  </div>
+                );
+              })}
+
+              {/* Grid */}
+              <div ref={gridWrapRef} className="p-2">
+                <ReactGridLayout
+                  cols={COLS}
+                  rowHeight={ROW_H}
+                  margin={MARGIN}
+                  containerPadding={PADDING}
+                  compactType="vertical"
+                  isResizable
+                  isDraggable
+                  preventCollision={false}
+                  autoSize
+                  useCSSTransforms
+                  draggableCancel=".rgl-no-drag"
+                  layout={layout.filter(l => !hiddenCards.has(l.i) && !(membership[l.i] && hiddenSections.has(membership[l.i]!)))}
+                  onLayoutChange={handleLayoutChange}
+                  onDragStop={handleDragStop}
+                >
+                  {layout
+                    .filter(l => !hiddenCards.has(l.i) && !(membership[l.i] && hiddenSections.has(membership[l.i]!)))
+                    .map(l => {
+                      const comp = state.components.find(c => c.id === l.i);
+                      if (!comp) return null;
+                      return (
+                        <div key={l.i} className="rgl-card">
+                          <div className="bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative group w-full h-full">
+                            <div className="bg-neutral-light px-3 h-9 flex items-center justify-between border-b border-primary">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-heading font-medium text-primary truncate">{comp.title}</span>
+                                <span className="text-xs text-gray-600 bg-white px-2 py-0.5 rounded">{comp.type}</span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  className="text-xs px-2 py-1 rounded bg-white border text-gray-700 hover:bg-gray-50 rgl-no-drag"
+                                  onClick={e => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    toggleCardHidden(comp.id);
+                                  }}
+                                >
+                                  {hiddenCards.has(comp.id) ? 'Show' : 'Hide'}
+                                </button>
+                                <button
+                                  className="text-xs px-2 py-1 rounded bg-white border text-red-600 hover:bg-red-50 rgl-no-drag"
+                                  onClick={e => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    removeComponent(comp.id);
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            </div>
+                            <div className="relative" style={{ width: '100%', height: 'calc(100% - 36px)', minHeight: MIN_CARD_H - 36 }}>
+                              <CardContent component={comp} />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                </ReactGridLayout>
               </div>
             </div>
           ) : (
@@ -743,74 +466,6 @@ export function ComponentCanvasPage() {
           )}
         </div>
       </div>
-
-      {/* Smart Edit Popup */}
-      {editingComponent &&
-        isEditMode &&
-        (() => {
-          const comp = state.components.find(c => c.id === editingComponent);
-          if (!comp) return null;
-          const afford = state.availableAffordances.find(a => a.key === comp.affordanceKey);
-          return (
-            <SmartEditPopup
-              component={comp}
-              affordance={afford}
-              onClose={() => setEditingComponent(null)}
-              attributesList={attributesList}
-              attributesValues={attributesValues}
-              attributesTypes={attributesTypes}
-              onAttributeChange={applyAttributeChange}
-              onVariantChange={handleVariantChange}
-              onComponentClose={handleComponentClose}
-            />
-          );
-        })()}
-
-      {/* Save Dashboard Modal */}
-      {showSaveModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-heading font-medium text-primary mb-4">Save Dashboard</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Dashboard Name</label>
-                <input
-                  type="text"
-                  value={saveName}
-                  onChange={e => setSaveName(e.target.value)}
-                  placeholder="Enter dashboard name..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-heading font-medium text-gray-700 mb-1">Description (Optional)</label>
-                <textarea
-                  value={saveDescription}
-                  onChange={e => setSaveDescription(e.target.value)}
-                  placeholder="Enter description..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    setShowSaveModal(false);
-                    setSaveName('');
-                    setSaveDescription('');
-                  }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 font-heading font-medium"
-                >
-                  Cancel
-                </button>
-                <button onClick={handleSaveDashboard} className="px-4 py-2 bg-primary hover:bg-primary-light text-white font-heading font-medium rounded-lg transition-colors">
-                  Export
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
