@@ -668,50 +668,92 @@ export function ComponentCanvasPage() {
                     .map(l => {
                       const comp = state.components.find(c => c.id === l.i);
                       if (!comp) return null;
+                      const showWrapper = !comp.hideCard;
                       return (
                         <div key={l.i} className="rgl-card" style={{ padding: 1 }}>
-                          <div className="bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative w-full h-full" data-component-id={comp.id}>
-                            {/* Top-right icon actions: edit (pencil) and remove (×) */}
-                            {editMode && (
-                              <div className="absolute top-1 right-1 flex items-center gap-2 z-10">
-                                <span
-                                  className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
-                                  title="Edit"
-                                  onClick={e => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setEditComponentId(comp.id);
-                                  }}
-                                >
-                                  <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                    />
-                                  </svg>
-                                </span>
-                                <span
-                                  className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
-                                  title="Remove"
-                                  onClick={e => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    removeComponent(comp.id);
-                                  }}
-                                >
-                                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </span>
+                          {showWrapper ? (
+                            <div className="bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative w-full h-full" data-component-id={comp.id}>
+                              {editMode && (
+                                <div className="absolute top-1 right-1 flex items-center gap-2 z-10">
+                                  <span
+                                    className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
+                                    title="Edit"
+                                    onClick={e => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setEditComponentId(comp.id);
+                                    }}
+                                  >
+                                    <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                      />
+                                    </svg>
+                                  </span>
+                                  <span
+                                    className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
+                                    title="Remove"
+                                    onClick={e => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      removeComponent(comp.id);
+                                    }}
+                                  >
+                                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </span>
+                                </div>
+                              )}
+                              <div className="relative" style={{ width: '100%', height: '100%' }}>
+                                <CardContent component={comp} />
                               </div>
-                            )}
-
-                            <div className="relative" style={{ width: '100%', height: '100%' }}>
-                              <CardContent component={comp} />
                             </div>
-                          </div>
+                          ) : (
+                            <div data-component-id={comp.id} className="relative w-full h-full flex items-center justify-center">
+                              {editMode && (
+                                <div className="absolute top-1 right-1 flex items-center gap-2 z-10">
+                                  <span
+                                    className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
+                                    title="Edit"
+                                    onClick={e => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setEditComponentId(comp.id);
+                                    }}
+                                  >
+                                    <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                      />
+                                    </svg>
+                                  </span>
+                                  <span
+                                    className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
+                                    title="Remove"
+                                    onClick={e => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      removeComponent(comp.id);
+                                    }}
+                                  >
+                                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </span>
+                                </div>
+                              )}
+                              <div className="relative" style={{ width: '100%', height: '100%' }}>
+                                <CardContent component={comp} />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
