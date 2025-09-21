@@ -46,6 +46,7 @@ Open http://localhost:5173 in your browser.
 ### 4. Watch the Magic ✨
 
 The React app automatically:
+
 - Connects to the TestThing at localhost:8080
 - Demonstrates tree-shakable imports from the component library
 - Shows 5 different UI components bound to WoT properties
@@ -55,17 +56,20 @@ The React app automatically:
 ## 🧪 What's Demonstrated
 
 ### Library Features
+
 - Node‑WoT only auto-connect helpers: `connectAllAuto`, `connectPropertyAuto`, `connectActionAuto`, `connectEventAuto`
 - Tree-shakable imports: `@thingweb/ui-wot-components/services`
 
 ### Components Showcased
+
 - **ui-toggle** - Boolean property with observe/poll
-- **ui-slider** - Numeric property with polling  
+- **ui-slider** - Numeric property with polling
 - **ui-text** - String property with auto-binding
 - **ui-button** - Action invocation
 - **ui-event** - Event subscription display
 
 ### WoT Integration Patterns
+
 - Property reading/writing with automatic type handling
 - Action invocation with result display
 - Event subscription via Node‑WoT
@@ -91,17 +95,20 @@ React App
 The included test server provides:
 
 **Properties:**
+
 - `enabled` (boolean) - Device enabled state
-- `level` (0-100) - Power level percentage  
+- `level` (0-100) - Power level percentage
 - `name` (string) - Device name
 
 **Actions:**
+
 - `brew` - Start brewing coffee
 - `upload-file` - File upload simulation
 - `clear-files` - Clear file list
 - `convert-color` - Color format conversion
 
 **Events:**
+
 - `on-bool`, `on-int`, etc. (see your TD)
 
 ## 🔧 Customization

@@ -20,194 +20,221 @@ const state = {
   currentColor: '#3b82f6',
   colorRgb: { r: 59, g: 130, b: 246 },
   selectedFile: null,
-  fileList: []
+  fileList: [],
 };
 
 // Thing Description
 const thingDescription = {
-  "@context": [
-    "https://www.w3.org/2019/wot/td/v1",
-    "https://www.w3.org/2022/wot/td/v1.1"
-  ],
-  "id": "urn:dev:testthing:1",
-  "title": "TestThing",
-  "description": "A simple test thing for UI-WoT React demo",
-  "securityDefinitions": {
-    "nosec_sc": {
-      "scheme": "nosec"
-    }
+  '@context': ['https://www.w3.org/2019/wot/td/v1', 'https://www.w3.org/2022/wot/td/v1.1'],
+  'id': 'urn:dev:testthing:1',
+  'title': 'TestThing',
+  'description': 'A simple test thing for UI-WoT React demo',
+  'securityDefinitions': {
+    nosec_sc: {
+      scheme: 'nosec',
+    },
   },
-  "security": ["nosec_sc"],
-  "base": "http://localhost:8080/",
-  "properties": {
-    "enabled": {
-      "type": "boolean",
-      "title": "Device Enabled",
-      "description": "Whether the device is enabled",
-      "forms": [{
-        "href": "properties/enabled",
-        "contentType": "application/json"
-      }]
+  'security': ['nosec_sc'],
+  'base': 'http://localhost:8080/',
+  'properties': {
+    enabled: {
+      type: 'boolean',
+      title: 'Device Enabled',
+      description: 'Whether the device is enabled',
+      forms: [
+        {
+          href: 'properties/enabled',
+          contentType: 'application/json',
+        },
+      ],
     },
-    "level": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 100,
-      "title": "Power Level",
-      "description": "Current power level percentage",
-      "forms": [{
-        "href": "properties/level",
-        "contentType": "application/json"
-      }]
+    level: {
+      type: 'integer',
+      minimum: 0,
+      maximum: 100,
+      title: 'Power Level',
+      description: 'Current power level percentage',
+      forms: [
+        {
+          href: 'properties/level',
+          contentType: 'application/json',
+        },
+      ],
     },
-    "name": {
-      "type": "string",
-      "title": "Device Name",
-      "description": "Human-readable device name",
-      "forms": [{
-        "href": "properties/name",
-        "contentType": "application/json"
-      }]
+    name: {
+      type: 'string',
+      title: 'Device Name',
+      description: 'Human-readable device name',
+      forms: [
+        {
+          href: 'properties/name',
+          contentType: 'application/json',
+        },
+      ],
     },
-    "currentDate": {
-      "type": "string",
-      "format": "date",
-      "title": "Current Date",
-      "forms": [{
-        "href": "properties/currentDate",
-        "contentType": "application/json"
-      }]
+    currentDate: {
+      type: 'string',
+      format: 'date',
+      title: 'Current Date',
+      forms: [
+        {
+          href: 'properties/currentDate',
+          contentType: 'application/json',
+        },
+      ],
     },
-    "currentTime": {
-      "type": "string",
-      "format": "time",
-      "title": "Current Time",
-      "forms": [{
-        "href": "properties/currentTime",
-        "contentType": "application/json"
-      }]
+    currentTime: {
+      type: 'string',
+      format: 'time',
+      title: 'Current Time',
+      forms: [
+        {
+          href: 'properties/currentTime',
+          contentType: 'application/json',
+        },
+      ],
     },
-    "currentDateTime": {
-      "type": "string",
-      "format": "date-time",
-      "title": "Current DateTime",
-      "forms": [{
-        "href": "properties/currentDateTime",
-        "contentType": "application/json"
-      }]
+    currentDateTime: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Current DateTime',
+      forms: [
+        {
+          href: 'properties/currentDateTime',
+          contentType: 'application/json',
+        },
+      ],
     },
-    "currentColor": {
-      "type": "string",
-      "title": "Current Color",
-      "description": "Color in hex format",
-      "forms": [{
-        "href": "properties/currentColor",
-        "contentType": "application/json"
-      }]
+    currentColor: {
+      type: 'string',
+      title: 'Current Color',
+      description: 'Color in hex format',
+      forms: [
+        {
+          href: 'properties/currentColor',
+          contentType: 'application/json',
+        },
+      ],
     },
-    "colorRgb": {
-      "type": "object",
-      "title": "RGB Color",
-      "properties": {
-        "r": { "type": "integer", "minimum": 0, "maximum": 255 },
-        "g": { "type": "integer", "minimum": 0, "maximum": 255 },
-        "b": { "type": "integer", "minimum": 0, "maximum": 255 }
+    colorRgb: {
+      type: 'object',
+      title: 'RGB Color',
+      properties: {
+        r: { type: 'integer', minimum: 0, maximum: 255 },
+        g: { type: 'integer', minimum: 0, maximum: 255 },
+        b: { type: 'integer', minimum: 0, maximum: 255 },
       },
-      "forms": [{
-        "href": "properties/colorRgb",
-        "contentType": "application/json"
-      }]
+      forms: [
+        {
+          href: 'properties/colorRgb',
+          contentType: 'application/json',
+        },
+      ],
     },
-    "selectedFile": {
-      "type": "object",
-      "title": "Selected File",
-      "forms": [{
-        "href": "properties/selectedFile",
-        "contentType": "application/json"
-      }]
+    selectedFile: {
+      type: 'object',
+      title: 'Selected File',
+      forms: [
+        {
+          href: 'properties/selectedFile',
+          contentType: 'application/json',
+        },
+      ],
     },
-    "fileList": {
-      "type": "array",
-      "title": "File List",
-      "forms": [{
-        "href": "properties/fileList",
-        "contentType": "application/json"
-      }]
-    }
+    fileList: {
+      type: 'array',
+      title: 'File List',
+      forms: [
+        {
+          href: 'properties/fileList',
+          contentType: 'application/json',
+        },
+      ],
+    },
   },
-  "actions": {
-    "brew": {
-      "title": "Brew Coffee",
-      "description": "Start brewing coffee",
-      "output": {
-        "type": "object",
-        "properties": {
-          "status": { "type": "string" },
-          "timestamp": { "type": "string" }
-        }
+  'actions': {
+    'brew': {
+      title: 'Brew Coffee',
+      description: 'Start brewing coffee',
+      output: {
+        type: 'object',
+        properties: {
+          status: { type: 'string' },
+          timestamp: { type: 'string' },
+        },
       },
-      "forms": [{
-        "href": "actions/brew",
-        "contentType": "application/json"
-      }]
+      forms: [
+        {
+          href: 'actions/brew',
+          contentType: 'application/json',
+        },
+      ],
     },
-    "upload-file": {
-      "title": "Upload File",
-      "input": {
-        "type": "object",
-        "properties": {
-          "name": { "type": "string" },
-          "size": { "type": "integer" },
-          "type": { "type": "string" },
-          "content": { "type": "string" }
-        }
+    'upload-file': {
+      title: 'Upload File',
+      input: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          size: { type: 'integer' },
+          type: { type: 'string' },
+          content: { type: 'string' },
+        },
       },
-      "forms": [{
-        "href": "actions/upload-file",
-        "contentType": "application/json"
-      }]
+      forms: [
+        {
+          href: 'actions/upload-file',
+          contentType: 'application/json',
+        },
+      ],
     },
-    "clear-files": {
-      "title": "Clear Files",
-      "forms": [{
-        "href": "actions/clear-files",
-        "contentType": "application/json"
-      }]
+    'clear-files': {
+      title: 'Clear Files',
+      forms: [
+        {
+          href: 'actions/clear-files',
+          contentType: 'application/json',
+        },
+      ],
     },
-    "convert-color": {
-      "title": "Convert Color",
-      "input": {
-        "type": "object",
-        "properties": {
-          "color": { "type": "string" },
-          "from": { "type": "string" },
-          "to": { "type": "string" }
-        }
+    'convert-color': {
+      title: 'Convert Color',
+      input: {
+        type: 'object',
+        properties: {
+          color: { type: 'string' },
+          from: { type: 'string' },
+          to: { type: 'string' },
+        },
       },
-      "forms": [{
-        "href": "actions/convert-color",
-        "contentType": "application/json"
-      }]
-    }
+      forms: [
+        {
+          href: 'actions/convert-color',
+          contentType: 'application/json',
+        },
+      ],
+    },
   },
-  "events": {
-    "status": {
-      "title": "Status Change",
-      "description": "Emitted when device status changes",
-      "data": {
-        "type": "object",
-        "properties": {
-          "message": { "type": "string" },
-          "timestamp": { "type": "string" },
-          "level": { "type": "string" }
-        }
+  'events': {
+    status: {
+      title: 'Status Change',
+      description: 'Emitted when device status changes',
+      data: {
+        type: 'object',
+        properties: {
+          message: { type: 'string' },
+          timestamp: { type: 'string' },
+          level: { type: 'string' },
+        },
       },
-      "forms": [{
-        "href": "events/status",
-        "contentType": "application/json"
-      }]
-    }
-  }
+      forms: [
+        {
+          href: 'events/status',
+          contentType: 'application/json',
+        },
+      ],
+    },
+  },
 };
 
 // Helper to set CORS headers
@@ -250,7 +277,7 @@ const server = http.createServer((req, res) => {
   const propertyMatch = path.match(/^\/properties\/(.+)$/);
   if (propertyMatch) {
     const propName = propertyMatch[1];
-    
+
     if (method === 'GET') {
       if (state.hasOwnProperty(propName)) {
         sendJson(res, state[propName]);
@@ -259,10 +286,10 @@ const server = http.createServer((req, res) => {
       }
       return;
     }
-    
+
     if (method === 'PUT') {
       let body = '';
-      req.on('data', chunk => body += chunk);
+      req.on('data', chunk => (body += chunk));
       req.on('end', () => {
         try {
           const value = JSON.parse(body);
@@ -285,47 +312,47 @@ const server = http.createServer((req, res) => {
   const actionMatch = path.match(/^\/actions\/(.+)$/);
   if (actionMatch && method === 'POST') {
     const actionName = actionMatch[1];
-    
+
     let body = '';
-    req.on('data', chunk => body += chunk);
+    req.on('data', chunk => (body += chunk));
     req.on('end', () => {
       try {
         const input = body ? JSON.parse(body) : {};
-        
+
         switch (actionName) {
           case 'brew':
             console.log('  ☕ Brewing coffee...');
             sendJson(res, {
               status: 'brewing',
               timestamp: new Date().toISOString(),
-              message: 'Coffee brewing started'
+              message: 'Coffee brewing started',
             });
             break;
-            
+
           case 'upload-file':
             console.log(`  📁 File uploaded: ${input.name} (${input.size} bytes)`);
             sendJson(res, {
               status: 'uploaded',
               filename: input.name,
-              size: input.size
+              size: input.size,
             });
             break;
-            
+
           case 'clear-files':
             console.log('  🗑️ Files cleared');
             state.selectedFile = null;
             state.fileList = [];
             sendJson(res, { status: 'cleared' });
             break;
-            
+
           case 'convert-color':
             console.log(`  🎨 Converting color: ${input.color} from ${input.from} to ${input.to}`);
             sendJson(res, {
               original: input.color,
-              converted: input.to === 'rgb' ? { r: 255, g: 87, b: 34 } : '#ff5722'
+              converted: input.to === 'rgb' ? { r: 255, g: 87, b: 34 } : '#ff5722',
             });
             break;
-            
+
           default:
             sendJson(res, { error: 'Action not found' }, 404);
         }
@@ -341,7 +368,7 @@ const server = http.createServer((req, res) => {
     sendJson(res, {
       message: 'Device status normal',
       timestamp: new Date().toISOString(),
-      level: 'info'
+      level: 'info',
     });
     return;
   }

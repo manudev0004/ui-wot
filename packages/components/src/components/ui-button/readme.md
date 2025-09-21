@@ -7,76 +7,115 @@
 
 ## Overview
 
-A simple button component designed for WoT device actions.
-
-Features multiple visual styles, status indicators, and Web of Things integration.
-Buttons trigger actions rather than managing state values.
+Button component with various visual styles, matching the ui-number-picker design family.
+Supports the same variants, colors, and themes as the number picker.
 
 ## Properties
 
-| Property          | Attribute           | Description                                                                                                                                                                    | Type                                    | Default      |
-| ----------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- | ------------ |
-| `color`           | `color`             | Color theme for the button matching to thingsweb theme                                                                                                                         | `"neutral" \| "primary" \| "secondary"` | `'primary'`  |
-| `dark`            | `dark`              | Enable dark mode theme styling when true                                                                                                                                       | `boolean`                               | `false`      |
-| `disabled`        | `disabled`          | Disable user interaction when true                                                                                                                                             | `boolean`                               | `false`      |
-| `keyboard`        | `keyboard`          | Enable keyboard navigation so user can click using 'Space' and 'Enter' keys when true                                                                                          | `boolean`                               | `true`       |
-| `label`           | `label`             | Text label displayed on the button                                                                                                                                             | `string`                                | `'Button'`   |
-| `showLastUpdated` | `show-last-updated` | Show last updated timestamp below the component                                                                                                                                | `boolean`                               | `false`      |
-| `showStatus`      | `show-status`       | Show visual operation status indicators (loading, success, failed) right to the component                                                                                      | `boolean`                               | `false`      |
-| `variant`         | `variant`           | Visual style variant of the button. - minimal: Clean design with transparent background - outlined: Border-focused design with outline style - filled: Solid background design | `"filled" \| "minimal" \| "outlined"`   | `'outlined'` |
+| Property          | Attribute           | Description                                                                                                                                                       | Type                                    | Default      |
+| ----------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------ |
+| `color`           | `color`             | Color scheme to match thingsweb webpage                                                                                                                           | `"neutral" \| "primary" \| "secondary"` | `'primary'`  |
+| `connected`       | `connected`         | Connection state for readonly mode                                                                                                                                | `boolean`                               | `true`       |
+| `dark`            | `dark`              | Dark theme variant.                                                                                                                                               | `boolean`                               | `false`      |
+| `disabled`        | `disabled`          | Whether the component is disabled (cannot be interacted with).                                                                                                    | `boolean`                               | `false`      |
+| `keyboard`        | `keyboard`          | Enable keyboard navigation.                                                                                                                                       | `boolean`                               | `true`       |
+| `label`           | `label`             | Button text label.                                                                                                                                                | `string`                                | `'Button'`   |
+| `readonly`        | `readonly`          | Whether the component is read-only (displays value but cannot be changed).                                                                                        | `boolean`                               | `false`      |
+| `showLastUpdated` | `show-last-updated` | Show last updated timestamp below the component.                                                                                                                  | `boolean`                               | `true`       |
+| `showStatus`      | `show-status`       | Show status badge when true                                                                                                                                       | `boolean`                               | `true`       |
+| `variant`         | `variant`           | Visual style variant of the button. - minimal: Clean button with subtle background (default) - outlined: Button with border outline - filled: Solid filled button | `"filled" \| "minimal" \| "outlined"`   | `'outlined'` |
 
 
 ## Events
 
-| Event      | Description                                                                                                            | Type                         |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| `clickMsg` | Emitted when button is clicked through user interaction. Contains the button label, timestamp, and source information. | `CustomEvent<UiMsg<string>>` |
+| Event      | Description                                                                                           | Type                         |
+| ---------- | ----------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `valueMsg` | Primary event emitted when the component value changes. Use this event for all value change handling. | `CustomEvent<UiMsg<string>>` |
 
 
 ## Methods
 
-### `setAction(actionFn?: () => Promise<any>) => Promise<boolean>`
+### `getValue() => Promise<string>`
 
-Sets the action to execute when button is clicked.
-This is the primary method for connecting button to real devices .
-
-#### Parameters
-
-| Name       | Type                 | Description                                     |
-| ---------- | -------------------- | ----------------------------------------------- |
-| `actionFn` | `() => Promise<any>` | - The async function to execute on button click |
+Get current button value (its label).
 
 #### Returns
 
-Type: `Promise<boolean>`
+Type: `Promise<string>`
 
-Promise resolving to true if successful, false if failed
+Promise<string> - The current button label/text
 
-### `setStatus(status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>`
+### `setStatus(status: "idle" | "loading" | "success" | "error", message?: string) => Promise<void>`
 
-(Advance) to manually set the operation status indicator.
-Useful when managing device communication externally and you want to show loading/success/error states.
+Manually set operation status for external status management.
 
 #### Parameters
 
-| Name           | Type                                          | Description                                 |
-| -------------- | --------------------------------------------- | ------------------------------------------- |
-| `status`       | `"error" \| "loading" \| "success" \| "idle"` | - The status to display                     |
-| `errorMessage` | `string`                                      | - (Optional) error message for error status |
+| Name      | Type                                          | Description                                                 |
+| --------- | --------------------------------------------- | ----------------------------------------------------------- |
+| `status`  | `"error" \| "loading" \| "success" \| "idle"` | - The status to set ('idle', 'loading', 'success', 'error') |
+| `message` | `string`                                      | - Optional error message for error status                   |
 
 #### Returns
 
 Type: `Promise<void>`
 
+Promise<void>
 
+### `setValue(value: string, options?: { writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "loading" | "success" | "error"; errorMessage?: string; _isRevert?: boolean; }) => Promise<boolean>`
+
+Set the button value (label) with automatic operation management.
+This method allows you to change the button text and optionally perform operations.
+
+#### Parameters
+
+| Name      | Type                                                                                                                                                                                                                                                 | Description                               |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `value`   | `string`                                                                                                                                                                                                                                             | - The string value to set as button label |
+| `options` | `{ writeOperation?: () => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; customStatus?: "error" \| "loading" \| "success"; errorMessage?: string; _isRevert?: boolean; }` | - Configuration options for the operation |
+
+#### Returns
+
+Type: `Promise<boolean>`
+
+Promise<boolean> - true if successful, false if failed
+
+### `setValueSilent(value: string) => Promise<boolean>`
+
+Set value silently without triggering events or status changes.
+Use this for external updates that shouldn't trigger event listeners.
+
+#### Parameters
+
+| Name    | Type     | Description                               |
+| ------- | -------- | ----------------------------------------- |
+| `value` | `string` | - The string value to set as button label |
+
+#### Returns
+
+Type: `Promise<boolean>`
+
+Promise<boolean> - Always returns true
+
+### `triggerReadPulse() => Promise<void>`
+
+Trigger visual read pulse (brief animation).
+Provides visual feedback for data refresh or read operations.
+
+#### Returns
+
+Type: `Promise<void>`
+
+Promise<void>
 
 
 ## Shadow Parts
 
 | Part          | Description |
 | ------------- | ----------- |
+| `"button"`    |             |
 | `"container"` |             |
-| `"control"`   |             |
+| `"label"`     |             |
 
 
 ----------------------------------------------

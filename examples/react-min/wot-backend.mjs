@@ -95,7 +95,7 @@ app.get('/api/events/:name', async (req, res) => {
     res.flushHeaders?.();
     sseStarted = true;
 
-    sub = await t.subscribeEvent(name, async (data) => {
+    sub = await t.subscribeEvent(name, async data => {
       if (closed) return;
       const v = typeof data?.value === 'function' ? await data.value() : data;
       res.write(`data: ${JSON.stringify(v)}\n\n`);
@@ -103,15 +103,21 @@ app.get('/api/events/:name', async (req, res) => {
 
     req.on('close', () => {
       closed = true;
-      try { sub?.unsubscribe?.(); } catch {}
-      try { res.end(); } catch {}
+      try {
+        sub?.unsubscribe?.();
+      } catch {}
+      try {
+        res.end();
+      } catch {}
     });
   } catch (e) {
     if (sseStarted) {
       try {
         res.write(`event: error\ndata: ${JSON.stringify(String(e))}\n\n`);
       } catch {}
-      try { res.end(); } catch {}
+      try {
+        res.end();
+      } catch {}
     } else {
       if (!res.headersSent) {
         res.status(500).json({ error: String(e) });

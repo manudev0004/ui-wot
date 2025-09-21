@@ -7,72 +7,68 @@
 
 ## Overview
 
-A versatile calendar component designed for WoT device control.
-
-It has various features, visual styles, status and last updated timestamps and other options.
+Advanced calendar component with comprehensive styling, variants, and features.
+Matches the design family of ui-button, ui-slider, and other components.
 
 ## Properties
 
-| Property          | Attribute           | Description                                                                                                                  | Type                                    | Default      |
-| ----------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------ |
-| `color`           | `color`             | Color theme for the active state matching to thingsweb theme                                                                 | `"neutral" \| "primary" \| "secondary"` | `'primary'`  |
-| `connected`       | `connected`         | Connection state for readonly mode                                                                                           | `boolean`                               | `true`       |
-| `dark`            | `dark`              | Enable dark mode theme styling when true                                                                                     | `boolean`                               | `false`      |
-| `disabled`        | `disabled`          | Disable user interaction when true                                                                                           | `boolean`                               | `false`      |
-| `firstDayOfWeek`  | `first-day-of-week` | First day of week (0 = Sunday, 1 = Monday)                                                                                   | `0 \| 1`                                | `0`          |
-| `includeTime`     | `include-time`      | Include time picker alongside date picker                                                                                    | `boolean`                               | `false`      |
-| `inline`          | `inline`            | Display calendar inline instead of as a popup                                                                                | `boolean`                               | `false`      |
-| `keyboard`        | `keyboard`          | Enable keyboard navigation so user can interact using keyboard when true                                                     | `boolean`                               | `true`       |
-| `label`           | `label`             | Text label displayed above the calendar (optional)                                                                           | `string`                                | `undefined`  |
-| `maxDate`         | `max-date`          | Maximum selectable date (ISO string)  (Optional)                                                                             | `string`                                | `undefined`  |
-| `minDate`         | `min-date`          | Minimum selectable date (ISO string)  (Optional)                                                                             | `string`                                | `undefined`  |
-| `showClearButton` | `show-clear-button` | Show clear button to reset selection                                                                                         | `boolean`                               | `true`       |
-| `showLastUpdated` | `show-last-updated` | Show last updated timestamp below the component                                                                              | `boolean`                               | `false`      |
-| `showStatus`      | `show-status`       | Show visual operation status indicators (loading, success, failed) right to the component                                    | `boolean`                               | `true`       |
-| `showTodayButton` | `show-today-button` | Show today button                                                                                                            | `boolean`                               | `true`       |
-| `showWeekNumbers` | `show-week-numbers` | Show week numbers in calendar grid                                                                                           | `boolean`                               | `false`      |
-| `timeFormat`      | `time-format`       | Time format when includeTime is enabled (12-hour or 24-hour)                                                                 | `"12" \| "24"`                          | `'12'`       |
-| `value`           | `value`             | Current date-time value of the calendar (ISO string)                                                                         | `string`                                | `undefined`  |
-| `variant`         | `variant`           | Visual style variant of the calendar. - outlined: Border-focused design with outline style - filled: Solid background design | `"filled" \| "outlined"`                | `'outlined'` |
+| Property          | Attribute           | Description                                                                                                                                                                                                                                                                                       | Type                                                                          | Default     |
+| ----------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------- |
+| `animation`       | `animation`         | Animation style for transitions. - none: No animations - slide: Slide transitions between months - fade: Fade transitions   - bounce: Playful bounce effects                                                                                                                                      | `"bounce" \| "fade" \| "none" \| "slide"`                                     | `'slide'`   |
+| `color`           | `color`             | Color scheme matching the component family palette. - primary: Main brand color (blue tones) - secondary: Accent color (green/teal tones)   - neutral: Grayscale for subtle integration - success: Green for positive actions - warning: Orange for caution - danger: Red for destructive actions | `"danger" \| "neutral" \| "primary" \| "secondary" \| "success" \| "warning"` | `'primary'` |
+| `connected`       | `connected`         | Connection state for readonly mode                                                                                                                                                                                                                                                                | `boolean`                                                                     | `true`      |
+| `dark`            | `dark`              | Dark theme variant.                                                                                                                                                                                                                                                                               | `boolean`                                                                     | `false`     |
+| `disabled`        | `disabled`          | Whether the component is disabled (cannot be interacted with).                                                                                                                                                                                                                                    | `boolean`                                                                     | `false`     |
+| `firstDayOfWeek`  | `first-day-of-week` | First day of week (0 = Sunday, 1 = Monday).                                                                                                                                                                                                                                                       | `0 \| 1`                                                                      | `0`         |
+| `includeTime`     | `include-time`      | Include time picker alongside date picker. Supports hour:minute selection with AM/PM or 24-hour format.                                                                                                                                                                                           | `boolean`                                                                     | `false`     |
+| `inline`          | `inline`            | Display calendar inline instead of as dropdown popup. Perfect for always-visible date selection.                                                                                                                                                                                                  | `boolean`                                                                     | `false`     |
+| `keyboard`        | `keyboard`          | Enable keyboard navigation and shortcuts.                                                                                                                                                                                                                                                         | `boolean`                                                                     | `true`      |
+| `label`           | `label`             | Optional text label for the calendar with enhanced styling.                                                                                                                                                                                                                                       | `string`                                                                      | `undefined` |
+| `maxDate`         | `max-date`          | Maximum selectable date (ISO string).                                                                                                                                                                                                                                                             | `string`                                                                      | `undefined` |
+| `minDate`         | `min-date`          | Minimum selectable date (ISO string).                                                                                                                                                                                                                                                             | `string`                                                                      | `undefined` |
+| `readonly`        | `readonly`          | Whether the component is read-only (displays value but cannot be changed).                                                                                                                                                                                                                        | `boolean`                                                                     | `false`     |
+| `showClearButton` | `show-clear-button` | Show clear button to reset selection.                                                                                                                                                                                                                                                             | `boolean`                                                                     | `true`      |
+| `showLastUpdated` | `show-last-updated` | Show last updated timestamp below the component.                                                                                                                                                                                                                                                  | `boolean`                                                                     | `false`     |
+| `showStatus`      | `show-status`       | Show status badge when true                                                                                                                                                                                                                                                                       | `boolean`                                                                     | `true`      |
+| `showTodayButton` | `show-today-button` | Show today button for quick navigation.                                                                                                                                                                                                                                                           | `boolean`                                                                     | `true`      |
+| `showWeekNumbers` | `show-week-numbers` | Show week numbers in calendar grid.                                                                                                                                                                                                                                                               | `boolean`                                                                     | `false`     |
+| `size`            | `size`              | Component size for different use cases. - small: Compact calendar for tight spaces - medium: Standard size (default) - large: Prominent calendar with larger touch targets                                                                                                                        | `"large" \| "medium" \| "small"`                                              | `'medium'`  |
+| `timeFormat`      | `time-format`       | Time format when includeTime is enabled. - 12: 12-hour format with AM/PM - 24: 24-hour format                                                                                                                                                                                                     | `"12" \| "24"`                                                                | `'12'`      |
+| `value`           | `value`             | Current selected date-time value (ISO string).                                                                                                                                                                                                                                                    | `string`                                                                      | `undefined` |
+| `variant`         | `variant`           | Visual style variant matching component family design. - minimal: Clean, borderless design with subtle hover effects - outlined: Border with transparent background, colored accents - filled: Solid background with contrasting text - elevated: Shadow and depth for prominent display          | `"elevated" \| "filled" \| "minimal" \| "outlined"`                           | `'minimal'` |
 
 
 ## Events
 
-| Event      | Description                                                                                                                                                | Type                         |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| `valueMsg` | Emitted when calendar value changes through user interaction or setValue calls. Contains the new value, previous value, timestamp, and source information. | `CustomEvent<UiMsg<string>>` |
+| Event         | Description                                                                                                                                                  | Type                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
+| `dateChange`  | Event emitted when date changes                                                                                                                              | `CustomEvent<UiCalendarDateChange>`  |
+| `valueChange` | Standardized valueChange event for calendar                                                                                                                  | `CustomEvent<UiCalendarValueChange>` |
+| `valueMsg`    | Standardized value event emitter - emits UiMsg<string> with enhanced metadata. Provides consistent value change notifications with unified messaging format. | `CustomEvent<UiMsg<string>>`         |
 
 
 ## Methods
 
-### `getValue(includeMetadata?: boolean) => Promise<string | undefined | { value: string | undefined; lastUpdated?: number; status: string; error?: string; }>`
+### `getValue() => Promise<string | undefined>`
 
-Gets the current calendar value with optional metadata.
-
-#### Parameters
-
-| Name              | Type      | Description                                                  |
-| ----------------- | --------- | ------------------------------------------------------------ |
-| `includeMetadata` | `boolean` | - Whether to include status, timestamp and other information |
+Get the current calendar value.
 
 #### Returns
 
-Type: `Promise<string | { value: string; lastUpdated?: number; status: string; error?: string; }>`
+Type: `Promise<string>`
 
-Current value or detailed metadata object
+Current date value as ISO string or undefined
 
-### `setStatus(status: "idle" | "loading" | "success" | "error", errorMessage?: string) => Promise<void>`
+### `setStatus(status: "idle" | "loading" | "success" | "error", message?: string) => Promise<void>`
 
-(Advance) to manually set the operation status indicator.
-
-Useful when managing device communication externally and you want to show loading/success/error states.
+Set the visual status of the calendar (success, warning, error).
 
 #### Parameters
 
-| Name           | Type                                          | Description                                 |
-| -------------- | --------------------------------------------- | ------------------------------------------- |
-| `status`       | `"error" \| "loading" \| "success" \| "idle"` | - The status to display                     |
-| `errorMessage` | `string`                                      | - (Optional) error message for error status |
+| Name      | Type                                          | Description                    |
+| --------- | --------------------------------------------- | ------------------------------ |
+| `status`  | `"error" \| "loading" \| "success" \| "idle"` | - Status type or null to clear |
+| `message` | `string`                                      | - Optional status message      |
 
 #### Returns
 
@@ -80,38 +76,32 @@ Type: `Promise<void>`
 
 
 
-### `setValue(value: string, options?: { writeOperation?: (value: string) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }) => Promise<any>`
+### `setValue(value: string, metadata?: Record<string, any>) => Promise<void>`
 
-Sets the calendar value with optional device communication api and other options.
-
-This is the primary method for connecting calendars to real devices.
-It supports optimistic updates, error handling, and automatic retries.
+Set the calendar value programmatically and emit events.
 
 #### Parameters
 
-| Name      | Type                                                                                                                                                                                     | Description                                                    |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `value`   | `string`                                                                                                                                                                                 | - The date string value to set (ISO format)                    |
-| `options` | `{ writeOperation?: (value: string) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; autoRetry?: { attempts: number; delay: number; }; _isRevert?: boolean; }` | - Optional configuration for device communication and behavior |
+| Name       | Type                    | Description                                 |
+| ---------- | ----------------------- | ------------------------------------------- |
+| `value`    | `string`                | - ISO date string to set                    |
+| `metadata` | `{ [x: string]: any; }` | - Optional metadata to include in the event |
 
 #### Returns
 
-Type: `Promise<any>`
+Type: `Promise<void>`
 
-Promise resolving to any result from the operation
+
 
 ### `setValueSilent(value: string) => Promise<void>`
 
-This method updates the value silently without triggering events.
-
-Use this for external data synchronization to prevent event loops.
-Perfect for WebSocket updates or polling from remote devices.
+Set value without emitting events (silent update).
 
 #### Parameters
 
-| Name    | Type     | Description                                          |
-| ------- | -------- | ---------------------------------------------------- |
-| `value` | `string` | - The date string value to set silently (ISO format) |
+| Name    | Type     | Description              |
+| ------- | -------- | ------------------------ |
+| `value` | `string` | - ISO date string to set |
 
 #### Returns
 
@@ -119,13 +109,15 @@ Type: `Promise<void>`
 
 
 
+### `triggerReadPulse() => Promise<void>`
 
-## Shadow Parts
+Trigger a visual pulse effect to indicate the value was read/accessed.
 
-| Part          | Description |
-| ------------- | ----------- |
-| `"container"` |             |
-| `"label"`     |             |
+#### Returns
+
+Type: `Promise<void>`
+
+
 
 
 ----------------------------------------------
