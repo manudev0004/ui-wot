@@ -43,7 +43,7 @@ export function ComponentCanvasPage() {
   // Hide state
   const [hiddenCards, _setHiddenCards] = useState<Set<string>>(new Set());
   const [hiddenSections, setHiddenSections] = useState<Set<string>>(new Set());
-  const [sectionTitles, setSectionTitles] = useState<Record<string, string>>({});
+  const [sectionNames, setSectionNames] = useState<Record<string, string>>({});
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editComponentId, setEditComponentId] = useState<string | null>(null);
   // Grid container width for computing section overlays
@@ -61,21 +61,6 @@ export function ComponentCanvasPage() {
     ro.observe(gridWrapRef.current);
     return () => ro.disconnect();
   }, []);
-
-  // Initialize or sync section titles from TD infos
-  useEffect(() => {
-    setSectionTitles(prev => {
-      const next = { ...prev } as Record<string, string>;
-      state.tdInfos.forEach(td => {
-        if (!next[td.id]) next[td.id] = td.title || 'Section';
-      });
-      // Remove titles for TDs no longer present
-      Object.keys(next).forEach(k => {
-        if (!state.tdInfos.some(td => td.id === k)) delete next[k];
-      });
-      return next;
-    });
-  }, [state.tdInfos]);
 
   // Seed or update layout when components list changes
   useEffect(() => {
@@ -226,8 +211,8 @@ export function ComponentCanvasPage() {
       if (colWidth === 0) return;
       e.preventDefault();
       e.stopPropagation();
-      // Collect members
-      const members = layout.filter(l => (membership[l.i] ?? state.components.find(c => c.id === l.i)?.tdId) === tdId);
+  // Collect members (only those explicitly inside this section)
+  const members = layout.filter(l => membership[l.i] === tdId);
       const original = new Map<string, { x: number; y: number; w: number }>();
       members.forEach(m => original.set(m.i, { x: m.x, y: m.y, w: m.w }));
       sectionDragRef.current = {
@@ -286,8 +271,8 @@ export function ComponentCanvasPage() {
   const reflowSectionItems = useCallback(
     (tdId: string, minX: number, minY: number, targetW: number) => {
       if (targetW < 1) targetW = 1;
-      // Collect visible items in this section
-      const items = layout.filter(it => (membership[it.i] ?? state.components.find(c => c.id === it.i)?.tdId) === tdId && !hiddenCards.has(it.i)).map(it => ({ ...it }));
+  // Collect visible items in this section (explicit membership only)
+  const items = layout.filter(it => membership[it.i] === tdId && !hiddenCards.has(it.i)).map(it => ({ ...it }));
       if (items.length === 0) return;
 
       // Stable order by current (y,x)
@@ -334,8 +319,8 @@ export function ComponentCanvasPage() {
       if (colWidth === 0) return;
       e.preventDefault();
       e.stopPropagation();
-      // Determine the minimum allowed width so we don't force-resize children
-      const sectionItems = layout.filter(it => (membership[it.i] ?? state.components.find(c => c.id === it.i)?.tdId) === tdId && !hiddenCards.has(it.i));
+  // Determine the minimum allowed width so we don't force-resize children
+  const sectionItems = layout.filter(it => membership[it.i] === tdId && !hiddenCards.has(it.i));
       const minAllowedW = sectionItems.length > 0 ? Math.max(...sectionItems.map(it => it.w)) : 1;
       sectionResizeRef.current = {
         tdId,
@@ -375,10 +360,10 @@ export function ComponentCanvasPage() {
     // If the item belongs to a section, drop out when it exits the bounding box of remaining items
     const comp = state.components.find(c => c.id === item.i);
     if (!comp) return;
-    const currentSec = membership[item.i] ?? comp.tdId ?? null;
+  const currentSec = membership[item.i] ?? comp.tdId ?? null;
     if (!currentSec) return;
     // Compute bounding box of other items in same section
-    const others = layout.filter(l => l.i !== item.i && (membership[l.i] ?? state.components.find(c => c.id === l.i)?.tdId) === currentSec);
+  const others = layout.filter(l => l.i !== item.i && membership[l.i] === currentSec);
     if (others.length === 0) return; // nothing to compare
     const box = others.reduce(
       (acc, l) => ({ minX: Math.min(acc.minX, l.x), minY: Math.min(acc.minY, l.y), maxX: Math.max(acc.maxX, l.x + l.w), maxY: Math.max(acc.maxY, l.y + l.h) }),
@@ -407,23 +392,17 @@ export function ComponentCanvasPage() {
     if (editComponentId === id) setEditComponentId(null);
   };
 
-  const deleteSectionWithChildren = (tdId: string) => {
-    // Remove only components currently in this section (membership === tdId)
-    const idsToRemove = layout
-      .filter(l => (membership[l.i] ?? state.components.find(c => c.id === l.i)?.tdId) === tdId)
-      .map(l => l.i);
-    idsToRemove.forEach(id => dispatch({ type: 'REMOVE_COMPONENT', payload: id }));
-    // Clean up local state
+  const removeSection = (tdId: string) => {
+    // Remove only components currently inside this section (explicit membership)
+    const toRemove = layout.filter(l => membership[l.i] === tdId).map(l => l.i);
+    toRemove.forEach(id => dispatch({ type: 'REMOVE_COMPONENT', payload: id }));
+    // Clean up local maps
     setMembership(prev => {
-      const next = { ...prev };
-      idsToRemove.forEach(id => delete next[id]);
+      const next = { ...prev } as Record<string, string | null>;
+      toRemove.forEach(id => delete next[id]);
       return next;
     });
-    setHiddenSections(prev => {
-      const next = new Set(prev);
-      next.delete(tdId);
-      return next;
-    });
+    setLayout(prev => prev.filter(l => !toRemove.includes(l.i)));
   };
 
   // Simple card content mounting for custom elements
@@ -511,7 +490,7 @@ export function ComponentCanvasPage() {
                 if (colWidth === 0) return null;
                 const { left, top, width } = unitToPx(box.minX, box.minY, box.maxX - box.minX, box.maxY - box.minY);
                 const tdInfo = state.tdInfos.find(t => t.id === tdId);
-                const title = sectionTitles[tdId] ?? tdInfo?.title ?? 'Section';
+                const currentName = sectionNames[tdId] ?? tdInfo?.title ?? 'Section';
                 return (
                   <div
                     key={`bar-${tdId}`}
@@ -524,60 +503,60 @@ export function ComponentCanvasPage() {
                       height: 24,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 8,
-                      padding: '0 12px',
+                      gap: 6,
+                      padding: '0 8px',
                       cursor: 'move',
                     }}
                     onMouseDown={e => onSectionMouseDown(tdId, e)}
                   >
                     {editingSectionId === tdId ? (
                       <input
-                        className="rgl-no-drag text-xs px-2 py-0.5 bg-white border border-primary rounded"
-                        style={{ cursor: 'text' }}
+                        className="rgl-no-drag text-xs font-heading px-1 py-0.5 rounded border border-primary/30 bg-white/95"
+                        style={{ width: Math.min(240, Math.max(90, currentName.length * 8)) }}
                         autoFocus
-                        defaultValue={title}
+                        value={currentName}
                         onClick={e => { e.stopPropagation(); }}
-                        onMouseDown={e => { e.stopPropagation(); }}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            const value = (e.target as HTMLInputElement).value.trim() || 'Section';
-                            setSectionTitles(prev => ({ ...prev, [tdId]: value }));
-                            setEditingSectionId(null);
-                          } else if (e.key === 'Escape') {
-                            setEditingSectionId(null);
-                          }
-                        }}
-                        onBlur={e => {
-                          const value = e.target.value.trim() || 'Section';
-                          setSectionTitles(prev => ({ ...prev, [tdId]: value }));
-                          setEditingSectionId(null);
-                        }}
+                        onChange={e => setSectionNames(prev => ({ ...prev, [tdId]: e.target.value }))}
+                        onBlur={() => setEditingSectionId(null)}
+                        onKeyDown={e => { if (e.key === 'Enter') setEditingSectionId(null); if (e.key === 'Escape') setEditingSectionId(null); }}
                       />
                     ) : (
-                      <span className="px-2 py-0.5 bg-white/90 text-primary text-xs font-heading rounded shadow border border-primary/30 rgl-no-drag" onDoubleClick={e => { e.stopPropagation(); setEditingSectionId(tdId); }}>{title}</span>
+                      <span
+                        className="px-2 py-0.5 bg-white/90 text-primary text-xs font-heading rounded shadow border border-primary/30 rgl-no-drag"
+                        onClick={e => { e.stopPropagation(); setEditingSectionId(tdId); }}
+                        title="Rename section"
+                      >
+                        {currentName}
+                      </span>
                     )}
-                    {/* Icons: edit name, hide, delete section */}
                     <span
-                      className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
+                      className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer ml-1"
                       title="Rename"
                       onClick={e => { e.preventDefault(); e.stopPropagation(); setEditingSectionId(tdId); }}
                     >
-                      <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    </span>
-                    <span
-                      className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
-                      title="Hide section"
-                      onClick={e => { e.preventDefault(); e.stopPropagation(); toggleSectionHidden(tdId); }}
-                    >
-                      <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.016.152-1.996.436-2.922m2.063-3.48C6.349 1.866 9.061 1 12 1c5.523 0 10 4.477 10 10 0 2.353-.808 4.516-2.162 6.227M3 3l18 18"/></svg>
+                      <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
                     </span>
                     <span
                       className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
                       title="Delete section"
-                      onClick={e => { e.preventDefault(); e.stopPropagation(); deleteSectionWithChildren(tdId); }}
+                      onClick={e => { e.preventDefault(); e.stopPropagation(); removeSection(tdId); }}
                     >
-                      <svg className="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      <svg className="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     </span>
+                    <button
+                      className="text-xs px-2 py-0.5 rounded bg-white border text-blue-600 hover:bg-blue-50 rgl-no-drag ml-1"
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleSectionHidden(tdId);
+                      }}
+                    >
+                      Hide
+                    </button>
                   </div>
                 );
               })}
@@ -652,17 +631,6 @@ export function ComponentCanvasPage() {
                     })}
                 </ReactGridLayout>
               </div>
-              {/* Hidden Sections Dock */}
-              {hiddenSections.size > 0 && (
-                <div className="absolute left-2 top-2 flex flex-wrap gap-2 z-30">
-                  {Array.from(hiddenSections).map(tdId => (
-                    <div key={`hidden-${tdId}`} className="rgl-no-drag flex items-center gap-1 px-2 py-1 bg-white/90 border border-primary/30 rounded shadow cursor-pointer" onClick={e => { e.preventDefault(); e.stopPropagation(); toggleSectionHidden(tdId); }}>
-                      <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                      <span className="text-xs text-primary font-heading">{sectionTitles[tdId] || state.tdInfos.find(t => t.id === tdId)?.title || 'Section'}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
               {/* Smart Edit Popup */}
               {editComponentId &&
                 (() => {
