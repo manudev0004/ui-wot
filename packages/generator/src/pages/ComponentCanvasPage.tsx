@@ -253,6 +253,107 @@ export function ComponentCanvasPage() {
     [layout, membership, state.components, colWidth],
   );
 
+  // SECTION RESIZE: bottom-right handle to resize width; children reflow to fill
+  const sectionResizeRef = useRef<{
+    tdId: string;
+    startX: number;
+    startY: number;
+    startBox: { minX: number; minY: number; width: number; height: number };
+    // snapshot order for stable packing
+    itemOrder: string[];
+  } | null>(null);
+
+  const reflowSectionItems = useCallback(
+    (tdId: string, minX: number, minY: number, targetW: number) => {
+      if (targetW < 1) targetW = 1;
+      // Collect visible items in this section
+      const items = layout
+        .filter(
+          it =>
+            (membership[it.i] ?? state.components.find(c => c.id === it.i)?.tdId) === tdId &&
+            !hiddenCards.has(it.i),
+        )
+        .map(it => ({ ...it }));
+      if (items.length === 0) return;
+
+      // Stable order by current (y,x)
+      items.sort((a, b) => (a.y - b.y) || (a.x - b.x));
+
+      let cursorX = 0;
+      let cursorY = 0;
+      let rowMaxH = 0;
+
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        // Keep child width fixed; do not resize items during section resize
+        const w = it.w;
+
+        // next row if doesn't fit
+        if (cursorX + w > targetW && cursorX > 0) {
+          cursorX = 0;
+          cursorY += rowMaxH;
+          rowMaxH = 0;
+        }
+
+        // place
+        it.x = minX + cursorX;
+        it.y = minY + cursorY;
+        it.w = w;
+        cursorX += it.w;
+        rowMaxH = Math.max(rowMaxH, it.h);
+      }
+
+      // Apply back to main layout
+      setLayout(prev => {
+        const next = prev.map(it => {
+          const found = items.find(x => x.i === it.i);
+          return found ? { ...it, x: found.x, y: found.y, w: found.w } : it;
+        });
+        return next;
+      });
+    },
+    [layout, membership, state.components, hiddenCards],
+  );
+
+  const onSectionResizeMouseDown = useCallback(
+    (tdId: string, box: { minX: number; minY: number; maxX: number; maxY: number }, e: React.MouseEvent<HTMLDivElement>) => {
+      if (colWidth === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      // Determine the minimum allowed width so we don't force-resize children
+      const sectionItems = layout.filter(
+        it => (membership[it.i] ?? state.components.find(c => c.id === it.i)?.tdId) === tdId && !hiddenCards.has(it.i),
+      );
+      const minAllowedW = sectionItems.length > 0 ? Math.max(...sectionItems.map(it => it.w)) : 1;
+      sectionResizeRef.current = {
+        tdId,
+        startX: e.clientX,
+        startY: e.clientY,
+        startBox: { minX: box.minX, minY: box.minY, width: box.maxX - box.minX, height: box.maxY - box.minY },
+        itemOrder: [],
+      };
+
+      const handleMove = (ev: MouseEvent) => {
+        const data = sectionResizeRef.current;
+        if (!data) return;
+        const dxPx = ev.clientX - data.startX;
+        const cellW = colWidth + MARGIN[0];
+        let dCols = Math.round(dxPx / cellW);
+        // Calculate target width, clamp within grid
+        let targetW = Math.max(minAllowedW, Math.min(COLS - data.startBox.minX, data.startBox.width + dCols));
+        reflowSectionItems(tdId, data.startBox.minX, data.startBox.minY, targetW);
+      };
+      const handleUp = () => {
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleUp);
+        sectionResizeRef.current = null;
+      };
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleUp);
+    },
+    [colWidth, reflowSectionItems],
+  );
+
   // Layout change handlers
   const handleLayoutChange = (next: Layout[]) => {
     setLayout(next);
@@ -332,13 +433,39 @@ export function ComponentCanvasPage() {
         <div className="page-container canvas-page py-2" style={{ minHeight: 'inherit' }}>
           {state.components.length > 0 ? (
             <div className="relative w-full bg-white border border-gray-200 rounded-lg overflow-hidden" style={{ minHeight: 'calc(100vh - var(--navbar-height) - 1rem)' }}>
-              {/* Section overlays (non-interactive dashed boxes) */}
+              {/* Section overlays (non-interactive dashed boxes with draggable edges) */}
               <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
                 {Object.entries(sectionBoxes.byTd).map(([tdId, box]) => {
                   if (hiddenSections.has(tdId)) return null;
                   if (colWidth === 0) return null;
                   const { left, top, width, height } = unitToPx(box.minX, box.minY, box.maxX - box.minX, box.maxY - box.minY);
-                  return <div key={tdId} style={{ position: 'absolute', left, top, width, height, border: '2px dashed #cbd5e1', borderRadius: 12, background: 'transparent' }} />;
+                  return (
+                    <div key={tdId} style={{ position: 'absolute', left, top, width, height, border: '2px dashed #cbd5e1', borderRadius: 12, background: 'transparent' }}>
+                      {/* Interactive resize handle (bottom-right) */}
+                      <div
+                        className="section-resize-handle"
+                        style={{ position: 'absolute', right: -6, bottom: -6, width: 14, height: 14, borderRadius: 4, background: 'white', border: '1px solid #64748b', cursor: 'nwse-resize', pointerEvents: 'auto' }}
+                        onMouseDown={e => onSectionResizeMouseDown(tdId, box, e)}
+                      />
+                      {/* Draggable edges for moving whole section */}
+                      <div
+                        style={{ position: 'absolute', left: -6, top: 0, width: 12, height, cursor: 'move', pointerEvents: 'auto', zIndex: 20 }}
+                        onMouseDown={e => onSectionMouseDown(tdId, e)}
+                      />
+                      <div
+                        style={{ position: 'absolute', right: -6, top: 0, width: 12, height, cursor: 'move', pointerEvents: 'auto', zIndex: 20 }}
+                        onMouseDown={e => onSectionMouseDown(tdId, e)}
+                      />
+                      <div
+                        style={{ position: 'absolute', left: 0, top: -6, width, height: 12, cursor: 'move', pointerEvents: 'auto', zIndex: 20 }}
+                        onMouseDown={e => onSectionMouseDown(tdId, e)}
+                      />
+                      <div
+                        style={{ position: 'absolute', left: 0, bottom: -6, width, height: 12, cursor: 'move', pointerEvents: 'auto', zIndex: 20 }}
+                        onMouseDown={e => onSectionMouseDown(tdId, e)}
+                      />
+                    </div>
+                  );
                 })}
               </div>
 
@@ -388,7 +515,7 @@ export function ComponentCanvasPage() {
                   rowHeight={ROW_H}
                   margin={MARGIN}
                   containerPadding={PADDING}
-                  compactType="vertical"
+                  compactType={null}
                   isResizable
                   isDraggable
                   preventCollision={false}

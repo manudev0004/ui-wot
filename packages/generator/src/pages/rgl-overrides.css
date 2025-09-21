@@ -15,3 +15,8 @@
 .canvas-page .section-drag-bar {
   z-index: 20;
 }
+
+/* Ensure resize handle is clickable above grid */
+.canvas-page .section-resize-handle {
+  z-index: 21;
+}
