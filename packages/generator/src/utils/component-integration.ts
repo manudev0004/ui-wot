@@ -5,7 +5,7 @@
  * UI-WoT components with Web of Things (WoT) devices seamlessly.
  */
 
-import { ComponentName, ComponentInstance, ComponentInitOptions, WotIntegrationOptions, UiMsg, OperationStatus } from '../types/component-interfaces';
+import { ComponentName, ComponentInitOptions, WotIntegrationOptions, UiMsg, OperationStatus } from '../types/component-interfaces';
 
 // ============================================================================
 // COMPONENT FACTORY
@@ -20,18 +20,18 @@ export class ComponentFactory {
   /**
    * Creates a new UI-WoT component instance
    */
-  static async create<T extends ComponentName>(options: ComponentInitOptions<T>): Promise<ComponentInstance<T>> {
+  static async create<T extends ComponentName>(options: ComponentInitOptions<T>): Promise<HTMLElement> {
     const { name, props = {}, target, id, wot } = options;
 
     // Wait for component to be defined
     await customElements.whenDefined(name);
 
     // Create element
-    const element = document.createElement(name) as ComponentInstance<T>;
+    const element = document.createElement(name as unknown as string) as HTMLElement;
 
     // Set ID if provided
     if (id) {
-      element.id = id;
+      (element as HTMLElement).id = id;
     }
 
     // Apply props
@@ -44,18 +44,18 @@ export class ComponentFactory {
       const targetElement = typeof target === 'string' ? document.querySelector(target) : target;
 
       if (targetElement) {
-        targetElement.appendChild(element);
+        targetElement.appendChild(element as unknown as Node);
       }
     }
 
     // Setup WoT integration if provided
     if (wot) {
-      await ComponentFactory.setupWotIntegration(element, wot);
+      await ComponentFactory.setupWotIntegration(element as HTMLElement, wot);
     }
 
     // Register component
-    const elementId = element.id || `${name}-${Date.now()}`;
-    ComponentFactory.registeredComponents.set(elementId, element);
+    const elementId = (element as HTMLElement).id || `${name}-${Date.now()}`;
+    ComponentFactory.registeredComponents.set(elementId, element as HTMLElement);
 
     return element;
   }
@@ -63,9 +63,9 @@ export class ComponentFactory {
   /**
    * Gets a registered component by ID
    */
-  static get<T extends ComponentName>(id: string): ComponentInstance<T> | null {
+  static get(id: string): HTMLElement | null {
     const element = ComponentFactory.registeredComponents.get(id);
-    return (element as ComponentInstance<T>) || null;
+    return element || null;
   }
 
   /**
@@ -84,8 +84,8 @@ export class ComponentFactory {
   /**
    * Sets up WoT integration for a component
    */
-  private static async setupWotIntegration<T extends ComponentName>(component: ComponentInstance<T>, wot: WotIntegrationOptions): Promise<void> {
-    const tagName = component.tagName.toLowerCase() as T;
+  private static async setupWotIntegration<T extends ComponentName>(component: HTMLElement, wot: WotIntegrationOptions): Promise<void> {
+    const tagName = component.tagName.toLowerCase() as unknown as T;
 
     // Setup based on component type
     switch (tagName) {
@@ -126,9 +126,9 @@ export class ComponentFactory {
   /**
    * Setup WoT integration for button components
    */
-  private static async setupButtonWoT(button: ComponentInstance<'ui-button'>, wot: WotIntegrationOptions): Promise<void> {
+  private static async setupButtonWoT(button: HTMLElement, wot: WotIntegrationOptions): Promise<void> {
     if (wot.invokeAction) {
-      await button.setAction(async () => {
+      await (button as any).setAction(async () => {
         return await wot.invokeAction!('execute');
       });
     }
@@ -137,12 +137,12 @@ export class ComponentFactory {
   /**
    * Setup WoT integration for boolean value components (toggle, checkbox)
    */
-  private static async setupBooleanWoT(component: ComponentInstance<'ui-toggle'> | ComponentInstance<'ui-checkbox'>, wot: WotIntegrationOptions): Promise<void> {
+  private static async setupBooleanWoT(component: HTMLElement, wot: WotIntegrationOptions): Promise<void> {
     if (wot.writeProperty && wot.readProperty) {
       // Read initial value
       try {
         const initialValue = await wot.readProperty('value');
-        await component.setValue(initialValue, {
+        await (component as any).setValue(initialValue, {
           writeOperation: async (value: boolean) => {
             await wot.writeProperty!('value', value);
           },
@@ -156,12 +156,12 @@ export class ComponentFactory {
   /**
    * Setup WoT integration for numeric value components (slider, number-picker)
    */
-  private static async setupNumericWoT(component: ComponentInstance<'ui-slider'> | ComponentInstance<'ui-number-picker'>, wot: WotIntegrationOptions): Promise<void> {
+  private static async setupNumericWoT(component: HTMLElement, wot: WotIntegrationOptions): Promise<void> {
     if (wot.writeProperty && wot.readProperty) {
       // Read initial value
       try {
         const initialValue = await wot.readProperty('value');
-        await component.setValue(initialValue, {
+        await (component as any).setValue(initialValue, {
           writeOperation: async (value: number) => {
             await wot.writeProperty!('value', value);
           },
@@ -175,15 +175,12 @@ export class ComponentFactory {
   /**
    * Setup WoT integration for string value components (text, calendar, color-picker)
    */
-  private static async setupStringWoT(
-    component: ComponentInstance<'ui-text'> | ComponentInstance<'ui-calendar'> | ComponentInstance<'ui-color-picker'>,
-    wot: WotIntegrationOptions,
-  ): Promise<void> {
+  private static async setupStringWoT(component: HTMLElement, wot: WotIntegrationOptions): Promise<void> {
     if (wot.writeProperty && wot.readProperty) {
       // Read initial value
       try {
         const initialValue = await wot.readProperty('value');
-        await component.setValue(initialValue, {
+        await (component as any).setValue(initialValue, {
           writeOperation: async (value: string) => {
             await wot.writeProperty!('value', value);
           },
@@ -197,9 +194,9 @@ export class ComponentFactory {
   /**
    * Setup WoT integration for file picker components
    */
-  private static async setupFilePickerWoT(filePicker: ComponentInstance<'ui-file-picker'>, wot: WotIntegrationOptions): Promise<void> {
+  private static async setupFilePickerWoT(filePicker: HTMLElement, wot: WotIntegrationOptions): Promise<void> {
     if (wot.invokeAction && wot.writeProperty) {
-      await filePicker.setUpload(
+      await (filePicker as any).setUpload(
         async (fileData: any) => {
           return await wot.invokeAction!('uploadFile', fileData);
         },
@@ -216,22 +213,22 @@ export class ComponentFactory {
   /**
    * Setup WoT integration for event components
    */
-  private static async setupEventWoT(eventComponent: ComponentInstance<'ui-event'>, wot: WotIntegrationOptions): Promise<void> {
+  private static async setupEventWoT(eventComponent: HTMLElement, wot: WotIntegrationOptions): Promise<void> {
     if (wot.subscribeEvent) {
       await wot.subscribeEvent('dataChanged', (eventData: any) => {
-        eventComponent.addEvent(eventData);
+        (eventComponent as any).addEvent(eventData);
       });
-      await eventComponent.startListening();
+      await (eventComponent as any).startListening();
     }
   }
 
   /**
    * Setup WoT integration for notification components
    */
-  private static async setupNotificationWoT(notification: ComponentInstance<'ui-notification'>, wot: WotIntegrationOptions): Promise<void> {
+  private static async setupNotificationWoT(notification: HTMLElement, wot: WotIntegrationOptions): Promise<void> {
     if (wot.subscribeEvent) {
       await wot.subscribeEvent('alert', (_alertData: any) => {
-        notification.show();
+        (notification as any).show();
       });
     }
   }
@@ -246,13 +243,44 @@ export class ComponentFactory {
  */
 export class ComponentMapper {
   /**
+   * Infer canRead/canWrite from TD flags and forms
+   */
+  private static analyzeCapabilities(property: any): { canRead: boolean; canWrite: boolean } {
+    let canRead = true;
+    let canWrite = true;
+    if (!property) return { canRead, canWrite };
+
+    if (property.readOnly === true) canWrite = false;
+    if (property.writeOnly === true) canRead = false;
+
+    if (Array.isArray(property.forms)) {
+      const ops: string[] = [];
+      for (const f of property.forms) {
+        if (!f) continue;
+        if (typeof f.op === 'string') ops.push(f.op);
+        else if (Array.isArray(f.op)) ops.push(...f.op);
+      }
+      if (ops.length > 0) {
+        const hasRead = ops.some(o => /readproperty/i.test(o));
+        const hasWrite = ops.some(o => /writeproperty/i.test(o));
+        // Only override if explicit ops provided
+        canRead = hasRead;
+        canWrite = hasWrite;
+      }
+    }
+
+    return { canRead, canWrite };
+  }
+  /**
    * Maps a WoT property to the most appropriate UI component
    */
   static mapPropertyToComponent(property: any): {
-    componentName: ComponentName;
+    componentName: string;
     props: any;
   } | null {
-    const { type, minimum, maximum, enum: enumValues, readOnly } = property;
+    const { type, minimum, maximum, enum: enumValues } = property;
+    const { canWrite } = this.analyzeCapabilities(property);
+    const readOnly = !canWrite;
 
     switch (type) {
       case 'boolean':
@@ -260,8 +288,6 @@ export class ComponentMapper {
           componentName: 'ui-toggle',
           props: {
             readonly: readOnly,
-            variant: 'outlined',
-            showStatus: true,
           },
         };
 
@@ -277,9 +303,6 @@ export class ComponentMapper {
                 min: minimum,
                 max: maximum,
                 readonly: readOnly,
-                variant: 'outlined',
-                showStatus: true,
-                showMinMax: true,
                 step: 1,
               },
             };
@@ -291,9 +314,6 @@ export class ComponentMapper {
                 min: minimum,
                 max: maximum,
                 readonly: readOnly,
-                variant: 'outlined',
-                showStatus: true,
-                showMinMax: true,
               },
             };
           } else {
@@ -304,8 +324,6 @@ export class ComponentMapper {
                 min: minimum,
                 max: maximum,
                 readonly: readOnly,
-                variant: 'outlined',
-                showStatus: true,
                 precision: type === 'integer' ? 0 : undefined,
               },
             };
@@ -318,8 +336,6 @@ export class ComponentMapper {
               min: minimum,
               max: maximum,
               readonly: readOnly,
-              variant: 'outlined',
-              showStatus: true,
               precision: type === 'integer' ? 0 : undefined,
             },
           };
@@ -332,18 +348,15 @@ export class ComponentMapper {
             componentName: 'ui-text',
             props: {
               readonly: readOnly,
-              variant: 'outlined',
-              showStatus: true,
+              mode: readOnly ? 'readonly' : 'editable',
             },
           };
-        } else if (property.format === 'date-time') {
+        } else if (property.format === 'date-time' || property.format === 'date') {
           return {
             componentName: 'ui-calendar',
             props: {
               readonly: readOnly,
-              variant: 'outlined',
-              showStatus: true,
-              includeTime: true,
+              includeTime: property.format === 'date-time',
             },
           };
         } else if (property.format === 'color') {
@@ -351,8 +364,6 @@ export class ComponentMapper {
             componentName: 'ui-color-picker',
             props: {
               readonly: readOnly,
-              variant: 'outlined',
-              showStatus: true,
             },
           };
         } else {
@@ -360,11 +371,29 @@ export class ComponentMapper {
             componentName: 'ui-text',
             props: {
               readonly: readOnly,
-              variant: 'outlined',
-              showStatus: true,
+              mode: readOnly ? 'readonly' : 'editable',
             },
           };
         }
+
+      case 'object':
+        return {
+          componentName: 'ui-object' as unknown as ComponentName,
+          props: {
+            readonly: readOnly,
+          },
+        };
+
+      case 'array':
+        // Represent arrays using text in structured mode
+        return {
+          componentName: 'ui-text',
+          props: {
+            readonly: readOnly,
+            mode: 'structured',
+            spellcheck: false,
+          },
+        };
 
       default:
         return null;
@@ -375,7 +404,7 @@ export class ComponentMapper {
    * Maps a WoT action to the most appropriate UI component
    */
   static mapActionToComponent(action: any): {
-    componentName: ComponentName;
+    componentName: string;
     props: any;
   } | null {
     const { input } = action;
@@ -385,8 +414,6 @@ export class ComponentMapper {
       return {
         componentName: 'ui-file-picker',
         props: {
-          variant: 'outlined',
-          showStatus: true,
           accept: input.properties.file.contentMediaType || '*/*',
         },
       };
@@ -394,11 +421,7 @@ export class ComponentMapper {
       // Generic action button
       return {
         componentName: 'ui-button',
-        props: {
-          variant: 'outlined',
-          showStatus: true,
-          label: action.title || 'Execute',
-        },
+        props: {},
       };
     }
   }
@@ -407,17 +430,12 @@ export class ComponentMapper {
    * Maps a WoT event to the most appropriate UI component
    */
   static mapEventToComponent(_event: any): {
-    componentName: ComponentName;
+    componentName: string;
     props: any;
   } | null {
     return {
       componentName: 'ui-event',
-      props: {
-        showStatus: true,
-        maxEvents: 50,
-        showTimestamps: true,
-        autoScroll: true,
-      },
+      props: {},
     };
   }
 
@@ -425,27 +443,18 @@ export class ComponentMapper {
    * Returns all possible component mappings for a given event
    */
   static getAllPossibleComponentsForEvent(_event: any): Array<{
-    componentName: ComponentName;
+    componentName: string;
     props: any;
   }> {
     // Events can be displayed using ui-event or ui-notification
     return [
       {
         componentName: 'ui-event',
-        props: {
-          showStatus: true,
-          maxEvents: 50,
-          showTimestamps: true,
-          autoScroll: true,
-        },
+        props: {},
       },
       {
         componentName: 'ui-notification',
-        props: {
-          type: 'info',
-          showStatus: true,
-          duration: 5000,
-        },
+        props: {},
       },
     ];
   }
@@ -454,10 +463,12 @@ export class ComponentMapper {
    * Returns all possible component mappings for a given property
    */
   static getAllPossibleComponents(property: any): Array<{
-    componentName: ComponentName;
+    componentName: string;
     props: any;
   }> {
-    const { type, minimum, maximum, format, readOnly } = property;
+    const { type, minimum, maximum, format } = property;
+    const { canWrite } = this.analyzeCapabilities(property);
+    const readOnly = !canWrite;
     const possibilities: Array<{ componentName: ComponentName; props: any }> = [];
 
     switch (type) {
@@ -467,16 +478,12 @@ export class ComponentMapper {
           componentName: 'ui-toggle',
           props: {
             readonly: readOnly,
-            variant: 'outlined',
-            showStatus: true,
           },
         });
         possibilities.push({
           componentName: 'ui-checkbox',
           props: {
             readonly: readOnly,
-            variant: 'outlined',
-            showStatus: true,
           },
         });
         break;
@@ -486,7 +493,6 @@ export class ComponentMapper {
         // For integers and numbers, always provide both slider and number picker options
         // but prioritize slider when there's a reasonable range
         if (minimum !== undefined && maximum !== undefined) {
-          const range = maximum - minimum;
           // Always add slider for ranged values
           possibilities.push({
             componentName: 'ui-slider',
@@ -494,9 +500,6 @@ export class ComponentMapper {
               min: minimum,
               max: maximum,
               readonly: readOnly,
-              variant: 'outlined',
-              showStatus: true,
-              showMinMax: true,
               step: type === 'integer' ? 1 : undefined,
             },
           });
@@ -509,8 +512,6 @@ export class ComponentMapper {
             min: minimum,
             max: maximum,
             readonly: readOnly,
-            variant: 'outlined',
-            showStatus: true,
             precision: type === 'integer' ? 0 : undefined,
           },
         });
@@ -523,8 +524,6 @@ export class ComponentMapper {
             componentName: 'ui-calendar',
             props: {
               readonly: readOnly,
-              variant: 'outlined',
-              showStatus: true,
               includeTime: format === 'date-time',
             },
           });
@@ -533,8 +532,6 @@ export class ComponentMapper {
             componentName: 'ui-color-picker',
             props: {
               readonly: readOnly,
-              variant: 'outlined',
-              showStatus: true,
             },
           });
         }
@@ -544,25 +541,30 @@ export class ComponentMapper {
           componentName: 'ui-text',
           props: {
             readonly: readOnly,
-            variant: 'outlined',
-            showStatus: true,
+            mode: readOnly ? 'readonly' : 'editable',
+          },
+        });
+        break;
+
+      case 'object':
+        possibilities.push({
+          componentName: 'ui-object' as unknown as ComponentName,
+          props: {
+            readonly: readOnly,
           },
         });
         break;
 
       case 'array':
-        // Array properties might be used for file uploads
-        if (format === 'binary' || property.contentMediaType) {
-          possibilities.push({
-            componentName: 'ui-file-picker',
-            props: {
-              variant: 'outlined',
-              showStatus: true,
-              accept: property.contentMediaType || '*/*',
-              multiple: true,
-            },
-          });
-        }
+        // Use text component in structured mode for arrays
+        possibilities.push({
+          componentName: 'ui-text',
+          props: {
+            readonly: readOnly,
+            mode: 'structured',
+            spellcheck: false,
+          },
+        });
         break;
     }
 

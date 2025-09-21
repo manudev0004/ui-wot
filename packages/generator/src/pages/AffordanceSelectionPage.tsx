@@ -145,22 +145,7 @@ export function AffordanceSelectionPage() {
 
   // Back navigation handled by global Navbar
 
-  const getComponentBadgeColor = (component: string) => {
-    const colorMap: Record<string, string> = {
-      'ui-button': theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800',
-      'ui-toggle': theme === 'dark' ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-800',
-      'ui-slider': theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-800',
-      'ui-number-picker': theme === 'dark' ? 'bg-purple-900/30 text-purple-300' : 'bg-purple-100 text-purple-800',
-      'ui-text': theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800',
-      'ui-calendar': theme === 'dark' ? 'bg-indigo-900/30 text-indigo-300' : 'bg-indigo-100 text-indigo-800',
-      'ui-checkbox': theme === 'dark' ? 'bg-emerald-900/30 text-emerald-300' : 'bg-emerald-100 text-emerald-800',
-      'ui-color-picker': theme === 'dark' ? 'bg-pink-900/30 text-pink-300' : 'bg-pink-100 text-pink-800',
-      'ui-file-picker': theme === 'dark' ? 'bg-cyan-900/30 text-cyan-300' : 'bg-cyan-100 text-cyan-800',
-      'ui-event': theme === 'dark' ? 'bg-lime-900/30 text-lime-300' : 'bg-lime-100 text-lime-800',
-      'ui-notification': theme === 'dark' ? 'bg-yellow-900/30 text-yellow-300' : 'bg-yellow-100 text-yellow-800',
-    };
-    return colorMap[component] || (theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800');
-  };
+  // removed unused getComponentBadgeColor helper
 
   const navbarInfo = useMemo(() => {
     const tdTitle = state.parsedTD?.title || 'Thing';
