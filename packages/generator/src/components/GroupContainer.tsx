@@ -1,6 +1,7 @@
 import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { AffordanceGroup, WoTComponent } from '../types';
 import { useAppContext } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 import './GroupContainer.css';
 import { GridStack } from 'gridstack';
 
@@ -24,6 +25,7 @@ interface GroupContainerProps {
  */
 export function GroupContainer({ group, components, isEditMode, renderCard }: GroupContainerProps) {
   const { dispatch } = useAppContext();
+  const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [showOptions, setShowOptions] = useState(false);
@@ -259,29 +261,48 @@ export function GroupContainer({ group, components, isEditMode, renderCard }: Gr
   return (
     <div ref={containerRef} className={`group-container custom-styled ${isEditMode ? 'edit-mode' : ''}`} style={containerStyles} data-group-id={group.id}>
       {/* Group Header */}
-      <div className="group-header flex items-center justify-between mb-4 bg-white/80 backdrop-blur-sm rounded-lg p-3 shadow-sm">
+      <div
+        className={`group-header flex items-center justify-between mb-4 ${
+          theme === 'dark' ? 'bg-gray-800/80' : 'bg-white/80'
+        } backdrop-blur-sm rounded-lg p-3 shadow-sm transition-colors duration-300`}
+      >
         <div className="flex items-center space-x-3">
-          <h3 className="text-lg font-medium text-gray-800">
+          <h3 className={`text-lg font-medium ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'} transition-colors duration-300`}>
             {isEditMode ? (
               <input
                 type="text"
                 value={group.title}
                 onChange={e => handleTitleChange(e.target.value)}
-                className="bg-transparent border-b border-gray-300 focus:border-blue-500 outline-none"
+                className={`bg-transparent border-b outline-none transition-colors duration-300 ${
+                  theme === 'dark' ? 'border-gray-600 text-gray-100' : 'border-gray-300 text-gray-800'
+                }`}
+                style={{
+                  borderBottomColor: 'var(--color-border)',
+                }}
+                onFocus={e => {
+                  e.target.style.borderBottomColor = 'var(--color-primary)';
+                }}
+                onBlur={e => {
+                  e.target.style.borderBottomColor = 'var(--color-border)';
+                }}
                 placeholder="Group title"
               />
             ) : (
               group.title
             )}
           </h3>
-          <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">{groupComponents.length} components</span>
+          <span className={`text-sm ${theme === 'dark' ? 'text-gray-400 bg-gray-700' : 'text-gray-500 bg-gray-100'} px-2 py-1 rounded transition-colors duration-300`}>
+            {groupComponents.length} components
+          </span>
         </div>
 
         <div className="flex items-center space-x-2 group-options">
           {/* Collapse/Expand Button */}
           <button
             onClick={handleToggleCollapse}
-            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors no-drag"
+            className={`p-2 ${
+              theme === 'dark' ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+            } rounded-lg transition-colors no-drag`}
             title={group.options.collapsed ? 'Expand group' : 'Collapse group'}
             aria-label={group.options.collapsed ? 'Expand group' : 'Collapse group'}
           >
@@ -294,8 +315,31 @@ export function GroupContainer({ group, components, isEditMode, renderCard }: Gr
           <button
             onClick={handleToggleVisibility}
             className={`p-2 rounded-lg transition-colors no-drag ${
-              group.options.visible ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              group.options.visible
+                ? theme === 'dark'
+                  ? 'hover:bg-gray-700'
+                  : 'hover:bg-blue-50'
+                : theme === 'dark'
+                ? 'text-gray-500 hover:text-gray-400 hover:bg-gray-700'
+                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
             }`}
+            style={
+              group.options.visible
+                ? {
+                    color: 'var(--color-primary)',
+                  }
+                : {}
+            }
+            onMouseEnter={e => {
+              if (group.options.visible) {
+                e.currentTarget.style.color = 'var(--color-primary-dark)';
+              }
+            }}
+            onMouseLeave={e => {
+              if (group.options.visible) {
+                e.currentTarget.style.color = 'var(--color-primary)';
+              }
+            }}
             title={group.options.visible ? 'Hide group' : 'Show group'}
             aria-pressed={group.options.visible}
             aria-label={group.options.visible ? 'Hide group' : 'Show group'}
@@ -328,7 +372,9 @@ export function GroupContainer({ group, components, isEditMode, renderCard }: Gr
                   e.stopPropagation();
                   setShowOptions(!showOptions);
                 }}
-                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors no-drag"
+                className={`p-2 ${
+                  theme === 'dark' ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                } rounded-lg transition-colors no-drag`}
                 title="Group options"
                 aria-haspopup="menu"
                 aria-expanded={showOptions}
@@ -345,7 +391,9 @@ export function GroupContainer({ group, components, isEditMode, renderCard }: Gr
 
               {showOptions && (
                 <div
-                  className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-lg border p-4 no-drag options-panel"
+                  className={`absolute right-0 top-full mt-2 w-64 ${
+                    theme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+                  } rounded-lg shadow-lg border p-4 no-drag options-panel transition-colors duration-300`}
                   style={{ zIndex: 2000, position: 'absolute' }}
                   onMouseDown={e => {
                     e.stopPropagation();
@@ -361,7 +409,7 @@ export function GroupContainer({ group, components, isEditMode, renderCard }: Gr
                 >
                   {/* Border Style */}
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Border Style</label>
+                    <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>Border Style</label>
                     <div className="flex space-x-2">
                       {(['solid', 'dashed', 'none'] as const).map(style => (
                         <button
@@ -373,8 +421,23 @@ export function GroupContainer({ group, components, isEditMode, renderCard }: Gr
                             console.log('Border style changed to:', style);
                           }}
                           className={`px-3 py-1 text-xs rounded border transition-colors ${
-                            group.options.borderStyle === style ? 'bg-blue-100 text-blue-800 border-blue-300' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                            group.options.borderStyle === style
+                              ? theme === 'dark'
+                                ? 'text-gray-100 border-gray-500'
+                                : 'text-gray-800 border-gray-400'
+                              : theme === 'dark'
+                              ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                              : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
                           }`}
+                          style={
+                            group.options.borderStyle === style
+                              ? {
+                                  backgroundColor: 'var(--color-primary)',
+                                  color: 'white',
+                                  borderColor: 'var(--color-primary-dark)',
+                                }
+                              : {}
+                          }
                           role="menuitemradio"
                           aria-checked={group.options.borderStyle === style}
                           aria-label={`Border ${style}`}
@@ -387,7 +450,7 @@ export function GroupContainer({ group, components, isEditMode, renderCard }: Gr
 
                   {/* Background Color */}
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Background Color</label>
+                    <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>Background Color</label>
                     <div className="grid grid-cols-4 gap-2 mb-2">
                       {['transparent', '#ffffff', '#f8fafc', '#e2e8f0', '#cbd5e1', '#dbeafe', '#dcfce7', '#fef3c7', '#fed7d7'].map(color => (
                         <button

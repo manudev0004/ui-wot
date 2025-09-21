@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 import { WoTComponent } from '../types';
 import { useNavbar } from '../context/NavbarContext';
 import ReactGridLayoutLib, { WidthProvider, Layout } from 'react-grid-layout';
@@ -19,7 +20,7 @@ const PADDING: [number, number] = [12, 12];
 
 // Minimal default sizes per component type (grid units)
 const DEFAULT_SIZES: Record<string, { w: number; h: number; minW?: number; minH?: number }> = {
-  'ui-button': { w: 3, h: 2, minW: 4, minH: 2 },
+  'ui-button': { w: 4, h: 2, minW: 4, minH: 2 },
   'ui-toggle': { w: 3, h: 2, minW: 2, minH: 2 },
   'ui-slider': { w: 5, h: 2, minW: 4, minH: 2 },
   'ui-text': { w: 6, h: 3, minW: 6, minH: 3 },
@@ -31,6 +32,7 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number; minW?: number; minH?
 
 export function ComponentCanvasPage() {
   const { state, dispatch } = useAppContext();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const { setContent, clear } = useNavbar();
 
@@ -481,11 +483,16 @@ export function ComponentCanvasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-light">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
       <div className="w-full transition-all duration-200" style={{ minHeight: 'calc(100vh - var(--navbar-height))' }}>
         <div className="page-container canvas-page py-2" style={{ minHeight: 'inherit' }}>
           {state.components.length > 0 ? (
-            <div className="relative w-full bg-white border border-gray-200 rounded-lg overflow-hidden" style={{ minHeight: 'calc(100vh - var(--navbar-height) - 1rem)' }}>
+            <div
+              className={`relative w-full ${
+                theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              } border rounded-lg overflow-hidden transition-colors duration-300`}
+              style={{ minHeight: 'calc(100vh - var(--navbar-height) - 1rem)' }}
+            >
               {/* Full-canvas background grid (visible only in edit mode) */}
               {editMode && (
                 <div
@@ -852,15 +859,33 @@ export function ComponentCanvasPage() {
           ) : (
             <div className="text-center py-12">
               <div className="max-w-md mx-auto">
-                <svg className="mx-auto h-12 w-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="mx-auto h-12 w-12 transition-colors duration-300" style={{ color: 'var(--color-primary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
-                <h3 className="mt-2 text-sm font-heading font-medium text-primary">No components</h3>
-                <p className="mt-1 text-sm font-body text-gray-500">No components have been selected yet. Go back to select affordances from your Thing Description.</p>
+                <h3 className={`mt-2 text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'} transition-colors duration-300`}>No components</h3>
+                <p className={`mt-1 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} transition-colors duration-300`}>
+                  No components have been selected yet. Go back to select affordances from your Thing Description.
+                </p>
                 <div className="mt-6">
                   <button
                     onClick={() => navigate('/affordances')}
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-heading font-medium rounded-md text-white bg-primary hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white transition-all duration-300 transform hover:scale-105"
+                    style={{
+                      backgroundColor: 'var(--color-primary)',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.backgroundColor = 'var(--color-primary-dark)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.backgroundColor = 'var(--color-primary)';
+                    }}
+                    onFocus={e => {
+                      e.target.style.outline = '2px solid var(--color-primary)';
+                      e.target.style.outlineOffset = '2px';
+                    }}
+                    onBlur={e => {
+                      e.target.style.outline = 'none';
+                    }}
                   >
                     Select Affordances
                   </button>

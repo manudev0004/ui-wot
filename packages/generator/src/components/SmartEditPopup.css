@@ -10,6 +10,13 @@
   font-family: inherit;
 }
 
+/* Dark Mode Popup */
+.smart-edit-popup--dark {
+  background: #1f2937;
+  border: 1px solid #374151;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
 /* Popup Arrow */
 .smart-popup-arrow {
   position: absolute;
@@ -18,6 +25,12 @@
   background: white;
   border: 1px solid #e5e7eb;
   transform: rotate(45deg);
+}
+
+/* Dark Mode Arrow */
+.smart-edit-popup--dark .smart-popup-arrow {
+  background: #1f2937;
+  border-color: #374151;
 }
 
 .smart-popup-arrow--right {
@@ -58,6 +71,12 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
+/* Dark Mode Header */
+.smart-edit-popup--dark .smart-popup-header {
+  background: #111827;
+  border-bottom: 1px solid #374151;
+}
+
 .smart-popup-title {
   display: flex;
   align-items: center;
@@ -65,6 +84,11 @@
   font-weight: 600;
   font-size: 14px;
   color: #1f2937;
+}
+
+/* Dark Mode Title */
+.smart-edit-popup--dark .smart-popup-title {
+  color: #f9fafb;
 }
 
 .smart-popup-close {
@@ -86,6 +110,16 @@
   color: #374151;
 }
 
+/* Dark Mode Close Button */
+.smart-edit-popup--dark .smart-popup-close {
+  color: #9ca3af;
+}
+
+.smart-edit-popup--dark .smart-popup-close:hover {
+  background: #374151;
+  color: #f3f4f6;
+}
+
 /* Content */
 .smart-popup-content {
   padding: 0;
@@ -93,6 +127,11 @@
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #d1d5db #f3f4f6;
+}
+
+/* Dark Mode Content Scrollbar */
+.smart-edit-popup--dark .smart-popup-content {
+  scrollbar-color: #4b5563 #1f2937;
 }
 
 .smart-popup-content::-webkit-scrollbar {
@@ -103,19 +142,39 @@
   background: #f3f4f6;
 }
 
+/* Dark Mode Scrollbar Track */
+.smart-edit-popup--dark .smart-popup-content::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
 .smart-popup-content::-webkit-scrollbar-thumb {
   background: #d1d5db;
   border-radius: 3px;
+}
+
+/* Dark Mode Scrollbar Thumb */
+.smart-edit-popup--dark .smart-popup-content::-webkit-scrollbar-thumb {
+  background: #4b5563;
 }
 
 .smart-popup-content::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
 }
 
+/* Dark Mode Scrollbar Thumb Hover */
+.smart-edit-popup--dark .smart-popup-content::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
 /* Sections */
 .smart-popup-section {
   padding: 20px;
   border-bottom: 1px solid #f3f4f6;
+}
+
+/* Dark Mode Sections */
+.smart-edit-popup--dark .smart-popup-section {
+  border-bottom: 1px solid #374151;
 }
 
 .smart-popup-section:last-child {
@@ -129,6 +188,11 @@
   margin: 0 0 16px 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+/* Dark Mode Section Title */
+.smart-edit-popup--dark .smart-popup-section-title {
+  color: #e5e7eb;
 }
 
 /* Fields */
@@ -157,11 +221,21 @@
   margin-bottom: 6px;
 }
 
+/* Dark Mode Label */
+.smart-edit-popup--dark .smart-popup-label {
+  color: #d1d5db;
+}
+
 .smart-popup-description {
   font-size: 11px;
   color: #6b7280;
   margin-top: 4px;
   line-height: 1.4;
+}
+
+/* Dark Mode Description */
+.smart-edit-popup--dark .smart-popup-description {
+  color: #9ca3af;
 }
 
 /* Inputs */
@@ -173,12 +247,26 @@
   border-radius: 6px;
   background: white;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  color: #1f2937;
+}
+
+/* Dark Mode Input */
+.smart-edit-popup--dark .smart-popup-input {
+  background: #374151;
+  border: 1px solid #4b5563;
+  color: #f9fafb;
 }
 
 .smart-popup-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+/* Dark Mode Input Focus */
+.smart-edit-popup--dark .smart-popup-input:focus {
+  border-color: #ff7b47;
+  box-shadow: 0 0 0 3px rgba(255, 123, 71, 0.2);
 }
 
 .smart-popup-input--small {
@@ -195,12 +283,26 @@
   background: white;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  color: #1f2937;
+}
+
+/* Dark Mode Select */
+.smart-edit-popup--dark .smart-popup-select {
+  background: #374151;
+  border: 1px solid #4b5563;
+  color: #f9fafb;
 }
 
 .smart-popup-select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+/* Dark Mode Select Focus */
+.smart-edit-popup--dark .smart-popup-select:focus {
+  border-color: #ff7b47;
+  box-shadow: 0 0 0 3px rgba(255, 123, 71, 0.2);
 }
 
 /* Checkboxes */
@@ -213,6 +315,11 @@
   cursor: pointer;
 }
 
+/* Dark Mode Checkbox Label */
+.smart-edit-popup--dark .smart-popup-checkbox-label {
+  color: #d1d5db;
+}
+
 .smart-popup-checkbox {
   width: 16px;
   height: 16px;
@@ -221,9 +328,21 @@
   cursor: pointer;
 }
 
+/* Dark Mode Checkbox */
+.smart-edit-popup--dark .smart-popup-checkbox {
+  border: 1px solid #4b5563;
+  background: #374151;
+}
+
 .smart-popup-checkbox:checked {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: #ff6b35;
+  border-color: #ff6b35;
+}
+
+/* Dark Mode Checkbox Checked */
+.smart-edit-popup--dark .smart-popup-checkbox:checked {
+  background: #ff7b47;
+  border-color: #ff7b47;
 }
 
 .smart-popup-checkbox-wrapper {
@@ -235,6 +354,11 @@
 .smart-popup-checkbox-status {
   font-size: 12px;
   color: #6b7280;
+}
+
+/* Dark Mode Checkbox Status */
+.smart-edit-popup--dark .smart-popup-checkbox-status {
+  color: #9ca3af;
 }
 
 /* Attributes */
@@ -265,21 +389,52 @@
   background: #b91c1c;
 }
 
+/* Bulk Action Buttons */
+.smart-popup-btn {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex: 1;
+}
+
+.smart-popup-btn:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+/* Dark Mode Buttons */
+.smart-edit-popup--dark .smart-popup-btn {
+  color: #d1d5db;
+  background: #374151;
+  border: 1px solid #4b5563;
+}
+
+.smart-edit-popup--dark .smart-popup-btn:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .smart-edit-popup {
     width: 320px;
     max-height: 500px;
   }
-  
+
   .smart-popup-content {
     max-height: 420px;
   }
-  
+
   .smart-popup-section {
     padding: 16px;
   }
-  
+
   .smart-popup-header {
     padding: 12px 16px;
   }
@@ -290,11 +445,11 @@
     width: 300px;
     max-height: 450px;
   }
-  
+
   .smart-popup-content {
     max-height: 370px;
   }
-  
+
   .smart-popup-row {
     flex-direction: column;
     gap: 8px;
@@ -316,20 +471,25 @@
   background: #fafbfc;
 }
 
+/* Dark Mode Section Background */
+.smart-edit-popup--dark .smart-popup-section:nth-child(odd) {
+  background: #111827;
+}
+
 /* Compact mode for smaller screens */
 @media (max-height: 600px) {
   .smart-edit-popup {
     max-height: 80vh;
   }
-  
+
   .smart-popup-content {
     max-height: calc(80vh - 120px);
   }
-  
+
   .smart-popup-section {
     padding: 12px 16px;
   }
-  
+
   .smart-popup-field {
     margin-bottom: 12px;
   }

@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 import { AppProvider } from './context/AppContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { HomePage } from './pages/HomePage';
 import { TDInputPage } from './pages/TDInputPage';
 import { AffordanceSelectionPage } from './pages/AffordanceSelectionPage';
 import { ComponentCanvasPage } from './pages/ComponentCanvasPage';
 import { wotService } from './services/wotService';
 import './App.css';
+import './styles/theme.css';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useAppContext as useCtx } from './context/AppContext';
 import { Navbar } from './components/Navbar';
@@ -55,16 +57,18 @@ function RouterSync() {
 
 function App() {
   return (
-    <AppProvider>
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        <RouterSync />
-      </BrowserRouter>
-    </AppProvider>
+    <ThemeProvider>
+      <AppProvider>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          <RouterSync />
+        </BrowserRouter>
+      </AppProvider>
+    </ThemeProvider>
   );
 }
 

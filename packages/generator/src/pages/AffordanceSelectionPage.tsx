@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 import { wotService } from '../services/wotService';
 import { WoTComponent } from '../types';
 import { useNavbar } from '../context/NavbarContext';
 
 export function AffordanceSelectionPage() {
   const { state, dispatch } = useAppContext();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const { setContent, clear } = useNavbar();
   const [selectedAffordances, setSelectedAffordances] = useState<string[]>([]);
@@ -157,19 +159,19 @@ export function AffordanceSelectionPage() {
 
   const getComponentBadgeColor = (component: string) => {
     const colorMap: Record<string, string> = {
-      'ui-button': 'bg-primary/10 text-primary',
-      'ui-toggle': 'bg-accent/10 text-accent',
-      'ui-slider': 'bg-primary-light/10 text-primary-light',
-      'ui-number-picker': 'bg-accent/20 text-primary',
-      'ui-text': 'bg-neutral-light/50 text-primary',
-      'ui-calendar': 'bg-primary/20 text-primary',
-      'ui-checkbox': 'bg-primary-light/20 text-primary-light',
-      'ui-color-picker': 'bg-purple-100 text-purple-800',
-      'ui-file-picker': 'bg-blue-100 text-blue-800',
-      'ui-event': 'bg-green-100 text-green-800',
-      'ui-notification': 'bg-yellow-100 text-yellow-800',
+      'ui-button': theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800',
+      'ui-toggle': theme === 'dark' ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-800',
+      'ui-slider': theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-800',
+      'ui-number-picker': theme === 'dark' ? 'bg-purple-900/30 text-purple-300' : 'bg-purple-100 text-purple-800',
+      'ui-text': theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800',
+      'ui-calendar': theme === 'dark' ? 'bg-indigo-900/30 text-indigo-300' : 'bg-indigo-100 text-indigo-800',
+      'ui-checkbox': theme === 'dark' ? 'bg-emerald-900/30 text-emerald-300' : 'bg-emerald-100 text-emerald-800',
+      'ui-color-picker': theme === 'dark' ? 'bg-pink-900/30 text-pink-300' : 'bg-pink-100 text-pink-800',
+      'ui-file-picker': theme === 'dark' ? 'bg-cyan-900/30 text-cyan-300' : 'bg-cyan-100 text-cyan-800',
+      'ui-event': theme === 'dark' ? 'bg-lime-900/30 text-lime-300' : 'bg-lime-100 text-lime-800',
+      'ui-notification': theme === 'dark' ? 'bg-yellow-900/30 text-yellow-300' : 'bg-yellow-100 text-yellow-800',
     };
-    return colorMap[component] || 'bg-neutral-light/50 text-primary';
+    return colorMap[component] || (theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800');
   };
 
   const navbarInfo = useMemo(() => {
@@ -187,18 +189,45 @@ export function AffordanceSelectionPage() {
       info: navbarInfo,
       actions: (
         <>
-          <button onClick={handleSelectAll} className="text-accent hover:text-accent/80 font-heading">
+          <button
+            onClick={handleSelectAll}
+            className="font-medium transition-colors duration-300"
+            style={{ color: 'var(--color-primary)' }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = 'var(--color-primary-dark)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = 'var(--color-primary)';
+            }}
+          >
             Select All
           </button>
-          <span className="text-primary/30">|</span>
-          <button onClick={handleSelectNone} className="text-primary/70 hover:text-primary font-heading">
+          <span className={theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}>|</span>
+          <button
+            onClick={handleSelectNone}
+            className={`${theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-700'} font-medium transition-colors duration-300`}
+          >
             Select None
           </button>
-          <span className="text-primary/30">|</span>
+          <span className={theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}>|</span>
           <button
             onClick={handleLoad}
             disabled={selectedAffordances.length === 0 || loading || !state.parsedTD}
-            className="bg-primary hover:bg-primary-light disabled:bg-gray-300 text-white font-heading font-medium py-1.5 px-4 rounded-lg transition-colors"
+            className="text-white font-medium py-1.5 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:hover:scale-100"
+            style={{
+              backgroundColor: selectedAffordances.length === 0 || loading || !state.parsedTD ? (theme === 'dark' ? '#4B5563' : '#D1D5DB') : 'var(--color-primary)',
+              cursor: selectedAffordances.length === 0 || loading || !state.parsedTD ? 'not-allowed' : 'pointer',
+            }}
+            onMouseEnter={e => {
+              if (selectedAffordances.length > 0 && !loading && state.parsedTD) {
+                e.currentTarget.style.backgroundColor = 'var(--color-primary-dark)';
+              }
+            }}
+            onMouseLeave={e => {
+              if (selectedAffordances.length > 0 && !loading && state.parsedTD) {
+                e.currentTarget.style.backgroundColor = 'var(--color-primary)';
+              }
+            }}
           >
             {loading ? 'Loading…' : `Load (${selectedAffordances.length})`}
           </button>
@@ -206,43 +235,71 @@ export function AffordanceSelectionPage() {
       ),
     });
     return () => clear();
-  }, [navbarInfo, selectedAffordances.length, loading, state.parsedTD, setContent, clear]);
+  }, [navbarInfo, selectedAffordances.length, loading, state.parsedTD, setContent, clear, theme]);
 
   return (
-    <div className="min-h-screen bg-neutral-light">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
       {/* Affordances Grid */}
       <div className="page-container affordances-page py-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {state.availableAffordances.map(affordance => (
             <div
               key={affordance.key}
-              className={`bg-white rounded-lg border-2 transition-all cursor-pointer hover:shadow-md ${
-                selectedAffordances.includes(affordance.key) ? 'border-accent bg-accent/5' : 'border-primary/20 hover:border-primary/40'
+              className={`rounded-lg border-2 transition-all duration-300 cursor-pointer hover:shadow-md transform hover:scale-105 ${
+                theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+              } ${
+                selectedAffordances.includes(affordance.key)
+                  ? theme === 'dark'
+                    ? 'border-gray-500'
+                    : 'border-gray-400'
+                  : theme === 'dark'
+                  ? 'border-gray-700 hover:border-gray-600'
+                  : 'border-gray-200 hover:border-gray-300'
               }`}
+              style={
+                selectedAffordances.includes(affordance.key)
+                  ? {
+                      borderColor: 'var(--color-primary)',
+                      backgroundColor: theme === 'dark' ? 'rgba(6, 115, 98, 0.1)' : 'rgba(6, 115, 98, 0.05)',
+                    }
+                  : {}
+              }
               onClick={() => handleAffordanceToggle(affordance.key)}
             >
               <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center">
                     <div>
-                      <h3 className="font-heading font-medium text-primary">{affordance.title}</h3>
-                      <p className="text-sm text-primary/70 font-body capitalize">{affordance.type}</p>
+                      <h3 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'} transition-colors duration-300`}>{affordance.title}</h3>
+                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} capitalize transition-colors duration-300`}>{affordance.type}</p>
                     </div>
                   </div>
                   <input
                     type="checkbox"
                     checked={selectedAffordances.includes(affordance.key)}
                     onChange={() => handleAffordanceToggle(affordance.key)}
-                    className="w-4 h-4 text-primary border-primary/30 rounded focus:ring-primary"
+                    className={`w-4 h-4 rounded transition-colors duration-300 ${theme === 'dark' ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-white'}`}
+                    style={{
+                      accentColor: 'var(--color-primary)',
+                    }}
+                    onFocus={e => {
+                      e.target.style.outline = '2px solid var(--color-primary)';
+                      e.target.style.outlineOffset = '2px';
+                    }}
+                    onBlur={e => {
+                      e.target.style.outline = 'none';
+                    }}
                   />
                 </div>
 
-                {affordance.description && <p className="text-sm text-black font-body mb-3">{affordance.description}</p>}
+                {affordance.description && (
+                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-3 transition-colors duration-300`}>{affordance.description}</p>
+                )}
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-heading font-medium ${getComponentBadgeColor(
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors duration-300 ${getComponentBadgeColor(
                         selectedComponentMap[affordance.key] || affordance.suggestedComponent,
                       )}`}
                     >
@@ -252,7 +309,9 @@ export function AffordanceSelectionPage() {
                       <select
                         value={selectedComponentMap[affordance.key] || affordance.suggestedComponent}
                         onChange={e => handleComponentChoice(affordance.key, e.target.value)}
-                        className="text-sm border border-gray-200 rounded px-2 py-1"
+                        className={`text-sm border rounded px-2 py-1 transition-colors duration-300 ${
+                          theme === 'dark' ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-200 bg-white text-gray-900'
+                        }`}
                         onClick={e => e.stopPropagation()}
                       >
                         {affordance.possibleComponents.map(pc => (
@@ -263,7 +322,11 @@ export function AffordanceSelectionPage() {
                       </select>
                     )}
                   </div>
-                  {affordance.availableVariants.length > 1 && <span className="text-xs text-primary/50 font-body">+{affordance.availableVariants.length - 1} variants</span>}
+                  {affordance.availableVariants.length > 1 && (
+                    <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'} transition-colors duration-300`}>
+                      +{affordance.availableVariants.length - 1} variants
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -272,7 +335,7 @@ export function AffordanceSelectionPage() {
 
         {state.availableAffordances.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-primary/70 font-body">No affordances found in the Thing Description.</p>
+            <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-300`}>No affordances found in the Thing Description.</p>
           </div>
         )}
       </div>

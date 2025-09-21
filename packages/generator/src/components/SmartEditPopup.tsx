@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { WoTComponent, ParsedAffordance } from '../types';
 import { useAppContext } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 import './SmartEditPopup.css';
 
 interface SmartEditPopupPropsBase {
@@ -38,6 +39,7 @@ interface PopupPosition {
 
 export function SmartEditPopup(props: SmartEditPopupProps) {
   const { dispatch } = useAppContext();
+  const { theme } = useTheme();
   const popupRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<PopupPosition>({ top: 0, left: 0, placement: 'right' });
   const [isVisible, setIsVisible] = useState(false);
@@ -144,7 +146,7 @@ export function SmartEditPopup(props: SmartEditPopupProps) {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.1)',
+          backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.1)',
           zIndex: 998,
           opacity: isVisible ? 1 : 0,
           transition: 'opacity 0.2s ease-in-out',
@@ -155,7 +157,7 @@ export function SmartEditPopup(props: SmartEditPopupProps) {
       {/* Popup Container */}
       <div
         ref={popupRef}
-        className={`smart-edit-popup smart-edit-popup--${position.placement}`}
+        className={`smart-edit-popup smart-edit-popup--${position.placement} ${theme === 'dark' ? 'smart-edit-popup--dark' : ''}`}
         style={{
           position: 'absolute',
           top: position.top,
