@@ -5,9 +5,9 @@ export function CardContent({ component, tdInfos }: { component: WoTComponent; t
   const hostRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const elHost = hostRef.current;
-    if (!elHost) return;
-    elHost.replaceChildren();
+    const host = hostRef.current;
+    if (!host) return;
+    host.replaceChildren();
 
     const tdInfo = tdInfos.find(t => t.id === component.tdId);
     const tdUrl = (tdInfo?.source.type === 'url' ? (tdInfo.source.content as string) : undefined) || component.tdUrl || '';
@@ -29,22 +29,14 @@ export function CardContent({ component, tdInfos }: { component: WoTComponent; t
       (el as HTMLElement).style.maxWidth = '100%';
       (el as HTMLElement).style.maxHeight = '100%';
 
-      elHost.replaceChildren(el);
-      console.debug('[generator][card] appended', {
-        id: component.id,
-        tag: component.uiComponent,
-        type: component.type,
-        name: component.name,
-        hasTdUrl: Boolean(tdUrl),
-      });
+      host.replaceChildren(el);
     } catch (e) {
-      console.error('[generator][card] failed to render component', component.uiComponent, e);
-      // No visual fallback to keep logic minimal as requested
-      elHost.replaceChildren();
+      console.error('Render failed:', component.uiComponent);
+      host.replaceChildren();
     }
 
     return () => {
-      elHost.replaceChildren();
+      host.replaceChildren();
     };
   }, [component.id, component.title, component.uiComponent, component.variant, component.attributes, component.type, component.name, component.tdId, tdInfos]);
 
