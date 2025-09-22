@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TD Host UI</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: #0b1220;
+        color: #e5e7eb;
+      }
+      .card {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      h1,
+      h2,
+      h3 {
+        margin: 0 0 12px;
+      }
+      input[type='file'],
+      input[type='url'],
+      input[type='text'],
+      input[type='number'],
+      select,
+      button,
+      textarea {
+        background: #111827;
+        color: #e5e7eb;
+        border: 1px solid #374151;
+        border-radius: 6px;
+        padding: 8px 10px;
+      }
+      button {
+        cursor: pointer;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .aff {
+        border-top: 1px dashed #334155;
+        padding-top: 10px;
+        margin-top: 10px;
+      }
+      code {
+        background: #111827;
+        padding: 2px 4px;
+        border-radius: 4px;
+      }
+      .muted {
+        color: #94a3b8;
+      }
+      .small {
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Thing Description Host</h1>
+
+    <div class="card">
+      <h2>Upload Thing Description</h2>
+      <div class="row" style="margin-top: 8px">
+        <input id="td-file" type="file" accept=".json,.jsonld" />
+        <button id="btn-upload">Upload</button>
+      </div>
+      <div class="row" style="margin-top: 8px">
+        <input id="td-url" type="url" placeholder="...or paste TD JSON URL" style="flex: 1" />
+        <button id="btn-fetch">Fetch</button>
+      </div>
+      <div id="status" class="small muted" style="margin-top: 8px"></div>
+    </div>
+
+    <div id="thing" class="card" style="display: none">
+      <h2 id="thing-title"></h2>
+      <div class="muted small">Hosted at: <code id="thing-url"></code></div>
+    </div>
+
+    <div class="grid">
+      <div id="properties" class="card">
+        <h3>Properties</h3>
+        <div id="prop-list" class="aff"></div>
+      </div>
+      <div id="actions" class="card">
+        <h3>Actions</h3>
+        <div id="act-list" class="aff"></div>
+      </div>
+      <div id="events" class="card">
+        <h3>Events</h3>
+        <div id="evt-list" class="aff"></div>
+      </div>
+      <div id="raw" class="card">
+        <h3>Raw TD</h3>
+        <pre id="td-json" style="white-space: pre-wrap; max-height: 320px; overflow: auto"></pre>
+      </div>
+    </div>
+
+    <script src="/client.js"></script>
+  </body>
+</html>
