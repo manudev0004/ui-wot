@@ -1,14 +1,31 @@
 import { Component, Prop, State, Element, h, Method } from '@stencil/core';
-import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
+import { StatusIndicator, OperationStatus } from '../../utils/status-indicator'; // Status indicator utility
 
 /**
- * Auto-generates an editor for a TD object-type property and persists the full
- * object on Save. Designed to behave like other UI components with consistent
- * status and last-updated indicators, while sub-fields operate in local-edit mode.
+ * A versatile object component designed for WoT device to handle object type TD properties.
  *
- * Usage: Map boolean/number/integer/string fields to child inputs (ui-toggle,
- * ui-slider, ui-number-picker, ui-text). Child fields do not perform device writes;
- * only the parent Save writes the entire object, avoiding partial updates.
+ * It auto-generates an editor interface for TD object-type properties with save button to push
+ * all the changes at once.
+ * It also features status indicators, last updated timestamps.
+ *
+ * @example Basic Usage
+ * ```html
+ * <ui-object variant="outlined" label="Device Settings"></ui-object>
+ * <ui-object variant="filled" show-last-updated="true" show-status="true"></ui-object>
+ * <ui-object readonly="true" label="System Status" dark="true"></ui-object>
+ * ```
+ *
+ * @example JS integration with node-wot browser bundle
+ * ```javascript
+ * const objectEditor = document.getElementById('device-config');
+ * const initialValue = await (await thing.readProperty('configuration')).value();
+ *
+ * await objectEditor.setValue(initialValue, {
+ *   writeOperation: async value => {
+ *     await thing.writeProperty('configuration', value);
+ *   }
+ * });
+ * ```
  */
 
 @Component({
@@ -21,61 +38,96 @@ export class UiObject {
 
   // ============================== COMPONENT PROPERTIES ==============================
 
-  /** Visual style for the editor container */
+  /**
+   * Visual style variant of the object editor.
+   * - outlined: Border around container (default)
+   * - filled: Background-filled container with border
+   */
   @Prop() variant: 'outlined' | 'filled' = 'outlined';
-  @Prop() disabled: boolean = false;
-  @Prop() readonly: boolean = false;
+
+  /** Color theme for the active state matching to thingsweb theme */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
-  @Prop() showLastUpdated: boolean = false;
-  @Prop() showStatus: boolean = true;
+
   /** Enable dark mode theme styling when true */
   @Prop() dark: boolean = false;
 
-  /** Optional label shown above the editor */
+  /** Disable user interaction when true */
+  @Prop() disabled: boolean = false;
+
+  /** Text label displayed above the object editor (optional) */
   @Prop() label?: string;
 
+  /** Read only mode, display value but prevent changes when true. Just to monitor changes*/
+  @Prop({ mutable: true }) readonly: boolean = false;
+
+  /** Show last updated timestamp below the component */
+  @Prop() showLastUpdated: boolean = false;
+
+  /** Show visual operation status indicators (loading, success, failed) right to the component */
+  @Prop() showStatus: boolean = true;
+
   // ============================== COMPONENT STATE ==============================
+
+  /** Derived field definitions from object value shape and types */
   @State() private fields: Array<{ name: string; type: string; minimum?: number; maximum?: number }> = [];
+
+  /** Current object value from device/server */
   @State() private value: any = {};
+
+  /** Local editing buffer for user changes before Save */
   @State() private editing: any = {};
+
+  /** Current operation status for visual feedback */
   @State() private operationStatus: OperationStatus = 'idle';
-  @State() private lastError = '';
+
+  /** Error message from failed operations if any (optional) */
+  @State() lastError?: string;
+
+  /** Timestamp when value was last updated (optional) */
   @State() private lastUpdatedTs?: number;
+
   /** Internal state counter for timestamp re-rendering */
   @State() private timestampCounter: number = 0;
 
   // ============================== PRIVATE PROPERTIES ==============================
-  /** Stored write operation provided by connector; executed on Save */
-  private storedWriteOperation?: (value: any) => Promise<any>;
+
+  /** Tracks bound child elements to prevent duplicate setValue calls */
   private boundElements: WeakSet<Element> = new WeakSet();
+
+  /** Timer for updating relative timestamps */
   private timestampUpdateTimer?: number;
 
-  // ============================== LIFECYCLE METHODS ==============================
-  /** No TD wiring here; connector will call setValue(). */
-  async componentWillLoad() {
-    if (this.showLastUpdated) this.startTimestampUpdater();
-  }
-
-  /** Bind local write-ops once children are rendered */
-  componentDidLoad() {
-    // Ensure subfields operate in local-edit mode (no device writes per-field)
-    this.ensureLocalWriteOps();
-  }
-
-  /** Re-bind local write-ops for newly rendered children */
-  componentDidRender() {
-    // In case fields render later, bind write ops once per element
-    this.ensureLocalWriteOps();
-  }
-
-  disconnectedCallback() {
-    // nothing to cleanup: connector owns observe/poll lifecycles
-    this.stopTimestampUpdater();
-  }
+  /** Stores API function from first initialization to re-use further for any user interactions */
+  private storedWriteOperation?: (value: any) => Promise<any>;
 
   // ============================== PUBLIC METHODS ==============================
 
-  /** Set the object value (from connector) and optionally bind device write op. */
+  /**
+   * Sets the object value with optional device communication api and other options.
+   *
+   * This is the primary method for connecting object editors to real devices.
+   * It supports optimistic updates, error handling, and stores write operations for Save button.
+   *
+   * @param value - The object value to set
+   * @param options - Optional configuration for device communication and behavior
+   * @returns Promise resolving to true if successful, false if failed
+   *
+   * @example Basic Usage
+   * ```javascript
+   * await objectEditor.setValue({ temperature: 22, humidity: 45 });
+   * ```
+   *
+   * @example JS integration with node-wot browser bundle
+   * ```javascript
+   * const objectEditor = document.getElementById('device-config');
+   * const initialValue = await (await thing.readProperty('configuration')).value();
+   * await objectEditor.setValue(initialValue, {
+   *   writeOperation: async value => {
+   *     await thing.writeProperty('configuration', value);
+   *   }
+   * });
+   * ```
+   */
   @Method()
   async setValue(
     value: any,
@@ -86,15 +138,16 @@ export class UiObject {
       _isRevert?: boolean;
     },
   ): Promise<boolean> {
-    // Clear error on fresh attempt
+    // Clear any existing error state
     if (this.operationStatus === 'error' && !options?._isRevert) {
       StatusIndicator.applyStatus(this as any, 'idle');
     }
 
-    // Bind write operation for Save (setup phase)
+    // Store write operation for Save button functionality (setup phase)
     if (options?.writeOperation && !options._isRevert) {
       this.storedWriteOperation = options.writeOperation;
       StatusIndicator.applyStatus(this as any, 'loading');
+
       try {
         this.updateFromValue(value);
         StatusIndicator.applyStatus(this as any, 'success');
@@ -105,12 +158,17 @@ export class UiObject {
       }
     }
 
-    // Simple state update
+    // Simple state update without other operations
     this.updateFromValue(value);
     return true;
   }
 
-  /** Get current server value or metadata, mirroring other components. */
+  /**
+   * Gets the current object value with optional metadata.
+   *
+   * @param includeMetadata - Whether to include status, timestamp and other information
+   * @returns Current value or detailed metadata object
+   */
   @Method()
   async getValue(includeMetadata: boolean = false): Promise<any | { value: any; lastUpdated?: number; status: string; error?: string }> {
     if (includeMetadata) {
@@ -124,26 +182,22 @@ export class UiObject {
     return this.value;
   }
 
-  /** Silent update from connector (observe/poll) without event emission. */
-  @Method()
-  async setValueSilent(value: any): Promise<void> {
-    this.updateFromValue(value);
-  }
-
-  // removed isDirty; updateFromValue computes dirtiness based on previous value
-
-  private onFieldChange = (name: string, newVal: any) => {
-    this.editing = { ...this.editing, [name]: newVal };
-  };
-
+  /**
+   * Executes the stored write operation to save the complete object to the device.
+   *
+   * Combines all field changes into a single object and sends it via the configured
+   * write operation. Handles type coercion and error states automatically.
+   *
+   * @returns Promise resolving to true if successful, false if failed
+   */
   @Method()
   async save(): Promise<boolean> {
     if (!this.storedWriteOperation) {
-      this.setStatus('error', 'No operation configured - setup may have failed');
+      StatusIndicator.applyStatus(this, 'error', 'No operation configured - setup may have failed');
       return false;
     }
     try {
-      this.setStatus('loading');
+      StatusIndicator.applyStatus(this, 'loading');
       const payload: any = {};
       if (this.fields.length === 0) {
         const source = this.editing && Object.keys(this.editing).length ? this.editing : this.value;
@@ -162,20 +216,64 @@ export class UiObject {
       }
       await this.storedWriteOperation(payload);
       this.value = { ...payload };
-      this.setStatus('success');
+      StatusIndicator.applyStatus(this, 'success');
       this.lastUpdatedTs = Date.now();
       return true;
     } catch (err: any) {
-      this.setStatus('error', err?.message || String(err));
+      StatusIndicator.applyStatus(this, 'error', err?.message || String(err));
       return false;
     }
   }
-
-  private setStatus(status: OperationStatus, message?: string) {
-    StatusIndicator.applyStatus(this as any, status, message);
+ 
+  /**
+   * This method updates the value silently without triggering events.
+   *
+   * Use this for external data synchronization to prevent event loops.
+   * Perfect for WebSocket updates or polling from remote devices.
+   *
+   * @param value - The object value to set silently
+   */
+  @Method()
+  async setValueSilent(value: any): Promise<void> {
+    this.updateFromValue(value);
   }
 
-  /** Merge inbound value and derive fields; if not dirty, sync editing */
+
+
+  // ============================== LIFECYCLE METHODS ==============================
+
+  /** Initialize component state from props */
+  componentWillLoad() {
+    if (this.showLastUpdated) this.startTimestampUpdater();
+  }
+
+  /** Bind local write operations to child components once rendered */
+  componentDidLoad() {
+    // Ensure subfields operate in local-edit mode
+    this.ensureLocalWriteOps();
+  }
+
+  /** Re-bind local write operations for any newly rendered children */
+  componentDidRender() {
+    // In case fields render later, bind write ops once per element
+    this.ensureLocalWriteOps();
+  }
+
+  /** Clean up timers when component is removed */
+  disconnectedCallback() {
+    this.stopTimestampUpdater();
+  }
+  // ============================== PRIVATE METHODS ==============================
+
+  /** Handles field value changes and updates the editing buffer */
+  private onFieldChange = (name: string, newVal: any) => {
+    this.editing = { ...this.editing, [name]: newVal };
+  };
+
+  /**
+   * This is the core state update method that handles value changes.
+   * It updates internal state, derives field definitions, and manages local changes tracking.
+   */
   private updateFromValue(value: any) {
     const v = value && typeof value === 'object' ? value : {};
     const prev = this.value;
@@ -187,14 +285,16 @@ export class UiObject {
       }
     })();
     this.value = v;
-    // Derive fields from current value shape and JS types
+
+    // Derive field definitions from current value shape and JavaScript types
     this.fields = Object.keys(v).map(name => {
       const t = typeof v[name];
       let type: string = t;
       if (t === 'number' && Number.isInteger(v[name])) type = 'integer';
-      if (t === 'object') type = 'string'; // fallback to text for nested/unknown types
+      if (t === 'object') type = 'string'; // Fallback to text for nested/unknown types
       return { name, type };
     });
+
     // If user hasn't made local changes relative to previous value, sync editing to new value
     if (!hasLocalChanges) this.editing = { ...v };
     this.lastUpdatedTs = Date.now();
@@ -247,7 +347,9 @@ export class UiObject {
     }
   }
 
-  /** Render a single sub-field using appropriate child component */
+  // ============================== RENDERING HELPERS ==============================
+
+  /** Render a single sub-field using appropriate child component based on field type */
   private renderField(f: { name: string; type: string; minimum?: number; maximum?: number }) {
     const val = this.editing?.[f.name];
     const common = {
@@ -259,10 +361,12 @@ export class UiObject {
       'dark': this.dark,
     } as any;
 
+    // Boolean fields use toggle components
     if (f.type === 'boolean') {
       return <ui-toggle {...common} value={!!val} onValueMsg={(e: CustomEvent<any>) => this.onFieldChange(f.name, e.detail?.newVal)} />;
     }
 
+    // Integer fields use number picker with step=1
     if (f.type === 'integer') {
       const min = typeof f.minimum === 'number' ? f.minimum : 0;
       const max = typeof f.maximum === 'number' ? f.maximum : 100;
@@ -279,6 +383,7 @@ export class UiObject {
       );
     }
 
+    // Number fields use slider with step=0.1
     if (f.type === 'number') {
       const min = typeof f.minimum === 'number' ? f.minimum : 0;
       const max = typeof f.maximum === 'number' ? f.maximum : 100;
@@ -295,7 +400,7 @@ export class UiObject {
       );
     }
 
-    // default to text
+    // Default to text input for string and other types
     return (
       <ui-text
         {...common}
@@ -306,6 +411,11 @@ export class UiObject {
     );
   }
 
+  // ============================== MAIN COMPONENT RENDER METHOD ==============================
+
+  /**
+   * Renders the complete object editor component with all fields and controls.
+   */
   render() {
     return (
       <div class="w-full">
