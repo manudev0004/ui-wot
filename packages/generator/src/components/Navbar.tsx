@@ -41,8 +41,9 @@ export function Navbar() {
 
   return (
     <header
-      className="w-full bg-[var(--color-bg-primary)] border-b border-[var(--color-border)] shadow-sm transition-all duration-300"
+      className="w-full border-b border-[var(--color-border)] shadow-sm transition-all duration-300"
       style={{
+        backgroundColor: 'var(--navbar-bg)',
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
       }}

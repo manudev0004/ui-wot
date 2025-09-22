@@ -10,7 +10,7 @@ export function HomePage() {
   };
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} flex flex-col items-center justify-center transition-colors duration-300`}>
+    <div className={`min-h-screen flex flex-col items-center justify-center transition-colors duration-300`} style={{ backgroundColor: 'var(--bg-color)' }}>
       <div className="text-center">
         <h1 className={`text-6xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4 transition-colors duration-300`}>WoT UI GENERATOR</h1>
         <p className="text-xl mb-8 font-medium transition-colors duration-300" style={{ color: 'var(--color-primary)' }}>

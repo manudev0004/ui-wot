@@ -6,7 +6,7 @@
 @tailwind utilities;
 
 :root {
-  /* PRIMARY: Original color scheme from index.css (ThingWeb green-teal) */
+  /* PRIMARY: Original color scheme */
   --primary-base: #067362;
   --primary-highlight: #08967f;
   --accent-color: #33b8a4;
@@ -14,13 +14,13 @@
   --text-color: #067362;
   --bg-color: #ffffff;
 
-  /* FONTS: Priority to index.css fonts */
+  /* FONTS*/
   font-family: 'Josefin Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   --font-family-heading: 'Bebas Neue', cursive;
   --font-family-body: 'Josefin Sans', sans-serif;
   --font-family-mono: 'Fira Code', monospace;
 
-  /* LAYOUT: Navbar and responsive tokens from index.css */
+  /* LAYOUT*/
   --navbar-height: clamp(3rem, 3vw, 4rem);
   --navbar-padding: clamp(0.75rem, 2.5vw, 1.25rem);
   --navbar-content-gap: clamp(0.5rem, 1.5vw, 0.875rem);
@@ -34,7 +34,7 @@
   --navbar-bg: #ffffff;
   --transition-speed: 200ms;
 
-  /* THEME COLORS: Using original ThingWeb colors for consistency */
+  /* THEME COLORS */
   --color-primary: var(--primary-base);
   --color-primary-light: var(--primary-highlight);
   --color-primary-dark: #055a50;
@@ -63,7 +63,7 @@
   --color-warning: #f59e0b;
   --color-error: #ef4444;
 
-  /* TRANSITIONS: From index.css priority */
+  /* TRANSITIONS*/
   --transition-fast: 150ms ease-in-out;
   --transition-normal: 300ms ease-in-out;
   --transition-slow: 500ms ease-in-out;
@@ -81,14 +81,14 @@
   font-display: swap;
 }
 
-/* Dark Theme - Based on index.css with ThingWeb colors */
+/* Dark Theme  */
 .dark,
 [data-theme='dark'] {
   color-scheme: dark;
-  --navbar-bg: #0f1a18;
+  --navbar-bg: #242526;
   --text-color: #e6f4f1;
   --accent-color: #33b8a4;
-  --bg-color: #0b1412;
+  --bg-color: #1a1a1a;
   --neutral-light: #2a3f3a;
 
   --color-primary: var(--accent-color);
@@ -106,13 +106,13 @@
   --color-text-inverse: #0b1412;
 
   --color-bg-primary: var(--bg-color);
-  --color-bg-secondary: #1a2e26;
-  --color-bg-tertiary: #243832;
-  --color-bg-card: #1a2e26;
+  --color-bg-secondary: #222222;
+  --color-bg-tertiary: #2a2a2a;
+  --color-bg-card: #1f1f1f;
   --color-bg-overlay: rgba(0, 0, 0, 0.5);
 
-  --color-border: #2a3f3a;
-  --color-border-light: #1a2e26;
+  --color-border: #2e2e2e;
+  --color-border-light: #262626;
   --color-border-focus: var(--accent-color);
 
   --color-success: #34d399;
@@ -135,7 +135,7 @@ body {
   width: 100%;
 }
 
-/* Global transition for theme switching */
+/* Global transition for theme change*/
 * {
   transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -144,7 +144,7 @@ html {
   transition: background-color var(--transition-normal);
 }
 
-/* Page Layout System from index.css */
+/* Page Layout */
 .page-container {
   width: 100%;
   max-width: var(--page-max-width, 100%);
@@ -163,7 +163,6 @@ html {
   --page-padding-x: 0;
 }
 
-/* App-level Styles from app.css */
 .app {
   max-width: 1200px;
   margin: 0 auto;

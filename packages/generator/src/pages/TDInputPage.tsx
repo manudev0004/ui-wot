@@ -13,7 +13,6 @@ export function TDInputPage() {
   const [urlInput, setUrlInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Hosting is disabled by default; enable explicitly with VITE_USE_TD_HOST=true
   const USE_TD_HOST = (import.meta as any).env?.VITE_USE_TD_HOST === 'true';
 
   async function postTDToHost(td: any): Promise<string> {
@@ -30,6 +29,34 @@ export function TDInputPage() {
     return data.url as string;
   }
 
+  // Unified TD ingestion: host when enabled, otherwise use original URL or a Blob URL for files
+  const setupTD = async (parsedTD: any, opts: { originalUrl?: string; file?: File }) => {
+    // Decide final URL used for wiring (td-url)
+    const finalUrl = USE_TD_HOST
+      ? await postTDToHost(parsedTD)
+      : opts.originalUrl
+      ? opts.originalUrl
+      : URL.createObjectURL(new Blob([JSON.stringify(parsedTD)], { type: 'application/json' }));
+
+    const affordances = parseAffordances(parsedTD);
+
+    // Create TD info object with URL source for consistent downstream wiring
+    const tdInfo = {
+      id: Date.now().toString(),
+      title: parsedTD.title || 'Untitled TD',
+      td: parsedTD,
+      source: { type: 'url' as const, content: finalUrl },
+    };
+
+    // Update context state
+    dispatch({ type: 'SET_TD_SOURCE', payload: { type: 'url', content: finalUrl } });
+    dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
+    dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
+    dispatch({ type: 'ADD_TD', payload: tdInfo });
+
+    navigate('/affordances');
+  };
+
   const onDrop = async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
@@ -37,41 +64,9 @@ export function TDInputPage() {
       setLoading(true);
 
       try {
-        const tdSource = { type: 'file' as const, content: file };
-        const parsedTD = await parseTDFromSource(tdSource);
+        const parsedTD = await parseTDFromSource({ type: 'file' as const, content: file });
         console.log('[generator][td] file TD parsed', { title: parsedTD?.title });
-        // Optionally host via local TD servient
-        const servedUrl = USE_TD_HOST ? await postTDToHost(parsedTD) : null;
-        const blobUrl = !USE_TD_HOST ? URL.createObjectURL(new Blob([JSON.stringify(parsedTD)], { type: 'application/json' })) : null;
-        console.log('[generator][td] TD URLs', { servedUrl, blobUrl });
-        const affordances = parseAffordances(parsedTD);
-
-        // Create TD info object
-        const tdInfo = {
-          id: Date.now().toString(), // Simple ID generation
-          title: parsedTD.title || 'Untitled TD',
-          td: parsedTD,
-          source: tdSource,
-        };
-
-        // Always replace current parsed TD and available affordances when loading a new TD from this page
-        if (USE_TD_HOST && servedUrl) {
-          dispatch({ type: 'SET_TD_SOURCE', payload: { type: 'url', content: servedUrl } });
-        } else if (blobUrl) {
-          // Provide a blob URL so downstream wiring has a base URL
-          dispatch({ type: 'SET_TD_SOURCE', payload: { type: 'url', content: blobUrl } });
-        } else {
-          dispatch({ type: 'SET_TD_SOURCE', payload: tdSource });
-        }
-        dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
-        dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
-        dispatch({
-          type: 'ADD_TD',
-          payload: { ...tdInfo, source: USE_TD_HOST && servedUrl ? { type: 'url', content: servedUrl } : blobUrl ? { type: 'url', content: blobUrl } : tdSource },
-        });
-
-        console.log('[generator][td] navigating to affordances...');
-        navigate('/affordances');
+        await setupTD(parsedTD, { file });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to parse Thing Description');
       } finally {
@@ -98,29 +93,9 @@ export function TDInputPage() {
 
     try {
       const originalUrl = urlInput.trim();
-      const tdSource = { type: 'url' as const, content: originalUrl };
-      const parsedTD = await parseTDFromSource(tdSource);
+      const parsedTD = await parseTDFromSource({ type: 'url' as const, content: originalUrl });
       console.log('[generator][td] url TD parsed', { title: parsedTD?.title, originalUrl });
-      // Optionally rehost via Node‑WoT to normalize path/security and ensure liveness
-      const servedUrl = USE_TD_HOST ? await postTDToHost(parsedTD) : originalUrl;
-      const affordances = parseAffordances(parsedTD);
-
-      // Create TD info object
-      const tdInfo = {
-        id: Date.now().toString(), // Simple ID generation
-        title: parsedTD.title || 'Untitled TD',
-        td: parsedTD,
-        source: tdSource,
-      };
-
-      // Always replace current parsed TD and available affordances when loading a new TD from this page
-      dispatch({ type: 'SET_TD_SOURCE', payload: { type: 'url', content: servedUrl } });
-      dispatch({ type: 'SET_PARSED_TD', payload: parsedTD });
-      dispatch({ type: 'SET_AFFORDANCES', payload: affordances });
-      dispatch({ type: 'ADD_TD', payload: { ...tdInfo, source: { type: 'url', content: servedUrl } } });
-
-      console.log('[generator][td] navigating to affordances (URL)...');
-      navigate('/affordances');
+      await setupTD(parsedTD, { originalUrl });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch Thing Description');
     } finally {
@@ -159,10 +134,8 @@ export function TDInputPage() {
     event.target.value = '';
   };
 
-  // Back navigation handled by global Navbar
-
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} py-6 transition-colors duration-300`}>
+    <div className={`min-h-screen py-6 transition-colors duration-300`} style={{ backgroundColor: 'var(--bg-color)' }}>
       <div className="max-w-2xl mx-auto px-4">
         {/* Context note when adding to existing dashboard */}
         {state.components.length > 0 && (

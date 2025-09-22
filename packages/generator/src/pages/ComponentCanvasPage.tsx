@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { useNavbar } from '../context/NavbarContext';
+import { dashboardService } from '../services/dashboardService';
 import ReactGridLayoutLib, { WidthProvider, Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -231,7 +232,11 @@ export function ComponentCanvasPage() {
       info: <span>{tdSummary}</span>,
       actions: (
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1 bg-white border rounded-lg px-2 py-1 rgl-no-drag cursor-pointer select-none">
+          <label
+            className={`flex items-center gap-2 border rounded-lg px-2 py-1 rgl-no-drag cursor-pointer select-none transition-colors ${
+              theme === 'dark' ? 'bg-gray-800 border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900'
+            }`}
+          >
             <input
               type="checkbox"
               checked={editMode}
@@ -254,11 +259,26 @@ export function ComponentCanvasPage() {
           >
             New
           </button>
+          <button
+            onClick={() => {
+              try {
+                const name = prompt('Save dashboard as (name):', state.tdInfos[0]?.title || 'dashboard')?.trim();
+                if (!name) return;
+                // Persist and export JSON (connectivity-aware)
+                dashboardService.saveDashboard(state as any, name);
+                dashboardService.exportFromState(state as any, { name });
+                alert('Dashboard saved and downloaded as JSON.');
+              } catch {}
+            }}
+            className="bg-primary hover:bg-primary-light text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors"
+          >
+            Save
+          </button>
         </div>
       ),
     });
     return () => clear();
-  }, [tdSummary, navigate, dispatch, setContent, clear, editMode]);
+  }, [tdSummary, navigate, dispatch, setContent, clear, editMode, theme]);
 
   // Close any open editor when edit mode turns off
   useEffect(() => {
@@ -622,15 +642,17 @@ export function ComponentCanvasPage() {
   useAutoWiring({ tdInfos: state.tdInfos, components: state.components, editMode });
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
+    <div className={`min-h-screen transition-colors duration-300`} style={{ backgroundColor: 'var(--bg-color)' }}>
       <div className="w-full transition-all duration-200" style={{ minHeight: 'calc(100vh - var(--navbar-height))' }}>
         <div className="page-container canvas-page py-2" style={{ minHeight: 'inherit' }}>
           {state.components.length > 0 ? (
             <div
-              className={`relative w-full ${
-                theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-              } border rounded-lg overflow-hidden transition-colors duration-300`}
-              style={{ minHeight: 'calc(100vh - var(--navbar-height) - 1rem)' }}
+              className={`relative w-full border rounded-lg overflow-hidden transition-colors duration-300`}
+              style={{
+                minHeight: 'calc(100vh - var(--navbar-height) - 1rem)',
+                backgroundColor: 'var(--color-bg-card)',
+                borderColor: 'var(--color-border)',
+              }}
             >
               {/* Full-canvas background grid (visible only in edit mode) */}
               {editMode && (
@@ -728,8 +750,12 @@ export function ComponentCanvasPage() {
                     >
                       {editingSectionId === tdId ? (
                         <input
-                          className="rgl-no-drag text-xs font-heading px-1 py-0.5 rounded border border-primary/30 bg-white/95"
-                          style={{ width: Math.min(240, Math.max(90, currentName.length * 8)) }}
+                          className={`rgl-no-drag text-xs font-heading px-1 py-0.5 rounded border border-primary/30`}
+                          style={{
+                            backgroundColor: 'var(--color-bg-card)',
+                            color: 'var(--color-text-primary)',
+                            width: Math.min(240, Math.max(90, currentName.length * 8)),
+                          }}
                           autoFocus
                           value={currentName}
                           onClick={e => {
@@ -744,7 +770,8 @@ export function ComponentCanvasPage() {
                         />
                       ) : (
                         <span
-                          className="px-2 py-0.5 bg-white/90 text-primary text-xs font-heading rounded shadow border border-primary/30 rgl-no-drag"
+                          className={`px-2 py-0.5 text-primary text-xs font-heading rounded shadow border border-primary/30 rgl-no-drag`}
+                          style={{ backgroundColor: 'var(--color-bg-card)' }}
                           onClick={e => {
                             e.stopPropagation();
                             setEditingSectionId(tdId);
@@ -755,7 +782,8 @@ export function ComponentCanvasPage() {
                         </span>
                       )}
                       <span
-                        className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer ml-1"
+                        className={`rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded cursor-pointer ml-1`}
+                        style={{ backgroundColor: 'transparent' }}
                         title="Rename"
                         onClick={e => {
                           e.preventDefault();
@@ -773,7 +801,9 @@ export function ComponentCanvasPage() {
                         </svg>
                       </span>
                       <span
-                        className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
+                        className={`rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded cursor-pointer ${
+                          theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                        }`}
                         title="Section settings"
                         onClick={e => {
                           e.preventDefault();
@@ -791,7 +821,9 @@ export function ComponentCanvasPage() {
                         </svg>
                       </span>
                       <span
-                        className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 cursor-pointer"
+                        className={`rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded cursor-pointer ${
+                          theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                        }`}
                         title="Delete section"
                         onClick={e => {
                           e.preventDefault();
@@ -820,7 +852,9 @@ export function ComponentCanvasPage() {
                       padding: '0 6px',
                     }}
                   >
-                    <span className="px-2 py-0.5 bg-white/90 text-primary text-xs font-heading rounded shadow border border-primary/30">{currentName}</span>
+                    <span className={`px-2 py-0.5 text-primary text-xs font-heading rounded shadow border border-primary/30`} style={{ backgroundColor: 'var(--color-bg-card)' }}>
+                      {currentName}
+                    </span>
                   </div>
                 );
               })}
@@ -855,11 +889,18 @@ export function ComponentCanvasPage() {
                       return (
                         <div key={l.i} className="rgl-card" style={{ padding: 1 }}>
                           {showWrapper ? (
-                            <div className="bg-white rounded-lg shadow-sm border border-primary overflow-hidden relative w-full h-full" data-component-id={comp.id}>
+                            <div
+                              className={`rounded-lg shadow-sm border overflow-hidden relative w-full h-full ${
+                                theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-primary'
+                              }`}
+                              data-component-id={comp.id}
+                            >
                               {editMode && (
                                 <div className="absolute top-1 right-1 flex items-center gap-2 z-10">
                                   <span
-                                    className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
+                                    className={`rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer ${
+                                      theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                                    }`}
                                     title="Edit"
                                     onClick={e => {
                                       e.preventDefault();
@@ -877,7 +918,9 @@ export function ComponentCanvasPage() {
                                     </svg>
                                   </span>
                                   <span
-                                    className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
+                                    className={`rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer ${
+                                      theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                                    }`}
                                     title="Remove"
                                     onClick={e => {
                                       e.preventDefault();
@@ -900,7 +943,9 @@ export function ComponentCanvasPage() {
                               {editMode && (
                                 <div className="absolute top-1 right-1 flex items-center gap-2 z-10">
                                   <span
-                                    className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
+                                    className={`rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer ${
+                                      theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                                    }`}
                                     title="Edit"
                                     onClick={e => {
                                       e.preventDefault();
@@ -918,7 +963,9 @@ export function ComponentCanvasPage() {
                                     </svg>
                                   </span>
                                   <span
-                                    className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer"
+                                    className={`rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer ${
+                                      theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                                    }`}
                                     title="Remove"
                                     onClick={e => {
                                       e.preventDefault();

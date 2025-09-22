@@ -7,50 +7,44 @@ export function CardContent({ component, tdInfos }: { component: WoTComponent; t
   useEffect(() => {
     const elHost = hostRef.current;
     if (!elHost) return;
-    elHost.innerHTML = '';
+    elHost.replaceChildren();
+
+    const tdInfo = tdInfos.find(t => t.id === component.tdId);
+    const tdUrl = (tdInfo?.source.type === 'url' ? (tdInfo.source.content as string) : undefined) || component.tdUrl || '';
+
     try {
       const el = document.createElement(component.uiComponent);
-      if (component.variant) {
-        el.setAttribute('variant', component.variant);
-      }
+      if (component.variant) el.setAttribute('variant', component.variant);
       el.setAttribute('label', component.title);
-
       if (component.attributes) {
-        Object.entries(component.attributes).forEach(([k, v]) => {
+        for (const [k, v] of Object.entries(component.attributes)) {
           if (v != null) el.setAttribute(k, String(v));
-        });
+        }
       }
-
-      const tdInfo = tdInfos.find(t => t.id === component.tdId);
-      const tdUrl = (tdInfo?.source.type === 'url' ? (tdInfo.source.content as string) : undefined) || component.tdUrl || '';
-      if (tdUrl) el.setAttribute('data-td-url', tdUrl);
-      if (component.type === 'property') el.setAttribute('data-td-property', component.name);
-      else if (component.type === 'action') el.setAttribute('data-td-action', component.name);
-      else if (component.type === 'event') el.setAttribute('data-td-event', component.name);
+      if (tdUrl) el.setAttribute('td-url', tdUrl);
+      if (component.type === 'property') el.setAttribute('td-property', component.name);
+      else if (component.type === 'action') el.setAttribute('td-action', component.name);
+      else if (component.type === 'event') el.setAttribute('td-event', component.name);
 
       (el as HTMLElement).style.maxWidth = '100%';
       (el as HTMLElement).style.maxHeight = '100%';
 
-      elHost.appendChild(el);
-      try {
-        const tdInfo = tdInfos.find(t => t.id === component.tdId);
-        const tdUrlLog = (tdInfo?.source.type === 'url' ? (tdInfo.source.content as string) : undefined) || component.tdUrl || '';
-        console.log('[generator][card] appended', {
-          id: component.id,
-          tag: component.uiComponent,
-          type: component.type,
-          name: component.name,
-          hasTdUrl: Boolean(tdUrlLog),
-        });
-      } catch {}
+      elHost.replaceChildren(el);
+      console.debug('[generator][card] appended', {
+        id: component.id,
+        tag: component.uiComponent,
+        type: component.type,
+        name: component.name,
+        hasTdUrl: Boolean(tdUrl),
+      });
     } catch (e) {
-      const fallback = document.createElement('div');
-      fallback.className = 'p-4 bg-gray-100 rounded border-2 border-dashed border-gray-300 text-center text-gray-500';
-      fallback.innerHTML = `<div class="text-sm font-medium">${component.title}</div><div class="text-xs mt-1">${component.uiComponent}</div>`;
-      elHost.appendChild(fallback);
+      console.error('[generator][card] failed to render component', component.uiComponent, e);
+      // No visual fallback to keep logic minimal as requested
+      elHost.replaceChildren();
     }
+
     return () => {
-      if (elHost) elHost.innerHTML = '';
+      elHost.replaceChildren();
     };
   }, [component.id, component.title, component.uiComponent, component.variant, component.attributes, component.type, component.name, component.tdId, tdInfos]);
 

@@ -19,21 +19,13 @@ class DashboardService {
    * Save the current dashboard state
    */
   saveDashboard(state: AppState, name: string, description?: string): void {
-    const dashboardData: DashboardData = {
-      name,
-      description,
-      version: this.VERSION,
-      timestamp: Date.now(),
-      tdInfos: state.tdInfos,
-      components: state.components,
-      availableAffordances: state.availableAffordances,
-      groups: state.groups,
-    };
+    const normalized = this.buildSerializableSnapshot(state, { name, description });
+    const dashboardData: DashboardData = normalized;
 
     const existingDashboards = this.getSavedDashboards();
     const updatedDashboards = {
       ...existingDashboards,
-      [name]: dashboardData
+      [name]: dashboardData,
     };
 
     try {
@@ -71,7 +63,7 @@ class DashboardService {
   deleteDashboard(name: string): void {
     const existingDashboards = this.getSavedDashboards();
     delete existingDashboards[name];
-    
+
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(existingDashboards));
     } catch (error) {
@@ -87,7 +79,7 @@ class DashboardService {
     const jsonString = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = `${data.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_dashboard.json`;
@@ -98,33 +90,73 @@ class DashboardService {
   }
 
   /**
+   * Export from live AppState to JSON with connectivity info preserved.
+   */
+  exportFromState(state: AppState, opts: { name?: string; description?: string } = {}): void {
+    const snapshot = this.buildSerializableSnapshot(state, { name: opts.name || state.tdInfos[0]?.title || 'dashboard', description: opts.description });
+    this.exportDashboard(snapshot);
+  }
+
+  /**
    * Import dashboard from JSON file
    */
   async importDashboard(file: File): Promise<DashboardData> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
-      reader.onload = (event) => {
+
+      reader.onload = event => {
         try {
           const jsonString = event.target?.result as string;
           const data: DashboardData = JSON.parse(jsonString);
-          
+          // Normalize connectivity: ensure tdInfos have proper source entries and usable content
+          data.tdInfos = (data.tdInfos || []).map(td => {
+            const out: TDInfo = { ...td } as TDInfo;
+            if (!out.source) {
+              if ((out as any).td) {
+                const tdJson = (out as any).td;
+                out.source = { type: 'file', content: new File([JSON.stringify(tdJson, null, 2)], `${out.title || 'thing'}.json`, { type: 'application/json' }) };
+              } else {
+                out.source = { type: 'url', content: '' };
+              }
+            } else if (out.source.type === 'file') {
+              // If content was serialized as a JSON string, rehydrate either td or File
+              const c: any = (out.source as any).content;
+              if (typeof c === 'string') {
+                try {
+                  const parsed = JSON.parse(c);
+                  (out as any).td = parsed;
+                  out.source = { type: 'file', content: new File([JSON.stringify(parsed, null, 2)], `${out.title || 'thing'}.json`, { type: 'application/json' }) };
+                } catch {
+                  // keep raw string; downstream may ignore file sources
+                }
+              }
+            }
+            return out;
+          });
+
+          // Backfill component.tdUrl from tdInfos that have URL sources
+          const tdUrlById = new Map<string, string>();
+          (data.tdInfos || []).forEach(t => {
+            if (t.source?.type === 'url' && t.source.content) tdUrlById.set(t.id, String(t.source.content));
+          });
+          data.components = (data.components || []).map(c => ({ ...c, tdUrl: c.tdUrl || tdUrlById.get(c.tdId) }));
+
           // Validate the dashboard data structure
           if (!this.validateDashboardData(data)) {
             reject(new Error('Invalid dashboard file format'));
             return;
           }
-          
+
           resolve(data);
         } catch (error) {
           reject(new Error('Failed to parse dashboard file'));
         }
       };
-      
+
       reader.onerror = () => {
         reject(new Error('Failed to read dashboard file'));
       };
-      
+
       reader.readAsText(file);
     });
   }
@@ -145,13 +177,54 @@ class DashboardService {
   }
 
   /**
+   * Create a serializable snapshot that preserves connectivity:
+   * - For URL-based TDs, keep the URL in tdInfos.source.content and copy it to components[i].tdUrl for redundancy.
+   * - For file-based TDs, embed the TD JSON so it can be restored without original file.
+   */
+  private buildSerializableSnapshot(state: AppState, meta: { name: string; description?: string }): DashboardData {
+    const tdInfos: TDInfo[] = state.tdInfos.map(info => {
+      if (info.source?.type === 'url') {
+        return { ...info, source: { type: 'url', content: String(info.source.content) } } as TDInfo;
+      }
+      // For file sources, embed TD JSON content for portability
+      try {
+        if (info.td) {
+          return { ...info, source: { type: 'file', content: JSON.stringify(info.td) as unknown as File } } as unknown as TDInfo;
+        }
+      } catch {}
+      return info;
+    });
+
+    // Add tdUrl redundancy on components for direct element wiring
+    const tdUrlById = new Map<string, string>();
+    tdInfos.forEach(t => {
+      if (t.source?.type === 'url' && t.source.content) tdUrlById.set(t.id, String(t.source.content));
+    });
+    const components: WoTComponent[] = state.components.map(c => ({
+      ...c,
+      tdUrl: c.tdUrl || tdUrlById.get(c.tdId),
+    }));
+
+    return {
+      name: meta.name,
+      description: meta.description,
+      version: this.VERSION,
+      timestamp: Date.now(),
+      tdInfos,
+      components,
+      availableAffordances: state.availableAffordances,
+      groups: state.groups,
+    };
+  }
+
+  /**
    * Get dashboard statistics
    */
   getDashboardStats(): { count: number; totalSize: number } {
     const dashboards = this.getSavedDashboards();
     const count = Object.keys(dashboards).length;
     const totalSize = JSON.stringify(dashboards).length;
-    
+
     return { count, totalSize };
   }
 }

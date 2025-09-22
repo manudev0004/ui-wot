@@ -210,7 +210,7 @@ export function AffordanceSelectionPage() {
   }, [navbarInfo, selectedAffordances.length, loading, state.parsedTD, setContent, clear, theme]);
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
+    <div className={`min-h-screen transition-colors duration-300`} style={{ backgroundColor: 'var(--bg-color)' }}>
       {/* Affordances Grid */}
       <div className="page-container affordances-page py-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
