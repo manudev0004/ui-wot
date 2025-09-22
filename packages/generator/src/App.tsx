@@ -15,9 +15,6 @@ function RouterSync() {
   const { dispatch } = useCtx();
   const location = useLocation();
 
-  // WoT is initialized in main.tsx via components services
-
-  // Only sync URL changes to context, never context to URL
   useEffect(() => {
     const pathToView = (path: string) => {
       if (path === '/' || path === '') return 'home';
@@ -41,7 +38,7 @@ function RouterSync() {
             <Route path="/td-input" element={<TDInputPage />} />
             <Route path="/affordances" element={<AffordanceSelectionPage />} />
             <Route path="/components/*" element={<ComponentCanvasPage />} />
-            {/* keep a fallback to home */}
+            {/* fallback to home */}
             <Route path="*" element={<HomePage />} />
           </Routes>
         </main>

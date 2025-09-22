@@ -1,6 +1,5 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-// Global styles are imported via App.tsx -> styles/theme.css
 import App from './App.tsx';
 // Define all UI-WoT custom elements
 import { defineCustomElement as UiButton } from '@thingweb/ui-wot-components/components/ui-button';
