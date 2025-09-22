@@ -800,6 +800,94 @@ export namespace Components {
         "variant": 'minimal' | 'outlined' | 'filled';
     }
     /**
+     * A versatile object component designed for WoT device to handle object type TD properties.
+     * It auto-generates an editor interface for TD object-type properties with save button to push
+     * all the changes at once.
+     * It also features status indicators, last updated timestamps.
+     * @example Basic Usage
+     * ```html
+     * <ui-object variant="outlined" label="Device Settings"></ui-object>
+     * <ui-object variant="filled" show-last-updated="true" show-status="true"></ui-object>
+     * <ui-object readonly="true" label="System Status" dark="true"></ui-object>
+     * ```
+     * @example JS integration with node-wot browser bundle
+     * ```javascript
+     * const objectEditor = document.getElementById('device-config');
+     * const initialValue = await (await thing.readProperty('configuration')).value();
+     * await objectEditor.setValue(initialValue, {
+     * writeOperation: async value => {
+     * await thing.writeProperty('configuration', value);
+     * }
+     * });
+     * ```
+     */
+    interface UiObject {
+        /**
+          * Color theme for the active state matching to thingsweb theme
+          * @default 'primary'
+         */
+        "color": 'primary' | 'secondary' | 'neutral';
+        /**
+          * Enable dark mode theme styling when true
+          * @default false
+         */
+        "dark": boolean;
+        /**
+          * Disable user interaction when true
+          * @default false
+         */
+        "disabled": boolean;
+        /**
+          * Gets the current object value with optional metadata.
+          * @param includeMetadata - Whether to include status, timestamp and other information
+          * @returns Current value or detailed metadata object
+         */
+        "getValue": (includeMetadata?: boolean) => Promise<any | { value: any; lastUpdated?: number; status: string; error?: string; }>;
+        /**
+          * Text label displayed above the object editor (optional)
+         */
+        "label"?: string;
+        /**
+          * Read only mode, display value but prevent changes when true. Just to monitor changes
+          * @default false
+         */
+        "readonly": boolean;
+        /**
+          * Executes the stored write operation to save the complete object to the device.  Combines all field changes into a single object and sends it via the configured write operation. Handles type coercion and error states automatically.
+          * @returns Promise resolving to true if successful, false if failed
+         */
+        "save": () => Promise<boolean>;
+        /**
+          * Sets the object value with optional device communication api and other options.  This is the primary method for connecting object editors to real devices. It supports optimistic updates, error handling, and stores write operations for Save button.
+          * @param value - The object value to set
+          * @param options - Optional configuration for device communication and behavior
+          * @returns Promise resolving to true if successful, false if failed
+          * @example Basic Usage ```javascript await objectEditor.setValue({ temperature: 22, humidity: 45 }); ```
+          * @example JS integration with node-wot browser bundle ```javascript const objectEditor = document.getElementById('device-config'); const initialValue = await (await thing.readProperty('configuration')).value(); await objectEditor.setValue(initialValue, { writeOperation: async value => { await thing.writeProperty('configuration', value); } }); ```
+         */
+        "setValue": (value: any, options?: { writeOperation?: (value: any) => Promise<any>; readOperation?: () => Promise<any>; optimistic?: boolean; _isRevert?: boolean; }) => Promise<boolean>;
+        /**
+          * This method updates the value silently without triggering events.  Use this for external data synchronization to prevent event loops. Perfect for WebSocket updates or polling from remote devices.
+          * @param value - The object value to set silently
+         */
+        "setValueSilent": (value: any) => Promise<void>;
+        /**
+          * Show last updated timestamp below the component
+          * @default false
+         */
+        "showLastUpdated": boolean;
+        /**
+          * Show visual operation status indicators (loading, success, failed) right to the component
+          * @default true
+         */
+        "showStatus": boolean;
+        /**
+          * Visual style variant of the object editor. - outlined: Border around container (default) - filled: Background-filled container with border
+          * @default 'outlined'
+         */
+        "variant": 'outlined' | 'filled';
+    }
+    /**
      * A versatile slider component designed for WoT device control and monitoring.
      * It supports continuous value selection with multiple visual styles, orientations, and different thumb shapes.
      * Supports both interactive control and read-only monitoring modes with customizable ranges.
@@ -999,7 +1087,7 @@ export namespace Components {
         "minRows": number;
         /**
           * Display mode for the text component. - field: One-line text display - area: Expandable text box (multi-line) - unstructured: Plain style, no highlighting - structured: Highlighted block (for JSON-like or formatted text) - editable: User can edit/write directly
-          * @default 'field'
+          * @default 'unstructured'
          */
         "mode": 'field' | 'area' | 'unstructured' | 'structured' | 'editable';
         /**
@@ -1525,6 +1613,34 @@ declare global {
         prototype: HTMLUiNumberPickerElement;
         new (): HTMLUiNumberPickerElement;
     };
+    /**
+     * A versatile object component designed for WoT device to handle object type TD properties.
+     * It auto-generates an editor interface for TD object-type properties with save button to push
+     * all the changes at once.
+     * It also features status indicators, last updated timestamps.
+     * @example Basic Usage
+     * ```html
+     * <ui-object variant="outlined" label="Device Settings"></ui-object>
+     * <ui-object variant="filled" show-last-updated="true" show-status="true"></ui-object>
+     * <ui-object readonly="true" label="System Status" dark="true"></ui-object>
+     * ```
+     * @example JS integration with node-wot browser bundle
+     * ```javascript
+     * const objectEditor = document.getElementById('device-config');
+     * const initialValue = await (await thing.readProperty('configuration')).value();
+     * await objectEditor.setValue(initialValue, {
+     * writeOperation: async value => {
+     * await thing.writeProperty('configuration', value);
+     * }
+     * });
+     * ```
+     */
+    interface HTMLUiObjectElement extends Components.UiObject, HTMLStencilElement {
+    }
+    var HTMLUiObjectElement: {
+        prototype: HTMLUiObjectElement;
+        new (): HTMLUiObjectElement;
+    };
     interface HTMLUiSliderElementEventMap {
         "valueMsg": UiMsg<number>;
     }
@@ -1649,6 +1765,7 @@ declare global {
         "ui-file-picker": HTMLUiFilePickerElement;
         "ui-notification": HTMLUiNotificationElement;
         "ui-number-picker": HTMLUiNumberPickerElement;
+        "ui-object": HTMLUiObjectElement;
         "ui-slider": HTMLUiSliderElement;
         "ui-text": HTMLUiTextElement;
         "ui-toggle": HTMLUiToggleElement;
@@ -2280,6 +2397,69 @@ declare namespace LocalJSX {
         "variant"?: 'minimal' | 'outlined' | 'filled';
     }
     /**
+     * A versatile object component designed for WoT device to handle object type TD properties.
+     * It auto-generates an editor interface for TD object-type properties with save button to push
+     * all the changes at once.
+     * It also features status indicators, last updated timestamps.
+     * @example Basic Usage
+     * ```html
+     * <ui-object variant="outlined" label="Device Settings"></ui-object>
+     * <ui-object variant="filled" show-last-updated="true" show-status="true"></ui-object>
+     * <ui-object readonly="true" label="System Status" dark="true"></ui-object>
+     * ```
+     * @example JS integration with node-wot browser bundle
+     * ```javascript
+     * const objectEditor = document.getElementById('device-config');
+     * const initialValue = await (await thing.readProperty('configuration')).value();
+     * await objectEditor.setValue(initialValue, {
+     * writeOperation: async value => {
+     * await thing.writeProperty('configuration', value);
+     * }
+     * });
+     * ```
+     */
+    interface UiObject {
+        /**
+          * Color theme for the active state matching to thingsweb theme
+          * @default 'primary'
+         */
+        "color"?: 'primary' | 'secondary' | 'neutral';
+        /**
+          * Enable dark mode theme styling when true
+          * @default false
+         */
+        "dark"?: boolean;
+        /**
+          * Disable user interaction when true
+          * @default false
+         */
+        "disabled"?: boolean;
+        /**
+          * Text label displayed above the object editor (optional)
+         */
+        "label"?: string;
+        /**
+          * Read only mode, display value but prevent changes when true. Just to monitor changes
+          * @default false
+         */
+        "readonly"?: boolean;
+        /**
+          * Show last updated timestamp below the component
+          * @default false
+         */
+        "showLastUpdated"?: boolean;
+        /**
+          * Show visual operation status indicators (loading, success, failed) right to the component
+          * @default true
+         */
+        "showStatus"?: boolean;
+        /**
+          * Visual style variant of the object editor. - outlined: Border around container (default) - filled: Background-filled container with border
+          * @default 'outlined'
+         */
+        "variant"?: 'outlined' | 'filled';
+    }
+    /**
      * A versatile slider component designed for WoT device control and monitoring.
      * It supports continuous value selection with multiple visual styles, orientations, and different thumb shapes.
      * Supports both interactive control and read-only monitoring modes with customizable ranges.
@@ -2443,7 +2623,7 @@ declare namespace LocalJSX {
         "minRows"?: number;
         /**
           * Display mode for the text component. - field: One-line text display - area: Expandable text box (multi-line) - unstructured: Plain style, no highlighting - structured: Highlighted block (for JSON-like or formatted text) - editable: User can edit/write directly
-          * @default 'field'
+          * @default 'unstructured'
          */
         "mode"?: 'field' | 'area' | 'unstructured' | 'structured' | 'editable';
         /**
@@ -2585,6 +2765,7 @@ declare namespace LocalJSX {
         "ui-file-picker": UiFilePicker;
         "ui-notification": UiNotification;
         "ui-number-picker": UiNumberPicker;
+        "ui-object": UiObject;
         "ui-slider": UiSlider;
         "ui-text": UiText;
         "ui-toggle": UiToggle;
@@ -2766,6 +2947,29 @@ declare module "@stencil/core" {
              * ```
              */
             "ui-number-picker": LocalJSX.UiNumberPicker & JSXBase.HTMLAttributes<HTMLUiNumberPickerElement>;
+            /**
+             * A versatile object component designed for WoT device to handle object type TD properties.
+             * It auto-generates an editor interface for TD object-type properties with save button to push
+             * all the changes at once.
+             * It also features status indicators, last updated timestamps.
+             * @example Basic Usage
+             * ```html
+             * <ui-object variant="outlined" label="Device Settings"></ui-object>
+             * <ui-object variant="filled" show-last-updated="true" show-status="true"></ui-object>
+             * <ui-object readonly="true" label="System Status" dark="true"></ui-object>
+             * ```
+             * @example JS integration with node-wot browser bundle
+             * ```javascript
+             * const objectEditor = document.getElementById('device-config');
+             * const initialValue = await (await thing.readProperty('configuration')).value();
+             * await objectEditor.setValue(initialValue, {
+             * writeOperation: async value => {
+             * await thing.writeProperty('configuration', value);
+             * }
+             * });
+             * ```
+             */
+            "ui-object": LocalJSX.UiObject & JSXBase.HTMLAttributes<HTMLUiObjectElement>;
             /**
              * A versatile slider component designed for WoT device control and monitoring.
              * It supports continuous value selection with multiple visual styles, orientations, and different thumb shapes.

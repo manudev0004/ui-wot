@@ -7,12 +7,8 @@ export const config: Config = {
   globalStyle: 'src/global.css',
   plugins: [
     postcss({
-      plugins: [
-        require("postcss-import"),
-        require("tailwindcss")("./tailwind.config.js"),
-        autoprefixer()
-      ]
-    })
+      plugins: [require('postcss-import'), require('tailwindcss')('./tailwind.config.js'), autoprefixer()],
+    }),
   ],
   outputTargets: [
     {
@@ -33,6 +29,6 @@ export const config: Config = {
     },
   ],
   testing: {
-    browserHeadless: "shell",
+    browserHeadless: 'shell',
   },
 };

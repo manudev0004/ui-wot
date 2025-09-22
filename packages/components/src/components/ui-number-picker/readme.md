@@ -143,6 +143,19 @@ Type: `Promise<void>`
 | `"value-display"`          |             |
 
 
+## Dependencies
+
+### Used by
+
+ - [ui-object](../ui-object)
+
+### Graph
+```mermaid
+graph TD;
+  ui-object --> ui-number-picker
+  style ui-number-picker fill:#f9f,stroke:#333,stroke-width:4px
+```
+
 ----------------------------------------------
 
 *Built with [StencilJS](https://stenciljs.com/)*
