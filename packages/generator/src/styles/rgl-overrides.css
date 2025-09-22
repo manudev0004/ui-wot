@@ -1,0 +1,22 @@
+.react-grid-layout {
+  position: relative;
+}
+.rgl-card {
+  background: transparent;
+}
+.react-resizable-handle {
+  z-index: 5;
+}
+/* Prevent drag when clicking controls */
+.rgl-no-drag {
+  cursor: default !important;
+}
+/* Make section overlay drag bar above grid items */
+.canvas-page .section-drag-bar {
+  z-index: 20;
+}
+
+/* Ensure resize handle is clickable above grid */
+.canvas-page .section-resize-handle {
+  z-index: 21;
+}
