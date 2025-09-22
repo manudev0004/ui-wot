@@ -30,6 +30,14 @@ export function ComponentCanvasPage() {
 
   // Local, minimal layout state for RGL (no persistence)
   const [layout, setLayout] = useState<Layout[]>([]);
+  // Transient RGL layout while dragging/resizing; null means use committed layout
+  const [transientLayout, setTransientLayout] = useState<Layout[] | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+  const [dragBaseline, setDragBaseline] = useState<Layout[] | null>(null);
+  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+  const [resizeBaseline, setResizeBaseline] = useState<Layout[] | null>(null);
+  const [resizingItemId, setResizingItemId] = useState<string | null>(null);
   // Membership of cards to visual section (defaults to their TD id)
   const [membership, setMembership] = useState<Record<string, string | null>>({});
   // Hide state
@@ -285,7 +293,8 @@ export function ComponentCanvasPage() {
   const sectionBoxes = useMemo(() => {
     const byTd: Record<string, { minX: number; minY: number; maxX: number; maxY: number }> = {};
     const byTdItems: Record<string, Layout[]> = {};
-    const visibleLayout = layout.filter(l => {
+    const activeLayout = transientLayout ?? layout;
+    const visibleLayout = activeLayout.filter(l => {
       if (hiddenCards.has(l.i)) return false;
       if (membership[l.i] === null) return false;
       // Skip items without resolved positions yet
@@ -309,7 +318,7 @@ export function ComponentCanvasPage() {
       }
     });
     return { byTd, byTdItems };
-  }, [layout, membership, hiddenCards, state.components]);
+  }, [layout, transientLayout, membership, hiddenCards, state.components]);
 
   // SECTION DRAG: allow dragging the whole section box to move all child items together
   const sectionDragRef = useRef<{
@@ -467,12 +476,46 @@ export function ComponentCanvasPage() {
     [colWidth, reflowSectionItems],
   );
 
-  // Layout change handlers
+  // Layout change handlers: keep changes transient during drag/resize
   const handleLayoutChange = (next: Layout[]) => {
-    setLayout(next);
+    if (isDragging && dragBaseline && draggingItemId) {
+      const moved = next.find(l => l.i === draggingItemId);
+      if (!moved) return;
+      const overlay = dragBaseline.map(it => (it.i === draggingItemId ? { ...it, x: moved.x, y: moved.y, w: moved.w, h: moved.h } : { ...it }));
+      setTransientLayout(overlay);
+      return;
+    }
+    if (isResizing && resizeBaseline && resizingItemId) {
+      const resized = next.find(l => l.i === resizingItemId);
+      if (!resized) return;
+      const overlay = resizeBaseline.map(it => (it.i === resizingItemId ? { ...it, x: resized.x, y: resized.y, w: resized.w, h: resized.h } : { ...it }));
+      setTransientLayout(overlay);
+      return;
+    }
   };
 
-  const handleDragStop = (_layout: Layout[], item: Layout) => {
+  const handleDragStart = (current: Layout[], _oldItem: Layout, newItem: Layout) => {
+    setIsDragging(true);
+    setDraggingItemId(newItem.i);
+    // capture baseline as a deep copy
+    const base = current.map(it => ({ ...it }));
+    setDragBaseline(base);
+    // show the initial overlay immediately
+    setTransientLayout(base.map(it => (it.i === newItem.i ? { ...it, x: newItem.x, y: newItem.y, w: newItem.w, h: newItem.h } : it)));
+  };
+
+  const handleDragStop = (finalLayout: Layout[], _oldItem: Layout, item: Layout) => {
+    setIsDragging(false);
+    setTransientLayout(null);
+    // Commit only the dragged item's position; restore others to baseline
+    if (dragBaseline && draggingItemId) {
+      const committed = dragBaseline.map(it => (it.i === draggingItemId ? { ...it, x: item.x, y: item.y, w: item.w, h: item.h } : { ...it }));
+      setLayout(committed);
+    } else {
+      setLayout(finalLayout);
+    }
+    setDragBaseline(null);
+    setDraggingItemId(null);
     // If the item belongs to a section, drop out when it exits the bounding box of remaining items
     const comp = state.components.find(c => c.id === item.i);
     if (!comp) return;
@@ -520,8 +563,18 @@ export function ComponentCanvasPage() {
     });
   }, [state.components]);
 
-  // Ensure resized items snap to multiples of their min sizes
-  const handleResizeStop = (_layout: Layout[], _oldItem: Layout, newItem: Layout) => {
+  const handleResizeStart = (current: Layout[], _oldItem: Layout, newItem: Layout) => {
+    setIsResizing(true);
+    setResizingItemId(newItem.i);
+    const base = current.map(it => ({ ...it }));
+    setResizeBaseline(base);
+    setTransientLayout(base.map(it => (it.i === newItem.i ? { ...it, x: newItem.x, y: newItem.y, w: newItem.w, h: newItem.h } : it)));
+  };
+
+  // Ensure resized items snap to multiples of their min sizes, then commit
+  const handleResizeStop = (finalLayout: Layout[], _oldItem: Layout, newItem: Layout) => {
+    setIsResizing(false);
+    setTransientLayout(null);
     const comp = state.components.find(c => c.id === newItem.i);
     const def = comp ? DEFAULT_SIZES[comp.uiComponent] : undefined;
     const minW = newItem.minW ?? def?.minW ?? 1;
@@ -532,8 +585,15 @@ export function ComponentCanvasPage() {
     };
     const qW = Math.min(COLS - newItem.x, quantize(newItem.w, minW));
     const qH = quantize(newItem.h, minH);
-    if (qW === newItem.w && qH === newItem.h) return; // nothing to change
-    setLayout(prev => prev.map(it => (it.i === newItem.i ? { ...it, w: qW, h: qH } : it)));
+    let committed: Layout[];
+    if (resizeBaseline && resizingItemId) {
+      committed = resizeBaseline.map(it => (it.i === resizingItemId ? { ...it, x: newItem.x, y: newItem.y, w: qW, h: qH } : { ...it }));
+    } else {
+      committed = finalLayout.map(it => (it.i === newItem.i ? { ...it, w: qW, h: qH } : it));
+    }
+    setLayout(committed);
+    setResizeBaseline(null);
+    setResizingItemId(null);
   };
 
   // Card-level hide control removed from UI; keep hiddenCards support if needed later
@@ -779,9 +839,11 @@ export function ComponentCanvasPage() {
                   autoSize
                   useCSSTransforms
                   draggableCancel=".rgl-no-drag"
-                  layout={layout.filter(l => !hiddenCards.has(l.i))}
+                  layout={(transientLayout ?? layout).filter(l => !hiddenCards.has(l.i))}
                   onLayoutChange={handleLayoutChange}
+                  onDragStart={handleDragStart}
                   onDragStop={handleDragStop}
+                  onResizeStart={handleResizeStart}
                   onResizeStop={handleResizeStop}
                 >
                   {layout
