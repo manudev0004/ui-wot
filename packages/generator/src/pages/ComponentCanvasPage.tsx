@@ -63,6 +63,24 @@ export function ComponentCanvasPage() {
       const existingIds = new Set(next.map(l => l.i));
       const idToComp = new Map(state.components.map(c => [c.id, c] as const));
 
+      // Quantization helpers: snap width/height to a multiple of minW/minH
+      const quantizeDim = (value: number, min: number) => {
+        const base = Math.max(min || 1, value || min || 1);
+        const step = Math.max(1, min || 1);
+        // Round to nearest multiple
+        const q = Math.max(step, Math.round(base / step) * step);
+        return q;
+      };
+      const quantizeWithinSpan = (desired: number, min: number, span: number) => {
+        if (!span || span < 1) return Math.max(1, min || 1);
+        let q = quantizeDim(desired, Math.max(1, min || 1));
+        if (q > span) {
+          const down = Math.floor(span / Math.max(1, min || 1)) * Math.max(1, min || 1);
+          q = Math.max(Math.min(span, Math.max(1, down)), Math.max(1, min || 1));
+        }
+        return q;
+      };
+
       // Helper: current bounding box for a TD (by comp.tdId) from `next`
       const getSectionBox = (tdId?: string | null) => {
         if (!tdId) return null as null | { minX: number; maxX: number; minY: number; maxY: number };
@@ -144,8 +162,8 @@ export function ComponentCanvasPage() {
         for (const comp of comps) {
           const def = defOf(comp);
           const desired = unitW;
-          const w = Math.max(1, Math.min(desired, span));
-          const h = def.h || 3;
+          const w = quantizeWithinSpan(Math.max(1, Math.min(desired, span)), def.minW ?? 1, span);
+          const h = quantizeDim(def.h || 3, def.minH ?? 1);
           if (cursorX + w > span && cursorX > 0) {
             cursorX = 0;
             cursorY += rowMaxH;
@@ -474,6 +492,50 @@ export function ComponentCanvasPage() {
     }
   };
 
+  // Re-quantize items when their component type changes (minW/minH may change)
+  useEffect(() => {
+    setLayout(prev => {
+      if (prev.length === 0) return prev;
+      let changed = false;
+      const next = prev.map(it => {
+        const comp = state.components.find(c => c.id === it.i);
+        if (!comp) return it;
+        const def = DEFAULT_SIZES[comp.uiComponent] || { w: 4, h: 3, minW: 1, minH: 1 };
+        const minW = def.minW ?? 1;
+        const minH = def.minH ?? 1;
+        let w = it.w;
+        let h = it.h;
+        const quant = (value: number, min: number) => Math.max(min, Math.round(value / Math.max(1, min)) * Math.max(1, min));
+        if (it.minW !== minW) w = quant(w, minW);
+        if (it.minH !== minH) h = quant(h, minH);
+        // Ensure item still fits within grid horizontally
+        if (it.x + w > COLS) w = Math.max(minW, Math.min(COLS - it.x, w));
+        if (w !== it.w || h !== it.h || it.minW !== minW || it.minH !== minH) {
+          changed = true;
+          return { ...it, w, h, minW, minH };
+        }
+        return it;
+      });
+      return changed ? next : prev;
+    });
+  }, [state.components]);
+
+  // Ensure resized items snap to multiples of their min sizes
+  const handleResizeStop = (_layout: Layout[], _oldItem: Layout, newItem: Layout) => {
+    const comp = state.components.find(c => c.id === newItem.i);
+    const def = comp ? DEFAULT_SIZES[comp.uiComponent] : undefined;
+    const minW = newItem.minW ?? def?.minW ?? 1;
+    const minH = newItem.minH ?? def?.minH ?? 1;
+    const quantize = (value: number, min: number) => {
+      const step = Math.max(1, min || 1);
+      return Math.max(step, Math.round(value / step) * step);
+    };
+    const qW = Math.min(COLS - newItem.x, quantize(newItem.w, minW));
+    const qH = quantize(newItem.h, minH);
+    if (qW === newItem.w && qH === newItem.h) return; // nothing to change
+    setLayout(prev => prev.map(it => (it.i === newItem.i ? { ...it, w: qW, h: qH } : it)));
+  };
+
   // Card-level hide control removed from UI; keep hiddenCards support if needed later
 
   // Section hide feature removed
@@ -720,6 +782,7 @@ export function ComponentCanvasPage() {
                   layout={layout.filter(l => !hiddenCards.has(l.i))}
                   onLayoutChange={handleLayoutChange}
                   onDragStop={handleDragStop}
+                  onResizeStop={handleResizeStop}
                 >
                   {layout
                     .filter(l => !hiddenCards.has(l.i))
