@@ -29,9 +29,8 @@ export function TDInputPage() {
     return data.url as string;
   }
 
-  // Unified TD ingestion: host when enabled, otherwise use original URL or a Blob URL for files
+  // Common TD setup logic after parsing from any source
   const setupTD = async (parsedTD: any, opts: { originalUrl?: string; file?: File }) => {
-    // Decide final URL used for wiring (td-url)
     const finalUrl = USE_TD_HOST
       ? await postTDToHost(parsedTD)
       : opts.originalUrl
@@ -65,7 +64,7 @@ export function TDInputPage() {
 
       try {
         const parsedTD = await parseTDFromSource({ type: 'file' as const, content: file });
-        console.log('[generator][td] file TD parsed', { title: parsedTD?.title });
+        // console.log('[generator][td] file TD parsed', { title: parsedTD?.title });
         await setupTD(parsedTD, { file });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to parse Thing Description');
@@ -94,7 +93,7 @@ export function TDInputPage() {
     try {
       const originalUrl = urlInput.trim();
       const parsedTD = await parseTDFromSource({ type: 'url' as const, content: originalUrl });
-      console.log('[generator][td] url TD parsed', { title: parsedTD?.title, originalUrl });
+      // console.log('[generator][td] url TD parsed', { title: parsedTD?.title, originalUrl });
       await setupTD(parsedTD, { originalUrl });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch Thing Description');
@@ -137,7 +136,7 @@ export function TDInputPage() {
   return (
     <div className={`min-h-screen py-6 transition-colors duration-300`} style={{ backgroundColor: 'var(--bg-color)' }}>
       <div className="max-w-2xl mx-auto px-4">
-        {/* Context note when adding to existing dashboard */}
+        {/* Note when adding to existing dashboard */}
         {state.components.length > 0 && (
           <div className={`mb-6 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-300`}>
             Adding to existing dashboard with {state.components.length} components from {state.tdInfos.length} TD{state.tdInfos.length !== 1 ? 's' : ''}

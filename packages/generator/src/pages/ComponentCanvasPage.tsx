@@ -7,9 +7,8 @@ import { dashboardService } from '../services/dashboardService';
 import ReactGridLayoutLib, { WidthProvider, Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import './rgl-overrides.css';
+import '../styles/rgl-overrides.css';
 import { EditPopup } from '../components/EditPopup';
-// Services are now used via useAutoWiring hook
 
 const ReactGridLayout = WidthProvider(ReactGridLayoutLib as unknown as React.ComponentType<any>);
 
@@ -21,7 +20,7 @@ import { getAttributeSchema } from './canvas/attributeSchemas';
 
 // Extracted components and hooks
 import { CardContent } from './canvas/CardContent';
-import { useAutoWiring } from './canvas/useAutoWiring';
+import { connectThings } from './canvas/connectThings';
 
 export function ComponentCanvasPage() {
   const { state, dispatch } = useAppContext();
@@ -29,9 +28,8 @@ export function ComponentCanvasPage() {
   const navigate = useNavigate();
   const { setContent, clear } = useNavbar();
 
-  // Local, minimal layout state for RGL (no persistence)
+  // Local, minimal layout state for RGL
   const [layout, setLayout] = useState<Layout[]>([]);
-  // Transient RGL layout while dragging/resizing; null means use committed layout
   const [transientLayout, setTransientLayout] = useState<Layout[] | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isResizing, setIsResizing] = useState<boolean>(false);
@@ -65,7 +63,7 @@ export function ComponentCanvasPage() {
     return () => ro.disconnect();
   }, []);
 
-  // Seed or update layout when components list changes (section-aware placement)
+  // Update layout when components list changes (section-aware placement)
   useEffect(() => {
     setLayout(prev => {
       const next: Layout[] = [...prev];
@@ -136,12 +134,12 @@ export function ComponentCanvasPage() {
         newByTd.set(key, arr);
       }
 
-      // For each TD group, decide section placement and pack items horizontally within the span
+      // For each TD group, decide section placement
       for (const [tdId, comps] of newByTd) {
         if (!comps || comps.length === 0) continue;
         const defOf = (c: any) => DEFAULT_SIZES[c.uiComponent] || { w: 4, h: 3 };
 
-        // Existing section bounds or allocate a new half-width column
+        // Existing section bounds
         const sec = getSectionBox(tdId);
         let startX: number;
         let span: number;
@@ -193,7 +191,7 @@ export function ComponentCanvasPage() {
 
       return next;
     });
-    // Initialize membership defaults: auto-assign to TD sections so users see sections initially
+    // Initialize membership defaults: auto-assign to TD sections
     setMembership(prev => {
       const next: Record<string, string | null> = { ...prev };
       state.components.forEach(c => {
@@ -233,9 +231,8 @@ export function ComponentCanvasPage() {
       actions: (
         <div className="flex items-center gap-2">
           <label
-            className={`flex items-center gap-2 border rounded-lg px-2 py-1 rgl-no-drag cursor-pointer select-none transition-colors ${
-              theme === 'dark' ? 'bg-gray-800 border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900'
-            }`}
+            className="flex items-center gap-2 border rounded-lg px-2 py-1 rgl-no-drag cursor-pointer select-none transition-colors"
+            style={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
           >
             <input
               type="checkbox"
@@ -264,7 +261,7 @@ export function ComponentCanvasPage() {
               try {
                 const name = prompt('Save dashboard as (name):', state.tdInfos[0]?.title || 'dashboard')?.trim();
                 if (!name) return;
-                // Persist and export JSON (connectivity-aware)
+                // Persist and export JSON
                 dashboardService.saveDashboard(state as any, name);
                 dashboardService.exportFromState(state as any, { name });
                 alert('Dashboard saved and downloaded as JSON.');
@@ -284,7 +281,7 @@ export function ComponentCanvasPage() {
   useEffect(() => {
     if (!editMode) setEditComponentId(null);
   }, [editMode]);
-  // Helpers to compute pixel positions from grid units
+  // Compute pixel positions from grid units
   const colWidth = useMemo(() => {
     if (!containerWidth) return 0;
     const totalMargins = MARGIN[0] * (COLS - 1);
@@ -294,7 +291,7 @@ export function ComponentCanvasPage() {
 
   // Derive a square row height from current column width
   const rowH = useMemo(() => {
-    if (!colWidth) return 56; // fallback before first measure
+    if (!colWidth) return 56;
     return colWidth; // exact match to keep squares at any zoom
   }, [colWidth]);
 
@@ -345,7 +342,7 @@ export function ComponentCanvasPage() {
     tdId: string;
     startX: number;
     startY: number;
-    // Snapshot of original positions for members
+    //  original positions for members
     original: Map<string, { x: number; y: number; w: number }>;
     lastDx: number;
     lastDy: number;
@@ -356,7 +353,7 @@ export function ComponentCanvasPage() {
       if (colWidth === 0 || !editMode) return;
       e.preventDefault();
       e.stopPropagation();
-      // Collect members (only those explicitly inside this section)
+      // Collect members (only those are inside this section)
       const members = layout.filter(l => membership[l.i] === tdId);
       const original = new Map<string, { x: number; y: number; w: number }>();
       members.forEach(m => original.set(m.i, { x: m.x, y: m.y, w: m.w }));
@@ -409,14 +406,13 @@ export function ComponentCanvasPage() {
     startX: number;
     startY: number;
     startBox: { minX: number; minY: number; width: number; height: number };
-    // snapshot order for stable packing
     itemOrder: string[];
   } | null>(null);
 
   const reflowSectionItems = useCallback(
     (tdId: string, minX: number, minY: number, targetW: number) => {
       if (targetW < 1) targetW = 1;
-      // Collect visible items in this section (explicit membership only)
+      // Collect visible items in this section
       const items = layout.filter(it => membership[it.i] === tdId && !hiddenCards.has(it.i)).map(it => ({ ...it }));
       if (items.length === 0) return;
 
@@ -464,7 +460,7 @@ export function ComponentCanvasPage() {
       if (colWidth === 0 || !editMode) return;
       e.preventDefault();
       e.stopPropagation();
-      // Determine the minimum allowed width so we don't force-resize children
+      // Determine the minimum allowed width so it don't force-resize children
       const sectionItems = layout.filter(it => membership[it.i] === tdId && !hiddenCards.has(it.i));
       const minAllowedW = sectionItems.length > 0 ? Math.max(...sectionItems.map(it => it.w)) : 1;
       sectionResizeRef.current = {
@@ -616,17 +612,13 @@ export function ComponentCanvasPage() {
     setResizingItemId(null);
   };
 
-  // Card-level hide control removed from UI; keep hiddenCards support if needed later
-
-  // Section hide feature removed
-
   const removeComponent = (id: string) => {
     dispatch({ type: 'REMOVE_COMPONENT', payload: id });
     if (editComponentId === id) setEditComponentId(null);
   };
 
   const removeSection = (tdId: string) => {
-    // Remove only components currently inside this section (explicit membership)
+    // Remove only components currently inside this section
     const toRemove = layout.filter(l => membership[l.i] === tdId).map(l => l.i);
     toRemove.forEach(id => dispatch({ type: 'REMOVE_COMPONENT', payload: id }));
     // Clean up local maps
@@ -638,8 +630,8 @@ export function ComponentCanvasPage() {
     setLayout(prev => prev.filter(l => !toRemove.includes(l.i)));
   };
 
-  // Auto-wiring uses extracted hook for stability and cleanup
-  useAutoWiring({ tdInfos: state.tdInfos, components: state.components, editMode });
+  // Connect UI elements to TDs using the hook
+  connectThings({ tdInfos: state.tdInfos, components: state.components, editMode });
 
   return (
     <div className={`min-h-screen transition-colors duration-300`} style={{ backgroundColor: 'var(--bg-color)' }}>
@@ -782,7 +774,7 @@ export function ComponentCanvasPage() {
                         </span>
                       )}
                       <span
-                        className={`rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded cursor-pointer ml-1`}
+                        className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded cursor-pointer ml-1"
                         style={{ backgroundColor: 'transparent' }}
                         title="Rename"
                         onClick={e => {
@@ -801,9 +793,9 @@ export function ComponentCanvasPage() {
                         </svg>
                       </span>
                       <span
-                        className={`rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded cursor-pointer ${
-                          theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                        }`}
+                        className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded cursor-pointer"
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-secondary)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         title="Section settings"
                         onClick={e => {
                           e.preventDefault();
@@ -821,9 +813,9 @@ export function ComponentCanvasPage() {
                         </svg>
                       </span>
                       <span
-                        className={`rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded cursor-pointer ${
-                          theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                        }`}
+                        className="rgl-no-drag inline-flex items-center justify-center w-5 h-5 rounded cursor-pointer"
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-secondary)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         title="Delete section"
                         onClick={e => {
                           e.preventDefault();
@@ -890,17 +882,16 @@ export function ComponentCanvasPage() {
                         <div key={l.i} className="rgl-card" style={{ padding: 1 }}>
                           {showWrapper ? (
                             <div
-                              className={`rounded-lg shadow-sm border overflow-hidden relative w-full h-full ${
-                                theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-primary'
-                              }`}
+                              className="rounded-lg shadow-sm border overflow-hidden relative w-full h-full"
+                              style={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-border)' }}
                               data-component-id={comp.id}
                             >
                               {editMode && (
                                 <div className="absolute top-1 right-1 flex items-center gap-2 z-10">
                                   <span
-                                    className={`rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer ${
-                                      theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                                    }`}
+                                    className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer"
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-secondary)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                                     title="Edit"
                                     onClick={e => {
                                       e.preventDefault();
@@ -918,9 +909,9 @@ export function ComponentCanvasPage() {
                                     </svg>
                                   </span>
                                   <span
-                                    className={`rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer ${
-                                      theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                                    }`}
+                                    className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer"
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-secondary)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                                     title="Remove"
                                     onClick={e => {
                                       e.preventDefault();
@@ -943,9 +934,9 @@ export function ComponentCanvasPage() {
                               {editMode && (
                                 <div className="absolute top-1 right-1 flex items-center gap-2 z-10">
                                   <span
-                                    className={`rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer ${
-                                      theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                                    }`}
+                                    className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer"
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-secondary)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                                     title="Edit"
                                     onClick={e => {
                                       e.preventDefault();
@@ -963,9 +954,9 @@ export function ComponentCanvasPage() {
                                     </svg>
                                   </span>
                                   <span
-                                    className={`rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer ${
-                                      theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                                    }`}
+                                    className="rgl-no-drag inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer"
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-secondary)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                                     title="Remove"
                                     onClick={e => {
                                       e.preventDefault();
@@ -989,7 +980,7 @@ export function ComponentCanvasPage() {
                     })}
                 </ReactGridLayout>
               </div>
-              {/* Smart Edit Popup */}
+              {/* Edit Popup */}
               {editComponentId &&
                 (() => {
                   const comp = state.components.find(c => c.id === editComponentId);
@@ -1020,13 +1011,20 @@ export function ComponentCanvasPage() {
                         // Persist to state as strings (kebab-case)
                         const target = state.components.find(c => c.id === componentId);
                         if (!target) return;
-                        const nextAttrs = { ...(target.attributes || {}) };
-                        nextAttrs[attrName] = value;
+                        const nextAttrs = { ...(target.attributes || {}) } as Record<string, string>;
+                        if (value === '' || value == null) {
+                          delete nextAttrs[attrName];
+                        } else {
+                          nextAttrs[attrName] = value;
+                        }
                         dispatch({ type: 'UPDATE_COMPONENT', payload: { id: componentId, updates: { attributes: nextAttrs } } });
                         // Also apply live to the element in DOM if present
                         const elHost = document.querySelector(`[data-component-id="${componentId}"]`);
                         const el = elHost?.querySelector(target.uiComponent) as HTMLElement | null;
-                        if (el) el.setAttribute(attrName, value);
+                        if (el) {
+                          if (value === '' || value == null) el.removeAttribute(attrName);
+                          else el.setAttribute(attrName, value);
+                        }
                       }}
                       onVariantChange={(componentId, variant) => dispatch({ type: 'UPDATE_COMPONENT', payload: { id: componentId, updates: { variant } } })}
                       onComponentClose={componentId => removeComponent(componentId)}

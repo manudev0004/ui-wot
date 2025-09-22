@@ -55,7 +55,6 @@ export function EditPopup(props: EditPopupProps) {
     const popupRect = popupRef.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    // Using fixed positioning for the popup, so coordinates are viewport-relative
 
     // Popup dimensions (estimated if not rendered yet)
     const popupWidth = popupRect.width || 350;
@@ -87,7 +86,7 @@ export function EditPopup(props: EditPopupProps) {
       left = Math.max(16, Math.min(componentRect.left, viewportWidth - popupWidth - 16));
       top = componentRect.bottom + 16;
     } else {
-      // Place above (fallback)
+      // Place above
       placement = 'top';
       left = Math.max(16, Math.min(componentRect.left, viewportWidth - popupWidth - 16));
       top = Math.max(16, componentRect.top - popupHeight - 16);
@@ -239,6 +238,55 @@ export function EditPopup(props: EditPopupProps) {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">Show only the component without card border</p>
                 </div>
               </div>
+              {/* Connectivity */}
+              {props.affordance?.type === 'property' && (
+                <div className="p-5 border-b border-gray-100 dark:border-gray-700">
+                  <h5 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-4">Connectivity</h5>
+                  <div className="mb-4">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">TD Strategy</label>
+                    <select
+                      value={(props.component.attributes?.['td-strategy'] as string) || ''}
+                      onChange={e => {
+                        const v = e.target.value;
+                        props.onAttributeChange(props.component.id, 'td-strategy', v);
+                        if (!v) props.onAttributeChange(props.component.id, 'td-poll-ms', '');
+                      }}
+                      className="w-full px-3 py-2 text-sm border rounded-md cursor-pointer"
+                      style={{
+                        borderColor: 'var(--color-border)',
+                        backgroundColor: theme === 'dark' ? '#374151' : 'white',
+                        color: theme === 'dark' ? '#f9fafb' : '#1f2937',
+                      }}
+                    >
+                      <option value="">Disabled</option>
+                      <option value="observe">Observe</option>
+                      <option value="poll">Poll</option>
+                      <option value="auto">Auto</option>
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Continuous updates: observe/poll/auto. Empty disables.</p>
+                  </div>
+                  {((props.component.attributes?.['td-strategy'] as string) === 'poll' || (props.component.attributes?.['td-strategy'] as string) === 'auto') && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Poll interval (ms)</label>
+                      <input
+                        type="number"
+                        min="250"
+                        step="250"
+                        value={(props.component.attributes?.['td-poll-ms'] as string) || ''}
+                        onChange={e => props.onAttributeChange(props.component.id, 'td-poll-ms', e.target.value)}
+                        className="w-full px-3 py-2 text-sm border rounded-md"
+                        style={{
+                          borderColor: 'var(--color-border)',
+                          backgroundColor: theme === 'dark' ? '#374151' : 'white',
+                          color: theme === 'dark' ? '#f9fafb' : '#1f2937',
+                        }}
+                        placeholder="e.g. 3000"
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Used when polling or auto fallback.</p>
+                    </div>
+                  )}
+                </div>
+              )}
               {/* Layout */}
               <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                 <h5 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-4">Layout</h5>
@@ -376,7 +424,7 @@ export function EditPopup(props: EditPopupProps) {
             </>
           ) : (
             <>
-              {/* Section */}
+              {/* Section popup */}
               <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                 <h5 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-4">Section Settings</h5>
                 <div className="mb-4">

@@ -12,7 +12,6 @@ export function AffordanceSelectionPage() {
   const { setContent, clear } = useNavbar();
   const [selectedAffordances, setSelectedAffordances] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  // map affordanceKey -> selected component type (when multiple are available)
   const [selectedComponentMap, setSelectedComponentMap] = useState<Record<string, string>>({});
 
   const handleAffordanceToggle = (affordanceKey: string) => {
@@ -38,15 +37,14 @@ export function AffordanceSelectionPage() {
     setLoading(true);
 
     try {
-      // Reset previous selection in context when loading for a new TD
+      // Reset previous selection if loading a new TD
       dispatch({ type: 'SELECT_AFFORDANCES', payload: [] });
-      // Reset local map for component choice
       setSelectedComponentMap({});
       // Determine active TD URL for components wiring
       const foundTdInfo = state.tdInfos.find(t => t.td === state.parsedTD) || state.tdInfos[0];
       const tdUrl = (foundTdInfo?.source.type === 'url' ? (foundTdInfo.source.content as string) : undefined) || undefined;
 
-      // Get the active TD ID (prefer existing tdInfo id, fallback to parsedTD.id)
+      // Get the active TD ID 
       const activeTdId = state.activeTdId || foundTdInfo?.id || (state.tdInfos.length > 0 ? state.tdInfos[0].id : 'default');
       const activeTdInfo = state.tdInfos.find(td => td.id === activeTdId);
 
@@ -66,7 +64,6 @@ export function AffordanceSelectionPage() {
             uiComponent: selectedComponentMap[affordance.key] || affordance.suggestedComponent,
             layout: {
               i: `${affordanceKey}-${Date.now()}-${index}`,
-              // Start compact: two tiles wide, two tiles high; dense placement
               x: (index % 6) * 2,
               y: Math.floor(index / 6) * 2,
               w: 2,
@@ -141,10 +138,6 @@ export function AffordanceSelectionPage() {
       setLoading(false);
     }
   };
-
-  // Back navigation handled by global Navbar
-
-  // removed unused getComponentBadgeColor helper
 
   const navbarInfo = useMemo(() => {
     const tdTitle = state.parsedTD?.title || 'Thing';
@@ -276,7 +269,7 @@ export function AffordanceSelectionPage() {
                 <div className="flex items-center justify-start">
                   <div className="flex items-center space-x-2">
                     {(() => {
-                      // Build options based on affordance type with stricter rules
+                      // Build options based on affordance type and other rules
                       let opts: string[] = [];
                       if (affordance.type === 'property') {
                         const schemaType = (affordance as any).schema?.type as string | undefined;

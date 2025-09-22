@@ -8,7 +8,7 @@ export interface DashboardData {
   tdInfos: TDInfo[];
   components: WoTComponent[];
   availableAffordances: ParsedAffordance[];
-  groups?: AffordanceGroup[]; // Optional for backward compatibility
+  groups?: AffordanceGroup[];
 }
 
 class DashboardService {
@@ -119,22 +119,19 @@ class DashboardService {
                 out.source = { type: 'url', content: '' };
               }
             } else if (out.source.type === 'file') {
-              // If content was serialized as a JSON string, rehydrate either td or File
               const c: any = (out.source as any).content;
               if (typeof c === 'string') {
                 try {
                   const parsed = JSON.parse(c);
                   (out as any).td = parsed;
                   out.source = { type: 'file', content: new File([JSON.stringify(parsed, null, 2)], `${out.title || 'thing'}.json`, { type: 'application/json' }) };
-                } catch {
-                  // keep raw string; downstream may ignore file sources
-                }
+                } catch {}
               }
             }
             return out;
           });
 
-          // Backfill component.tdUrl from tdInfos that have URL sources
+          // Fill component.tdUrl from tdInfos that have URL sources
           const tdUrlById = new Map<string, string>();
           (data.tdInfos || []).forEach(t => {
             if (t.source?.type === 'url' && t.source.content) tdUrlById.set(t.id, String(t.source.content));
@@ -178,8 +175,7 @@ class DashboardService {
 
   /**
    * Create a serializable snapshot that preserves connectivity:
-   * - For URL-based TDs, keep the URL in tdInfos.source.content and copy it to components[i].tdUrl for redundancy.
-   * - For file-based TDs, embed the TD JSON so it can be restored without original file.
+   * For URL-based TDs, keep the URL in tdInfos.source.content and copy it to components[i].tdUrl for redundancy.
    */
   private buildSerializableSnapshot(state: AppState, meta: { name: string; description?: string }): DashboardData {
     const tdInfos: TDInfo[] = state.tdInfos.map(info => {
