@@ -51,12 +51,7 @@ function App() {
   return (
     <ThemeProvider>
       <AppProvider>
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
+        <BrowserRouter>
           <RouterSync />
         </BrowserRouter>
       </AppProvider>
