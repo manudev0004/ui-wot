@@ -20,9 +20,9 @@ export function useAutoWiring(deps: { tdInfos: any[]; components: any[]; editMod
         await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
         if (wiringSeqRef.current !== seq) return;
 
-        const propSel = '[data-td-property],[td-property],[property]';
-        const actSel = '[data-td-action],[td-action],[action]';
-        const evtSel = '[data-td-event],[td-event],[event]';
+        const propSel = '[td-property]';
+        const actSel = '[td-action]';
+        const evtSel = '[td-event]';
         let attempts = 0;
         let targetNodes: HTMLElement[] = [];
         while (attempts < 10) {
@@ -78,12 +78,12 @@ export function useAutoWiring(deps: { tdInfos: any[]; components: any[]; editMod
         if (wiringSeqRef.current !== seq) return;
 
         const tdUrls = deps.tdInfos.map(t => (t.source?.type === 'url' ? (t.source.content as string) : null)).filter(Boolean) as string[];
-        const fallbackFromElement = (root.querySelector('[data-td-url]') as HTMLElement | null)?.getAttribute('data-td-url') || undefined;
+        const fallbackFromElement = (root.querySelector('[td-url]') as HTMLElement | null)?.getAttribute('td-url') || undefined;
         const baseUrl = tdUrls[0] ?? fallbackFromElement ?? '';
 
         if (!baseUrl) {
-          const candidates = Array.from(root.querySelectorAll<HTMLElement>('[data-td-property],[data-td-action],[data-td-event]'));
-          const missingUrl = candidates.filter(el => !el.getAttribute('data-td-url')).length;
+          const candidates = Array.from(root.querySelectorAll<HTMLElement>('[td-property],[td-action],[td-event]'));
+          const missingUrl = candidates.filter(el => !el.getAttribute('td-url')).length;
           if (missingUrl > 0) return;
         }
         if (wiringSeqRef.current !== seq) return;

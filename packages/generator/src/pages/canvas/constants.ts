@@ -1,6 +1,6 @@
 import type { Layout } from 'react-grid-layout';
 
-export const COLS = 48; // half-step horizontal granularity (0.5 of previous 24)
+export const COLS = 48; 
 export const MARGIN: [number, number] = [12, 12];
 export const PADDING: [number, number] = [12, 12];
 

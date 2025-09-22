@@ -49,7 +49,7 @@ export function Navbar() {
     >
       <nav className="w-[95%] mx-auto px-3 sm:px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Left: Logo + Back + Title */}
+          {/* Logo*/}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               <img src="https://thingweb.io/img/logo.svg" alt="ThingWeb logo" title="ThingWeb" className="h-10 w-auto select-none" draggable={false} />
@@ -58,7 +58,7 @@ export function Navbar() {
                 <div className="text-xs font-medium text-[var(--color-text-secondary)]">ui-wot</div>
               </div>
             </div>
-
+            {/* Back Button */}
             {showBack && (
               <button
                 onClick={() => navigate(-1)}
@@ -70,7 +70,7 @@ export function Navbar() {
                 </svg>
               </button>
             )}
-
+            {/* Title */}
             {title && (
               <div className="hidden sm:block">
                 <h1 className="text-2xl font-semibold text-[var(--color-text-primary)] animate-slide-in" style={{ fontFamily: 'var(--font-family-heading)' }}>
@@ -91,7 +91,7 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Right: Actions + Theme Toggle */}
+          {/* Actions + Theme Toggle */}
           <div className="flex items-center gap-3">
             {content?.actions && <div className="flex items-center gap-2 animate-slide-in">{content.actions}</div>}
 
