@@ -849,46 +849,72 @@ function ComponentNode({ id, data }: any) {
   const rf = useReactFlow();
   const resizing = useRef<{ startX: number; startY: number; w: number; h: number } | null>(null);
   const size = data?.size || { w: CARD_W, h: CARD_H };
-  const contentObserverRef = useRef<ResizeObserver | null>(null);
-  const lastAppliedRef = useRef<{ w: number; h: number } | null>(null);
-
+  // Auto-fit wrapper to custom element's shadow content so the card matches its true size
   useEffect(() => {
-    // Observe the actual ui-* element size and auto-grow the node to prevent cropping
-    const compId = data?.comp?.id;
-    if (!compId) return;
-    const container = document.querySelector(`[data-component-id="${compId}"]`) as HTMLElement | null;
-    if (!container) return;
-    const host = (container.firstElementChild as HTMLElement | null) || null; // CardContent host
-    if (!host) return;
-    const target = (host.firstElementChild as HTMLElement | null) || host; // ui-* element or host itself
+    if (!data?.comp?.id) return;
+    const containerSel = `[data-component-id="${data.comp.id}"]`;
+    let containerEl: HTMLElement | null = null;
+    let childEl: HTMLElement | null = null; // the custom element with data-ui-el="1"
+    let shadowInner: HTMLElement | null = null; // inner shadow content for intrinsic size
 
-    const ro = new ResizeObserver(() => {
-      const rect = target.getBoundingClientRect();
-      // Minimal padding so borders/controls don't clip
-      const pad = 12;
-      const desiredW = Math.ceil(rect.width) + pad;
-      const desiredH = Math.ceil(rect.height) + pad;
+    const measure = () => {
+      if (!containerEl || !childEl) return;
       const node = rf.getNode(id);
-      const curW = (node?.style?.width as number) ?? size.w;
-      const curH = (node?.style?.height as number) ?? size.h;
-      // Only grow; do not shrink automatically to avoid layout jitter
-      const nextW = Math.max(curW, desiredW);
-      const nextH = Math.max(curH, desiredH);
-      const last = lastAppliedRef.current;
-      if (!last || last.w !== nextW || last.h !== nextH) {
-        lastAppliedRef.current = { w: nextW, h: nextH };
-        rf.setNodes(prev =>
-          reflowAllSections(prev.map(n => (n.id === id ? { ...n, style: { ...n.style, width: nextW, height: nextH }, data: { ...n.data, size: { w: nextW, h: nextH } } } : n))),
-        );
-      }
-    });
-    contentObserverRef.current = ro;
-    ro.observe(target);
+      if (!node) return;
+      const curW = (node.style?.width as number) ?? size.w ?? CARD_W;
+      const curH = (node.style?.height as number) ?? size.h ?? CARD_H;
+
+      // Prefer measuring shadow content when available for accurate intrinsic size
+      const baseRect = childEl.getBoundingClientRect();
+      const innerRect = (shadowInner?.getBoundingClientRect && shadowInner.getBoundingClientRect()) || baseRect;
+      const contRect = containerEl.getBoundingClientRect();
+      const needsW = innerRect.width - contRect.width > 1;
+      const needsH = innerRect.height - contRect.height > 1;
+      if (!needsW && !needsH) return;
+
+      const desiredW = needsW ? Math.ceil(innerRect.width + 4) : curW;
+      const desiredH = needsH ? Math.ceil(innerRect.height + 4) : curH;
+
+      const capW = Math.max(120, Math.min(desiredW, 1600));
+      const capH = Math.max(100, Math.min(desiredH, 1600));
+      if (Math.abs(capW - curW) < 2 && Math.abs(capH - curH) < 2) return;
+
+      rf.setNodes(prev =>
+        reflowAllSections(
+          prev.map(n =>
+            n.id === id
+              ? ({
+                  ...n,
+                  style: { ...n.style, width: capW, height: capH },
+                  data: { ...n.data, size: { w: capW, h: capH } },
+                } as any)
+              : n,
+          ),
+        ),
+      );
+    };
+
+    const ro = new ResizeObserver(() => measure());
+    const init = () => {
+      containerEl = document.querySelector(containerSel) as HTMLElement | null;
+      childEl = (containerEl?.querySelector('[data-ui-el="1"]') as HTMLElement) || null;
+      shadowInner = (childEl as any)?.shadowRoot?.firstElementChild || null;
+      if (!containerEl || !childEl) return;
+      // Initial measurement after paint
+      requestAnimationFrame(measure);
+      // Observe subsequent size changes
+      if (shadowInner instanceof HTMLElement) ro.observe(shadowInner);
+      ro.observe(childEl);
+      ro.observe(containerEl);
+    };
+    // Try now and after microtask in case CardContent just mounted
+    init();
+    const t = setTimeout(init, 50);
     return () => {
+      clearTimeout(t);
       try {
         ro.disconnect();
       } catch {}
-      contentObserverRef.current = null;
     };
   }, [id, rf, data?.comp?.id]);
   const onMouseDown = (e: React.MouseEvent) => {
@@ -989,7 +1015,7 @@ function ComponentNode({ id, data }: any) {
           onMouseDown={onMouseDown}
         />
       )}
-      <div style={{ width: '100%', height: '100%', overflow: 'visible' }} data-component-id={data?.comp?.id}>
+      <div style={{ width: '100%', height: '100%' }} data-component-id={data?.comp?.id}>
         {data?.comp ? <CardContent component={data.comp} tdInfos={data.tdInfos} /> : null}
       </div>
     </div>

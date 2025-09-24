@@ -14,6 +14,7 @@ export function CardContent({ component, tdInfos }: { component: WoTComponent; t
 
     try {
       const el = document.createElement(component.uiComponent);
+      (el as HTMLElement).setAttribute('data-ui-el', '1');
       if (component.variant) el.setAttribute('variant', component.variant);
       el.setAttribute('label', component.title);
       if (component.attributes) {
@@ -27,7 +28,7 @@ export function CardContent({ component, tdInfos }: { component: WoTComponent; t
       else if (component.type === 'event') el.setAttribute('td-event', component.name);
 
       (el as HTMLElement).style.maxWidth = '100%';
-      (el as HTMLElement).style.maxHeight = '100%';
+      // Let custom element compute its own height; avoid clamping to host
 
       host.replaceChildren(el);
     } catch (e) {
