@@ -7,7 +7,22 @@ export function connectThings(deps: { tdInfos: any[]; components: any[]; editMod
   const [wireTick, setWireTick] = useState(0);
 
   useEffect(() => {
-    if (!deps.editMode) setWireTick(t => t + 1);
+    // When entering edit mode, disconnect existing connections and pause updates
+    if (deps.editMode) {
+      try {
+        if (stopHandles.current?.length) {
+          for (const stop of stopHandles.current) {
+            try {
+              stop();
+            } catch {}
+          }
+          stopHandles.current = [];
+        }
+      } catch {}
+      return;
+    }
+    // When leaving edit mode, rewire
+    setWireTick(t => t + 1);
   }, [deps.editMode]);
 
   useEffect(() => {
@@ -20,6 +35,9 @@ export function connectThings(deps: { tdInfos: any[]; components: any[]; editMod
       try {
         await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
         if (seqRef.current !== seqId) return;
+
+        // If in edit mode, skip wiring entirely
+        if (deps.editMode) return;
 
         const propertySelector = '[td-property]';
         const actionSelector = '[td-action]';
@@ -101,6 +119,8 @@ export function connectThings(deps: { tdInfos: any[]; components: any[]; editMod
         } catch {}
 
         if (seqRef.current !== seqId) return;
+        // Guard again in case edit mode toggled during async ops
+        if (deps.editMode) return;
         stopList = await connectAll({ baseUrl, container: canvasRoot });
         if ((stopList?.length ?? 0) === 0) {
           stopList = await connectAll({ baseUrl, container: document });
@@ -122,5 +142,5 @@ export function connectThings(deps: { tdInfos: any[]; components: any[]; editMod
         } catch {}
       }
     };
-  }, [deps.tdInfos, deps.components, wireTick]);
+  }, [deps.tdInfos, deps.components, wireTick, deps.editMode]);
 }

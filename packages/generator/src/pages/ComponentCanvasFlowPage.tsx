@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import ReactFlow, { Background, Controls, MiniMap, Node, useEdgesState, useNodesState, addEdge, Connection, Edge, BackgroundVariant, useReactFlow, NodeTypes, PanOnScrollMode } from 'reactflow';
+import ReactFlow, {
+  Background,
+  Controls,
+  MiniMap,
+  Node,
+  useEdgesState,
+  useNodesState,
+  addEdge,
+  Connection,
+  Edge,
+  BackgroundVariant,
+  useReactFlow,
+  NodeTypes,
+  PanOnScrollMode,
+} from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useAppContext } from '../context/AppContext';
 import { useNavbar } from '../context/NavbarContext';
@@ -41,7 +55,7 @@ export function ComponentCanvasFlowPage() {
 
   // Build nodes per component; auto-pack into rows under their section header
   const [membership, setMembership] = useState<Record<string, string | null>>({});
-  const [editMode, setEditMode] = useState<boolean>(true);
+  const [editMode, setEditMode] = useState<boolean>(false);
   const [editComponentId, setEditComponentId] = useState<string | null>(null);
   const [sectionNames, setSectionNames] = useState<Record<string, string>>({});
   const [sectionStyles, setSectionStyles] = useState<Record<string, { bgColor: string; border: 'dashed' | 'solid' | 'none' }>>({});
@@ -729,7 +743,11 @@ function SectionNode({ id, data }: any) {
       const dy = ev.clientY - resizing.current.startY;
       const nw = Math.max(320, resizing.current.w + dx);
       const nh = Math.max(160, resizing.current.h + dy);
-      rf.setNodes(prev => prev.map(n => (n.id === id ? { ...n, style: { ...n.style, width: nw, height: nh } } : n)));
+      // Update size and reflow to preview layout in real-time
+      rf.setNodes(prev => {
+        const next = prev.map(n => (n.id === id ? { ...n, style: { ...n.style, width: nw, height: nh } } : { ...n }));
+        return reflowAllSections(next);
+      });
     };
     const up = () => {
       document.removeEventListener('mousemove', move);
@@ -831,6 +849,48 @@ function ComponentNode({ id, data }: any) {
   const rf = useReactFlow();
   const resizing = useRef<{ startX: number; startY: number; w: number; h: number } | null>(null);
   const size = data?.size || { w: CARD_W, h: CARD_H };
+  const contentObserverRef = useRef<ResizeObserver | null>(null);
+  const lastAppliedRef = useRef<{ w: number; h: number } | null>(null);
+
+  useEffect(() => {
+    // Observe the actual ui-* element size and auto-grow the node to prevent cropping
+    const compId = data?.comp?.id;
+    if (!compId) return;
+    const container = document.querySelector(`[data-component-id="${compId}"]`) as HTMLElement | null;
+    if (!container) return;
+    const host = (container.firstElementChild as HTMLElement | null) || null; // CardContent host
+    if (!host) return;
+    const target = (host.firstElementChild as HTMLElement | null) || host; // ui-* element or host itself
+
+    const ro = new ResizeObserver(() => {
+      const rect = target.getBoundingClientRect();
+      // Minimal padding so borders/controls don't clip
+      const pad = 12;
+      const desiredW = Math.ceil(rect.width) + pad;
+      const desiredH = Math.ceil(rect.height) + pad;
+      const node = rf.getNode(id);
+      const curW = (node?.style?.width as number) ?? size.w;
+      const curH = (node?.style?.height as number) ?? size.h;
+      // Only grow; do not shrink automatically to avoid layout jitter
+      const nextW = Math.max(curW, desiredW);
+      const nextH = Math.max(curH, desiredH);
+      const last = lastAppliedRef.current;
+      if (!last || last.w !== nextW || last.h !== nextH) {
+        lastAppliedRef.current = { w: nextW, h: nextH };
+        rf.setNodes(prev =>
+          reflowAllSections(prev.map(n => (n.id === id ? { ...n, style: { ...n.style, width: nextW, height: nextH }, data: { ...n.data, size: { w: nextW, h: nextH } } } : n))),
+        );
+      }
+    });
+    contentObserverRef.current = ro;
+    ro.observe(target);
+    return () => {
+      try {
+        ro.disconnect();
+      } catch {}
+      contentObserverRef.current = null;
+    };
+  }, [id, rf, data?.comp?.id]);
   const onMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -863,8 +923,12 @@ function ComponentNode({ id, data }: any) {
   const hideWrapper = !!data?.comp?.hideCard;
   return (
     <div
-      className={hideWrapper ? 'relative w-full h-full' : 'rounded-lg shadow-sm border overflow-hidden w-full h-full'}
-      style={hideWrapper ? { position: 'relative', background: 'transparent' } : { borderColor: 'var(--color-border)', background: 'var(--color-bg-card)', position: 'relative' }}
+      className={hideWrapper ? 'relative w-full h-full' : 'rounded-lg shadow-sm border w-full h-full'}
+      style={
+        hideWrapper
+          ? { position: 'relative', background: 'transparent', overflow: 'visible' }
+          : { borderColor: 'var(--color-border)', background: 'var(--color-bg-card)', position: 'relative', overflow: 'visible' }
+      }
     >
       {/* In edit mode, a transparent overlay lets you drag anywhere */}
       {data?.editMode && <div style={{ position: 'absolute', inset: 0, zIndex: 1 }} />}
@@ -925,7 +989,7 @@ function ComponentNode({ id, data }: any) {
           onMouseDown={onMouseDown}
         />
       )}
-      <div style={{ width: '100%', height: '100%' }} data-component-id={data?.comp?.id}>
+      <div style={{ width: '100%', height: '100%', overflow: 'visible' }} data-component-id={data?.comp?.id}>
         {data?.comp ? <CardContent component={data.comp} tdInfos={data.tdInfos} /> : null}
       </div>
     </div>
