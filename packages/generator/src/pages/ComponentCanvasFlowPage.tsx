@@ -28,7 +28,8 @@ import { formatLabelText } from '../utils/label';
 const SECTION_WIDTH = 640; // px default width for sections
 const SECTION_HEIGHT = 360; // px default height for sections
 const GAP = 24; // px gap between nodes
-const CARD_W = 225; // default card width (also min width)
+const CARD_W = 250; // default card width (also min width)
+const LAYOUT_CARD_W = 360; // nominal card width used only for section layout math
 const CARD_H = 140; // default card height (min height is 130)
 
 // Module-scope layout order to be used by helpers outside component scope
@@ -95,17 +96,25 @@ export function ComponentCanvasFlowPage() {
       });
     });
 
-    // place sections in two columns to balance height
+    // place sections in multiple columns to balance height
     const sectionIds = [...tdOrder];
-    const cols = Math.max(1, Math.min(5, Math.floor((canvasWidth - GAP) / (SECTION_WIDTH + GAP))));
-    const colX = Array.from({ length: cols }, (_, i) => i * (SECTION_WIDTH + GAP));
+    let cols = Math.max(1, Math.min(5, Math.floor((canvasWidth - GAP) / (LAYOUT_CARD_W + GAP))));
+    const activeSectionCount = sectionIds.filter(sid => (bySection[sid] || []).length > 0).length;
+    if (activeSectionCount <= 1) cols = 1;
+    const baseW = Math.max(1, Math.floor((canvasWidth - GAP * (cols - 1)) / cols));
+    const singleTargetCols = 4; // aim for ~4 cards per row when only one section
+    const singleTargetW = GAP * 2 + singleTargetCols * LAYOUT_CARD_W + (singleTargetCols - 1) * GAP;
+    const secW = activeSectionCount <= 1 ? Math.max(320, Math.min(baseW, singleTargetW)) : Math.min(SECTION_WIDTH, Math.max(320, baseW));
+    const colX = Array.from({ length: cols }, (_, i) => i * (secW + GAP));
     const colY = Array.from({ length: cols }, () => 0);
     const result: Node[] = [];
 
     for (const sid of sectionIds) {
       const ids = bySection[sid] || [];
       if (ids.length === 0) continue;
-      const col = colY[0] <= colY[1] ? 0 : 1;
+      // pick the column with the smallest current height
+      let col = 0;
+      for (let i = 1; i < cols; i++) if (colY[i] < colY[col]) col = i;
       const x = colX[col];
       const y = colY[col];
       const sectionTitle = sid === '__unassigned__' ? 'Unassigned' : sectionNames[sid] ?? state.tdInfos.find(t => t.id === sid)?.title ?? 'Section';
@@ -113,6 +122,7 @@ export function ComponentCanvasFlowPage() {
       const borderCss = styleConf.border === 'none' ? 'none' : `1px ${styleConf.border} #94a3b8`;
       // We'll compute height as we place children; preserve existing pos/size if present
       const existing = nodesRef.current.find(n => n.id === `sec:${sid}`);
+      const widthForSection = (existing?.style?.width as number) ?? secW;
       const secNode: Node = {
         id: `sec:${sid}`,
         type: 'sectionNode',
@@ -139,7 +149,7 @@ export function ComponentCanvasFlowPage() {
           onOpenSettings: (id: string) => setEditSectionId(id),
         },
         position: existing?.position ?? { x, y },
-        style: { width: (existing?.style?.width as number) ?? SECTION_WIDTH, height: (existing?.style?.height as number) ?? SECTION_HEIGHT, borderRadius: 8 },
+        style: { width: widthForSection, height: (existing?.style?.height as number) ?? SECTION_HEIGHT, borderRadius: 8 },
         draggable: editMode,
       };
       result.push(secNode);
@@ -147,7 +157,7 @@ export function ComponentCanvasFlowPage() {
       let cx = GAP;
       let cy = GAP; // small top gap
       let rowH = 0;
-      const innerW = SECTION_WIDTH - GAP * 2;
+      const innerW = widthForSection - GAP * 2;
       const preIndex = result.length; // remember start index for children
       for (const id of ids) {
         const comp = state.components.find(c => c.id === id);
@@ -887,8 +897,8 @@ function ComponentNode({ id, data }: any) {
       const desiredW = needsW ? Math.ceil(innerRect.width + padX + FUDGE) : curW;
       const desiredH = needsH ? Math.ceil(innerRect.height + padY + FUDGE) : curH;
 
-      const capW = Math.max(225, Math.min(desiredW, 1600));
-      const capH = Math.max(130, Math.min(desiredH, 1600));
+      const capW = Math.max(CARD_W, Math.min(desiredW, 1600));
+      const capH = Math.max(CARD_H, Math.min(desiredH, 1600));
       if (Math.abs(capW - curW) < 2 && Math.abs(capH - curH) < 2) return;
 
       rf.setNodes(prev =>
@@ -942,8 +952,8 @@ function ComponentNode({ id, data }: any) {
       if (!resizing.current) return;
       const dx = ev.clientX - resizing.current.startX;
       const dy = ev.clientY - resizing.current.startY;
-      const nw = Math.max(225, resizing.current.w + dx);
-      const nh = Math.max(130, resizing.current.h + dy);
+      const nw = Math.max(CARD_W, resizing.current.w + dx);
+      const nh = Math.max(CARD_H, resizing.current.h + dy);
       rf.setNodes(prev => prev.map(n => (n.id === id ? { ...n, style: { ...n.style, width: nw, height: nh }, data: { ...n.data, size: { w: nw, h: nh } } } : n)));
     };
     const up = () => {
