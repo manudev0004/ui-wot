@@ -27,54 +27,43 @@ import { formatLabelText } from '../utils/label';
 
 const SECTION_WIDTH = 640; // px default width for sections
 const SECTION_HEIGHT = 360; // px default height for sections
-const GAP = 24; // px gap between nodes
+const GAP = 10; // px gap between nodes
 const MIN_GAP = 8; // minimal gap when squeezing a row to fit another card
-const CARD_W = 250; // default card width (also min width)
-const LAYOUT_CARD_W = 360; // nominal card width used only for section layout math
+const CARD_W = 280; // default card width (also min width)
+
 const CARD_H = 140; // default card height (min height is 130)
+const EVENT_CARD_H = 304; // double height for event components
+const OBJECT_CARD_H = 304; // double height for object components
 
 // Module-scope layout order to be used by helpers outside component scope
 let layoutOrderGlobal: Record<string, string[]> = {};
-// Layout lock flags used by helpers outside the component
-let __lockLayoutSetting = false; // reflects the UI toggle
-let __layoutPositionsLocked = false; // becomes true after initial settle when lock is enabled
 
-// Enhanced reflow scheduler that waits for all components to fully load
-let __componentsLoaded = new Set<string>();
-let __totalComponents = 0;
-let __arrangeTimeout: NodeJS.Timeout | null = null;
+// Minimum height per component type (object/event need taller cards)
+function getMinCardHeight(comp: any): number {
+  const ui = comp?.uiComponent?.toLowerCase?.() || '';
+  if (ui.includes('event')) return EVENT_CARD_H;
+  if (ui.includes('object') || comp?.affordanceKey?.includes?.('object')) return OBJECT_CARD_H;
+  return CARD_H;
+}
 
-
-
-function scheduleArrangementAfterLoad(rf: ReturnType<typeof useReactFlow> | any, componentId: string, totalCount: number) {
-  __componentsLoaded.add(componentId);
-  __totalComponents = totalCount;
+// Helper function to get appropriate card size based on component type
+function getCardDimensions(comp: any): { w: number; h: number } {
+  if (!comp) return { w: CARD_W, h: CARD_H };
   
-  // Clear any existing timeout
-  if (__arrangeTimeout) {
-    clearTimeout(__arrangeTimeout);
-    __arrangeTimeout = null;
+  const uiComponent = comp.uiComponent?.toLowerCase() || '';
+  
+  // Event components need more height
+  if (uiComponent.includes('event')) {
+    return { w: CARD_W, h: EVENT_CARD_H };
   }
   
-  // If all components are loaded, arrange immediately
-  if (__componentsLoaded.size >= __totalComponents && __totalComponents > 0) {
-    console.log('All components loaded, arranging layout...');
-    __arrangeTimeout = setTimeout(() => {
-      try {
-        rf.setNodes((prev: Node[]) => reflowAllSections(prev));
-        if (__lockLayoutSetting) __layoutPositionsLocked = true;
-      } catch {}
-    }, 100);
-  } else {
-    // Wait a bit longer for remaining components
-    __arrangeTimeout = setTimeout(() => {
-      console.log(`Arranging layout (${__componentsLoaded.size}/${__totalComponents} components loaded)`);
-      try {
-        rf.setNodes((prev: Node[]) => reflowAllSections(prev));
-        if (__lockLayoutSetting) __layoutPositionsLocked = true;
-      } catch {}
-    }, 2000); // Extended wait for slow components
+  // Object/complex components need more height and should scroll if needed
+  if (uiComponent.includes('object') || comp.affordanceKey?.includes('object')) {
+    return { w: CARD_W, h: OBJECT_CARD_H };
   }
+  
+  // Default size for other components
+  return { w: CARD_W, h: CARD_H };
 }
 
 export function ComponentCanvasFlowPage() {
@@ -84,6 +73,7 @@ export function ComponentCanvasFlowPage() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node[]>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([]);
+  const isDraggingRef = useRef(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [canvasWidth, setCanvasWidth] = useState<number>(() => (typeof window !== 'undefined' ? window.innerWidth : 1280));
   useEffect(() => {
@@ -101,22 +91,26 @@ export function ComponentCanvasFlowPage() {
   const [membership, setMembership] = useState<Record<string, string | null>>({});
   const [editMode, setEditMode] = useState<boolean>(false);
   const [editComponentId, setEditComponentId] = useState<string | null>(null);
-  const [lockLayout, setLockLayout] = useState<boolean>(true);
+
   const [sectionNames, setSectionNames] = useState<Record<string, string>>({});
   const [sectionStyles, setSectionStyles] = useState<Record<string, { bgColor: string; border: 'dashed' | 'solid' | 'none' }>>({});
   const [editSectionId, setEditSectionId] = useState<string | null>(null);
   const [layoutOrder, setLayoutOrder] = useState<Record<string, string[]>>({});
 
+  // Canvas display options
+  const [showDots, setShowDots] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
+  const [showMiniMap, setShowMiniMap] = useState(true);
+  const [showControls, setShowControls] = useState(true);
+  const [zoomOnScroll, setZoomOnScroll] = useState(false);
+  const [panOnScroll, setPanOnScroll] = useState(true);
+  const [zoomOnDoubleClick, setZoomOnDoubleClick] = useState(true);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false });
+
   // Make the current order available to reflow helpers outside this component
   useEffect(() => {
     (layoutOrderGlobal as any) = layoutOrder;
   }, [layoutOrder]);
-
-  // Reflect lock toggle to module flags used by helper functions
-  useEffect(() => {
-    __lockLayoutSetting = !!lockLayout;
-    if (!lockLayout) __layoutPositionsLocked = false;
-  }, [lockLayout]);
 
   // Preserve existing node positions/sizes on rebuild
   const nodesRef = useRef<Node[]>([]);
@@ -145,17 +139,29 @@ export function ComponentCanvasFlowPage() {
       });
     });
 
-    // place sections in multiple columns to balance height
+    // Smart section layout: 1 TD = full width, 2 TDs = half each, 3+ TDs = grid
     const sectionIds = [...tdOrder];
-    let cols = Math.max(1, Math.min(5, Math.floor((canvasWidth - GAP) / (LAYOUT_CARD_W + GAP))));
     const activeSectionCount = sectionIds.filter(sid => (bySection[sid] || []).length > 0).length;
-    if (activeSectionCount <= 1) cols = 1;
-    const baseW = Math.max(1, Math.floor((canvasWidth - GAP * (cols - 1)) / cols));
-    const singleTargetCols = 4; // aim for ~4 cards per row when only one section
-    const singleTargetW = GAP * 2 + singleTargetCols * LAYOUT_CARD_W + (singleTargetCols - 1) * GAP;
-    const secW = activeSectionCount <= 1 ? Math.max(320, Math.min(baseW, singleTargetW)) : Math.min(SECTION_WIDTH, Math.max(320, baseW));
-    const colX = Array.from({ length: cols }, (_, i) => i * (secW + GAP));
-    const colY = Array.from({ length: cols }, () => 0);
+    
+    let cols, secW;
+    if (activeSectionCount === 1) {
+      // Single TD: take full available width (inner gaps handled inside section)
+      cols = 1;
+      secW = Math.min(canvasWidth - GAP * 2, 1800); // Cap max width for readability
+    } else if (activeSectionCount === 2) {
+      // Two TDs: ensure minimum 900px each to fit 3 cards per row
+      cols = 2;
+      const availableForSections = canvasWidth - GAP * 3; // Account for side margins + center gap
+      secW = Math.max(895, Math.floor(availableForSections / 2));
+    } else {
+      // Three or more TDs: grid layout (2 per row) with minimum width
+      cols = 2;
+      const availableForSections = canvasWidth - GAP * 3;
+      secW = Math.max(900, Math.floor(availableForSections / 2));
+    }
+    
+    const colX = Array.from({ length: cols }, (_, i) => GAP + i * (secW + GAP));
+    const colY = Array.from({ length: cols }, () => GAP);
     const result: Node[] = [];
 
     for (const sid of sectionIds) {
@@ -171,7 +177,8 @@ export function ComponentCanvasFlowPage() {
       const borderCss = styleConf.border === 'none' ? 'none' : `1px ${styleConf.border} #94a3b8`;
       // We'll compute height as we place children; preserve existing pos/size if present
       const existing = nodesRef.current.find(n => n.id === `sec:${sid}`);
-      const widthForSection = (existing?.style?.width as number) ?? secW;
+  // Always use computed layout width so section columns adapt to TD count
+  const widthForSection = secW;
       const secNode: Node = {
         id: `sec:${sid}`,
         type: 'sectionNode',
@@ -200,33 +207,39 @@ export function ComponentCanvasFlowPage() {
         position: existing?.position ?? { x, y },
         style: { width: widthForSection, height: (existing?.style?.height as number) ?? SECTION_HEIGHT, borderRadius: 8 },
         draggable: editMode,
+        dragHandle: '.section-drag-handle',
       };
       result.push(secNode);
       // pack components inside section as children using coordinate-based space tracking
       const innerW = widthForSection - GAP * 2;
       const preIndex = result.length; // remember start index for children
       const queue = [...ids];
-      
+
       // Track occupied space with coordinate system
       type SpaceRect = { x: number; y: number; w: number; h: number };
       const occupiedSpaces: SpaceRect[] = [];
       let currentY = GAP;
-      
+
       const findBestPosition = (w: number, h: number): { x: number; y: number } => {
-        // Try to place at each y level with finer granularity
-        const stepSize = Math.min(GAP, 12); // Smaller steps for better packing
-        for (let y = GAP; y <= currentY + h + GAP; y += stepSize) {
+        // Try to place at each y level, scanning for horizontal space
+        const stepY = GAP;
+        const stepX = 4; // Fine horizontal positioning
+
+        for (let y = GAP; y <= currentY + h + GAP; y += stepY) {
           // For each y level, try placing from left to right
-          for (let x = GAP; x + w <= innerW + GAP; x += stepSize) {
-            const candidate = { x, y, w: w + GAP, h: h + GAP }; // Include gap in conflict check
+          for (let x = GAP; x + w <= innerW; x += stepX) {
+            const candidate = { x, y, w: w + GAP, h: h + GAP };
             // Check if this position conflicts with any occupied space
-            const hasConflict = occupiedSpaces.some(occupied => 
-              !(candidate.x >= occupied.x + occupied.w ||
-                candidate.x + candidate.w <= occupied.x ||
-                candidate.y >= occupied.y + occupied.h ||
-                candidate.y + candidate.h <= occupied.y)
+            const hasConflict = occupiedSpaces.some(
+              occupied =>
+                !(
+                  candidate.x >= occupied.x + occupied.w ||
+                  candidate.x + candidate.w <= occupied.x ||
+                  candidate.y >= occupied.y + occupied.h ||
+                  candidate.y + candidate.h <= occupied.y
+                ),
             );
-            if (!hasConflict && x + w <= innerW) {
+            if (!hasConflict) {
               return { x, y };
             }
           }
@@ -235,55 +248,52 @@ export function ComponentCanvasFlowPage() {
         return { x: GAP, y: currentY };
       };
 
-      const detectAndResolveOverlaps = () => {
-        const placedNodes = result.slice(preIndex);
-        let hasOverlaps = false;
-        
-        // Check for overlaps between all placed nodes
-        for (let i = 0; i < placedNodes.length; i++) {
-          for (let j = i + 1; j < placedNodes.length; j++) {
-            const a = placedNodes[i];
-            const b = placedNodes[j];
+      // Add overlap detection to ensure no cards overlap
+      const detectAndFixOverlaps = () => {
+        const children = result.slice(preIndex);
+        let fixed = false;
+
+        for (let i = 0; i < children.length; i++) {
+          for (let j = i + 1; j < children.length; j++) {
+            const a = children[i];
+            const b = children[j];
             const aPos = a.position as { x: number; y: number };
             const bPos = b.position as { x: number; y: number };
             const aW = (a.style?.width as number) ?? CARD_W;
-            const aH = (a.style?.height as number) ?? CARD_H;
+            const aH = (a.style?.height as number) ?? getMinCardHeight((a.data as any)?.comp);
             const bW = (b.style?.width as number) ?? CARD_W;
-            const bH = (b.style?.height as number) ?? CARD_H;
-            
-            // Check for overlap (with small buffer for gaps)
-            const overlap = !(
-              aPos.x + aW + MIN_GAP <= bPos.x ||
-              bPos.x + bW + MIN_GAP <= aPos.x ||
-              aPos.y + aH + MIN_GAP <= bPos.y ||
-              bPos.y + bH + MIN_GAP <= aPos.y
-            );
-            
+            const bH = (b.style?.height as number) ?? getMinCardHeight((b.data as any)?.comp);
+
+            // Check for overlap
+            const overlap = !(aPos.x + aW + MIN_GAP <= bPos.x || bPos.x + bW + MIN_GAP <= aPos.x || aPos.y + aH + MIN_GAP <= bPos.y || bPos.y + bH + MIN_GAP <= aPos.y);
+
             if (overlap) {
-              hasOverlaps = true;
-              // Move the second node to a non-overlapping position
+              // Move the second card to a non-overlapping position
               const newPos = findBestPosition(bW, bH);
               b.position = { x: newPos.x, y: newPos.y } as any;
               occupiedSpaces.push({ x: newPos.x, y: newPos.y, w: bW + GAP, h: bH + GAP });
               currentY = Math.max(currentY, newPos.y + bH + GAP);
+              fixed = true;
             }
           }
         }
-        
-        return hasOverlaps;
+        return fixed;
       };
 
       while (queue.length) {
         const id = queue.shift()!;
         const comp = state.components.find(c => c.id === id);
         if (!comp) continue;
-        
+
         const existingChild = nodesRef.current.find(n => n.id === id);
-        const w = (existingChild?.style?.width as number) ?? CARD_W;
-        const h = (existingChild?.style?.height as number) ?? CARD_H;
-        
+  const dimensions = getCardDimensions(comp);
+  let w = (existingChild?.style?.width as number) ?? dimensions.w;
+  let h = (existingChild?.style?.height as number) ?? dimensions.h;
+  // Enforce per-type minimum height (e.g., object/event >= 304px)
+  h = Math.max(h, getMinCardHeight(comp));
+
         const pos = findBestPosition(w, h);
-        
+
         // Create the node
         result.push({
           id,
@@ -302,26 +312,26 @@ export function ComponentCanvasFlowPage() {
           style: { width: w, height: h },
           draggable: editMode,
         });
-        
+
         // Mark this space as occupied (including gap)
         occupiedSpaces.push({ x: pos.x, y: pos.y, w: w + GAP, h: h + GAP });
-        
+
         // Update currentY to track the bottom-most occupied space
         currentY = Math.max(currentY, pos.y + h + GAP);
       }
-      
-      // After initial placement, detect and resolve any overlaps
+
+      // Fix any overlaps that occurred during placement
       let attempts = 0;
-      while (detectAndResolveOverlaps() && attempts < 3) {
+      while (detectAndFixOverlaps() && attempts < 3) {
         attempts++;
-        console.log(`Resolving overlaps (attempt ${attempts})`);
       }
+
       // adjust section height to enclose children using actual child bounds
       const children = result.slice(preIndex);
       let maxBottom = GAP;
       if (children.length) {
         for (const ch of children) {
-          const h = (ch.style?.height as number) ?? CARD_H;
+          const h = (ch.style?.height as number) ?? getMinCardHeight((ch.data as any)?.comp);
           const y = (ch.position?.y as number) ?? 0;
           maxBottom = Math.max(maxBottom, y + h + GAP);
         }
@@ -331,7 +341,7 @@ export function ComponentCanvasFlowPage() {
       secNode.style = { ...secNode.style, height: Math.max(SECTION_HEIGHT, maxBottom) } as any;
       // stack using the section's current or computed height
       const stackH = (existing?.style?.height as number) ?? (Number((secNode.style as any)?.height) || SECTION_HEIGHT);
-      colY[col] += stackH + GAP;
+      colY[col] = Math.max(colY[col], y + stackH + GAP);
     }
 
     // Fallback: components without any section create standalone nodes so page never blanks
@@ -341,8 +351,9 @@ export function ComponentCanvasFlowPage() {
       const comp = state.components.find(c => c.id === id);
       if (!comp) continue;
       const existingFree = nodesRef.current.find(n => n.id === id && !n.parentNode);
-      const w = (existingFree?.style?.width as number) ?? CARD_W;
-      const h = (existingFree?.style?.height as number) ?? CARD_H;
+      const dimensions = getCardDimensions(comp);
+      const w = (existingFree?.style?.width as number) ?? dimensions.w;
+      const h = (existingFree?.style?.height as number) ?? dimensions.h;
       const pos = existingFree?.position ?? { x: 0, y: colY[0] + GAP };
       result.push({
         id,
@@ -369,25 +380,29 @@ export function ComponentCanvasFlowPage() {
     setNodes(buildNodes);
   }, [buildNodes, setNodes]);
 
-  // Enhanced post-mount: wait for all components to load before arranging
+  // Auto-reflow after nodes are built (regardless of edit mode)
   useEffect(() => {
     if (nodes.length === 0) return;
-    
-    // Reset tracking for new layout
-    __componentsLoaded.clear();
-    __totalComponents = state.components.length;
-    
-    // Don't arrange immediately - let components load first
-    // The arrangement will be triggered from ComponentNode measurement effects
-    console.log(`Waiting for ${__totalComponents} components to load...`);
-    
-    return () => {
-      if (__arrangeTimeout) {
-        clearTimeout(__arrangeTimeout);
-        __arrangeTimeout = null;
+    const timer = setTimeout(() => {
+      // Don't reflow if user is currently dragging
+      if (!isDraggingRef.current) {
+        setNodes(prev => reflowAllSections(prev));
       }
-    };
-  }, [nodes.length, state.components.length, setNodes]);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [nodes.length, setNodes]);
+
+  // Live reflow when components change (for live editing feedback)
+  useEffect(() => {
+    if (nodes.length === 0) return;
+    const timer = setTimeout(() => {
+      // Don't reflow if user is currently dragging
+      if (!isDraggingRef.current) {
+        setNodes(prev => reflowAllSections(prev));
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [state.components, setNodes]);
 
   // Initialize layout order from current arrangement once nodes are first built
   useEffect(() => {
@@ -468,14 +483,7 @@ export function ComponentCanvasFlowPage() {
             <input type="checkbox" checked={editMode} onChange={e => setEditMode(e.target.checked)} />
             <span className="text-xs font-heading">Edit</span>
           </label>
-          <label
-            className="flex items-center gap-2 border rounded-lg px-2 py-1 cursor-pointer select-none transition-colors"
-            title="Lock card positions after first layout"
-            style={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
-          >
-            <input type="checkbox" checked={lockLayout} onChange={e => setLockLayout(e.target.checked)} />
-            <span className="text-xs font-heading">Lock layout</span>
-          </label>
+
           <button onClick={() => navigate('/td-input')} className="bg-accent hover:bg-accent-light text-white font-heading font-medium py-1.5 px-3 rounded-lg transition-colors">
             Add TD
           </button>
@@ -506,7 +514,7 @@ export function ComponentCanvasFlowPage() {
       ),
     });
     return () => clear();
-  }, [setContent, clear, navigate, editMode, tdSummary, state, dispatch, lockLayout]);
+  }, [setContent, clear, navigate, editMode, tdSummary, state, dispatch]);
 
   // Toggle node draggability when edit mode changes
   useEffect(() => {
@@ -526,6 +534,29 @@ export function ComponentCanvasFlowPage() {
 
   const onConnect = (connection: Connection) => setEdges((eds: Edge[]) => addEdge(connection, eds));
 
+  // Context menu handlers
+  const onPaneContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      show: true
+    });
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu(prev => ({ ...prev, show: false }));
+  };
+
+  // Close context menu on click outside
+  useEffect(() => {
+    const handleClick = () => closeContextMenu();
+    if (contextMenu.show) {
+      document.addEventListener('click', handleClick);
+      return () => document.removeEventListener('click', handleClick);
+    }
+  }, [contextMenu.show]);
+
   // Drag preview state
   const dragRef = useRef<{
     activeId: string | null;
@@ -535,256 +566,191 @@ export function ComponentCanvasFlowPage() {
   const onNodeDragStart = (_: any, node: any) => {
     if (!editMode) return;
     if (!node || node.type !== 'componentNode') return;
+    isDraggingRef.current = true;
     dragRef.current = { activeId: node.id, baseline: nodes.map(n => ({ ...n, position: { ...n.position } })) };
   };
 
   const onNodeDrag = (_: any, node: any) => {
-    if (!editMode) return;
-    if (!node || node.type !== 'componentNode') return;
-    if (!dragRef.current || dragRef.current.activeId !== node.id) return;
-    const baseline = dragRef.current.baseline;
-
-    // Determine target section under cursor (absolute center)
-    const sections = baseline.filter(n => n.type === 'sectionNode');
-    const getNodeSize = (n: Node) => ({
-      w: (n.style?.width as number) ?? (n.data?.size?.w as number) ?? (n.data?.size?.width as number) ?? CARD_W,
-      h: (n.style?.height as number) ?? (n.data?.size?.h as number) ?? (n.data?.size?.height as number) ?? CARD_H,
+    // Allow free dragging in edit mode
+    if (!editMode || !node || node.type !== 'componentNode') return;
+    
+    // Update positions in real-time during drag to show live arrangement
+    const draggingCardId = node.id;
+    const draggingPos = node.position;
+    
+    // Find the section this card belongs to
+    const sectionId = node.parentNode;
+    if (!sectionId) return;
+    
+    // Get all cards in the same section
+    const sectionCards = nodes.filter(n => 
+      n.parentNode === sectionId && 
+      n.type === 'componentNode' && 
+      n.id !== draggingCardId
+    );
+    
+    // Apply coordinate-based repositioning for cards that would overlap
+  const cardW = (node.style?.width as number) ?? CARD_W;
+  const cardH = (node.style?.height as number) ?? getMinCardHeight(node.data?.comp);
+    const section = nodes.find(n => n.id === sectionId);
+    const sectionW = (section?.style?.width as number) ?? SECTION_WIDTH;
+    const innerW = sectionW - GAP * 2;
+    
+    // Track occupied spaces excluding the dragging card
+    const occupiedSpaces: Array<{ x: number; y: number; w: number; h: number; id: string }> = [];
+    
+    // Add the dragging card's new position
+    occupiedSpaces.push({
+      x: draggingPos.x,
+      y: draggingPos.y,
+      w: cardW + GAP,
+      h: cardH + GAP,
+      id: draggingCardId
     });
-
-    const draggedSize = getNodeSize(node);
-    const absPt = { x: node.positionAbsolute?.x ?? node.position.x, y: node.positionAbsolute?.y ?? node.position.y };
-    const center = { x: absPt.x + draggedSize.w / 2, y: absPt.y + draggedSize.h / 2 };
-    let targetSection: Node | null = null;
-    for (const sec of sections) {
-      const sw = (sec.style?.width as number) ?? SECTION_WIDTH;
-      const sh = (sec.style?.height as number) ?? SECTION_HEIGHT;
-      const rect = { x: sec.position.x, y: sec.position.y, w: sw, h: sh };
-      if (center.x >= rect.x && center.x <= rect.x + rect.w && center.y >= rect.y && center.y <= rect.y + rect.h) {
-        targetSection = sec;
-        break;
-      }
-    }
-
-    const next: Node[] = baseline.map(n => ({ ...n }));
-
-    // Helper to pack a section's children around a fixed node
-    const packSection = (sec: Node, fixed: { id: string; x: number; y: number; w: number; h: number } | null) => {
-      const sw = (sec.style?.width as number) ?? SECTION_WIDTH;
-      const innerW = sw - GAP * 2;
-      const children = next.filter(n => n.type === 'componentNode' && n.parentNode === sec.id);
-      sortChildrenByLayoutOrder(children, (sec.id as string).replace(/^sec:/, ''));
-      let cx = GAP;
-      let cy = GAP;
-      let rowH = 0;
-      for (const ch of children) {
-        if (fixed && ch.id === fixed.id) {
-          // ensure fixed is inside bounds
-          ch.position = { x: Math.max(GAP, Math.min(innerW - fixed.w, fixed.x)), y: Math.max(GAP, fixed.y) } as any;
-          rowH = Math.max(rowH, fixed.h);
-          continue;
+    
+    const findBestPosition = (w: number, h: number, excludeId: string): { x: number; y: number } => {
+      const stepY = GAP;
+      const stepX = 4;
+      let maxBottom = GAP;
+      
+      // Calculate max bottom from current occupancy
+      occupiedSpaces.forEach(space => {
+        if (space.id !== excludeId) {
+          maxBottom = Math.max(maxBottom, space.y + space.h);
         }
-        const sz = getNodeSize(ch);
-        // wrap if needed
-        if (cx + sz.w > innerW && cx > GAP) {
-          cx = GAP;
-          cy += rowH + GAP;
-          rowH = 0;
-        }
-        // avoid colliding with fixed
-        if (fixed) {
-          const overlapsVert = !(cy + sz.h <= fixed.y || fixed.y + fixed.h <= cy);
-          const wouldOverlapHoriz = !(cx + sz.w <= fixed.x || fixed.x + fixed.w <= cx);
-          if (overlapsVert && wouldOverlapHoriz) {
-            // move to right of fixed
-            const newCx = fixed.x + fixed.w + GAP;
-            if (newCx + sz.w <= innerW) {
-              cx = newCx;
-            } else {
-              // wrap row
-              cx = GAP;
-              cy += rowH + GAP;
-              rowH = 0;
-            }
-          }
-        }
-        ch.position = { x: cx, y: cy } as any;
-        cx += sz.w + GAP;
-        rowH = Math.max(rowH, sz.h);
-      }
-      // set section height to enclose children
-      const innerH = cy + rowH + GAP;
-      next.forEach(n => {
-        if (n.id === sec.id) n.style = { ...n.style, height: Math.max(SECTION_HEIGHT, innerH) } as any;
       });
-    };
-
-    // Case A: Dragging within a section (current or entering targetSection)
-    if (targetSection) {
-      // Remove from any previous parent in preview and attach to target section for preview
-      const idx = next.findIndex(n => n.id === node.id);
-      if (idx !== -1) {
-        next[idx].parentNode = targetSection.id as any;
-        const rel = { x: absPt.x - targetSection.position.x, y: absPt.y - targetSection.position.y };
-        const fixed = { id: node.id, x: rel.x, y: rel.y, w: draggedSize.w, h: draggedSize.h };
-        // Pack target section with fixed node
-        packSection(targetSection, fixed);
-      }
-      // Reflow all other sections without changes
-    } else {
-      // Not over a section: if it had a parent, preview leaving it by reflowing that section without the dragged
-      const draggedInBaseline = baseline.find(n => n.id === node.id);
-      const prevParentId = draggedInBaseline?.parentNode as string | undefined;
-      if (prevParentId) {
-        const sec = next.find(n => n.id === prevParentId);
-        if (sec) {
-          // Temporarily remove dragged from this section for preview
-          const idx = next.findIndex(n => n.id === node.id);
-          if (idx !== -1) next[idx].parentNode = undefined as any;
-          packSection(sec as any, null);
+      
+      for (let y = GAP; y <= maxBottom + GAP; y += stepY) {
+        for (let x = GAP; x + w <= innerW; x += stepX) {
+          const hasConflict = occupiedSpaces.some(occupied => 
+            occupied.id !== excludeId &&
+            !(x >= occupied.x + occupied.w || x + w + GAP <= occupied.x || 
+              y >= occupied.y + occupied.h || y + h + GAP <= occupied.y)
+          );
+          if (!hasConflict) return { x, y };
         }
       }
-      // Allow free dragging outside; do not pack global canvas
+      return { x: GAP, y: maxBottom };
+    };
+    
+    // Update positions of cards that would conflict with the dragging card
+    const updatedNodes = [...nodes];
+    let needsUpdate = false;
+    
+    sectionCards.forEach(card => {
+      const pos = card.position;
+  const w = (card.style?.width as number) ?? CARD_W;
+  const h = (card.style?.height as number) ?? getMinCardHeight((card as any)?.data?.comp);
+      
+      // Check if this card overlaps with the dragging card's new position
+      const overlap = !(
+        pos.x + w + MIN_GAP <= draggingPos.x || 
+        draggingPos.x + cardW + MIN_GAP <= pos.x || 
+        pos.y + h + MIN_GAP <= draggingPos.y || 
+        draggingPos.y + cardH + MIN_GAP <= pos.y
+      );
+      
+      if (overlap) {
+        const newPos = findBestPosition(w, h, card.id);
+        const nodeIndex = updatedNodes.findIndex(n => n.id === card.id);
+        if (nodeIndex >= 0) {
+          updatedNodes[nodeIndex] = {
+            ...updatedNodes[nodeIndex],
+            position: { x: newPos.x, y: newPos.y }
+          };
+          occupiedSpaces.push({
+            x: newPos.x,
+            y: newPos.y,
+            w: w + GAP,
+            h: h + GAP,
+            id: card.id
+          });
+          needsUpdate = true;
+        }
+      } else {
+        // Add non-overlapping cards to occupied spaces
+        occupiedSpaces.push({
+          x: pos.x,
+          y: pos.y,
+          w: w + GAP,
+          h: h + GAP,
+          id: card.id
+        });
+      }
+    });
+    
+    if (needsUpdate) {
+      setNodes(updatedNodes);
     }
-
-    setNodes(next);
   };
 
   const onNodeDragStop = (_: any, node: any) => {
-    // If dragging a component node, detect if it should join/leave a section
-    if (!node || node.type !== 'componentNode') return;
-    setNodes(prev => {
-      const sections = prev.filter(n => n.type === 'sectionNode');
-      const pt = { x: node.positionAbsolute?.x ?? node.position.x, y: node.positionAbsolute?.y ?? node.position.y };
-      let target: any = null;
-      for (const sec of sections) {
-        const sw = (sec.style?.width as number) ?? SECTION_WIDTH;
-        const sh = (sec.style?.height as number) ?? SECTION_HEIGHT;
-        const rect = { x: sec.position.x, y: sec.position.y, w: sw, h: sh };
-        // if center is inside
-        const cx = pt.x + ((node.style?.width as number) ?? CARD_W) / 2;
-        const cy = pt.y + ((node.style?.height as number) ?? CARD_H) / 2;
-        if (cx >= rect.x && cx <= rect.x + rect.w && cy >= rect.y && cy <= rect.y + rect.h) {
-          target = sec;
-          break;
-        }
-      }
-      let next = prev.map(n => ({ ...n }));
-      // Helper to pack a section with fixed dropped node
-      const packCommit = (sec: Node, fixedNode: Node, fixedAbs: { x: number; y: number }) => {
-        const sw = (sec.style?.width as number) ?? SECTION_WIDTH;
-        const innerW = sw - GAP * 2;
-        const rel = { x: fixedAbs.x - sec.position.x, y: fixedAbs.y - sec.position.y };
-        const fw = (fixedNode.style?.width as number) ?? CARD_W;
-        const fh = (fixedNode.style?.height as number) ?? CARD_H;
-        const fixed = { id: fixedNode.id, x: Math.max(GAP, Math.min(innerW - fw, rel.x)), y: Math.max(GAP, rel.y), w: fw, h: fh };
-        // attach fixed to section
-        next = next.map(n => (n.id === fixedNode.id ? ({ ...n, parentNode: sec.id, position: { x: fixed.x, y: fixed.y } } as any) : n));
-        // pack others
-        let cx = GAP;
-        let cy = GAP;
-        let rowH = 0;
-        const children = next.filter(n => n.type === 'componentNode' && n.parentNode === sec.id);
-        // honor stored layout order; keep fixed in sequence where it falls by order
-        sortChildrenByLayoutOrder(children, (sec.id as string).replace(/^sec:/, ''));
-        for (const ch of children) {
-          if (ch.id === fixed.id) {
-            rowH = Math.max(rowH, fixed.h);
-            continue;
-          }
-          const w = (ch.style?.width as number) ?? CARD_W;
-          const h = (ch.style?.height as number) ?? CARD_H;
-          if (cx + w > innerW && cx > GAP) {
-            cx = GAP;
-            cy += rowH + GAP;
-            rowH = 0;
-          }
-          // avoid fixed
-          const overlapsVert = !(cy + h <= fixed.y || fixed.y + fixed.h <= cy);
-          const wouldOverlapHoriz = !(cx + w <= fixed.x || fixed.x + fixed.w <= cx);
-          if (overlapsVert && wouldOverlapHoriz) {
-            const newCx = fixed.x + fixed.w + GAP;
-            if (newCx + w <= innerW) cx = newCx;
-            else {
-              cx = GAP;
-              cy += rowH + GAP;
-              rowH = 0;
-            }
-          }
-          ch.position = { x: cx, y: cy } as any;
-          cx += w + GAP;
-          rowH = Math.max(rowH, h);
-        }
-        const innerH = Math.max(cy + rowH + GAP, fixed.y + fixed.h + GAP);
-        next = next.map(n => (n.id === sec.id ? ({ ...n, style: { ...n.style, height: Math.max(SECTION_HEIGHT, innerH) } } as any) : n));
-      };
-
-      const draggedNode = next.find(n => n.id === node.id)!;
-      if (target) {
-        packCommit(target as Node, draggedNode as Node, pt);
-        // persist membership to target section
-        const secId = (target.id as string).replace(/^sec:/, '');
-        setMembership(m => ({ ...m, [node.id]: secId }));
-        // Recalculate and persist user sequence for the target section
-        const order = computeSectionOrder(next, target.id as string);
-        setLayoutOrder(prev => {
-          const n = { ...prev, [secId]: order };
-          layoutOrderGlobal = n;
-          return n;
-        });
-      } else {
-        // leaving section: keep absolute pos and reflow previous parent if any
-        const prevParentId = draggedNode.parentNode as string | undefined;
-        next = next.map(n => (n.id === node.id ? ({ ...n, parentNode: undefined, position: { x: pt.x, y: pt.y } } as any) : n));
-        setMembership(m => ({ ...m, [node.id]: null }));
-        if (prevParentId) {
-          const sec = next.find(n => n.id === prevParentId);
-          if (sec) {
-            // pack without fixed
-            let cx = GAP,
-              cy = GAP,
-              rowH = 0;
-            const sw = (sec.style?.width as number) ?? SECTION_WIDTH;
-            const innerW = sw - GAP * 2;
-            const children = next.filter(n => n.type === 'componentNode' && n.parentNode === sec.id);
-            sortChildrenByLayoutOrder(children, (sec.id as string).replace(/^sec:/, ''));
-            for (const ch of children) {
-              const w = (ch.style?.width as number) ?? CARD_W;
-              const h = (ch.style?.height as number) ?? CARD_H;
-              if (cx + w > innerW && cx > GAP) {
-                cx = GAP;
-                cy += rowH + GAP;
-                rowH = 0;
-              }
-              ch.position = { x: cx, y: cy } as any;
-              cx += w + GAP;
-              rowH = Math.max(rowH, h);
-            }
-            const innerH = cy + rowH + GAP;
-            next = next.map(n => (n.id === sec.id ? ({ ...n, style: { ...n.style, height: Math.max(SECTION_HEIGHT, innerH) } } as any) : n));
-            // Update order for the source section after removal
-            const sourceSecId = (sec.id as string).replace(/^sec:/, '');
-            const order = computeSectionOrder(next, sec.id as string);
-            setLayoutOrder(prev => {
-              const n = { ...prev, [sourceSecId]: order };
-              layoutOrderGlobal = n;
-              return n;
-            });
-          }
-        }
-      }
-      // Snapshot committed layout so buildNodes can preserve positions
-      try {
-        nodesRef.current = next.map(n => ({ ...n, position: { ...n.position } as any }));
-      } catch {}
-      return next;
-    });
+    // After drag, clean up and persist the position changes
+    if (!editMode || !node || node.type !== 'componentNode') return;
+    
+    // Mark that we're no longer dragging
+    isDraggingRef.current = false;
     dragRef.current = null;
-  };
-
-  const onNodesChangeWithArrange = (changes: any) => {
-    // Let React Flow update positions; avoid global reflow here
-    // We explicitly reflow after resizes and in drag/drop handlers
-    onNodesChange(changes);
+    
+    // The drag positions are already applied by onNodeDrag, so we just need to
+    // ensure they persist and don't get overridden by automatic reflow
+    // The coordinate system has already arranged other cards around the new position
+    
+    // Optional: Trigger a gentle reflow after a delay to clean up any minor positioning issues
+    // but only if we're not in the middle of another drag operation
+    setTimeout(() => {
+      if (!isDraggingRef.current) {
+        // Perform a minimal reflow that respects manually positioned cards
+        // This will only fix overlaps without completely rearranging the layout
+        setNodes(prev => {
+          const updated = [...prev];
+          const sections = updated.filter(n => n.type === 'sectionNode');
+          
+          sections.forEach(sec => {
+            const children = updated.filter(n => n.parentNode === sec.id && n.type === 'componentNode');
+            if (children.length === 0) return;
+            
+            // Only fix clear overlaps without major repositioning
+            for (let i = 0; i < children.length; i++) {
+              for (let j = i + 1; j < children.length; j++) {
+                const a = children[i];
+                const b = children[j];
+                const aPos = a.position as { x: number; y: number };
+                const bPos = b.position as { x: number; y: number };
+                const aW = (a.style?.width as number) ?? CARD_W;
+                const aH = (a.style?.height as number) ?? CARD_H;
+                const bW = (b.style?.width as number) ?? CARD_W;
+                const bH = (b.style?.height as number) ?? CARD_H;
+                
+                // Only fix if there's a clear overlap (less than minimum gap)
+                const overlap = !(
+                  aPos.x + aW + MIN_GAP <= bPos.x || 
+                  bPos.x + bW + MIN_GAP <= aPos.x || 
+                  aPos.y + aH + MIN_GAP <= bPos.y || 
+                  bPos.y + bH + MIN_GAP <= aPos.y
+                );
+                
+                if (overlap) {
+                  // Move the second card slightly to avoid overlap
+                  const sectionW = (sec.style?.width as number) ?? SECTION_WIDTH;
+                  const innerW = sectionW - GAP * 2;
+                  
+                  // Try moving horizontally first
+                  if (aPos.x + aW + MIN_GAP + bW <= innerW) {
+                    b.position = { x: aPos.x + aW + MIN_GAP, y: bPos.y } as any;
+                  } else {
+                    // Move vertically
+                    b.position = { x: bPos.x, y: aPos.y + aH + MIN_GAP } as any;
+                  }
+                }
+              }
+            }
+          });
+          
+          return updated;
+        });
+      }
+    }, 300);
   };
 
   return (
@@ -792,22 +758,179 @@ export function ComponentCanvasFlowPage() {
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChangeWithArrange}
+        onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         onNodeDragStart={onNodeDragStart}
         onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
+        onPaneContextMenu={onPaneContextMenu}
         fitView
-        zoomOnScroll={false}
-        panOnScroll={true}
+        fitViewOptions={{ 
+          padding: 0.05, 
+          minZoom: 0.5, 
+          maxZoom: 1.2,
+          includeHiddenNodes: false,
+          nodes: nodes.filter(n => n.type === 'sectionNode').slice(0, 1) // Focus on first section only
+        }}
+        zoomOnScroll={zoomOnScroll}
+        panOnScroll={panOnScroll}
         panOnScrollMode={PanOnScrollMode.Free}
+        zoomOnDoubleClick={zoomOnDoubleClick}
       >
-        <MiniMap />
-        <Controls />
-        <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
+        {showMiniMap && <MiniMap />}
+        {showControls && <Controls />}
+        {showDots && <Background variant={BackgroundVariant.Dots} gap={16} size={1} />}
+        {showGrid && <Background variant={BackgroundVariant.Lines} gap={20} size={1} />}
       </ReactFlow>
+
+      {/* Canvas Context Menu */}
+      {contextMenu.show && (
+        <div
+          className="fixed rounded-lg shadow-lg py-1 z-50"
+          style={{ 
+            left: contextMenu.x, 
+            top: contextMenu.y, 
+            minWidth: '200px',
+            backgroundColor: 'var(--color-bg-card)',
+            border: '1px solid var(--color-border)',
+            color: 'var(--color-text-primary)'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div 
+            className="px-3 py-1 text-xs font-semibold border-b"
+            style={{ color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)' }}
+          >
+            Canvas Options
+          </div>
+          
+          {/* Background Options */}
+          <button
+            className="w-full px-3 py-2 text-left text-sm flex items-center justify-between transition-colors"
+            style={{ color: 'var(--color-text-primary)' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              setShowDots(!showDots);
+              setShowGrid(false);
+              closeContextMenu();
+            }}
+          >
+            <span>Show Dots</span>
+            {showDots && <span style={{ color: 'var(--color-primary)' }}>✓</span>}
+          </button>
+          
+          <button
+            className="w-full px-3 py-2 text-left text-sm flex items-center justify-between transition-colors"
+            style={{ color: 'var(--color-text-primary)' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              setShowGrid(!showGrid);
+              setShowDots(false);
+              closeContextMenu();
+            }}
+          >
+            <span>Show Grid</span>
+            {showGrid && <span style={{ color: 'var(--color-primary)' }}>✓</span>}
+          </button>
+          
+          <button
+            className="w-full px-3 py-2 text-left text-sm flex items-center justify-between transition-colors"
+            style={{ color: 'var(--color-text-primary)' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              setShowDots(false);
+              setShowGrid(false);
+              closeContextMenu();
+            }}
+          >
+            <span>Hide Background</span>
+            {!showDots && !showGrid && <span style={{ color: 'var(--color-primary)' }}>✓</span>}
+          </button>
+          
+          <div className="border-t my-1" style={{ borderColor: 'var(--color-border)' }}></div>
+          
+          {/* UI Elements */}
+          <button
+            className="w-full px-3 py-2 text-left text-sm flex items-center justify-between transition-colors"
+            style={{ color: 'var(--color-text-primary)' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              setShowMiniMap(!showMiniMap);
+              closeContextMenu();
+            }}
+          >
+            <span>Show Mini Map</span>
+            {showMiniMap && <span style={{ color: 'var(--color-primary)' }}>✓</span>}
+          </button>
+          
+          <button
+            className="w-full px-3 py-2 text-left text-sm flex items-center justify-between transition-colors"
+            style={{ color: 'var(--color-text-primary)' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              setShowControls(!showControls);
+              closeContextMenu();
+            }}
+          >
+            <span>Show Controls</span>
+            {showControls && <span style={{ color: 'var(--color-primary)' }}>✓</span>}
+          </button>
+          
+          <div className="border-t my-1" style={{ borderColor: 'var(--color-border)' }}></div>
+          
+          {/* Interaction Options */}
+          <button
+            className="w-full px-3 py-2 text-left text-sm flex items-center justify-between transition-colors"
+            style={{ color: 'var(--color-text-primary)' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              setZoomOnScroll(true);
+              setPanOnScroll(false);
+              closeContextMenu();
+            }}
+          >
+            <span>Zoom on Scroll</span>
+            {zoomOnScroll && <span style={{ color: 'var(--color-primary)' }}>✓</span>}
+          </button>
+          
+          <button
+            className="w-full px-3 py-2 text-left text-sm flex items-center justify-between transition-colors"
+            style={{ color: 'var(--color-text-primary)' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              setPanOnScroll(true);
+              setZoomOnScroll(false);
+              closeContextMenu();
+            }}
+          >
+            <span>Pan on Scroll</span>
+            {panOnScroll && <span style={{ color: 'var(--color-primary)' }}>✓</span>}
+          </button>
+          
+          <button
+            className="w-full px-3 py-2 text-left text-sm flex items-center justify-between transition-colors"
+            style={{ color: 'var(--color-text-primary)' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              setZoomOnDoubleClick(!zoomOnDoubleClick);
+              closeContextMenu();
+            }}
+          >
+            <span>Double-click Zoom</span>
+            {zoomOnDoubleClick && <span style={{ color: 'var(--color-primary)' }}>✓</span>}
+          </button>
+        </div>
+      )}
 
       {/* Edit Popup */}
       {editComponentId &&
@@ -934,16 +1057,20 @@ function SectionNode({ id, data }: any) {
         width: '100%',
         height: '100%',
         background: data?.styles?.bgColor || 'transparent',
-        border: data?.styles?.border || '1px dashed #94a3b8',
+        border: data?.styles?.border || `1px dashed var(--color-border)`,
         borderRadius: 8,
         position: 'relative',
       }}
     >
       {/* Section label always visible; controls only in edit mode */}
-      <div style={{ position: 'absolute', left: GAP, top: -22, display: 'flex', alignItems: 'center', gap: 6, zIndex: 3 }}>
+      <div style={{ position: 'absolute', left: GAP, top: -30, display: 'flex', alignItems: 'center', gap: 6, zIndex: 3 }}>
         <span
-          className="nodrag nopan px-2 py-0.5 text-primary text-xs font-heading rounded shadow border"
-          style={{ backgroundColor: 'var(--color-bg-card)', borderColor: '#94a3b8' }}
+          className={`px-3 py-1 text-base font-heading font-semibold rounded shadow border ${data?.editMode ? 'section-drag-handle cursor-move' : 'nodrag nopan'}`}
+          style={{ 
+            backgroundColor: 'var(--color-bg-card)', 
+            borderColor: 'var(--color-border)',
+            color: 'var(--color-text-primary)'
+          }}
         >
           {data?.title || 'Section'}
         </span>
@@ -1005,7 +1132,7 @@ function SectionNode({ id, data }: any) {
         <div
           className="nodrag nopan"
           onMouseDown={onMouseDown}
-          style={{ position: 'absolute', right: -6, bottom: -6, width: 14, height: 14, borderRadius: 4, background: 'white', border: '1px solid #64748b', cursor: 'nwse-resize' }}
+          style={{ position: 'absolute', right: -6, bottom: -6, width: 14, height: 14, borderRadius: 4, background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', cursor: 'nwse-resize' }}
         />
       )}
     </div>
@@ -1066,7 +1193,7 @@ function ComponentNode({ id, data }: any) {
             const x0 = (node.position?.x as number) ?? 0;
             const next = row[idx + 1];
             // if next exists, don’t intrude into its space; otherwise allow up to innerW
-            const maxRight = next ? Math.max(GAP, (((next.position?.x as number) ?? 0) - MIN_GAP)) : innerW;
+            const maxRight = next ? Math.max(GAP, ((next.position?.x as number) ?? 0) - MIN_GAP) : innerW;
             const maxAllowedW = Math.max(CARD_W, Math.max(0, maxRight - x0));
             // growth-only: don't shrink width here
             desiredW = Math.min(desiredW, Math.max(curW, maxAllowedW));
@@ -1074,8 +1201,9 @@ function ComponentNode({ id, data }: any) {
         }
       } catch {}
 
-      const capW = Math.max(CARD_W, Math.min(desiredW, 1600));
-      const capH = Math.max(CARD_H, Math.min(desiredH, 1600));
+  const minH = getMinCardHeight(data?.comp);
+  const capW = Math.max(CARD_W, Math.min(desiredW, 1600));
+  const capH = Math.max(minH, Math.min(desiredH, 1600));
       if (Math.abs(capW - curW) < 2 && Math.abs(capH - curH) < 2) return;
 
       // Apply size update and only adjust the parent section height; avoid full reflow now
@@ -1104,8 +1232,8 @@ function ComponentNode({ id, data }: any) {
         }
         return next;
       });
-      // Signal that this component is loaded and measured
-      scheduleArrangementAfterLoad(rf, id, __totalComponents);
+      // Live reflow after measurement (works in all modes)
+      setTimeout(() => rf.setNodes((prev: Node[]) => reflowAllSections(prev)), 50);
     };
 
     const ro = new ResizeObserver(() => measure());
@@ -1134,7 +1262,7 @@ function ComponentNode({ id, data }: any) {
   const onMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const node = rf.getNode(id);
+  const node = rf.getNode(id);
     const w = (node?.style?.width as number) ?? size.w;
     const h = (node?.style?.height as number) ?? size.h;
     resizing.current = { startX: e.clientX, startY: e.clientY, w, h };
@@ -1144,8 +1272,9 @@ function ComponentNode({ id, data }: any) {
       if (!resizing.current) return;
       const dx = ev.clientX - resizing.current.startX;
       const dy = ev.clientY - resizing.current.startY;
-      const nw = Math.max(CARD_W, resizing.current.w + dx);
-      const nh = Math.max(CARD_H, resizing.current.h + dy);
+  const minH = getMinCardHeight(data?.comp);
+  const nw = Math.max(CARD_W, resizing.current.w + dx);
+  const nh = Math.max(minH, resizing.current.h + dy);
       rf.setNodes(prev => prev.map(n => (n.id === id ? { ...n, style: { ...n.style, width: nw, height: nh }, data: { ...n.data, size: { w: nw, h: nh } } } : n)));
     };
     const up = () => {
@@ -1229,7 +1358,17 @@ function ComponentNode({ id, data }: any) {
           onMouseDown={onMouseDown}
         />
       )}
-      <div style={{ width: '100%', height: '100%', padding: 8, boxSizing: 'border-box' }} data-component-id={data?.comp?.id}>
+      <div 
+        style={{ 
+          width: '100%', 
+          height: '100%', 
+          padding: 8, 
+          boxSizing: 'border-box',
+          // Add scroll for object components
+          overflow: data?.comp?.uiComponent?.toLowerCase().includes('object') || data?.comp?.affordanceKey?.includes('object') ? 'auto' : 'visible'
+        }} 
+        data-component-id={data?.comp?.id}
+      >
         {data?.comp ? <CardContent component={data.comp} tdInfos={data.tdInfos} /> : null}
       </div>
     </div>
@@ -1239,115 +1378,82 @@ function ComponentNode({ id, data }: any) {
 function reflowAllSections(prevNodes: Node[]): Node[] {
   const out = [...prevNodes];
   const sections = out.filter(n => n.type === 'sectionNode');
+
   for (const sec of sections) {
     const sw = (sec.style?.width as number) ?? SECTION_WIDTH;
     const children = out.filter(n => n.parentNode === sec.id && n.type === 'componentNode');
-    if (__layoutPositionsLocked) {
-      // Do not reposition; only update section height to fit current child bounds
-      let maxBottom = GAP;
-      for (const ch of children) {
-        const h = (ch.style?.height as number) ?? CARD_H;
-        const y = (ch.position?.y as number) ?? 0;
-        maxBottom = Math.max(maxBottom, y + h + GAP);
-      }
-      const innerH = Math.max(SECTION_HEIGHT, maxBottom);
-      sec.style = { ...sec.style, height: innerH } as any;
-    } else {
-      sortChildrenByLayoutOrder(children, (sec.id as string).replace(/^sec:/, ''));
-      if (children.length === 0) continue;
-      
-      const innerW = sw - GAP * 2;
-      
-      // Use coordinate-based space tracking for optimal packing
-      type SpaceRect = { x: number; y: number; w: number; h: number };
-      const occupiedSpaces: SpaceRect[] = [];
-      let maxBottom = GAP;
-      
-      const findBestPosition = (w: number, h: number): { x: number; y: number } => {
-        // Try to place at each y level with finer granularity
-        const stepSize = Math.min(GAP, 12);
-        for (let y = GAP; y <= maxBottom + GAP; y += stepSize) {
-          // For each y level, try placing from left to right
-          for (let x = GAP; x + w <= innerW + GAP; x += stepSize) {
-            const candidate = { x, y, w: w + GAP, h: h + GAP };
-            // Check if this position conflicts with any occupied space
-            const hasConflict = occupiedSpaces.some(occupied => 
-              !(candidate.x >= occupied.x + occupied.w ||
-                candidate.x + candidate.w <= occupied.x ||
-                candidate.y >= occupied.y + occupied.h ||
-                candidate.y + candidate.h <= occupied.y)
-            );
-            if (!hasConflict && x + w <= innerW) {
-              return { x, y };
-            }
-          }
-        }
-        // If no space found in existing area, place at bottom
-        return { x: GAP, y: maxBottom };
-      };
 
-      const detectOverlapsInReflow = (): boolean => {
-        let hasOverlaps = false;
-        
-        // Check for overlaps between all children
-        for (let i = 0; i < children.length; i++) {
-          for (let j = i + 1; j < children.length; j++) {
-            const a = children[i];
-            const b = children[j];
-            const aPos = a.position as { x: number; y: number };
-            const bPos = b.position as { x: number; y: number };
-            const aW = (a.style?.width as number) ?? CARD_W;
-            const aH = (a.style?.height as number) ?? CARD_H;
-            const bW = (b.style?.width as number) ?? CARD_W;
-            const bH = (b.style?.height as number) ?? CARD_H;
-            
-            // Check for overlap
-            const overlap = !(
-              aPos.x + aW + MIN_GAP <= bPos.x ||
-              bPos.x + bW + MIN_GAP <= aPos.x ||
-              aPos.y + aH + MIN_GAP <= bPos.y ||
-              bPos.y + bH + MIN_GAP <= aPos.y
-            );
-            
-            if (overlap) {
-              hasOverlaps = true;
-              // Move the second node to a non-overlapping position
-              const newPos = findBestPosition(bW, bH);
-              b.position = { x: newPos.x, y: newPos.y } as any;
-              occupiedSpaces.push({ x: newPos.x, y: newPos.y, w: bW + GAP, h: bH + GAP });
-              maxBottom = Math.max(maxBottom, newPos.y + bH + GAP);
-            }
+    if (children.length === 0) continue;
+
+    // Use coordinate-based space tracking
+    const innerW = sw - GAP * 2;
+    const occupiedSpaces: Array<{ x: number; y: number; w: number; h: number }> = [];
+    let maxBottom = GAP;
+
+    const findBestPosition = (w: number, h: number): { x: number; y: number } => {
+      const stepY = GAP;
+      const stepX = 4; // Fine horizontal positioning for better packing
+
+      for (let y = GAP; y <= maxBottom + GAP; y += stepY) {
+        for (let x = GAP; x + w <= innerW; x += stepX) {
+          const hasConflict = occupiedSpaces.some(
+            occupied => !(x >= occupied.x + occupied.w || x + w + GAP <= occupied.x || y >= occupied.y + occupied.h || y + h + GAP <= occupied.y),
+          );
+          if (!hasConflict) return { x, y };
+        }
+      }
+      return { x: GAP, y: maxBottom };
+    };
+
+    // Add overlap detection for reflow
+    const fixOverlapsInReflow = () => {
+      let fixed = false;
+      for (let i = 0; i < children.length; i++) {
+        for (let j = i + 1; j < children.length; j++) {
+          const a = children[i];
+          const b = children[j];
+          const aPos = a.position as { x: number; y: number };
+          const bPos = b.position as { x: number; y: number };
+          const aW = (a.style?.width as number) ?? CARD_W;
+          const aH = (a.style?.height as number) ?? getMinCardHeight((a as any)?.data?.comp);
+          const bW = (b.style?.width as number) ?? CARD_W;
+          const bH = (b.style?.height as number) ?? getMinCardHeight((b as any)?.data?.comp);
+
+          const overlap = !(aPos.x + aW + MIN_GAP <= bPos.x || bPos.x + bW + MIN_GAP <= aPos.x || aPos.y + aH + MIN_GAP <= bPos.y || bPos.y + bH + MIN_GAP <= aPos.y);
+
+          if (overlap) {
+            const newPos = findBestPosition(bW, bH);
+            b.position = { x: newPos.x, y: newPos.y } as any;
+            occupiedSpaces.push({ x: newPos.x, y: newPos.y, w: bW + GAP, h: bH + GAP });
+            maxBottom = Math.max(maxBottom, newPos.y + bH + GAP);
+            fixed = true;
           }
         }
-        
-        return hasOverlaps;
-      };
-      
-      for (const child of children) {
-        const w = (child.style?.width as number) ?? CARD_W;
-        const h = (child.style?.height as number) ?? CARD_H;
-        
-        const pos = findBestPosition(w, h);
-        child.position = { x: pos.x, y: pos.y } as any;
-        
-        // Mark this space as occupied
-        occupiedSpaces.push({ x: pos.x, y: pos.y, w: w + GAP, h: h + GAP });
-        
-        // Update maxBottom to track the bottom-most occupied space
-        maxBottom = Math.max(maxBottom, pos.y + h + GAP);
       }
-      
-      // After positioning, detect and resolve any overlaps
-      let attempts = 0;
-      while (detectOverlapsInReflow() && attempts < 3) {
-        attempts++;
-        console.log(`Resolving reflow overlaps (attempt ${attempts})`);
-      }
-      
-      const innerH = Math.max(SECTION_HEIGHT, maxBottom);
-      sec.style = { ...sec.style, height: innerH } as any;
+      return fixed;
+    };
+
+    sortChildrenByLayoutOrder(children, (sec.id as string).replace(/^sec:/, ''));
+
+    for (const child of children) {
+  const w = (child.style?.width as number) ?? CARD_W;
+  const h = (child.style?.height as number) ?? getMinCardHeight((child as any)?.data?.comp);
+      const pos = findBestPosition(w, h);
+
+      child.position = { x: pos.x, y: pos.y } as any;
+      occupiedSpaces.push({ x: pos.x, y: pos.y, w: w + GAP, h: h + GAP });
+      maxBottom = Math.max(maxBottom, pos.y + h + GAP);
     }
+
+    // Fix any overlaps after initial positioning
+    let attempts = 0;
+    while (fixOverlapsInReflow() && attempts < 3) {
+      attempts++;
+    }
+
+    sec.style = { ...sec.style, height: Math.max(SECTION_HEIGHT, maxBottom) } as any;
   }
+
   return out;
 }
 
@@ -1366,10 +1472,4 @@ function sortChildrenByLayoutOrder(children: Node[], sectionId: string) {
     // fallback to current reading order
     return a.position.y - b.position.y || a.position.x - b.position.x;
   });
-}
-
-function computeSectionOrder(nodes: Node[], sectionNodeId: string): string[] {
-  const children = nodes.filter(n => n.type === 'componentNode' && n.parentNode === sectionNodeId);
-  children.sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
-  return children.map(n => n.id);
 }
