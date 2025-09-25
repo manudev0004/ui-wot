@@ -96,7 +96,7 @@ export function ComponentCanvasFlowPage() {
   const [sectionStyles, setSectionStyles] = useState<Record<string, { bgColor: string; border: 'dashed' | 'solid' | 'none' }>>({});
   const [editSectionId, setEditSectionId] = useState<string | null>(null);
   const [layoutOrder, setLayoutOrder] = useState<Record<string, string[]>>({});
-  
+
   // Enhanced drag state for fluid interactions
   const [manualPositions, setManualPositions] = useState<Record<string, { x: number; y: number }>>({});
   const [dragHighlight, setDragHighlight] = useState<{ targetId: string; type: 'swap' | 'insert' } | null>(null);
@@ -636,15 +636,14 @@ export function ComponentCanvasFlowPage() {
     // Check for potential card swapping
     let swapTarget: string | null = null;
     const dragCenter = { x: draggingPos.x + cardW / 2, y: draggingPos.y + cardH / 2 };
-    
+
     sectionCards.forEach(card => {
       const pos = card.position;
       const w = (card.style?.width as number) ?? CARD_W;
       const h = (card.style?.height as number) ?? getMinCardHeight((card as any)?.data?.comp);
-      
+
       // Check if dragging card center is over this card's area (for swapping)
-      if (dragCenter.x >= pos.x && dragCenter.x <= pos.x + w && 
-          dragCenter.y >= pos.y && dragCenter.y <= pos.y + h) {
+      if (dragCenter.x >= pos.x && dragCenter.x <= pos.x + w && dragCenter.y >= pos.y && dragCenter.y <= pos.y + h) {
         swapTarget = card.id;
       }
     });
@@ -689,11 +688,11 @@ export function ComponentCanvasFlowPage() {
       if (targetNode) {
         const targetIndex = updatedNodes.findIndex(n => n.id === swapTarget);
         const dragIndex = updatedNodes.findIndex(n => n.id === draggingCardId);
-        
+
         if (targetIndex >= 0 && dragIndex >= 0) {
           // Store the target's original position for the dragging card to take
           const targetOriginalPos = { ...targetNode.position };
-          
+
           // Move target to dragging card's original position (from dragRef baseline)
           const dragOriginalPos = dragRef.current?.baseline.find(n => n.id === draggingCardId)?.position;
           if (dragOriginalPos) {
@@ -701,14 +700,14 @@ export function ComponentCanvasFlowPage() {
               ...updatedNodes[targetIndex],
               position: { ...dragOriginalPos },
             };
-            
+
             // Update manual positions to remember the swap
             setManualPositions(prev => ({
               ...prev,
               [swapTarget!]: { ...dragOriginalPos },
-              [draggingCardId]: { ...targetOriginalPos }
+              [draggingCardId]: { ...targetOriginalPos },
             }));
-            
+
             needsUpdate = true;
           }
         }
@@ -776,7 +775,7 @@ export function ComponentCanvasFlowPage() {
     // Store final position in manual positions for persistence
     setManualPositions(prev => ({
       ...prev,
-      [node.id]: { x: node.position.x, y: node.position.y }
+      [node.id]: { x: node.position.x, y: node.position.y },
     }));
 
     // Clean up drag reference
@@ -793,11 +792,11 @@ export function ComponentCanvasFlowPage() {
         }
         return a.position.y - b.position.y; // Different rows, sort by Y
       });
-      
+
       const newOrder = sortedCards.map(card => (card as any).data?.comp?.id).filter(Boolean);
       setLayoutOrder(prev => ({
         ...prev,
-        [sectionId.replace('sec:', '')]: newOrder
+        [sectionId.replace('sec:', '')]: newOrder,
       }));
     }
 
@@ -879,8 +878,29 @@ export function ComponentCanvasFlowPage() {
         panOnScrollMode={PanOnScrollMode.Free}
         zoomOnDoubleClick={zoomOnDoubleClick}
       >
-        {showMiniMap && <MiniMap />}
-        {showControls && <Controls />}
+        {showMiniMap && (
+          <MiniMap 
+            nodeColor={(node) => {
+              if (node.type === 'sectionNode') {
+                return 'var(--color-border)';
+              }
+              return 'var(--color-primary)';
+            }}
+            maskColor="var(--color-bg-secondary)"
+            style={{
+              backgroundColor: 'var(--color-bg-card)',
+              border: '1px solid var(--color-border)',
+            }}
+          />
+        )}
+        {showControls && (
+          <Controls 
+            style={{
+              backgroundColor: 'var(--color-bg-card)',
+              border: '1px solid var(--color-border)',
+            }}
+          />
+        )}
         {showDots && <Background variant={BackgroundVariant.Dots} gap={16} size={1} />}
         {showGrid && <Background variant={BackgroundVariant.Lines} gap={20} size={1} />}
       </ReactFlow>
@@ -1418,21 +1438,21 @@ function ComponentNode({ id, data }: any) {
   };
   const hideWrapper = !!data?.comp?.hideCard;
   const isDragTarget = data?.dragHighlight === 'swap';
-  
+
   return (
     <div
       className={hideWrapper ? 'relative w-full h-full' : 'rounded-lg shadow-sm border w-full h-full'}
       style={
         hideWrapper
           ? { position: 'relative', background: 'transparent', overflow: 'visible' }
-          : { 
-              borderColor: isDragTarget ? '#3b82f6' : 'var(--color-border)', 
-              background: isDragTarget ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-bg-card)', 
-              position: 'relative', 
+          : {
+              borderColor: isDragTarget ? '#3b82f6' : 'var(--color-border)',
+              background: isDragTarget ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-bg-card)',
+              position: 'relative',
               overflow: 'visible',
               boxShadow: isDragTarget ? '0 0 0 2px rgba(59, 130, 246, 0.3)' : undefined,
               transform: isDragTarget ? 'scale(1.02)' : 'scale(1)',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
             }
       }
     >

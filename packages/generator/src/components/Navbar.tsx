@@ -55,8 +55,8 @@ export function Navbar() {
             <div className="flex items-center gap-3">
               <img src="https://thingweb.io/img/logo.svg" alt="ThingWeb logo" title="ThingWeb" className="h-10 w-auto select-none" draggable={false} />
               <div className="leading-tight">
-                <div className="text-xl font-bold text-[var(--color-text-primary)] tracking-wide">THINGWEB</div>
-                <div className="text-xs font-medium text-[var(--color-text-secondary)]">ui-wot</div>
+                <div className="text-sm font-medium text-[var(--color-text-primary)]">THINGWEB</div>
+                <div className="text-sm font-medium text-[var(--color-text-secondary)]">ui-wot</div>
               </div>
             </div>
             {/* Back Button */}
