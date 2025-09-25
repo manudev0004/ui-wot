@@ -523,8 +523,7 @@ export class UiSlider {
   private renderReadPulseIndicator() {
     if (!(this.readonly && this.readPulseTs && Date.now() - this.readPulseTs < 1500)) return null;
     return (
-      <span class="ml-1 inline-flex items-center" part="readonly-pulse-sibling">
-        <style>{`@keyframes ui-read-pulse { 0% { opacity: 0; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1.2); } }`}</style>
+      <span class="ml-2 inline-flex items-center" part="readonly-pulse-sibling">
         <span
           class="w-3 h-3 rounded-full shadow-md"
           title="Updated"
@@ -625,22 +624,21 @@ export class UiSlider {
   /** Readonly background classes derived from color and theme */
   private getReadonlyBg(): string {
     if (this.dark) {
-      if (this.color === 'primary') return 'bg-gray-800 border-primary text-white';
-      if (this.color === 'secondary') return 'bg-gray-800 border-secondary text-white';
-      return 'bg-gray-800 border-gray-600 text-white';
+      return 'bg-gray-800 border-2 text-white';
     }
-
-    if (this.color === 'primary') return 'bg-white border-primary text-primary';
-    if (this.color === 'secondary') return 'bg-white border-secondary text-secondary';
-    return 'bg-white border-gray-300 text-gray-900';
+    return 'bg-white border-2 text-gray-900';
   }
 
-  /** Readonly text color classes*/
-  private getReadonlyText(): string {
-    if (this.dark) return 'text-white';
-    if (this.color === 'primary') return 'text-primary';
-    if (this.color === 'secondary') return 'text-secondary';
-    return 'text-gray-900';
+  /** Active color as CSS var for inline styles*/
+  private getActiveColorVar(): string {
+    switch (this.color) {
+      case 'secondary':
+        return 'var(--color-secondary)';
+      case 'neutral':
+        return 'var(--color-neutral)';
+      default:
+        return 'var(--color-primary)';
+    }
   }
 
   /** Render step marks for stepped variant */
@@ -744,13 +742,19 @@ export class UiSlider {
     const percent = ((this.currentValue - this.min) / safeRange) * 100;
 
     return (
-      <div class={isVertical ? 'flex flex-col items-center w-20 mx-4 mb-4' : 'w-full'} part="container">
+      <div class={isVertical ? 'flex flex-col items-center w-20 mx-4 mb-4' : isReadOnly ? 'w-[140px] mx-auto' : 'w-full'} part="container">
         {/* Label only for horizontal sliders */}
-        {this.label && !isVertical && (
-          <label class={`block text-sm font-medium mb-4 ${isDisabled ? 'text-gray-400' : ''} ${this.dark ? 'text-white' : 'text-gray-900'}`} part="label">
-            {this.label}
-          </label>
-        )}
+        {this.label &&
+          !isVertical &&
+          (isReadOnly ? (
+            <label class={`block text-sm font-medium mb-2 text-center ${isDisabled ? 'text-gray-400' : ''} ${this.dark ? 'text-white' : 'text-gray-900'}`} part="label">
+              {this.label}
+            </label>
+          ) : (
+            <label class={`block text-sm font-medium mb-4 ${isDisabled ? 'text-gray-400' : ''} ${this.dark ? 'text-white' : 'text-gray-900'}`} part="label">
+              {this.label}
+            </label>
+          ))}
         {/* Value labels for vertical sliders */}
         {isVertical && (
           <div class={`text-xs mb-4 text-center ${this.dark ? 'text-gray-300' : 'text-gray-500'}`}>
@@ -760,18 +764,40 @@ export class UiSlider {
         {/* Read-only UI */}
         {isReadOnly ? (
           <>
-            <div
-              class={`relative flex items-center justify-center min-w-[120px] h-12 px-4 mr-20 rounded-lg border transition-all duration-300 ${this.getReadonlyBg()}
-            `}
+            <span
+              class={`inline-flex items-center justify-center w-full h-12 px-4 rounded-lg transition-all duration-300 ${this.getReadonlyBg()}`}
+              style={
+                {
+                  borderColor: this.getActiveColorVar(),
+                  color: this.dark ? 'white' : this.getActiveColorVar(),
+                } as any
+              }
               title={`Read-only value: ${this.currentValue}`}
               part="readonly-indicator"
             >
-              <span class={`text-lg font-medium ${this.getReadonlyText()}`}>{this.currentValue}</span>
-              {/* Status badge positioned to the right, space reserved via mr-20 */}
-              {this.showStatus && <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 flex items-center">{this.renderStatusBadge()}</div>}
+              <span class={`text-lg font-medium`} style={{ color: this.dark ? 'white' : this.getActiveColorVar() } as any}>
+                {this.currentValue}
+              </span>
+              {this.readPulseTs && Date.now() - this.readPulseTs < 1500 && this.renderReadPulseIndicator()}
+              {this.showStatus && <span class="ml-2 inline-flex items-center">{this.renderStatusBadge()}</span>}
+            </span>
+            {/* MIN/MAX row under readonly box */}
+            <div class="mt-2 w-full">
+              <div class={`flex justify-between text-xs ${this.dark ? 'text-gray-300' : 'text-gray-500'}`}>
+                <span>
+                  <span class="uppercase">MIN:</span>
+                  <span class="font-semibold ml-1" style={{ color: this.dark ? 'white' : this.getActiveColorVar() } as any}>
+                    {this.min}
+                  </span>
+                </span>
+                <span>
+                  <span class="uppercase">MAX:</span>
+                  <span class="font-semibold ml-1" style={{ color: this.dark ? 'white' : this.getActiveColorVar() } as any}>
+                    {this.max}
+                  </span>
+                </span>
+              </div>
             </div>
-            {/* Read-only indicator */}
-            {this.renderReadPulseIndicator()}
           </>
         ) : (
           <div
@@ -813,11 +839,11 @@ export class UiSlider {
           </div>
         )}
         {/* Value labels for vertical */}
-        {isVertical && (
+        {isVertical && !isReadOnly && (
           <div class={`flex flex-col items-center mt-4 space-y-2 text-xs ${this.dark ? 'text-gray-300' : 'text-gray-500'}`} style={{ marginBottom: '1.5rem' }}>
             <span>{this.min}</span>
             {!isReadOnly ? (
-              <div class="relative flex justify-center">
+              <div class="flex justify-center items-center">
                 {/* Value box centered to slider */}
                 <div
                   class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${
@@ -826,8 +852,8 @@ export class UiSlider {
                 >
                   {this.currentValue}
                 </div>
-                {/* Status indicator positioned absolutely */}
-                {this.showStatus && <div class="absolute left-full ml-1 top-0 flex items-center h-full">{this.renderStatusBadge()}</div>}
+                {/* Status badge placed next to value */}
+                {this.showStatus && <span class="ml-2 inline-flex items-center">{this.renderStatusBadge()}</span>}
               </div>
             ) : null}
             {this.label && (
@@ -840,12 +866,14 @@ export class UiSlider {
         {/* Horizontal value labels*/}
         {!isVertical && (
           <>
-            <div class={`flex justify-between items-center text-xs mt-3 ${this.dark ? 'text-gray-300' : 'text-gray-500'}`}>
-              <span>{this.min}</span>
-              <span>{this.max}</span>
-            </div>
             {!isReadOnly && (
-              <div class="relative flex justify-center mt-0">
+              <div class={`flex justify-between items-center text-xs mt-3 ${this.dark ? 'text-gray-300' : 'text-gray-500'}`}>
+                <span>{this.min}</span>
+                <span>{this.max}</span>
+              </div>
+            )}
+            {!isReadOnly && (
+              <div class="flex justify-center items-center mt-0">
                 {/* Value box centered */}
                 <div
                   class={`px-2 py-1 rounded text-center font-medium border text-xs min-w-8 ${
@@ -855,15 +883,15 @@ export class UiSlider {
                 >
                   {this.currentValue}
                 </div>
-                {/* Status indicator positioned*/}
-                {this.showStatus && <div class="absolute left-full ml-2 top-0 flex items-center h-full">{this.renderStatusBadge()}</div>}
+                {/* Status badge placed next to value */}
+                {this.showStatus && <span class="ml-2 inline-flex items-center">{this.renderStatusBadge()}</span>}
               </div>
             )}
           </>
         )}
 
         {/* Last updated timestamp */}
-        {this.showLastUpdated && <div class="flex justify-center mt-2">{this.renderLastUpdated()}</div>}
+        {this.showLastUpdated && <div class={`flex justify-center mt-2`}>{this.renderLastUpdated()}</div>}
       </div>
     );
   }

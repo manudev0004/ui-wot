@@ -53,7 +53,7 @@ export class UiText {
    * - structured: Highlighted block (for JSON-like or formatted text)
    * - editable: User can edit/write directly
    */
-  @Prop() mode: 'field' | 'area' | 'unstructured' | 'structured' | 'editable' = 'unstructured';
+  @Prop() mode: 'field' | 'area' | 'unstructured' | 'structured' | 'editable' = 'structured';
 
   /** Color theme for the active state matching to thingsweb theme */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
