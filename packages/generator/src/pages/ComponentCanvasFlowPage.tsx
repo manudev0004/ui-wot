@@ -23,12 +23,13 @@ import { CardContent } from './canvas/CardContent';
 import { dashboardService } from '../services/dashboardService';
 import { EditPopup } from '../components/EditPopup';
 import { getAttributeSchema } from './canvas/attributeSchemas';
+import { formatLabelText } from '../utils/label';
 
 const SECTION_WIDTH = 640; // px default width for sections
 const SECTION_HEIGHT = 360; // px default height for sections
 const GAP = 24; // px gap between nodes
-const CARD_W = 200; // default card width
-const CARD_H = 140; // default card height
+const CARD_W = 225; // default card width (also min width)
+const CARD_H = 140; // default card height (min height is 130)
 
 // Module-scope layout order to be used by helpers outside component scope
 let layoutOrderGlobal: Record<string, string[]> = {};
@@ -681,8 +682,13 @@ export function ComponentCanvasFlowPage() {
                 const elHost = document.querySelector(`[data-component-id="${componentId}"]`);
                 const el = elHost?.querySelector(target.uiComponent) as HTMLElement | null;
                 if (el) {
-                  if (value === '' || value == null) el.removeAttribute(attrName);
-                  else el.setAttribute(attrName, value);
+                  const applyVal = (name: string, val: string | null | undefined) => {
+                    if (val === '' || val == null) el.removeAttribute(name);
+                    else el.setAttribute(name, val);
+                  };
+                  let out = value as string | undefined;
+                  if (attrName === 'label') out = formatLabelText(value, { maxPerLine: 24, maxLines: 2 });
+                  applyVal(attrName, out);
                 }
               }}
               onVariantChange={(componentId, variant) => dispatch({ type: 'UPDATE_COMPONENT', payload: { id: componentId, updates: { variant } } })}
@@ -868,15 +874,21 @@ function ComponentNode({ id, data }: any) {
       const baseRect = childEl.getBoundingClientRect();
       const innerRect = (shadowInner?.getBoundingClientRect && shadowInner.getBoundingClientRect()) || baseRect;
       const contRect = containerEl.getBoundingClientRect();
-      const needsW = innerRect.width - contRect.width > 1;
-      const needsH = innerRect.height - contRect.height > 1;
+      const cs = getComputedStyle(containerEl);
+      const padX = (parseFloat(cs.paddingLeft || '0') || 0) + (parseFloat(cs.paddingRight || '0') || 0);
+      const padY = (parseFloat(cs.paddingTop || '0') || 0) + (parseFloat(cs.paddingBottom || '0') || 0);
+      const contentW = contRect.width - padX;
+      const contentH = contRect.height - padY;
+      const needsW = innerRect.width - contentW > 1;
+      const needsH = innerRect.height - contentH > 1;
       if (!needsW && !needsH) return;
 
-      const desiredW = needsW ? Math.ceil(innerRect.width + 4) : curW;
-      const desiredH = needsH ? Math.ceil(innerRect.height + 4) : curH;
+      const FUDGE = 4; // slight extra beyond padding for visual gap
+      const desiredW = needsW ? Math.ceil(innerRect.width + padX + FUDGE) : curW;
+      const desiredH = needsH ? Math.ceil(innerRect.height + padY + FUDGE) : curH;
 
-      const capW = Math.max(120, Math.min(desiredW, 1600));
-      const capH = Math.max(100, Math.min(desiredH, 1600));
+      const capW = Math.max(225, Math.min(desiredW, 1600));
+      const capH = Math.max(130, Math.min(desiredH, 1600));
       if (Math.abs(capW - curW) < 2 && Math.abs(capH - curH) < 2) return;
 
       rf.setNodes(prev =>
@@ -930,8 +942,8 @@ function ComponentNode({ id, data }: any) {
       if (!resizing.current) return;
       const dx = ev.clientX - resizing.current.startX;
       const dy = ev.clientY - resizing.current.startY;
-      const nw = Math.max(120, resizing.current.w + dx);
-      const nh = Math.max(100, resizing.current.h + dy);
+      const nw = Math.max(225, resizing.current.w + dx);
+      const nh = Math.max(130, resizing.current.h + dy);
       rf.setNodes(prev => prev.map(n => (n.id === id ? { ...n, style: { ...n.style, width: nw, height: nh }, data: { ...n.data, size: { w: nw, h: nh } } } : n)));
     };
     const up = () => {
@@ -1015,7 +1027,7 @@ function ComponentNode({ id, data }: any) {
           onMouseDown={onMouseDown}
         />
       )}
-      <div style={{ width: '100%', height: '100%' }} data-component-id={data?.comp?.id}>
+      <div style={{ width: '100%', height: '100%', padding: 8, boxSizing: 'border-box' }} data-component-id={data?.comp?.id}>
         {data?.comp ? <CardContent component={data.comp} tdInfos={data.tdInfos} /> : null}
       </div>
     </div>
