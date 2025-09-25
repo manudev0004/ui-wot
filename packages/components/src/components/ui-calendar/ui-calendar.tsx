@@ -52,6 +52,12 @@ export class UiCalendar {
   /** Current date-time value of the calendar (ISO string) */
   @Prop({ mutable: true }) value?: string;
 
+  /** Output/storage format: iso | epoch-ms | epoch-s | unix | rfc2822 */
+  @Prop() format: string = 'iso';
+
+  /** Date display pattern (dd/mm/yyyy, MM-DD-YYYY, yyyy/MM/dd, etc.) */
+  @Prop() dateFormat: string = 'dd/MM/yyyy';
+
   /** Disable user interaction when true */
   @Prop() disabled: boolean = false;
 
@@ -284,7 +290,7 @@ export class UiCalendar {
   async componentWillLoad() {
     this.isInitialized = true;
     if (this.value) {
-      this.selectedDate = new Date(this.value);
+      this.selectedDate = this.parseDate(this.value);
       this.currentMonth = this.selectedDate.getMonth();
       this.currentYear = this.selectedDate.getFullYear();
     }
@@ -318,12 +324,14 @@ export class UiCalendar {
    * It updates both internal state and external prop and also manages timestamps, and emits events (optional).
    */
   private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
-    this.value = value;
-
-    if (value) {
-      this.selectedDate = new Date(value);
-      this.currentMonth = this.selectedDate.getMonth();
-      this.currentYear = this.selectedDate.getFullYear();
+    const d = this.parseDate(value);
+    if (!isNaN(d.getTime())) {
+      this.selectedDate = d;
+      this.currentMonth = d.getMonth();
+      this.currentYear = d.getFullYear();
+      this.value = this.formatDate(d);
+    } else {
+      this.value = value;
     }
 
     this.lastUpdatedTs = Date.now();
@@ -772,23 +780,89 @@ export class UiCalendar {
     return days;
   }
 
-  /** Format display value */
+  /** Format display value for the calendar input field */
   private getDisplayValue() {
+    // Return empty string if no valid date is selected
     if (!this.selectedDate || isNaN(this.selectedDate.getTime())) return '';
-
-    const date = this.selectedDate.toLocaleDateString();
-    if (!this.includeTime) return date;
-
-    const hours24 = this.selectedDate.getHours();
-    const minutes = this.selectedDate.getMinutes();
-
+    
+    const currentDate = this.selectedDate;
+    const addZero = (numberValue: number) => String(numberValue).padStart(2, '0');
+    
+    // Create mapping of date format
+    const dateMap: Record<string, string> = {
+      dd: addZero(currentDate.getDate()),           // Day of month (01-31)
+      mm: addZero(currentDate.getMonth() + 1),     // Month (01-12, +1 because getMonth() returns 0-11)
+      yyyy: String(currentDate.getFullYear()),         // Full year (e.g., 2024)
+    };
+    
+    let formatPattern = this.dateFormat;
+    formatPattern = formatPattern.replace(/yyyy|YYYY|MM|mm|dd|DD/g, token => 
+      dateMap[token.toLowerCase()]
+    );
+    
+    // If time is not included, return just the date part
+    if (!this.includeTime) return formatPattern;
+    
+    // Handle time formatting when includeTime is enabled
+    const hr24Format = currentDate.getHours();     // 0-23 format
+    const minFormatted = addZero(currentDate.getMinutes());
+    
     if (this.timeFormat === '12') {
-      const suffix = hours24 >= 12 ? 'PM' : 'AM';
-      const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
-      return `${date} ${hours12.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${suffix}`;
+      // Convert to 12-hour format with AM/PM
+      const isAM = hr24Format < 12;
+      const hr12Format = hr24Format % 12 === 0 ? 12 : hr24Format % 12;
+      const amPmIndicator = isAM ? 'AM' : 'PM';
+      
+      return `${formatPattern} ${addZero(hr12Format)}:${minFormatted} ${amPmIndicator}`;
     }
+    
+    // Return 24-hour format
+    return `${formatPattern} ${addZero(hr24Format)}:${minFormatted}`;
+  }
 
-    return `${date} ${hours24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  /** Parse date string from various formats */
+  private parseDate(dateValue: string): Date {
+    // Return invalid date for empty input
+    if (!dateValue) return new Date(NaN);
+    
+    const inputFormat = this.format.toLowerCase();
+    
+    // Handle Unix/Epoch timestamp in milliseconds (e.g., "1640995200000")
+    if ((inputFormat === 'epoch-ms' || inputFormat === 'unix-ms') && /^-?\d+$/.test(dateValue)) {
+      return new Date(parseInt(dateValue, 10));
+    }
+    
+    // Handle Unix/Epoch timestamp in seconds (e.g., "1640995200")
+    if ((inputFormat === 'epoch-s' || inputFormat === 'unix') && /^-?\d+$/.test(dateValue)) {
+      return new Date(parseInt(dateValue, 10) * 1000); // Convert seconds to milliseconds
+    }
+    
+    // Handle RFC 2822 format (e.g., "Mon, 25 Dec 1995 13:30:00 GMT")
+    if (inputFormat === 'rfc2822') return new Date(dateValue);
+    
+    // Default: ISO format and other standard formats (e.g., "2023-12-25T10:30:00.000Z")
+    return new Date(dateValue);
+  }
+
+  /** Format Date object into string */
+  private formatDate(dateObject: Date): string {
+    const outputFormat = this.format.toLowerCase();
+    
+    // Return Unix/Epoch timestamp in milliseconds (e.g., "1640995200000")
+    if (outputFormat === 'epoch-ms' || outputFormat === 'unix-ms') {
+      return String(dateObject.getTime());
+    }
+    
+    // Return Unix/Epoch timestamp in seconds (e.g., "1640995200")
+    if (outputFormat === 'epoch-s' || outputFormat === 'unix') {
+      return String(Math.floor(dateObject.getTime() / 1000)); // Convert milliseconds to seconds
+    }
+    
+    // Return RFC 2822 format (e.g., "Mon, 25 Dec 1995 13:30:00 GMT")
+    if (outputFormat === 'rfc2822') return dateObject.toUTCString();
+    
+    // Default: Return ISO 8601 format (e.g., "2023-12-25T10:30:00.000Z")
+    return dateObject.toISOString();
   }
 
   /** Get month name */
@@ -916,8 +990,21 @@ export class UiCalendar {
               {/* Calendar Icon */}
               <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                 {/* License: MIT. Made by Microsoft: https://github.com/microsoft/vscode-codicons */}
-                <svg class={this.dark ? 'text-white font-bold' : 'text-gray-900 font-bold'} width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path fill-rule="evenodd" clip-rule="evenodd" d="M14.5 2H13V1h-1v1H4V1H3v1H1.5l-.5.5v12l.5.5h13l.5-.5v-12l-.5-.5zM14 14H2V5h12v9zm0-10H2V3h12v1zM4 8H3v1h1V8zm-1 2h1v1H3v-1zm1 2H3v1h1v-1zm2-4h1v1H6V8zm1 2H6v1h1v-1zm-1 2h1v1H6v-1zm1-6H6v1h1V6zm2 2h1v1H9V8zm1 2H9v1h1v-1zm-1 2h1v1H9v-1zm1-6H9v1h1V6zm2 2h1v1h-1V8zm1 2h-1v1h1v-1zm-1-4h1v1h-1V6z" fill="currentColor" opacity="0.8" />
+                <svg
+                  class={this.dark ? 'text-white font-bold' : 'text-gray-900 font-bold'}
+                  width="18"
+                  height="18"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    clip-rule="evenodd"
+                    d="M14.5 2H13V1h-1v1H4V1H3v1H1.5l-.5.5v12l.5.5h13l.5-.5v-12l-.5-.5zM14 14H2V5h12v9zm0-10H2V3h12v1zM4 8H3v1h1V8zm-1 2h1v1H3v-1zm1 2H3v1h1v-1zm2-4h1v1H6V8zm1 2H6v1h1v-1zm-1 2h1v1H6v-1zm1-6H6v1h1V6zm2 2h1v1H9V8zm1 2H9v1h1v-1zm-1 2h1v1H9v-1zm1-6H9v1h1V6zm2 2h1v1h-1V8zm1 2h-1v1h1v-1zm-1-4h1v1h-1V6z"
+                    fill="currentColor"
+                    opacity="0.8"
+                  />
                 </svg>
               </div>
             </div>

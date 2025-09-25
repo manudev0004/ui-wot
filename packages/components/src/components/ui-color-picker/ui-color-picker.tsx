@@ -38,6 +38,9 @@ export class UiColorPicker {
   /** Current color value in hex format (e.g., #ff0000) */
   @Prop({ mutable: true }) value: string = '#000000';
 
+  /** Output format: hex (default) | rgb | rgba | hsl | hsla */
+  @Prop() format: string = 'hex';
+
   /** Disable user interaction when true */
   @Prop() disabled: boolean = false;
 
@@ -129,7 +132,7 @@ export class UiColorPicker {
       _isRevert?: boolean;
     },
   ): Promise<boolean> {
-    const prevValue = this.selectedColor;
+    const prevValue = this.value;
 
     // Clear any existing error state
     if (this.operationStatus === 'error' && !options?._isRevert) {
@@ -170,13 +173,13 @@ export class UiColorPicker {
   async getValue(includeMetadata: boolean = false): Promise<string | { value: string; lastUpdated?: number; status: string; error?: string }> {
     if (includeMetadata) {
       return {
-        value: this.selectedColor,
+        value: this.value,
         lastUpdated: this.lastUpdatedTs,
         status: this.operationStatus,
         error: this.lastError,
       };
     }
-    return this.selectedColor;
+    return this.value;
   }
 
   /**
@@ -209,7 +212,8 @@ export class UiColorPicker {
 
   /** Initialize component state from props */
   componentWillLoad() {
-    this.selectedColor = this.value || '#000000';
+    this.selectedColor = this.parseColor(this.value || '#000000');
+    this.value = this.formatColor(this.selectedColor);
     this.isInitialized = true;
     if (this.showLastUpdated) this.startTimestampUpdater();
   }
@@ -226,10 +230,12 @@ export class UiColorPicker {
   watchValue(newVal: string) {
     if (!this.isInitialized) return;
 
-    if (this.selectedColor !== newVal) {
-      const prevValue = this.selectedColor;
-      this.selectedColor = newVal;
-      this.emitValueMsg(newVal, prevValue);
+    const parsed = this.parseColor(newVal);
+    if (this.selectedColor !== parsed) {
+      const prevValue = this.value;
+      this.selectedColor = parsed;
+      this.value = this.formatColor(this.selectedColor);
+      this.emitValueMsg(this.value, prevValue);
     }
   }
 
@@ -240,12 +246,12 @@ export class UiColorPicker {
    * It updates both internal state and external prop and also manages timestamps, and emits events (optional).
    */
   private updateValue(value: string, prevValue?: string, emitEvent: boolean = true): void {
-    this.selectedColor = value;
-    this.value = value;
+    this.selectedColor = this.parseColor(value);
+    this.value = this.formatColor(this.selectedColor);
     this.lastUpdatedTs = Date.now();
 
     if (emitEvent && !this.suppressEvents) {
-      this.emitValueMsg(value, prevValue);
+      this.emitValueMsg(this.value, prevValue);
     }
   }
 
@@ -263,7 +269,8 @@ export class UiColorPicker {
     try {
       // Execute the API call
       if (options.writeOperation) {
-        await options.writeOperation(value);
+        const formatted = this.formatColor(this.parseColor(value));
+        await options.writeOperation(formatted);
       } else if (options.readOperation) {
         await options.readOperation();
       }
@@ -281,7 +288,7 @@ export class UiColorPicker {
 
       // Revert optimistic changes if operation is not successful or has an error
       if (optimistic && !options?._isRevert) {
-        this.updateValue(prevValue, value, false);
+        this.updateValue(prevValue, this.value, false);
       }
 
       // Retry logic
@@ -316,7 +323,7 @@ export class UiColorPicker {
 
     const target = event.target as HTMLInputElement;
     const newValue = target.value;
-    const prevValue = this.selectedColor;
+    const prevValue = this.value;
 
     StatusIndicator.applyStatus(this, 'loading');
 
@@ -324,17 +331,199 @@ export class UiColorPicker {
     if (this.storedWriteOperation) {
       this.updateValue(newValue, prevValue);
 
-      try {        
-        await this.storedWriteOperation(newValue);
+      try {
+        await this.storedWriteOperation(this.value);
         StatusIndicator.applyStatus(this, 'success');
       } catch (error) {
         StatusIndicator.applyStatus(this, 'error', error?.message || 'Operation failed');
-        this.updateValue(prevValue, newValue, false);
+        this.updateValue(prevValue, this.value, false);
       }
     } else {
       StatusIndicator.applyStatus(this, 'error', 'No operation configured - setup may have failed');
     }
   };
+
+  private parseColor(colorInput: string): string {
+    if (!colorInput) return '#000000';
+
+    const normalizedColor = colorInput.trim().toLowerCase();
+
+    // Handle hex color format (#fff, #ffffff, #ffffffff)
+    if (normalizedColor.startsWith('#')) {
+      let hex = normalizedColor.replace(/[^0-9a-f]/g, '');
+
+      // Convert 3-digit hex to 6-digit hex (e.g., #fff -> #ffffff)
+      if (hex.length === 3) {
+        hex = hex
+          .split('')
+          .map(character => character + character)
+          .join('');
+      }
+
+      if (hex.length === 6) return `#${hex}`;
+      // Handle 8-digit hex (with alpha) 
+      if (hex.length === 8) return `#${hex.slice(0, 6)}`;
+    }
+
+    // Handle RGB/RGBA format (rgb(255, 0, 0) or rgba(255, 0, 0, 1))
+    const rgb = normalizedColor.match(/^rgba?\(([^)]+)\)$/);
+    if (rgb) {
+      const [r, g, b] = rgb[1].split(',').map(value => parseFloat(value));
+
+      // Convert RGB values to hex
+      const convertToHex = (colorValue: number) =>
+        Math.max(0, Math.min(255, Math.round(colorValue)))
+          .toString(16)
+          .padStart(2, '0');
+
+      if ([r, g, b].every(value => !isNaN(value))) {
+        return `#${convertToHex(r)}${convertToHex(g)}${convertToHex(b)}`;
+      }
+    }
+
+    // Handle HSL/HSLA format
+    const hsl = normalizedColor.match(/^hsla?\(([^)]+)\)$/);
+    if (hsl) {
+      const hslParts = hsl[1].split(',').map(part => part.trim());
+      const hue = parseFloat(hslParts[0]);
+      const saturation = parseFloat((hslParts[1] || '0').replace('%', '')) / 100;
+      const lightness = parseFloat((hslParts[2] || '0').replace('%', '')) / 100;
+
+      const [r, g, b] = this.hslToRgb(hue, saturation, lightness);
+      const convertToHex = (colorValue: number) => colorValue.toString(16).padStart(2, '0');
+      return `#${convertToHex(r)}${convertToHex(g)}${convertToHex(b)}`;
+    }
+
+    // Try CSS named colors
+    const temporaryElement = document.createElement('div');
+    temporaryElement.style.color = normalizedColor;
+    document.body.appendChild(temporaryElement);
+    const computedColor = getComputedStyle(temporaryElement).color;
+    document.body.removeChild(temporaryElement);
+
+    const namedColorMatch = computedColor && computedColor.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    if (namedColorMatch) {
+      const convertToHex = (colorString: string) => parseInt(colorString, 10).toString(16).padStart(2, '0');
+      return `#${convertToHex(namedColorMatch[1])}${convertToHex(namedColorMatch[2])}${convertToHex(namedColorMatch[3])}`;
+    }
+
+    // Fallback to current selected color or black
+    return this.selectedColor || '#000000';
+  }
+
+  private formatColor(hexColor: string): string {
+    const cleanhex = (hexColor || '#000000').replace('#', '');
+
+    const r = parseInt(cleanhex.slice(0, 2), 16) || 0;
+    const g = parseInt(cleanhex.slice(2, 4), 16) || 0;
+    const b = parseInt(cleanhex.slice(4, 6), 16) || 0;
+
+    const outputFormat = (this.format || 'hex').toLowerCase();
+
+    if (outputFormat === 'rgb') return `rgb(${r}, ${g}, ${b})`;
+    if (outputFormat === 'rgba') return `rgba(${r}, ${g}, ${b}, 1)`;
+
+    if (outputFormat === 'hsl' || outputFormat === 'hsla') {
+      const [hue, saturation, lightness] = this.rgbToHsl(r, g, b);
+      return outputFormat === 'hsl' ? `hsl(${hue}, ${saturation}%, ${lightness}%)` : `hsla(${hue}, ${saturation}%, ${lightness}%, 1)`;
+    }
+
+    // Default to hex format
+    return `#${cleanhex}`;
+  }
+
+  private hslToRgb(hue: number, saturation: number, lightness: number): [number, number, number] {
+    // Calculate chroma color intensity
+    const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+    const intermediateValue = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
+    const lightnessMatch = lightness - chroma / 2;
+
+    let r = 0;
+    let g = 0;
+    let b = 0;
+
+    // Determine RGB values based on hue sector (0-360 degrees divided into 6 sectors)
+    if (0 <= hue && hue < 60) {
+      // Red to Yellow sector
+      r = chroma;
+      g = intermediateValue;
+      b = 0;
+    } else if (60 <= hue && hue < 120) {
+      // Yellow to Green sector
+      r = intermediateValue;
+      g = chroma;
+      b = 0;
+    } else if (120 <= hue && hue < 180) {
+      // Green to Cyan sector
+      r = 0;
+      g = chroma;
+      b = intermediateValue;
+    } else if (180 <= hue && hue < 240) {
+      // Cyan to Blue sector
+      r = 0;
+      g = intermediateValue;
+      b = chroma;
+    } else if (240 <= hue && hue < 300) {
+      // Blue to Magenta sector
+      r = intermediateValue;
+      g = 0;
+      b = chroma;
+    } else {
+      // Magenta to Red sector (300-360 degrees)
+      r = chroma;
+      g = 0;
+      b = intermediateValue;
+    }
+
+    // Convert to 0-255 range and round to integers
+    return [Math.round((r + lightnessMatch) * 255), Math.round((g + lightnessMatch) * 255), Math.round((b + lightnessMatch) * 255)];
+  }
+
+  private rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+    // Normalize RGB values to 0-1 range
+    const redDecimal = r / 255;
+    const greenDecimal = g / 255;
+    const blueDecimal = b / 255;
+
+    const maxColorValue = Math.max(redDecimal, greenDecimal, blueDecimal);
+    const minColorValue = Math.min(redDecimal, greenDecimal, blueDecimal);
+
+    let hue = 0;
+    let saturation = 0;
+
+    // Calculate lightness (average of max and min)
+    const lightness = (maxColorValue + minColorValue) / 2;
+
+    // Calculate hue and saturation if color is not grayscale
+    if (maxColorValue !== minColorValue) {
+      const colorDifference = maxColorValue - minColorValue;
+
+      // Calculate saturation based on lightness
+      saturation = lightness > 0.5 ? colorDifference / (2 - maxColorValue - minColorValue) : colorDifference / (maxColorValue + minColorValue);
+
+      // Calculate hue based on which color component is dominant
+      switch (maxColorValue) {
+        case redDecimal:
+          // Red is dominant - hue in red-yellow or red-magenta range
+          hue = (greenDecimal - blueDecimal) / colorDifference + (greenDecimal < blueDecimal ? 6 : 0);
+          break;
+        case greenDecimal:
+          // Green is dominant - hue in yellow-cyan range
+          hue = (blueDecimal - redDecimal) / colorDifference + 2;
+          break;
+        case blueDecimal:
+          // Blue is dominant - hue in cyan-magenta range
+          hue = (redDecimal - greenDecimal) / colorDifference + 4;
+          break;
+      }
+
+      // Convert hue to degrees (0-360)
+      hue *= 60;
+    }
+
+    // Return HSL values: hue (0-360), saturation (0-100%), lightness (0-100%)
+    return [Math.round(hue), Math.round(saturation * 100), Math.round(lightness * 100)];
+  }
 
   /** Manages timestamp update timer for relative time display */
   private startTimestampUpdater() {
