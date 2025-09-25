@@ -487,13 +487,11 @@ export class UiCalendar {
     if (this.previouslyFocused && (this.previouslyFocused as HTMLElement).focus) {
       try {
         (this.previouslyFocused as HTMLElement).focus();
-      } catch (e) {
-      }
+      } catch (e) {}
     } else if (this.inputEl) {
       try {
         this.inputEl.focus();
-      } catch (e) {
-      }
+      } catch (e) {}
     }
   }
 
@@ -705,22 +703,22 @@ export class UiCalendar {
     const colorVars = this.getColorVars();
 
     // Base container styles
-    let containerClass = `relative ${this.inline ? 'block' : 'inline-block'}`;
+    let containerClass = `relative ${this.inline ? 'block' : 'inline-block'} w-50`;
 
     // Enhanced input styles with family consistency
-    let inputClass = `w-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 px-3 py-2 text-sm ${
+    let inputClass = `w-full h-10 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 px-3 py-2 text-sm ${
       isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
     }`;
 
     // Calendar popup/inline styles with enhanced design
-    let calendarClass = `${this.inline ? 'relative' : 'absolute top-full left-0 mt-1 z-50'} ${
+    let calendarClass = `${this.inline ? 'relative' : 'absolute top-full left-0 mt-1 z-[9999]'} ${
       this.dark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
     } border rounded-lg shadow-lg p-4 min-w-72`;
 
     // Inline styles for CSS variable colors
     let inputStyle: any = {};
 
-    // Variant-specific styling 
+    // Variant-specific styling
     if (this.variant === 'outlined') {
       inputClass += ` border bg-transparent ${this.dark ? 'text-white hover:bg-gray-800' : 'hover:bg-gray-50'}`;
       inputStyle.borderColor = colorVars.main;
@@ -884,20 +882,19 @@ export class UiCalendar {
 
     return (
       <div class="inline-block" part="container" role="group" aria-label={this.label || 'Calendar'}>
-        <div class="inline-flex items-center space-x-2 relative">
-          {/* Label */}
-          {this.label && (
-            <label
-              class={`select-none mr-2 transition-colors duration-200 ${isDisabled ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer hover:text-opacity-80'} ${
-                this.dark ? 'text-white' : 'text-gray-900'
-              }`}
-              onClick={() => !isDisabled && this.toggleOpen()}
-              part="label"
-            >
-              {this.label}
-            </label>
-          )}
-
+        {/* Label */}
+        {this.label && (
+          <label
+            class={`block mb-2 text-sm font-medium select-none ${isDisabled ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer hover:opacity-80'} ${
+              this.dark ? 'text-white' : 'text-gray-900'
+            }`}
+            onClick={() => !isDisabled && this.toggleOpen()}
+            part="label"
+          >
+            {this.label}
+          </label>
+        )}
+        <div class="relative">
           {/* Calendar Input Container */}
           <div class={styles.containerClass}>
             {/* Input Field */}
@@ -918,8 +915,9 @@ export class UiCalendar {
 
               {/* Calendar Icon */}
               <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M4 0V2M12 0V2M2 4H14M2 2H14C15.1 2 16 2.9 16 4V14C16 15.1 15.1 16 14 16H2C0.9 16 0 15.1 0 14V4C0 2.9 0.9 2 2 2Z" fill="currentColor" opacity="0.6" />
+                {/* License: MIT. Made by Microsoft: https://github.com/microsoft/vscode-codicons */}
+                <svg class={this.dark ? 'text-white font-bold' : 'text-gray-900 font-bold'} width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M14.5 2H13V1h-1v1H4V1H3v1H1.5l-.5.5v12l.5.5h13l.5-.5v-12l-.5-.5zM14 14H2V5h12v9zm0-10H2V3h12v1zM4 8H3v1h1V8zm-1 2h1v1H3v-1zm1 2H3v1h1v-1zm2-4h1v1H6V8zm1 2H6v1h1v-1zm-1 2h1v1H6v-1zm1-6H6v1h1V6zm2 2h1v1H9V8zm1 2H9v1h1v-1zm-1 2h1v1H9v-1zm1-6H9v1h1V6zm2 2h1v1h-1V8zm1 2h-1v1h1v-1zm-1-4h1v1h-1V6z" fill="currentColor" opacity="0.8" />
                 </svg>
               </div>
             </div>

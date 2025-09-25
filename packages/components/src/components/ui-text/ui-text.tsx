@@ -907,7 +907,11 @@ export class UiText {
     // For other modes
     switch (this.mode) {
       case 'field':
-        return <span class="block">{this.value || this.placeholder}</span>;
+        return (
+          <span class="block overflow-hidden text-ellipsis whitespace-nowrap" title={this.value || this.placeholder || ''}>
+            {this.value || this.placeholder}
+          </span>
+        );
 
       case 'area': {
         const contentText = this.value || this.placeholder || '';

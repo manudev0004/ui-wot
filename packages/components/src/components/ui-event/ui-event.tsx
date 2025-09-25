@@ -377,7 +377,7 @@ export class UiEvent {
           onClick={() => (this.isSubscribed ? this.stopListening() : this.startListening())}
           disabled={this.disabled}
         >
-          {this.isSubscribed ? 'Stop' : 'Start'} Listening
+          {this.isSubscribed ? 'Unsubscribe' : 'Subscribe'}
         </button>
         <button
           class={`px-3 py-2 rounded-md font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
@@ -406,17 +406,14 @@ export class UiEvent {
     const historyBg = this.dark ? 'bg-transparent' : 'bg-[var(--neutral-clr-50)]';
 
     return (
-      <div class="w-full max-w-2xl">
-        {/* Label */}
-        {this.label && <label class={`block text-sm font-medium mb-2 ${generalTextColor}`}>{this.label}</label>}
-
+      <div class="w-full max-w-md">
         <div class="relative inline-flex items-start w-full">
           <div class={`${variantStyles.classes} p-4 w-full ${panelBg}`} style={variantStyles.style}>
             {/* Header with event info and status */}
             <div class="flex justify-between items-center mb-3">
               <div class="flex items-center gap-2">
                 <span class="text-sm font-medium" style={{ color: headerTextColor }}>
-                  Event Listener
+                  Events <br />({this.label && <label class={`block text-sm font-medium mb-2 ${generalTextColor}`}>{this.label}</label>})
                 </span>
                 {this.eventName && <span class="text-xs px-2 py-1 rounded bg-[var(--color-neutral)]/20 text-[var(--color-neutral)]">{this.eventName}</span>}
               </div>

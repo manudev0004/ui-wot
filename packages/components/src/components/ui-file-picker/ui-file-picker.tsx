@@ -126,7 +126,7 @@ export class UiFilePicker {
    * @param options - Optional configuration for device communication and behavior
    * @returns Promise resolving to true if successful, false if failed
    *
-   * @example Single file upload 
+   * @example Single file upload
    * ```javascript
    * const file = document.getElementById('file');
    * await file.setUpload(async (fileData) => {
@@ -477,7 +477,7 @@ export class UiFilePicker {
 
   /** Gets the CSS classes and styles */
   private getVariantStyles(): { classes: string; style: any } {
-    const baseClasses = 'border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200';
+    const baseClasses = 'border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 w-60 h-60 flex flex-col';
     const style: any = {};
 
     style.borderColor = this.getActiveColor();
@@ -522,10 +522,7 @@ export class UiFilePicker {
         <div class="space-y-2">
           {/* Label */}
           {this.label && (
-            <label
-              class={`block text-sm font-medium transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed opacity-50' : ''} ${textColor}`}
-              part="label"
-            >
+            <label class={`block text-sm font-medium transition-colors duration-200 ${!canInteract ? 'cursor-not-allowed opacity-50' : ''} ${textColor}`} part="label">
               {this.label}
             </label>
           )}
@@ -533,9 +530,9 @@ export class UiFilePicker {
           <div class="inline-flex items-center space-x-2 relative">
             {/* File Drop Zone */}
             <div
-              class={`file-picker-drop-zone ${variantStyles.classes} ${
-                this.isDragOver ? 'drag-over' : ''
-              } ${canInteract ? 'hover:border-opacity-80 cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+              class={`file-picker-drop-zone ${variantStyles.classes} ${this.isDragOver ? 'drag-over' : ''} ${
+                canInteract ? 'hover:border-opacity-80 cursor-pointer' : 'cursor-not-allowed opacity-50'
+              }`}
               style={{
                 ...variantStyles.style,
                 borderColor: this.isDragOver ? this.getActiveColor() : variantStyles.style.borderColor,
@@ -559,7 +556,7 @@ export class UiFilePicker {
                 part="file-input"
               />
 
-              <div class="flex flex-col items-center gap-3">
+              <div class="flex flex-col items-center gap-3 w-full flex-1 overflow-hidden">
                 <div class={`w-12 h-12 flex items-center justify-center ${mutedTextColor}`} style={{ color: this.getActiveColor() }}>
                   {this.selectedFiles.length > 0 ? (
                     <svg width="19" height="14" viewBox="0 0 19 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -579,7 +576,7 @@ export class UiFilePicker {
                 </div>
 
                 {this.selectedFiles.length > 0 ? (
-                  <div class="flex flex-col items-center gap-2">
+                  <div class="flex flex-col items-center gap-2 w-full overflow-hidden">
                     <div class={`font-medium ${secondaryTextColor}`}>
                       {this.selectedFiles.length} file{this.selectedFiles.length !== 1 ? 's' : ''} selected
                     </div>
@@ -598,10 +595,10 @@ export class UiFilePicker {
                         </button>
                         <button
                           class="px-3 py-1 text-sm border rounded hover:opacity-80 transition-all"
-                          style={{ 
-                            borderColor: 'var(--color-danger)', 
+                          style={{
+                            borderColor: 'var(--color-danger)',
                             color: 'var(--color-danger)',
-                            backgroundColor: 'transparent'
+                            backgroundColor: 'transparent',
                           }}
                           onClick={e => {
                             e.stopPropagation();
@@ -615,9 +612,20 @@ export class UiFilePicker {
                     )}
                   </div>
                 ) : (
-                  <div class="text-center">
+                  <div class="text-center flex-1 flex flex-col justify-center">
                     <div class={`font-medium ${secondaryTextColor}`}>{canInteract ? 'Click to select files or drag and drop' : 'No files selected'}</div>
                     {this.accept && <div class={`text-xs mt-1 ${mutedTextColor}`}>Accepted types: {this.accept}</div>}
+                  </div>
+                )}
+
+                {this.selectedFiles.length > 0 && (
+                  <div class={`mt-3 h-10 w-full flex-1 overflow-y-auto border rounded p-2 ${this.dark ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-gray-50'}`}>
+                    {this.selectedFiles.map((file, index) => (
+                      <div key={index} class={`flex justify-between items-center py-1 border-b last:border-0 ${this.dark ? 'border-gray-600' : 'border-gray-200'}`}>
+                        <span class={`text-sm truncate flex-1 mr-2 ${secondaryTextColor}`}>{file.name}</span>
+                        <span class={`text-xs flex-shrink-0 ${mutedTextColor}`}>{this.formatFileSize(file.size)}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -626,24 +634,6 @@ export class UiFilePicker {
             {/* Status Badge */}
             {this.renderStatusBadge()}
           </div>
-
-          {/* File List */}
-          {this.selectedFiles.length > 0 && (
-            <div class={`mt-3 max-h-32 overflow-y-auto border rounded p-2 ${
-              this.dark 
-                ? 'border-gray-600 bg-gray-800' 
-                : 'border-gray-200 bg-gray-50'
-            }`}>
-              {this.selectedFiles.map((file, index) => (
-                <div key={index} class={`flex justify-between items-center py-1 border-b last:border-0 ${
-                  this.dark ? 'border-gray-600' : 'border-gray-200'
-                }`}>
-                  <span class={`text-sm truncate flex-1 mr-2 ${secondaryTextColor}`}>{file.name}</span>
-                  <span class={`text-xs flex-shrink-0 ${mutedTextColor}`}>{this.formatFileSize(file.size)}</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Last Updated Timestamp */}
