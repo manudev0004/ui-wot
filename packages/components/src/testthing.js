@@ -58,6 +58,9 @@ let selectedFile = {
   lastModified: Date.now(),
 };
 let fileList = []; // Array of file objects
+// Observable and multi-value object test properties
+let observableStatus = 'idle';
+let multiValue = { flag: false, count: 0, text: 'unset' };
 WoT.produce({
   title: 'TestThing',
   properties: {
@@ -199,6 +202,25 @@ WoT.produce({
         },
         required: ['name', 'size', 'type', 'lastModified'],
       },
+    },
+    // Observable property for testing property observation
+    observableStatus: {
+      title: 'Observable Status',
+      description: 'A string status that is observable for testing',
+      type: 'string',
+      observable: true,
+    },
+    // Object property with multiple value types
+    multiValue: {
+      title: 'Multi-Value Object',
+      description: 'Object containing boolean, number, and string values',
+      type: 'object',
+      properties: {
+        flag: { type: 'boolean' },
+        count: { type: 'number' },
+        text: { type: 'string' },
+      },
+      required: ['flag', 'count', 'text'],
     },
   },
   actions: {
@@ -561,6 +583,26 @@ WoT.produce({
         thing.emitEvent('on-files-changed', fileList);
       })
       .setPropertyReadHandler('fileList', async () => fileList);
+    // observableStatus property handlers
+    thing
+      .setPropertyWriteHandler('observableStatus', async value => {
+        const localStatus = await value.value();
+        checkPropertyWrite('string', typeof localStatus);
+        observableStatus = localStatus;
+        thing.emitPropertyChange('observableStatus');
+      })
+      .setPropertyReadHandler('observableStatus', async () => observableStatus)
+      // multiValue property handlers
+      .setPropertyWriteHandler('multiValue', async value => {
+        const localObj = await value.value();
+        if (Array.isArray(localObj)) {
+          checkPropertyWrite('object', 'array');
+        } else {
+          checkPropertyWrite('object', typeof localObj);
+        }
+        multiValue = localObj;
+      })
+      .setPropertyReadHandler('multiValue', async () => multiValue);
     // set action handlers
     thing
       .setActionHandler('void-void', async parameters => {
