@@ -98,7 +98,7 @@ export class UiNumberPicker {
   /** Timestamp for read-only pulse animation (optional) */
   @State() readPulseTs?: number;
 
-    /** Internal state holding the current displayed value */
+  /** Internal state holding the current displayed value */
   @State() private currentValue: number = 0;
 
   /** Internal state counter for timestamp re-rendering */
@@ -515,7 +515,7 @@ export class UiNumberPicker {
         if (this.dark) {
           baseClasses += ` border-2 bg-transparent text-white hover:text-white`;
         } else {
-          baseClasses += ` border-2 bg-transparent text-black hover:text-white`;
+          baseClasses += ` border-2 bg-transparent text-black hover:bg-gray-100`;
         }
       }
     } else if (this.variant === 'filled') {

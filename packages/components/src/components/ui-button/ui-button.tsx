@@ -235,6 +235,7 @@ export class UiButton {
     if (this.variant === 'minimal') {
       style.backgroundColor = 'transparent';
       style.borderColor = 'transparent';
+      baseClasses += ` ${this.color === 'secondary' ? 'text-[var(--color-secondary)]' : this.color === 'neutral' ? 'text-[var(--color-neutral)]' : 'text-[var(--color-primary)]'}`;
       if (!isDisabled) {
         baseClasses += ' hover:bg-gray-100';
       }

@@ -10,7 +10,7 @@ import { StatusIndicator, OperationStatus } from '../../utils/status-indicator';
  * @example Basic Usage
  * ```html
  * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
- * <ui-checkbox variant="minimal" value="false" label="Enable Notifications"></ui-checkbox>
+ * <ui-checkbox variant="radio" value="false" label="Enable Notifications"></ui-checkbox>
  * <ui-checkbox variant="filled" label="Device Status" show-last-updated="true"></ui-checkbox>
  * ```
  *
@@ -38,11 +38,11 @@ export class UiCheckbox {
 
   /**
    * Visual style variant of the checkbox.
-   * - minimal: Clean design with transparent background
+   * - radio: Clean design with transparent background
    * - outlined: Border-focused design with outline style
    * - filled: Solid background when checked
    */
-  @Prop() variant: 'minimal' | 'outlined' | 'filled' = 'outlined';
+  @Prop() variant: 'radio' | 'outlined' | 'filled' = 'outlined';
 
   /** Color theme for the active state matching to thingsweb theme */
   @Prop() color: 'primary' | 'secondary' | 'neutral' = 'primary';
@@ -414,12 +414,12 @@ export class UiCheckbox {
     }
 
     // Variant-specific styling with CSS variables
-    if (this.variant === 'minimal') {
+    if (this.variant === 'radio') {
       if (this.isActive) {
-        style.backgroundColor = this.getActiveColor();
         style.borderColor = this.getActiveColor();
+        baseClasses += ' rounded-full bg-transparent';
       } else {
-        baseClasses += ` bg-transparent border-gray-300 ${this.dark ? 'border-gray-600' : ''}`;
+        baseClasses += ` rounded-full bg-transparent border-gray-300 ${this.dark ? 'border-gray-600' : ''}`;
       }
     } else if (this.variant === 'outlined') {
       if (this.isActive) {
@@ -477,20 +477,23 @@ export class UiCheckbox {
             aria-checked={this.isActive ? 'true' : 'false'}
             aria-disabled={this.disabled ? 'true' : 'false'}
           >
-            {this.isActive && (
-              <svg
-                class={`w-3 h-3 ${this.variant === 'outlined' ? 'text-current' : 'text-white'}`}
-                style={this.variant === 'outlined' ? { color: this.getActiveColor() } : {}}
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-            )}
+            {this.isActive &&
+              (this.variant === 'radio' ? (
+                <span class="block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: this.getActiveColor() }}></span>
+              ) : (
+                <svg
+                  class={`w-3 h-3 ${this.variant === 'outlined' ? 'text-current' : 'text-white'}`}
+                  style={this.variant === 'outlined' ? { color: this.getActiveColor() } : {}}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              ))}
           </div>
 
           {/* Label */}

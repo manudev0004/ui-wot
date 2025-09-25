@@ -66,7 +66,7 @@ export class UiEvent {
   @Prop() showLastUpdated: boolean = false;
 
   /** Show visual operation status indicators (loading, success, failed) right to the component */
-  @Prop() showStatus: boolean = true;
+  @Prop() showStatus: boolean = false;
 
   /** Connection status indicator */
   @Prop() connected: boolean = false;
@@ -368,9 +368,9 @@ export class UiEvent {
     const primaryButtonStyle = this.isSubscribed ? { backgroundColor: 'var(--color-danger)', color: 'white' } : { backgroundColor: this.getActiveColor(), color: 'white' };
 
     return (
-      <div class="flex gap-2 mb-3">
+      <div class="flex items-center gap-2 mb-3">
         <button
-          class={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+          class={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 w-[14ch] whitespace-nowrap text-center flex-shrink-0 ${
             this.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:opacity-80'
           }`}
           style={this.disabled ? { backgroundColor: 'var(--color-neutral)', color: 'white' } : primaryButtonStyle}
@@ -380,15 +380,17 @@ export class UiEvent {
           {this.isSubscribed ? 'Unsubscribe' : 'Subscribe'}
         </button>
         <button
-          class={`px-3 py-2 rounded-md font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+          class={`px-3 py-2 ml-2 rounded-md font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
             this.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:opacity-80'
           }`}
           style={{ backgroundColor: 'var(--color-neutral)', color: 'white' }}
           onClick={() => this.clearEvents()}
           disabled={this.disabled}
         >
-          Clear Events
+          Clear
         </button>
+        {/* Status badge */}
+        {this.renderStatusBadge()}
       </div>
     );
   }
@@ -406,15 +408,16 @@ export class UiEvent {
     const historyBg = this.dark ? 'bg-transparent' : 'bg-[var(--neutral-clr-50)]';
 
     return (
-      <div class="w-full max-w-md">
+      <div class="w-full max-w-xs">
         <div class="relative inline-flex items-start w-full">
           <div class={`${variantStyles.classes} p-4 w-full ${panelBg}`} style={variantStyles.style}>
             {/* Header with event info and status */}
             <div class="flex justify-between items-center mb-3">
               <div class="flex items-center gap-2">
                 <span class="text-sm font-medium" style={{ color: headerTextColor }}>
-                  Events <br />({this.label && <label class={`block text-sm font-medium mb-2 ${generalTextColor}`}>{this.label}</label>})
+                  Events
                 </span>
+                {this.label && <label class={`block text-sm font-medium ${generalTextColor}`}>({this.label})</label>}
                 {this.eventName && <span class="text-xs px-2 py-1 rounded bg-[var(--color-neutral)]/20 text-[var(--color-neutral)]">{this.eventName}</span>}
               </div>
               <div class="flex items-center gap-1">
@@ -429,9 +432,6 @@ export class UiEvent {
             {/* Event history */}
             <div class={`border rounded max-h-48 overflow-y-auto border-[var(--color-neutral)]/30 ${historyBg}`}>{this.renderEventHistory()}</div>
           </div>
-
-          {/* Status badge */}
-          <div class="ml-2 flex-shrink-0">{this.renderStatusBadge()}</div>
         </div>
 
         {/* Last updated timestamp */}
