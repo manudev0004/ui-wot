@@ -4,9 +4,8 @@ import { ThemeProvider } from './context/ThemeContext';
 import { HomePage } from './pages/HomePage';
 import { TDInputPage } from './pages/TDInputPage';
 import { AffordanceSelectionPage } from './pages/AffordanceSelectionPage';
-import { ComponentCanvasDndPage } from './pages/ComponentCanvasDndPage';
 import './styles/theme.css';
-import { ComponentCanvasFlowPage } from './pages/ComponentCanvasFlowPage';
+import { ComponentCanvasPage } from './pages/ComponentCanvasPage';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useAppContext as useCtx } from './context/AppContext';
 import { Navbar } from './components/Navbar';
@@ -38,9 +37,7 @@ function RouterSync() {
             <Route path="/" element={<HomePage />} />
             <Route path="/td-input" element={<TDInputPage />} />
             <Route path="/affordances" element={<AffordanceSelectionPage />} />
-            {/* <Route path="/components/*" element={<ComponentCanvasPage />} /> */}
-            {/* <Route path="/components" element={<ComponentCanvasDndPage />} /> */}
-            <Route path="/components" element={<ComponentCanvasFlowPage />} />
+            <Route path="/components" element={<ComponentCanvasPage />} />
             {/* fallback to home */}
             <Route path="*" element={<HomePage />} />
           </Routes>
@@ -54,7 +51,12 @@ function App() {
   return (
     <ThemeProvider>
       <AppProvider>
-        <BrowserRouter>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
           <RouterSync />
         </BrowserRouter>
       </AppProvider>

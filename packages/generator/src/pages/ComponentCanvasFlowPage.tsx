@@ -879,8 +879,8 @@ export function ComponentCanvasFlowPage() {
         zoomOnDoubleClick={zoomOnDoubleClick}
       >
         {showMiniMap && (
-          <MiniMap 
-            nodeColor={(node) => {
+          <MiniMap
+            nodeColor={node => {
               if (node.type === 'sectionNode') {
                 return 'var(--color-border)';
               }
@@ -894,7 +894,7 @@ export function ComponentCanvasFlowPage() {
           />
         )}
         {showControls && (
-          <Controls 
+          <Controls
             style={{
               backgroundColor: 'var(--color-bg-card)',
               border: '1px solid var(--color-border)',

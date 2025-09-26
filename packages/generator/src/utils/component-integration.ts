@@ -1,5 +1,3 @@
-// Keep only the ComponentMapper — factory/integration helpers are not used by the React app
-
 /**
  * Maps WoT Thing Description affordances to appropriate UI components
  */
