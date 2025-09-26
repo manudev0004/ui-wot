@@ -117,7 +117,7 @@ export namespace Components {
          */
         "dark": boolean;
         /**
-          * Date display pattern (dd/mm/yyyy, MM-DD-YYYY, yyyy/MM/dd, etc.)
+          * Date display pattern (dd/MM/yyyy, MM-DD-YYYY, yyyy/MM/dd, etc.)
           * @default 'dd/MM/yyyy'
          */
         "dateFormat": string;
@@ -1887,7 +1887,7 @@ declare namespace LocalJSX {
          */
         "dark"?: boolean;
         /**
-          * Date display pattern (dd/mm/yyyy, MM-DD-YYYY, yyyy/MM/dd, etc.)
+          * Date display pattern (dd/MM/yyyy, MM-DD-YYYY, yyyy/MM/dd, etc.)
           * @default 'dd/MM/yyyy'
          */
         "dateFormat"?: string;
