@@ -1,7 +1,5 @@
 {
-  "entryPoints": [
-    "src/docs-components.ts"
-  ],
+  "entryPoints": ["src/docs-components.ts"],
   "tsconfig": "tsconfig.json",
   "exclude": ["**/__tests__/**", "**/*.spec.ts", "**/node_modules/**"],
   "excludeNotDocumented": false,
@@ -30,20 +28,7 @@
   "modifierTags": ["@public", "@private", "@protected", "@readonly", "@internal"],
   "treatWarningsAsErrors": false,
   "sort": ["source-order", "alphabetical"],
-  "kindSortOrder": [
-    "Project",
-    "Module",
-    "Namespace",
-    "Class",
-    "Interface",
-    "TypeAlias",
-    "Variable",
-    "Function",
-    "Property",
-    "Method",
-    "Constructor",
-    "Accessor"
-  ],
+  "kindSortOrder": ["Project", "Module", "Namespace", "Class", "Interface", "TypeAlias", "Variable", "Function", "Property", "Method", "Constructor", "Accessor"],
   "searchInComments": true,
   "searchInDocuments": true,
   "preserveWatchOutput": false,

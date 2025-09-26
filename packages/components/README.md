@@ -6,7 +6,7 @@
 </picture>
 </h1>
 
->Independent Web Components library for building user interfaces for IoT applications using **Web of Things (WoT)**. These components provide ready-to-use UI elements that can interact with Thing Descriptions and WoT-enabled devices.
+> Independent Web Components library for building user interfaces for IoT applications using **Web of Things (WoT)**. These components provide ready-to-use UI elements that can interact with Thing Descriptions and WoT-enabled devices.
 
 ## Table of Contents
 
@@ -44,24 +44,22 @@ For vanilla HTML usage, you also need the Node-WoT browser bundle:
 ## Quick Start
 
 ### Vanilla HTML
+
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
-  <script type="module" src="./build/ui-wot-components.esm.js"></script>
-</head>
-<body>
-  <ui-toggle 
-    data-td-property="deviceStatus" 
-    label="Device Power" 
-    show-status="true">
-  </ui-toggle>
-</body>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
+    <script type="module" src="./build/ui-wot-components.esm.js"></script>
+  </head>
+  <body>
+    <ui-toggle data-td-property="deviceStatus" label="Device Power" show-status="true"> </ui-toggle>
+  </body>
 </html>
 ```
 
 ### React/Framework
+
 ```jsx
 import { defineCustomElement } from '@thingweb/ui-wot-components/components/ui-toggle';
 import { initializeWot, connectAll } from '@thingweb/ui-wot-components/services';
@@ -88,22 +86,24 @@ return <ui-toggle data-td-property="status" label="Status" />;
 For vanilla HTML applications, you need to include the Node-WoT browser bundle and manually define custom elements.
 
 #### Setup
+
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <!-- Required: Node-WoT browser bundle for WoT functionality -->
-  <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
-  <!-- Load all components -->
-  <script type="module" src="./build/ui-wot-components.esm.js"></script>
-</head>
-<body>
-  <!-- Your components will go here -->
-</body>
+  <head>
+    <!-- Required: Node-WoT browser bundle for WoT functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
+    <!-- Load all components -->
+    <script type="module" src="./build/ui-wot-components.esm.js"></script>
+  </head>
+  <body>
+    <!-- Your components will go here -->
+  </body>
 </html>
 ```
 
 #### Manual Component Connection
+
 ```html
 <ui-toggle id="power-toggle" label="Device Power"></ui-toggle>
 <ui-slider id="brightness" label="Brightness" min="0" max="100"></ui-slider>
@@ -113,22 +113,22 @@ For vanilla HTML applications, you need to include the Node-WoT browser bundle a
   (async () => {
     // Wait for components to be defined
     await Promise.all(['ui-toggle', 'ui-slider', 'ui-button'].map(tag => customElements.whenDefined(tag)));
-    
+
     // Initialize WoT and consume Thing Description
     const servient = new window.WoT.Core.Servient();
     servient.addClientFactory(new window.WoT.Http.HttpClientFactory());
     const wot = await servient.start();
     const td = await fetch('http://your-device/td').then(r => r.json());
     const thing = await wot.consume(td);
-    
+
     // Connect components manually - wait for component ready
     const toggle = document.getElementById('power-toggle');
     await toggle.componentOnReady();
     const initialPower = await (await thing.readProperty('power')).value();
     await toggle.setValue(initialPower, {
-      writeOperation: async (value) => await thing.writeProperty('power', value)
+      writeOperation: async value => await thing.writeProperty('power', value),
     });
-    
+
     const button = document.getElementById('restart-btn');
     await button.componentOnReady();
     await button.setAction(async () => await thing.invokeAction('restart'));
@@ -137,35 +137,22 @@ For vanilla HTML applications, you need to include the Node-WoT browser bundle a
 ```
 
 #### Automatic Connection (Recommended)
+
 ```html
 <!-- Use data-td-* attributes for automatic connection -->
-<ui-toggle 
-  data-td-property="power" 
-  data-td-strategy="poll"
-  label="Device Power" 
-  show-status="true">
-</ui-toggle>
+<ui-toggle data-td-property="power" data-td-strategy="poll" label="Device Power" show-status="true"> </ui-toggle>
 
-<ui-slider 
-  data-td-property="brightness" 
-  label="Brightness" 
-  min="0" max="100" 
-  show-last-updated="true">
-</ui-slider>
+<ui-slider data-td-property="brightness" label="Brightness" min="0" max="100" show-last-updated="true"> </ui-slider>
 
-<ui-button 
-  data-td-action="restart" 
-  label="Restart Device"
-  show-status="true">
-</ui-button>
+<ui-button data-td-action="restart" label="Restart Device" show-status="true"> </ui-button>
 
 <script>
   (async () => {
     // Wait for components to be defined
     const tags = ['ui-toggle', 'ui-slider', 'ui-button'];
     await Promise.all(tags.map(tag => customElements.whenDefined(tag)));
-    
-    // Initialize WoT and automatically connect all components  
+
+    // Initialize WoT and automatically connect all components
     await initializeWot();
     await connectAll({ baseUrl: 'http://your-device/td', container: document });
   })();
@@ -179,6 +166,7 @@ The components work seamlessly with modern frameworks. The library provides both
 #### React Example (Complete Setup)
 
 **main.tsx** - Define Custom Elements:
+
 ```tsx
 import React from 'react';
 import { createRoot } from 'react-dom/client';
@@ -201,6 +189,7 @@ createRoot(document.getElementById('root')!).render(<App />);
 ```
 
 **index.html** - Include Node-WoT Bundle:
+
 ```html
 <!DOCTYPE html>
 <html lang="en">
@@ -219,6 +208,7 @@ createRoot(document.getElementById('root')!).render(<App />);
 ```
 
 **App.tsx** - Use Components with Services:
+
 ```tsx
 import { useEffect } from 'react';
 import { initializeWot, connectAll } from '@thingweb/ui-wot-components/services';
@@ -277,14 +267,11 @@ export default function App() {
 ```
 
 #### Vue.js Example
+
 ```vue
 <template>
   <div>
-    <ui-toggle 
-      data-td-property="status" 
-      label="Device Status"
-      show-status="true">
-    </ui-toggle>
+    <ui-toggle data-td-property="status" label="Device Status" show-status="true"> </ui-toggle>
   </div>
 </template>
 
@@ -310,6 +297,7 @@ onMounted(async () => {
 UI-WoT Components provides a complete set of Web Components for WoT interactions:
 
 ### Input Components
+
 - **`<ui-toggle>`** - Boolean properties (on/off switches)
 - **`<ui-slider>`** - Numeric properties with range controls
 - **`<ui-number-picker>`** - Precise numeric input with increment/decrement
@@ -320,19 +308,24 @@ UI-WoT Components provides a complete set of Web Components for WoT interactions
 - **`<ui-calendar>`** - Date/time selection
 
 ### Action Components
+
 - **`<ui-button>`** - WoT action invocation with status feedback
 
 ### Monitoring Components
+
 - **`<ui-event>`** - WoT event monitoring and display
 - **`<ui-notification>`** - Status notifications and alerts
 
 ### Complex Data Components
+
 - **`<ui-object>`** - Complex object properties with dynamic forms
 
 ### Generic Components
+
 - **`<ui-heading>`** - Styled headings and labels
 
 Each component supports:
+
 - **Automatic WoT Integration** via `data-td-*` attributes
 - **Manual Connection** via component methods
 - **Status Indicators** (loading, success, error states)
@@ -347,6 +340,7 @@ The services module provides utilities for WoT integration and component managem
 ### Core Services
 
 #### `initializeWot()`
+
 Initializes the WoT runtime using the Node-WoT browser bundle. Must be called before using any WoT features.
 
 ```javascript
@@ -357,20 +351,22 @@ await initializeWot();
 ```
 
 #### `connectAll(options)`
+
 Automatically discovers and connects all components with `data-td-*` attributes to their corresponding WoT properties, actions, and events.
 
 ```javascript
 import { connectAll } from '@thingweb/ui-wot-components/services';
 
 // Connect all components to a Thing Description
-await connectAll({ 
-  baseUrl: 'http://device.local/td',  // Thing Description URL
-  container: document,               // Container to search for components
-  strategy: 'poll'                   // Default connection strategy
+await connectAll({
+  baseUrl: 'http://device.local/td', // Thing Description URL
+  container: document, // Container to search for components
+  strategy: 'poll', // Default connection strategy
 });
 ```
 
 #### Individual Connection Utilities
+
 For fine-grained control:
 
 ```javascript
@@ -378,7 +374,7 @@ import { connectProperty, connectAction, connectEvent } from './path/to/ui-wot-c
 
 // Wait for components to be defined before connecting
 await customElements.whenDefined('ui-toggle');
-await customElements.whenDefined('ui-button'); 
+await customElements.whenDefined('ui-button');
 await customElements.whenDefined('ui-event');
 
 // Connect individual component to specific WoT features
@@ -399,24 +395,25 @@ The services are built on top of the **Node-WoT browser bundle** and provide:
 6. **Error Handling**: Provides robust error handling and status reporting
 
 **Requirements:**
+
 - Node-WoT browser bundle must be included in the page
 - Components must be defined before calling `connectAll()`
 - Thing Descriptions must be accessible via HTTP/HTTPS
 
 ## Component Comparison
 
-| Feature | Toggle | Slider | Text | Button | Event | Notification |
-|---------|--------|--------|------|--------|--------|-------------|
-| **Primary Use** | Boolean props | Numeric props | String props | Actions | Event monitoring | Status display |
-| **Data Types** | `boolean` | `number` | `string` | N/A | Any | Any |
-| **Interaction** | Click | Drag/Input | Type/Edit | Click | Read-only | Read-only |
-| **WoT Property** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **WoT Action** | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| **WoT Event** | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| **Status Indicators** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Last Updated** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Themes** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Dark Mode** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Feature               | Toggle        | Slider        | Text         | Button  | Event            | Notification   |
+| --------------------- | ------------- | ------------- | ------------ | ------- | ---------------- | -------------- |
+| **Primary Use**       | Boolean props | Numeric props | String props | Actions | Event monitoring | Status display |
+| **Data Types**        | `boolean`     | `number`      | `string`     | N/A     | Any              | Any            |
+| **Interaction**       | Click         | Drag/Input    | Type/Edit    | Click   | Read-only        | Read-only      |
+| **WoT Property**      | ✅            | ✅            | ✅           | ❌      | ❌               | ❌             |
+| **WoT Action**        | ❌            | ❌            | ❌           | ✅      | ❌               | ❌             |
+| **WoT Event**         | ❌            | ❌            | ❌           | ❌      | ✅               | ✅             |
+| **Status Indicators** | ✅            | ✅            | ✅           | ✅      | ✅               | ✅             |
+| **Last Updated**      | ✅            | ✅            | ✅           | ✅      | ✅               | ❌             |
+| **Themes**            | ✅            | ✅            | ✅           | ✅      | ✅               | ✅             |
+| **Dark Mode**         | ✅            | ✅            | ✅           | ✅      | ✅               | ✅             |
 
 ### Supported Data Formats
 
@@ -430,15 +427,20 @@ The services are built on top of the **Node-WoT browser bundle** and provide:
 Comprehensive documentation is available in two formats:
 
 ### Component Documentation
+
 Each component has detailed documentation with examples, API reference, and usage patterns:
+
 - **Browse**: [Component Docs](./docs/components/README.md)
 - **Individual Components**: Available in `src/components/<component-name>/readme.md`
 
-### Services & Utilities Documentation  
+### Services & Utilities Documentation
+
 TypeDoc-generated API documentation for services and utilities:
+
 - **Browse**: [Services & Utils API](./docs/typedoc/README.md)
 
 ### Regenerate Documentation
+
 ```bash
 npm run docs
 ```
@@ -479,6 +481,7 @@ npm run docs
 ## License
 
 This project is licensed under both:
+
 - [Eclipse Public License 2.0](https://www.eclipse.org/legal/epl-2.0/)
 - [W3C Software License](https://www.w3.org/Consortium/Legal/2015/copyright-software-and-document)
 
@@ -487,4 +490,3 @@ This project is licensed under both:
 - **[Eclipse Thingweb](https://github.com/eclipse-thingweb/thingweb)** - Reference implementation of W3C WoT
 - **[Node-WoT](https://github.com/eclipse-thingweb/node-wot)** - JavaScript implementation of W3C WoT
 - **[WoT Scripting API](https://w3c.github.io/wot-scripting-api/)** - W3C WoT Scripting API specification
-
