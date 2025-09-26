@@ -20,44 +20,13 @@ import { useNavbar } from '../context/NavbarContext';
 import { useNavigate } from 'react-router-dom';
 import { connectThings } from './canvas/connectThings';
 import { CardContent } from './canvas/CardContent';
+import { SECTION_WIDTH, SECTION_HEIGHT, GAP, MIN_GAP, CARD_WIDTH, CARD_HEIGHT, getMinCardHeight, getCardDimensions } from './canvas/constants';
 import { dashboardService } from '../services/dashboardService';
 import { EditPopup } from '../components/EditPopup';
 import { getAttributeSchema } from './canvas/attributeSchemas';
 import { formatLabelText } from '../utils/label';
-
-const SECTION_WIDTH = 640;
-const SECTION_HEIGHT = 360;
-const GAP = 10;
-const MIN_GAP = 8;
-const CARD_WIDTH = 280;
-const CARD_HEIGHT = 140;
-const EVENT_CARD_HEIGHT = 304;
-const OBJECT_CARD_HEIGHT = 304;
-
-let globalLayoutOrder: Record<string, string[]> = {};
-
-function getMinCardHeight(component: any): number {
-  const uiType = component?.uiComponent?.toLowerCase?.() || '';
-  if (uiType.includes('event')) return EVENT_CARD_HEIGHT;
-  if (uiType.includes('object') || component?.affordanceKey?.includes?.('object')) return OBJECT_CARD_HEIGHT;
-  return CARD_HEIGHT;
-}
-
-function getCardDimensions(component: any): { w: number; h: number } {
-  if (!component) return { w: CARD_WIDTH, h: CARD_HEIGHT };
-
-  const uiComponentType = component.uiComponent?.toLowerCase() || '';
-
-  if (uiComponentType.includes('event')) {
-    return { w: CARD_WIDTH, h: EVENT_CARD_HEIGHT };
-  }
-
-  if (uiComponentType.includes('object') || component.affordanceKey?.includes('object')) {
-    return { w: CARD_WIDTH, h: OBJECT_CARD_HEIGHT };
-  }
-
-  return { w: CARD_WIDTH, h: CARD_HEIGHT };
-}
+import { reflowAllSections, setGlobalLayoutOrder } from './canvas/layout';
+import { createComponentResizeMouseDown, createSectionResizeMouseDown, setupComponentAutoFit } from './canvas/resize';
 
 export function ComponentCanvasPage() {
   const { state, dispatch } = useAppContext();
@@ -103,7 +72,7 @@ export function ComponentCanvasPage() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false });
 
   useEffect(() => {
-    (globalLayoutOrder as any) = layoutOrder;
+    setGlobalLayoutOrder(layoutOrder);
   }, [layoutOrder]);
 
   useEffect(() => {
@@ -174,12 +143,13 @@ export function ComponentCanvasPage() {
     for (const sectionId of sectionIds) {
       const componentIds = componentsBySection[sectionId] || [];
       if (componentIds.length === 0) continue;
-      
+
       let columnIndex = 0;
       for (let i = 1; i < columnCount; i++) if (columnHeights[i] < columnHeights[columnIndex]) columnIndex = i;
       const positionX = columnPositionsX[columnIndex];
       const positionY = columnHeights[columnIndex];
-      const sectionTitle = sectionId === '__unassigned__' ? 'Unassigned' : sectionNames[sectionId] ?? state.tdInfos.find(thingInfo => thingInfo.id === sectionId)?.title ?? 'Section';
+      const sectionTitle =
+        sectionId === '__unassigned__' ? 'Unassigned' : sectionNames[sectionId] ?? state.tdInfos.find(thingInfo => thingInfo.id === sectionId)?.title ?? 'Section';
       const styleConfig = sectionStyles[sectionId] || { bgColor: 'transparent', border: 'dashed' as const };
       const borderStyle = styleConfig.border === 'none' ? 'none' : `1px ${styleConfig.border} #94a3b8`;
       const existingSection = nodesRef.current.find(nodeItem => nodeItem.id === `sec:${sectionId}`);
@@ -215,7 +185,7 @@ export function ComponentCanvasPage() {
         dragHandle: '.section-drag-handle',
       };
       result.push(sectionNode);
-      
+
       const innerWidth = widthForSection - GAP * 2;
       const childrenStartIndex = result.length;
       const componentsQueue = [...componentIds];
@@ -268,7 +238,12 @@ export function ComponentCanvasPage() {
             const bWidth = (b.style?.width as number) ?? CARD_WIDTH;
             const bHeight = (b.style?.height as number) ?? getMinCardHeight((b.data as any)?.comp);
 
-            const overlap = !(aPos.x + aWidth + MIN_GAP <= bPos.x || bPos.x + bWidth + MIN_GAP <= aPos.x || aPos.y + aHeight + MIN_GAP <= bPos.y || bPos.y + bHeight + MIN_GAP <= aPos.y);
+            const overlap = !(
+              aPos.x + aWidth + MIN_GAP <= bPos.x ||
+              bPos.x + bWidth + MIN_GAP <= aPos.x ||
+              aPos.y + aHeight + MIN_GAP <= bPos.y ||
+              bPos.y + bHeight + MIN_GAP <= aPos.y
+            );
 
             if (overlap) {
               const newPos = findBestPosition(bWidth, bHeight);
@@ -419,7 +394,7 @@ export function ComponentCanvasPage() {
       setLayoutOrder(previousOrder => {
         const updatedOrder = { ...previousOrder };
         Object.entries(componentsBySection).forEach(([sectionId, componentIds]) => (updatedOrder[sectionId] = componentIds));
-        globalLayoutOrder = updatedOrder;
+        setGlobalLayoutOrder(updatedOrder);
         return updatedOrder;
       });
     }
@@ -459,7 +434,7 @@ export function ComponentCanvasPage() {
         const newComponents = componentIds.filter(componentId => !existingComponents.includes(componentId));
         updatedOrder[sectionId] = [...existingComponents, ...newComponents];
       });
-      globalLayoutOrder = updatedOrder;
+      setGlobalLayoutOrder(updatedOrder);
       return updatedOrder;
     });
   }, [state.components, membership]);
@@ -794,7 +769,12 @@ export function ComponentCanvasPage() {
                 const secondWidth = (secondNode.style?.width as number) ?? CARD_WIDTH;
                 const secondHeight = (secondNode.style?.height as number) ?? CARD_HEIGHT;
 
-                const hasOverlap = !(firstPosition.x + firstWidth + MIN_GAP <= secondPosition.x || secondPosition.x + secondWidth + MIN_GAP <= firstPosition.x || firstPosition.y + firstHeight + MIN_GAP <= secondPosition.y || secondPosition.y + secondHeight + MIN_GAP <= firstPosition.y);
+                const hasOverlap = !(
+                  firstPosition.x + firstWidth + MIN_GAP <= secondPosition.x ||
+                  secondPosition.x + secondWidth + MIN_GAP <= firstPosition.x ||
+                  firstPosition.y + firstHeight + MIN_GAP <= secondPosition.y ||
+                  secondPosition.y + secondHeight + MIN_GAP <= firstPosition.y
+                );
 
                 if (hasOverlap) {
                   const sectionWidth = (sectionNode.style?.width as number) ?? SECTION_WIDTH;
@@ -843,8 +823,8 @@ export function ComponentCanvasPage() {
         zoomOnDoubleClick={zoomOnDoubleClick}
       >
         {showMiniMap && (
-          <MiniMap 
-            nodeColor={(node) => {
+          <MiniMap
+            nodeColor={node => {
               if (node.type === 'sectionNode') {
                 return 'var(--color-border)';
               }
@@ -858,7 +838,7 @@ export function ComponentCanvasPage() {
           />
         )}
         {showControls && (
-          <Controls 
+          <Controls
             style={{
               backgroundColor: 'var(--color-bg-card)',
               border: '1px solid var(--color-border)',
@@ -1090,7 +1070,11 @@ export function ComponentCanvasPage() {
           const sectionStyle = sectionStyles[currentSectionId] || { bgColor: 'transparent', border: 'dashed' as const };
           const handleSectionChange = (sectionId: string, updates: { name?: string; styles?: { bgColor?: string; border?: 'dashed' | 'solid' | 'none' } }) => {
             if (updates.name !== undefined) setSectionNames(previousNames => ({ ...previousNames, [sectionId]: updates.name! }));
-            if (updates.styles) setSectionStyles(previousStyles => ({ ...previousStyles, [sectionId]: { ...(previousStyles[sectionId] || { bgColor: 'transparent', border: 'dashed' as const }), ...updates.styles } }));
+            if (updates.styles)
+              setSectionStyles(previousStyles => ({
+                ...previousStyles,
+                [sectionId]: { ...(previousStyles[sectionId] || { bgColor: 'transparent', border: 'dashed' as const }), ...updates.styles },
+              }));
           };
           const onBulkAction = (id: string, action: 'hideWrappers' | 'showWrappers' | 'setVariant', payload?: { variant?: string }) => {
             const nodeSectionId = `sec:${id}`;
@@ -1119,39 +1103,7 @@ export function ComponentCanvasPage() {
 function SectionNode({ id, data }: any) {
   const reactFlowInstance = useReactFlow();
   const resizingState = useRef<{ startX: number; startY: number; w: number; h: number } | null>(null);
-  const onMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const node = reactFlowInstance.getNode(id);
-    const currentWidth = (node?.style?.width as number) ?? SECTION_WIDTH;
-    const currentHeight = (node?.style?.height as number) ?? SECTION_HEIGHT;
-    resizingState.current = { startX: e.clientX, startY: e.clientY, w: currentWidth, h: currentHeight };
-    // disable dragging while resizing
-    reactFlowInstance.setNodes((previousNodes: any) => previousNodes.map((nodeItem: any) => (nodeItem.id === id ? { ...nodeItem, draggable: false } : nodeItem)));
-    const handleMouseMove = (ev: MouseEvent) => {
-      if (!resizingState.current) return;
-      const deltaX = ev.clientX - resizingState.current.startX;
-      const deltaY = ev.clientY - resizingState.current.startY;
-      const newWidth = Math.max(320, resizingState.current.w + deltaX);
-      const newHeight = Math.max(160, resizingState.current.h + deltaY);
-      // Update size and reflow to preview layout in real-time
-      reactFlowInstance.setNodes((previousNodes: any) => {
-        const updatedNodes = previousNodes.map((nodeItem: any) => (nodeItem.id === id ? { ...nodeItem, style: { ...nodeItem.style, width: newWidth, height: newHeight } } : { ...nodeItem }));
-        return reflowAllSections(updatedNodes);
-      });
-    };
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      resizingState.current = null;
-      // re-enable dragging
-      reactFlowInstance.setNodes((previousNodes: any) => previousNodes.map((nodeItem: any) => (nodeItem.id === id ? { ...nodeItem, draggable: true } : nodeItem)));
-      // trigger reflow after final size
-      reactFlowInstance.setNodes((previousNodes: any) => reflowAllSections(previousNodes));
-    };
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
+  const onMouseDown = createSectionResizeMouseDown(reactFlowInstance, id, resizingState);
   return (
     <div
       style={{
@@ -1254,151 +1206,11 @@ function ComponentNode({ id, data }: any) {
   const reactFlowInstance = useReactFlow();
   const resizingState = useRef<{ startX: number; startY: number; w: number; h: number } | null>(null);
   const cardSize = data?.size || { w: CARD_WIDTH, h: CARD_HEIGHT };
-  // Auto-fit wrapper to custom element's shadow content so the card matches its true size
   useEffect(() => {
     if (!data?.comp?.id) return;
-    const containerSelector = `[data-component-id="${data.comp.id}"]`;
-    let containerElement: HTMLElement | null = null;
-    let childElement: HTMLElement | null = null; // the custom element with data-ui-el="1"
-    let shadowInnerElement: HTMLElement | null = null; // inner shadow content for intrinsic size
-
-    const measure = () => {
-      if (!containerElement || !childElement) return;
-      const currentNode = reactFlowInstance.getNode(id);
-      if (!currentNode) return;
-      const currentWidth = (currentNode.style?.width as number) ?? cardSize.w ?? CARD_WIDTH;
-      const currentHeight = (currentNode.style?.height as number) ?? cardSize.h ?? CARD_HEIGHT;
-
-      // Prefer measuring shadow content when available for accurate intrinsic size
-      const baseRect = childElement.getBoundingClientRect();
-      const innerRect = (shadowInnerElement?.getBoundingClientRect && shadowInnerElement.getBoundingClientRect()) || baseRect;
-      const containerRect = containerElement.getBoundingClientRect();
-      const computedStyle = getComputedStyle(containerElement);
-      const paddingX = (parseFloat(computedStyle.paddingLeft || '0') || 0) + (parseFloat(computedStyle.paddingRight || '0') || 0);
-      const paddingY = (parseFloat(computedStyle.paddingTop || '0') || 0) + (parseFloat(computedStyle.paddingBottom || '0') || 0);
-      const contentWidth = containerRect.width - paddingX;
-      const contentHeight = containerRect.height - paddingY;
-      const needsWidth = innerRect.width - contentWidth > 1;
-      const needsHeight = innerRect.height - contentHeight > 1;
-      if (!needsWidth && !needsHeight) return;
-
-      const FUDGE = 4; // slight extra beyond padding for visual gap
-      let desiredWidth = needsWidth ? Math.ceil(innerRect.width + paddingX + FUDGE) : currentWidth;
-      const desiredHeight = needsHeight ? Math.ceil(innerRect.height + paddingY + FUDGE) : currentHeight;
-
-      // Constrain width growth to the available space in the current row to avoid forcing wraps
-      try {
-        const allNodes = (reactFlowInstance as any).getNodes ? (reactFlowInstance as any).getNodes() : [];
-        const parentSectionId = currentNode.parentNode as string | undefined;
-        if (parentSectionId) {
-          const sectionNode = reactFlowInstance.getNode(parentSectionId);
-          const sectionWidth = (sectionNode?.style?.width as number) ?? SECTION_WIDTH;
-          const innerWidth = sectionWidth - GAP * 2;
-          const siblingNodes = allNodes.filter((nodeItem: any) => nodeItem.type === 'componentNode' && nodeItem.parentNode === parentSectionId);
-          const currentY = (currentNode.position?.y as number) ?? 0;
-          const rowTol = 12; // px tolerance to consider same row (accounts for tiny vertical drifts)
-          const rowNodes = siblingNodes.filter((sibling: any) => Math.abs(((sibling.position?.y as number) ?? 0) - currentY) <= rowTol);
-          rowNodes.sort((firstNode: any, secondNode: any) => ((firstNode.position?.x as number) ?? 0) - ((secondNode.position?.x as number) ?? 0));
-          const currentIndex = rowNodes.findIndex((sibling: any) => sibling.id === id);
-          if (currentIndex !== -1) {
-            const currentX = (currentNode.position?.x as number) ?? 0;
-            const nextNode = rowNodes[currentIndex + 1];
-            // if next exists, don’t intrude into its space; otherwise allow up to innerW
-            const maxRightPosition = nextNode ? Math.max(GAP, ((nextNode.position?.x as number) ?? 0) - MIN_GAP) : innerWidth;
-            const maxAllowedWidth = Math.max(CARD_WIDTH, Math.max(0, maxRightPosition - currentX));
-            desiredWidth = Math.min(desiredWidth, Math.max(currentWidth, maxAllowedWidth));
-          }
-        }
-      } catch {}
-
-      const minHeight = getMinCardHeight(data?.comp);
-      const cappedWidth = Math.max(CARD_WIDTH, Math.min(desiredWidth, 1600));
-      const cappedHeight = Math.max(minHeight, Math.min(desiredHeight, 1600));
-      if (Math.abs(cappedWidth - currentWidth) < 2 && Math.abs(cappedHeight - currentHeight) < 2) return;
-
-      // Apply size update and only adjust the parent section height; avoid full reflow now
-      reactFlowInstance.setNodes((previousNodes: any) => {
-        let parentSectionId: string | undefined;
-        const updatedNodes = previousNodes.map((nodeItem: any) => {
-          if (nodeItem.id === id) {
-            parentSectionId = (nodeItem.parentNode as string) || undefined;
-            return { ...nodeItem, style: { ...nodeItem.style, width: cappedWidth, height: cappedHeight }, data: { ...nodeItem.data, size: { w: cappedWidth, h: cappedHeight } } } as any;
-          }
-          return nodeItem;
-        });
-        if (parentSectionId) {
-          const sectionIndex = updatedNodes.findIndex((n: any) => n.id === parentSectionId);
-          if (sectionIndex !== -1) {
-            const children = updatedNodes.filter((n: any) => n.type === 'componentNode' && n.parentNode === parentSectionId);
-            let maxBottom = GAP;
-            for (const ch of children) {
-              const childHeight = (ch.style?.height as number) ?? CARD_HEIGHT;
-              const y = (ch.position?.y as number) ?? 0;
-              maxBottom = Math.max(maxBottom, y + childHeight + GAP);
-            }
-            const innerHeight = Math.max(SECTION_HEIGHT, maxBottom);
-            updatedNodes[sectionIndex] = { ...updatedNodes[sectionIndex], style: { ...updatedNodes[sectionIndex].style, height: innerHeight } } as any;
-          }
-        }
-        return updatedNodes;
-      });
-      // Live reflow after measurement (works in all modes)
-      setTimeout(() => reactFlowInstance.setNodes((prev: Node[]) => reflowAllSections(prev)), 50);
-    };
-
-    const ro = new ResizeObserver(() => measure());
-    const init = () => {
-      containerElement = document.querySelector(containerSelector) as HTMLElement | null;
-      childElement = (containerElement?.querySelector('[data-ui-el="1"]') as HTMLElement) || null;
-      shadowInnerElement = (childElement as any)?.shadowRoot?.firstElementChild || null;
-      if (!containerElement || !childElement) return;
-      // Initial measurement after paint
-      requestAnimationFrame(measure);
-      // Observe subsequent size changes
-      if (shadowInnerElement instanceof HTMLElement) ro.observe(shadowInnerElement);
-      ro.observe(childElement);
-      ro.observe(containerElement);
-    };
-    // Try now and after microtask in case CardContent just mounted
-    init();
-    const t = setTimeout(init, 50);
-    return () => {
-      clearTimeout(t);
-      try {
-        ro.disconnect();
-      } catch {}
-    };
+    return setupComponentAutoFit(reactFlowInstance, id, data.comp, cardSize);
   }, [id, reactFlowInstance, data?.comp?.id]);
-  const onMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const node = reactFlowInstance.getNode(id);
-    const w = (node?.style?.width as number) ?? data?.size?.w ?? CARD_WIDTH;
-    const h = (node?.style?.height as number) ?? data?.size?.h ?? CARD_HEIGHT;
-    resizingState.current = { startX: e.clientX, startY: e.clientY, w, h };
-    // disable dragging of this node during resize
-    reactFlowInstance.setNodes((prev: any) => prev.map((n: any) => (n.id === id ? { ...n, draggable: false } : n)));
-    const move = (ev: MouseEvent) => {
-      if (!resizingState.current) return;
-      const dx = ev.clientX - resizingState.current.startX;
-      const dy = ev.clientY - resizingState.current.startY;
-      const minHeight = getMinCardHeight(data?.comp);
-      const newWidth = Math.max(CARD_WIDTH, resizingState.current.w + dx);
-      const newHeight = Math.max(minHeight, resizingState.current.h + dy);
-      reactFlowInstance.setNodes((prev: any) => prev.map((n: any) => (n.id === id ? { ...n, style: { ...n.style, width: newWidth, height: newHeight }, data: { ...n.data, size: { w: newWidth, h: newHeight } } } : n)));
-    };
-    const up = () => {
-      document.removeEventListener('mousemove', move);
-      document.removeEventListener('mouseup', up);
-      resizingState.current = null;
-      // re-enable dragging
-      reactFlowInstance.setNodes((prev: any) => prev.map((n: any) => (n.id === id ? { ...n, draggable: true } : n)));
-      // Reflow siblings in section if any
-      reactFlowInstance.setNodes((prev: any) => reflowAllSections(prev));
-    };
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', up);
-  };
+  const onMouseDown = createComponentResizeMouseDown(reactFlowInstance, id, data, resizingState);
   const hideWrapper = !!data?.comp?.hideCard;
   const isDragTarget = data?.dragHighlight === 'swap';
 
@@ -1495,101 +1307,3 @@ function ComponentNode({ id, data }: any) {
   );
 }
 
-function reflowAllSections(previousNodes: Node[]): Node[] {
-  const outputNodes = [...previousNodes];
-  const sections = outputNodes.filter(nodeItem => nodeItem.type === 'sectionNode');
-
-  for (const section of sections) {
-    const sectionWidth = (section.style?.width as number) ?? SECTION_WIDTH;
-    const children = outputNodes.filter(nodeItem => nodeItem.parentNode === section.id && nodeItem.type === 'componentNode');
-
-    if (children.length === 0) continue;
-
-    // Use coordinate-based space tracking
-    const innerWidth = sectionWidth - GAP * 2;
-    const occupiedSpaces: Array<{ x: number; y: number; w: number; h: number }> = [];
-    let maxBottom = GAP;
-
-    const findBestPosition = (width: number, height: number): { x: number; y: number } => {
-      const stepY = GAP;
-      const stepX = 4; // Fine horizontal positioning for better packing
-
-      for (let y = GAP; y <= maxBottom + GAP; y += stepY) {
-        for (let x = GAP; x + width <= innerWidth; x += stepX) {
-          const hasConflict = occupiedSpaces.some(
-            occupied => !(x >= occupied.x + occupied.w || x + width + GAP <= occupied.x || y >= occupied.y + occupied.h || y + height + GAP <= occupied.y),
-          );
-          if (!hasConflict) return { x, y };
-        }
-      }
-      return { x: GAP, y: maxBottom };
-    };
-
-    // Add overlap detection for reflow
-    const fixOverlapsInReflow = () => {
-      let hasFixed = false;
-      for (let i = 0; i < children.length; i++) {
-        for (let j = i + 1; j < children.length; j++) {
-          const firstNode = children[i];
-          const secondNode = children[j];
-          const firstPosition = firstNode.position as { x: number; y: number };
-          const secondPosition = secondNode.position as { x: number; y: number };
-          const firstWidth = (firstNode.style?.width as number) ?? CARD_WIDTH;
-          const firstHeight = (firstNode.style?.height as number) ?? getMinCardHeight((firstNode as any)?.data?.comp);
-          const secondWidth = (secondNode.style?.width as number) ?? CARD_WIDTH;
-          const secondHeight = (secondNode.style?.height as number) ?? getMinCardHeight((secondNode as any)?.data?.comp);
-
-          const hasOverlap = !(firstPosition.x + firstWidth + MIN_GAP <= secondPosition.x || secondPosition.x + secondWidth + MIN_GAP <= firstPosition.x || firstPosition.y + firstHeight + MIN_GAP <= secondPosition.y || secondPosition.y + secondHeight + MIN_GAP <= firstPosition.y);
-
-          if (hasOverlap) {
-            const newPosition = findBestPosition(secondWidth, secondHeight);
-            secondNode.position = { x: newPosition.x, y: newPosition.y } as any;
-            occupiedSpaces.push({ x: newPosition.x, y: newPosition.y, w: secondWidth + GAP, h: secondHeight + GAP });
-            maxBottom = Math.max(maxBottom, newPosition.y + secondHeight + GAP);
-            hasFixed = true;
-          }
-        }
-      }
-      return hasFixed;
-    };
-
-    sortChildrenByLayoutOrder(children, (section.id as string).replace(/^sec:/, ''));
-
-    for (const child of children) {
-      const childWidth = (child.style?.width as number) ?? CARD_WIDTH;
-      const childHeight = (child.style?.height as number) ?? getMinCardHeight((child as any)?.data?.comp);
-      const position = findBestPosition(childWidth, childHeight);
-
-      child.position = { x: position.x, y: position.y } as any;
-      occupiedSpaces.push({ x: position.x, y: position.y, w: childWidth + GAP, h: childHeight + GAP });
-      maxBottom = Math.max(maxBottom, position.y + childHeight + GAP);
-    }
-
-    // Fix any overlaps after initial positioning
-    let attempts = 0;
-    while (fixOverlapsInReflow() && attempts < 3) {
-      attempts++;
-    }
-
-    section.style = { ...section.style, height: Math.max(SECTION_HEIGHT, maxBottom) } as any;
-  }
-
-  return outputNodes;
-}
-
-function sortChildrenByLayoutOrder(children: Node[], sectionId: string) {
-  const layoutOrder = globalLayoutOrder[sectionId];
-  children.sort((firstNode, secondNode) => {
-    if (layoutOrder && layoutOrder.length) {
-      const firstIndex = layoutOrder.indexOf(firstNode.id);
-      const secondIndex = layoutOrder.indexOf(secondNode.id);
-      if (firstIndex !== -1 || secondIndex !== -1) {
-        if (firstIndex === -1) return 1;
-        if (secondIndex === -1) return -1;
-        return firstIndex - secondIndex;
-      }
-    }
-    // fallback to current reading order
-    return firstNode.position.y - secondNode.position.y || firstNode.position.x - secondNode.position.x;
-  });
-}
