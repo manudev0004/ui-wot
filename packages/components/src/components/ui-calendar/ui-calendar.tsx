@@ -55,7 +55,7 @@ export class UiCalendar {
   /** Output/storage format: iso | epoch-ms | epoch-s | unix | rfc2822 */
   @Prop() format: string = 'iso';
 
-  /** Date display pattern (dd/mm/yyyy, MM-DD-YYYY, yyyy/MM/dd, etc.) */
+  /** Date display pattern (dd/MM/yyyy, MM-DD-YYYY, yyyy/MM/dd, etc.) */
   @Prop() dateFormat: string = 'dd/MM/yyyy';
 
   /** Disable user interaction when true */
