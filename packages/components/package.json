@@ -14,6 +14,81 @@
       "types": "./dist/types/index.d.ts",
       "require": "./dist/index.cjs.js"
     },
+    "./components": {
+      "import": "./dist/components.js",
+      "types": "./dist/types/components.d.ts",
+      "require": "./dist/components.cjs.js"
+    },
+    "./components/ui-toggle": {
+      "import": "./dist/components/ui-toggle.js",
+      "types": "./dist/components/ui-toggle.d.ts",
+      "require": "./dist/components/ui-toggle.js"
+    },
+    "./components/ui-number-picker": {
+      "import": "./dist/components/ui-number-picker.js",
+      "types": "./dist/components/ui-number-picker.d.ts",
+      "require": "./dist/components/ui-number-picker.js"
+    },
+    "./components/ui-checkbox": {
+      "import": "./dist/components/ui-checkbox.js",
+      "types": "./dist/components/ui-checkbox.d.ts",
+      "require": "./dist/components/ui-checkbox.js"
+    },
+    "./components/ui-calendar": {
+      "import": "./dist/components/ui-calendar.js",
+      "types": "./dist/components/ui-calendar.d.ts",
+      "require": "./dist/components/ui-calendar.js"
+    },
+    "./components/ui-notification": {
+      "import": "./dist/components/ui-notification.js",
+      "types": "./dist/components/ui-notification.d.ts",
+      "require": "./dist/components/ui-notification.js"
+    },
+    "./components/ui-slider": {
+      "import": "./dist/components/ui-slider.js",
+      "types": "./dist/components/ui-slider.d.ts",
+      "require": "./dist/components/ui-slider.js"
+    },
+    "./components/ui-text": {
+      "import": "./dist/components/ui-text.js",
+      "types": "./dist/components/ui-text.d.ts",
+      "require": "./dist/components/ui-text.js"
+    },
+    "./components/ui-button": {
+      "import": "./dist/components/ui-button.js",
+      "types": "./dist/components/ui-button.d.ts",
+      "require": "./dist/components/ui-button.js"
+    },
+    "./components/ui-event": {
+      "import": "./dist/components/ui-event.js",
+      "types": "./dist/components/ui-event.d.ts",
+      "require": "./dist/components/ui-event.js"
+    },
+    "./components/ui-color-picker": {
+      "import": "./dist/components/ui-color-picker.js",
+      "types": "./dist/components/ui-color-picker.d.ts",
+      "require": "./dist/components/ui-color-picker.js"
+    },
+    "./components/ui-file-picker": {
+      "import": "./dist/components/ui-file-picker.js",
+      "types": "./dist/components/ui-file-picker.d.ts",
+      "require": "./dist/components/ui-file-picker.js"
+    },
+    "./components/ui-object": {
+      "import": "./dist/components/ui-object.js",
+      "types": "./dist/components/ui-object.d.ts",
+      "require": "./dist/components/ui-object.js"
+    },
+    "./services": {
+      "import": "./dist/services.js",
+      "types": "./dist/types/services.d.ts",
+      "require": "./dist/services.cjs.js"
+    },
+    "./utils": {
+      "import": "./dist/utils.js",
+      "types": "./dist/types/utils.d.ts",
+      "require": "./dist/utils.cjs.js"
+    },
     "./loader": {
       "import": "./loader/index.js",
       "require": "./loader/index.cjs",
@@ -24,10 +99,17 @@
     "type": "git",
     "url": "git+https://github.com/eclipse-thingweb/ui-wot.git"
   },
-    "keywords": [
+  "keywords": [
+    "web-of-things",
+    "wot",
+    "thing-description",
+    "eclipse-thingweb",
+    "node-wot",
     "ui-components",
     "iot",
-    "dashboard"
+    "dashboard",
+    "web-components",
+    "tree-shaking"
   ],
   "author": "Eclipse Thingweb <thingweb-dev@eclipse.org> (https://thingweb.io/)",
   "license": "EPL-2.0 OR W3C-20150513",
@@ -37,16 +119,19 @@
   "homepage": "https://github.com/eclipse-thingweb/ui-wot/packages/components#readme",
   "files": [
     "dist/",
-    "loader/"
+    "loader/",
+    "README.md"
   ],
+  "sideEffects": false,
   "scripts": {
-    "build": "stencil build",
+    "build": "stencil build && node ./scripts/postbuild.js",
     "start": "stencil build --dev --watch --serve",
     "test": "stencil test --spec --e2e",
     "test.watch": "stencil test --spec --e2e --watchAll",
     "generate": "stencil generate"
   },
   "devDependencies": {
+    "@stencil-community/postcss": "2.2.0",
     "@stencil/core": "^4.27.1",
     "@types/aria-query": "^5.0.4",
     "@types/chai": "^5.2.2",
@@ -58,8 +143,11 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/use-sync-external-store": "^1.5.0",
+    "autoprefixer": "10.4.21",
     "jest": "^29.7.0",
     "jest-cli": "^29.7.0",
-    "puppeteer": "^24.3.0"
+    "postcss-import": "16.1.1",
+    "puppeteer": "^24.3.0",
+    "tailwindcss": "3.4.17"
   }
 }

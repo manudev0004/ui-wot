@@ -1,0 +1,16 @@
+@import '../../global.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host {
+  display: inline-block;
+}
+
+/* Custom checkbox appearance reset */
+input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
