@@ -10,6 +10,16 @@ export interface ComponentLayout {
   maxH?: number;
 }
 
+// Canvas layout snapshot
+export interface LayoutSnapshot {
+  manualPositions: Record<string, { x: number; y: number }>;
+  sizes: Record<string, { w: number; h: number }>;
+  membership: Record<string, string | null>;
+  layoutOrder: Record<string, string[]>;
+  sectionNames: Record<string, string>;
+  sectionStyles: Record<string, { bgColor: string; border: 'dashed' | 'solid' | 'none' }>;
+}
+
 export interface WoTComponent {
   id: string;
   type: 'property' | 'action' | 'event';
@@ -41,7 +51,7 @@ export interface ParsedAffordance {
   forms?: any[];
   suggestedComponent: string;
   availableVariants: string[];
-  // Possible component types 
+  // Possible component types
   possibleComponents?: string[];
 }
 
@@ -81,7 +91,6 @@ export interface AffordanceGroup {
 }
 
 export interface AppState {
-  currentView: 'home' | 'td-input' | 'affordance-selection' | 'component-canvas';
   tdInfos: TDInfo[];
   activeTdId?: string;
   tdSource?: TDSource;
@@ -91,4 +100,6 @@ export interface AppState {
   components: WoTComponent[];
   things: Map<string, any>;
   groups: AffordanceGroup[];
+  // Optional persisted canvas layout for React Flow
+  layoutSnapshot?: LayoutSnapshot;
 }

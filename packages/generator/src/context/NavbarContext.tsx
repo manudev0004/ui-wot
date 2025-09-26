@@ -23,15 +23,16 @@ export function NavbarProvider({ children }: { children: React.ReactNode }) {
     setContentState({});
   }, []);
 
-  const api = useMemo<NavbarContextType>(() => ({
-    content,
-    setContent,
-    clear,
-  }), [content, setContent, clear]);
-
-  return (
-    <NavbarContext.Provider value={api}>{children}</NavbarContext.Provider>
+  const api = useMemo<NavbarContextType>(
+    () => ({
+      content,
+      setContent,
+      clear,
+    }),
+    [content, setContent, clear],
   );
+
+  return <NavbarContext.Provider value={api}>{children}</NavbarContext.Provider>;
 }
 
 export function useNavbar() {

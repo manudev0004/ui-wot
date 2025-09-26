@@ -1,8 +1,11 @@
 import { useEffect, useRef } from 'react';
 import type { WoTComponent, TDInfo } from '../../types';
+import { formatLabelText } from '../../utils/label';
 
 export function CardContent({ component, tdInfos }: { component: WoTComponent; tdInfos: TDInfo[] }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
+
+  const formatLabel = (raw: any) => formatLabelText(raw, { maxPerLine: 24, maxLines: 2 });
 
   useEffect(() => {
     const host = hostRef.current;
@@ -14,8 +17,11 @@ export function CardContent({ component, tdInfos }: { component: WoTComponent; t
 
     try {
       const el = document.createElement(component.uiComponent);
+      (el as HTMLElement).setAttribute('data-ui-el', '1');
       if (component.variant) el.setAttribute('variant', component.variant);
-      el.setAttribute('label', component.title);
+      const customLabel = (component.attributes as any)?.label;
+      const labelText = formatLabel(customLabel ?? component.title);
+      if (labelText) el.setAttribute('label', labelText);
       if (component.attributes) {
         for (const [k, v] of Object.entries(component.attributes)) {
           if (v != null) el.setAttribute(k, String(v));
@@ -27,7 +33,6 @@ export function CardContent({ component, tdInfos }: { component: WoTComponent; t
       else if (component.type === 'event') el.setAttribute('td-event', component.name);
 
       (el as HTMLElement).style.maxWidth = '100%';
-      (el as HTMLElement).style.maxHeight = '100%';
 
       host.replaceChildren(el);
     } catch (e) {

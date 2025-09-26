@@ -1,8 +1,102 @@
-// Keep only the ComponentMapper — factory/integration helpers are not used by the React app
+import { ParsedAffordance } from '../types';
 
 /**
  * Maps WoT Thing Description affordances to appropriate UI components
  */
+
+function isReasonableRange(type: string | undefined, min?: number, max?: number): boolean {
+  if (min === undefined || max === undefined) return false;
+  const range = max - min;
+  if (type === 'integer') return range <= 100;
+  if (type === 'number') return range <= 1000;
+  return false;
+}
+
+function hasNestedFormat(obj: any): { hasFile: boolean; hasDate: boolean; hasTime: boolean; hasColor: boolean } {
+  let hasFile = false;
+  let hasDate = false;
+  let hasTime = false;
+  let hasColor = false;
+
+  const visit = (node: any, keyPath: string[] = []) => {
+    if (!node || typeof node !== 'object') return;
+
+    const keyJoined = keyPath.join('.').toLowerCase();
+    const nameHints = ['file', 'upload', 'image', 'picture'];
+    if (nameHints.some(h => keyJoined.includes(h))) hasFile = true;
+    if (keyJoined.includes('date')) hasDate = true;
+    if (keyJoined.includes('time')) hasTime = true;
+    if (keyJoined.includes('color') || keyJoined.includes('colour')) hasColor = true;
+
+    const format = (node as any).format;
+    if (format === 'date' || format === 'date-time') hasDate = true;
+    if (format === 'time') hasTime = true;
+    if (format === 'color') hasColor = true;
+
+    if ((node as any).contentMediaType || (node as any).contentEncoding === 'base64' || (node as any).binary === true) {
+      hasFile = true;
+    }
+
+    if (node.properties && typeof node.properties === 'object') {
+      for (const [k, v] of Object.entries(node.properties)) {
+        visit(v, [...keyPath, String(k)]);
+      }
+    }
+
+    if (Array.isArray(node.anyOf)) node.anyOf.forEach((v: any) => visit(v, keyPath));
+    if (Array.isArray(node.oneOf)) node.oneOf.forEach((v: any) => visit(v, keyPath));
+    if (Array.isArray(node.allOf)) node.allOf.forEach((v: any) => visit(v, keyPath));
+  };
+
+  visit(obj);
+  return { hasFile, hasDate, hasTime, hasColor };
+}
+
+// Build a single best numeric component from schema
+function pickNumericComponent(schema: any, readOnly: boolean): { componentName: string; props: any } {
+  const t = schema?.type as 'integer' | 'number' | undefined;
+  const min = schema?.minimum;
+  const max = schema?.maximum;
+  const useSlider = isReasonableRange(t, min, max);
+  if (useSlider) {
+    return {
+      componentName: 'ui-slider',
+      props: { min, max, readonly: readOnly, step: t === 'integer' ? 1 : undefined },
+    };
+  }
+  return {
+    componentName: 'ui-number-picker',
+    props: { min, max, readonly: readOnly, step: t === 'integer' ? 1 : undefined },
+  };
+}
+
+// List of possible numeric components from schema
+function numericPossibilities(schema: any, readOnly: boolean): Array<{ componentName: string; props: any }> {
+  const t = schema?.type as 'integer' | 'number' | undefined;
+  const min = schema?.minimum;
+  const max = schema?.maximum;
+  const list: Array<{ componentName: string; props: any }> = [];
+  if (min !== undefined && max !== undefined) {
+    list.push({ componentName: 'ui-slider', props: { min, max, readonly: readOnly, step: t === 'integer' ? 1 : undefined } });
+  }
+  list.push({ componentName: 'ui-number-picker', props: { min, max, readonly: readOnly, step: t === 'integer' ? 1 : undefined } });
+  return list;
+}
+
+// List of possible string components from schema
+function stringPossibilities(schema: any, readOnly: boolean): Array<{ componentName: string; props: any }> {
+  const fmt = schema?.format as string | undefined;
+  const out: Array<{ componentName: string; props: any }> = [];
+  if (fmt === 'date-time' || fmt === 'date') {
+    out.push({ componentName: 'ui-calendar', props: { readonly: readOnly, includeTime: fmt === 'date-time' } });
+  } else if (fmt === 'time') {
+    out.push({ componentName: 'ui-calendar', props: { readonly: readOnly, includeTime: true } });
+  } else if (fmt === 'color') {
+    out.push({ componentName: 'ui-color-picker', props: { readonly: readOnly } });
+  }
+  out.push({ componentName: 'ui-text', props: { readonly: readOnly, ...(readOnly ? {} : { mode: 'editable' as const }) } });
+  return out;
+}
 export class ComponentMapper {
   /**
    * Infer canRead/canWrite from TD flags and forms
@@ -54,58 +148,12 @@ export class ComponentMapper {
         };
 
       case 'integer':
-      case 'number':
-        if (minimum !== undefined && maximum !== undefined) {
-          const range = maximum - minimum;
-          // For integers, prefer slider for reasonable ranges
-          if (type === 'integer' && range <= 100) {
-            return {
-              componentName: 'ui-slider',
-              props: {
-                min: minimum,
-                max: maximum,
-                readonly: readOnly,
-                step: 1,
-              },
-            };
-          } else if (type === 'number' && range <= 1000) {
-            // For numbers, use slider for reasonable ranges
-            return {
-              componentName: 'ui-slider',
-              props: {
-                min: minimum,
-                max: maximum,
-                readonly: readOnly,
-              },
-            };
-          } else {
-            // For large ranges, prefer number picker
-            return {
-              componentName: 'ui-number-picker',
-              props: {
-                min: minimum,
-                max: maximum,
-                readonly: readOnly,
-                step: type === 'integer' ? 1 : undefined,
-              },
-            };
-          }
-        } else {
-          // Use number picker for open-ended values
-          return {
-            componentName: 'ui-number-picker',
-            props: {
-              min: minimum,
-              max: maximum,
-              readonly: readOnly,
-              step: type === 'integer' ? 1 : undefined,
-            },
-          };
-        }
+      case 'number': {
+        return pickNumericComponent({ type, minimum, maximum }, readOnly);
+      }
 
       case 'string':
         if (enumValues && enumValues.length > 0) {
-          // Could map to a select component (not implemented yet)
           return {
             componentName: 'ui-text',
             props: {
@@ -114,29 +162,9 @@ export class ComponentMapper {
               ...(readOnly ? {} : { mode: 'editable' as const }),
             },
           };
-        } else if (property.format === 'date-time' || property.format === 'date') {
-          return {
-            componentName: 'ui-calendar',
-            props: {
-              readonly: readOnly,
-              includeTime: property.format === 'date-time',
-            },
-          };
-        } else if (property.format === 'color') {
-          return {
-            componentName: 'ui-color-picker',
-            props: {
-              readonly: readOnly,
-            },
-          };
         } else {
-          return {
-            componentName: 'ui-text',
-            props: {
-              readonly: readOnly,
-              ...(readOnly ? {} : { mode: 'editable' as const }),
-            },
-          };
+          // Delegate to string possibilities helper
+          return stringPossibilities(property, readOnly)[0] || null;
         }
 
       case 'object':
@@ -170,23 +198,17 @@ export class ComponentMapper {
     componentName: string;
     props: any;
   } | null {
-    const { input } = action;
-
-    if (input && input.type === 'object' && input.properties?.file) {
-      // File upload action
+    const input = action?.input || action;
+    const detect = hasNestedFormat(input);
+    if (detect.hasFile) {
       return {
         componentName: 'ui-file-picker',
         props: {
-          accept: input.properties.file.contentMediaType || '*/*',
+          accept: (input?.properties?.file?.contentMediaType as string) || '*/*',
         },
       };
-    } else {
-      // Generic action button
-      return {
-        componentName: 'ui-button',
-        props: {},
-      };
     }
+    return { componentName: 'ui-button', props: {} };
   }
 
   /**
@@ -252,61 +274,13 @@ export class ComponentMapper {
         break;
 
       case 'integer':
-      case 'number':
-        // For integers and numbers, always provide both slider and number picker options
-        // but prioritize slider when there's a reasonable range
-        if (minimum !== undefined && maximum !== undefined) {
-          // Always add slider for ranged values
-          possibilities.push({
-            componentName: 'ui-slider',
-            props: {
-              min: minimum,
-              max: maximum,
-              readonly: readOnly,
-              step: type === 'integer' ? 1 : undefined,
-            },
-          });
-        }
-
-        // Always add number picker as an option
-        possibilities.push({
-          componentName: 'ui-number-picker',
-          props: {
-            min: minimum,
-            max: maximum,
-            readonly: readOnly,
-            step: type === 'integer' ? 1 : undefined,
-          },
-        });
+      case 'number': {
+        numericPossibilities({ type, minimum, maximum }, readOnly).forEach(p => possibilities.push(p));
         break;
+      }
 
       case 'string':
-        // String properties have multiple options based on format
-        if (format === 'date-time' || format === 'date') {
-          possibilities.push({
-            componentName: 'ui-calendar',
-            props: {
-              readonly: readOnly,
-              includeTime: format === 'date-time',
-            },
-          });
-        } else if (format === 'color') {
-          possibilities.push({
-            componentName: 'ui-color-picker',
-            props: {
-              readonly: readOnly,
-            },
-          });
-        }
-
-        // All string properties can use text input
-        possibilities.push({
-          componentName: 'ui-text',
-          props: {
-            readonly: readOnly,
-            ...(readOnly ? {} : { mode: 'editable' as const }),
-          },
-        });
+        stringPossibilities({ format }, readOnly).forEach(p => possibilities.push(p));
         break;
 
       case 'object':
@@ -333,4 +307,82 @@ export class ComponentMapper {
 
     return possibilities;
   }
+}
+
+/**
+ * Returns a ranked list of suggested UI components
+ */
+export function getSuggestedComponentOrder(aff: ParsedAffordance): string[] {
+  const out: Array<{ name: string; score: number }> = [];
+
+  const push = (name: string, score: number) => {
+    const existing = out.find(o => o.name === name);
+    if (existing) {
+      existing.score = Math.max(existing.score, score);
+    } else {
+      out.push({ name, score });
+    }
+  };
+
+  if (aff.suggestedComponent) push(aff.suggestedComponent, 80);
+  if (aff.possibleComponents) aff.possibleComponents.forEach(pc => push(pc, 50));
+
+  if (aff.type === 'property') {
+    const schema = (aff as any).schema || {};
+    const t = schema.type as string | undefined;
+    switch (t) {
+      case 'boolean':
+        push('ui-toggle', 100);
+        push('ui-checkbox', 60);
+        break;
+      case 'integer':
+      case 'number': {
+        const hasReasonable = isReasonableRange(t, schema.minimum, schema.maximum);
+        // Prefer slider when range is reasonable, otherwise keep it listed but below
+        push('ui-slider', hasReasonable ? 100 : 92);
+        push('ui-number-picker', 90);
+        break;
+      }
+      case 'string': {
+        const fmt = schema.format as string | undefined;
+        if (fmt === 'date' || fmt === 'date-time' || fmt === 'time') push('ui-calendar', 100);
+        if (fmt === 'color') push('ui-color-picker', 100);
+        push('ui-text', 80);
+        break;
+      }
+      case 'object': {
+        const detect = hasNestedFormat(schema);
+        if (detect.hasFile) push('ui-file-picker', 100);
+        if (detect.hasDate || detect.hasTime) push('ui-calendar', 95);
+        if (detect.hasColor) push('ui-color-picker', 95);
+        push('ui-object', 85);
+        push('ui-text', 60);
+        break;
+      }
+      case 'array':
+        push('ui-text', 80);
+        break;
+      default:
+        push('ui-text', 50);
+        break;
+    }
+  } else if (aff.type === 'action') {
+    const schema = (aff as any).schema || {};
+    const input = schema.input || schema;
+    const detect = hasNestedFormat(input);
+    if (detect.hasFile) push('ui-file-picker', 95);
+    push('ui-button', 100);
+  } else if (aff.type === 'event') {
+    push('ui-event', 100);
+    push('ui-notification', 80);
+  }
+
+  const ordered = out
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.name.localeCompare(b.name);
+    })
+    .map(o => o.name);
+
+  return Array.from(new Set(ordered));
 }

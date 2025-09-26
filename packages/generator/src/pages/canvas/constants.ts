@@ -1,24 +1,32 @@
-import type { Layout } from 'react-grid-layout';
+// Canvas constants for layout and sizing
+export const SECTION_WIDTH = 640;
+export const SECTION_HEIGHT = 360;
+export const GAP = 10;
+export const MIN_GAP = 8;
+export const CARD_WIDTH = 280;
+export const CARD_HEIGHT = 140;
+export const EVENT_CARD_HEIGHT = 304;
+export const OBJECT_CARD_HEIGHT = 304;
 
-export const COLS = 48; 
-export const MARGIN: [number, number] = [12, 12];
-export const PADDING: [number, number] = [12, 12];
+export function getMinCardHeight(component: any): number {
+  const uiType = component?.uiComponent?.toLowerCase?.() || '';
+  if (uiType.includes('event')) return EVENT_CARD_HEIGHT;
+  if (uiType.includes('object') || component?.affordanceKey?.includes?.('object')) return OBJECT_CARD_HEIGHT;
+  return CARD_HEIGHT;
+}
 
-export const DEFAULT_SIZES: Record<string, { w: number; h: number; minW?: number; minH?: number }> = {
-  'ui-button': { w: 4, h: 2, minW: 4, minH: 2 },
-  'ui-toggle': { w: 4, h: 2, minW: 4, minH: 2 },
-  'ui-slider': { w: 8, h: 4, minW: 8, minH: 4 },
-  'ui-text': { w: 6, h: 4, minW: 6, minH: 4 },
-  'ui-number-picker': { w: 6, h: 3, minW: 6, minH: 3 },
-  'ui-color-picker': { w: 6, h: 3, minW: 6, minH: 3 },
-  'ui-file-picker': { w: 10, h: 6, minW: 10, minH: 6 },
-  'ui-calendar': { w: 9, h: 2, minW: 7, minH: 2 },
-  'ui-checkbox': { w: 3, h: 2, minW: 2, minH: 2 },
-  'ui-event': { w: 7, h: 6, minW: 6, minH: 6 },
-  'ui-object': { w: 9, h: 13, minW: 8, minH: 13 },
-};
+export function getCardDimensions(component: any): { w: number; h: number } {
+  if (!component) return { w: CARD_WIDTH, h: CARD_HEIGHT };
 
-export type SectionBoxes = {
-  byTd: Record<string, { minX: number; minY: number; maxX: number; maxY: number }>;
-  byTdItems: Record<string, Layout[]>;
-};
+  const uiComponentType = component.uiComponent?.toLowerCase() || '';
+
+  if (uiComponentType.includes('event')) {
+    return { w: CARD_WIDTH, h: EVENT_CARD_HEIGHT };
+  }
+
+  if (uiComponentType.includes('object') || component.affordanceKey?.includes('object')) {
+    return { w: CARD_WIDTH, h: OBJECT_CARD_HEIGHT };
+  }
+
+  return { w: CARD_WIDTH, h: CARD_HEIGHT };
+}

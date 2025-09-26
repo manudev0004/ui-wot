@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { AppState, WoTComponent, ParsedAffordance, TDSource, TDInfo, AffordanceGroup } from '../types';
+import { AppState, WoTComponent, ParsedAffordance, TDSource, TDInfo, AffordanceGroup, LayoutSnapshot } from '../types';
 
 type AppAction =
-  | { type: 'SET_VIEW'; payload: AppState['currentView'] }
   | { type: 'ADD_TD'; payload: TDInfo }
   | { type: 'SET_ACTIVE_TD'; payload: string }
   | { type: 'SET_TD_SOURCE'; payload: TDSource }
@@ -15,6 +14,7 @@ type AppAction =
   | { type: 'UPDATE_LAYOUT'; payload: { id: string; layout: WoTComponent['layout'] } }
   | { type: 'SET_THING'; payload: { id: string; thing: any } }
   | { type: 'LOAD_DASHBOARD'; payload: { tdInfos: TDInfo[]; components: WoTComponent[]; availableAffordances: ParsedAffordance[]; groups?: AffordanceGroup[] } }
+  | { type: 'SET_LAYOUT_SNAPSHOT'; payload: LayoutSnapshot | undefined }
   | { type: 'ADD_GROUP'; payload: AffordanceGroup }
   | { type: 'UPDATE_GROUP'; payload: { id: string; updates: Partial<AffordanceGroup> } }
   | { type: 'REMOVE_GROUP'; payload: string }
@@ -24,7 +24,6 @@ type AppAction =
   | { type: 'RESET_STATE' };
 
 const initialState: AppState = {
-  currentView: 'home',
   tdInfos: [],
   availableAffordances: [],
   selectedAffordances: [],
@@ -35,14 +34,11 @@ const initialState: AppState = {
 
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
-    case 'SET_VIEW':
-      return { ...state, currentView: action.payload };
-
     case 'ADD_TD':
-      return { 
-        ...state, 
+      return {
+        ...state,
         tdInfos: [...state.tdInfos, action.payload],
-        activeTdId: action.payload.id
+        activeTdId: action.payload.id,
       };
 
     case 'SET_ACTIVE_TD':
@@ -52,7 +48,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
           ...state,
           activeTdId: action.payload,
           parsedTD: activeTd.td,
-          tdSource: activeTd.source
+          tdSource: activeTd.source,
         };
       }
       return state;
@@ -102,63 +98,52 @@ function appReducer(state: AppState, action: AppAction): AppState {
         components: action.payload.components,
         availableAffordances: action.payload.availableAffordances,
         groups: action.payload.groups || [],
-        currentView: 'component-canvas'
+        layoutSnapshot: undefined, // will be set by TDInputPage if provided in file
       };
 
     case 'ADD_GROUP':
       return {
         ...state,
-        groups: [...state.groups, action.payload]
+        groups: [...state.groups, action.payload],
       };
 
     case 'UPDATE_GROUP':
       return {
         ...state,
-        groups: state.groups.map(group => 
-          group.id === action.payload.id 
-            ? { ...group, ...action.payload.updates }
-            : group
-        )
+        groups: state.groups.map(group => (group.id === action.payload.id ? { ...group, ...action.payload.updates } : group)),
       };
 
     case 'REMOVE_GROUP':
       return {
         ...state,
-        groups: state.groups.filter(group => group.id !== action.payload)
+        groups: state.groups.filter(group => group.id !== action.payload),
       };
 
     case 'ADD_COMPONENT_TO_GROUP':
       return {
         ...state,
-        groups: state.groups.map(group => 
-          group.id === action.payload.groupId
-            ? { ...group, affordanceIds: [...group.affordanceIds, action.payload.componentId] }
-            : group
-        )
+        groups: state.groups.map(group => (group.id === action.payload.groupId ? { ...group, affordanceIds: [...group.affordanceIds, action.payload.componentId] } : group)),
       };
 
     case 'REMOVE_COMPONENT_FROM_GROUP':
       return {
         ...state,
-        groups: state.groups.map(group => 
-          group.id === action.payload.groupId
-            ? { ...group, affordanceIds: group.affordanceIds.filter(id => id !== action.payload.componentId) }
-            : group
-        )
+        groups: state.groups.map(group =>
+          group.id === action.payload.groupId ? { ...group, affordanceIds: group.affordanceIds.filter(id => id !== action.payload.componentId) } : group,
+        ),
       };
 
     case 'UPDATE_GROUP_INNER_LAYOUT':
       return {
         ...state,
-        groups: state.groups.map(group => 
-          group.id === action.payload.groupId
-            ? { ...group, innerLayout: action.payload.layout }
-            : group
-        )
+        groups: state.groups.map(group => (group.id === action.payload.groupId ? { ...group, innerLayout: action.payload.layout } : group)),
       };
 
     case 'RESET_STATE':
       return initialState;
+
+    case 'SET_LAYOUT_SNAPSHOT':
+      return { ...state, layoutSnapshot: action.payload };
 
     default:
       return state;

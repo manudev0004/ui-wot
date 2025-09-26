@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { WoTComponent } from '../types';
+import { getSuggestedComponentOrder } from '../utils/component-integration';
 import { useNavbar } from '../context/NavbarContext';
 
 export function AffordanceSelectionPage() {
@@ -40,11 +41,9 @@ export function AffordanceSelectionPage() {
       // Reset previous selection if loading a new TD
       dispatch({ type: 'SELECT_AFFORDANCES', payload: [] });
       setSelectedComponentMap({});
-      // Determine active TD URL for components wiring
+      // Active TD URL for components wiring
       const foundTdInfo = state.tdInfos.find(t => t.td === state.parsedTD) || state.tdInfos[0];
       const tdUrl = (foundTdInfo?.source.type === 'url' ? (foundTdInfo.source.content as string) : undefined) || undefined;
-
-      // Get the active TD ID 
       const activeTdId = state.activeTdId || foundTdInfo?.id || (state.tdInfos.length > 0 ? state.tdInfos[0].id : 'default');
       const activeTdInfo = state.tdInfos.find(td => td.id === activeTdId);
 
@@ -73,7 +72,7 @@ export function AffordanceSelectionPage() {
             },
             thing: undefined,
             affordanceKey,
-            tdId: activeTdId, // Assign the correct TD ID
+            tdId: activeTdId,
             tdUrl: tdUrl,
           };
         })
@@ -269,47 +268,18 @@ export function AffordanceSelectionPage() {
                 <div className="flex items-center justify-start">
                   <div className="flex items-center space-x-2">
                     {(() => {
-                      // Build options based on affordance type and other rules
-                      let opts: string[] = [];
-                      if (affordance.type === 'property') {
-                        const schemaType = (affordance as any).schema?.type as string | undefined;
-                        switch (schemaType) {
-                          case 'boolean':
-                            opts = ['ui-toggle', 'ui-checkbox'];
-                            break;
-                          case 'integer':
-                          case 'number':
-                            opts = ['ui-number-picker', 'ui-slider'];
-                            break;
-                          case 'array':
-                            opts = ['ui-text'];
-                            break;
-                          case 'object':
-                            opts = ['ui-object', 'ui-text', 'ui-color-picker', 'ui-file-picker', 'ui-calendar'];
-                            break;
-                          default:
-                            // default for string/unknown
-                            opts = ['ui-text', 'ui-calendar', 'ui-color-picker'];
-                            break;
-                        }
-                      } else if (affordance.type === 'action') {
-                        opts = ['ui-button'];
-                      } else if (affordance.type === 'event') {
-                        opts = ['ui-event', 'ui-notification'];
-                      }
-
-                      const suggested = affordance.suggestedComponent;
-                      const unique = affordance.type === 'property' ? Array.from(new Set([suggested, ...opts])) : opts;
+                      const orderedOptions = getSuggestedComponentOrder(affordance);
+                      const defaultValue = selectedComponentMap[affordance.key] || affordance.suggestedComponent || orderedOptions[0];
                       return (
                         <select
-                          value={selectedComponentMap[affordance.key] || suggested}
+                          value={defaultValue}
                           onChange={e => handleComponentChoice(affordance.key, e.target.value)}
                           className={`text-sm border rounded px-2 py-1 transition-colors duration-300 ${
                             theme === 'dark' ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-200 bg-white text-gray-900'
                           }`}
                           onClick={e => e.stopPropagation()}
                         >
-                          {unique.map(pc => (
+                          {orderedOptions.map(pc => (
                             <option key={pc} value={pc}>
                               {pc}
                             </option>
