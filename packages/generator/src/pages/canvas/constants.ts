@@ -1,4 +1,4 @@
-// Centralized canvas constants and size helpers (no behavior changes)
+// Canvas constants for layout and sizing
 export const SECTION_WIDTH = 640;
 export const SECTION_HEIGHT = 360;
 export const GAP = 10;

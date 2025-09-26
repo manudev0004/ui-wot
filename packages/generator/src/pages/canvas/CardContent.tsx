@@ -32,8 +32,7 @@ export function CardContent({ component, tdInfos }: { component: WoTComponent; t
       else if (component.type === 'action') el.setAttribute('td-action', component.name);
       else if (component.type === 'event') el.setAttribute('td-event', component.name);
 
-      (el as HTMLElement).style.maxWidth = '120%';
-      // Let custom element compute its own height; avoid clamping to host
+      (el as HTMLElement).style.maxWidth = '100%';
 
       host.replaceChildren(el);
     } catch (e) {

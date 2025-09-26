@@ -1,6 +1,7 @@
 import type { Node } from 'reactflow';
 import { GAP, MIN_GAP, SECTION_HEIGHT, SECTION_WIDTH, CARD_WIDTH, getMinCardHeight } from './constants';
 
+// Stores a stable, component IDs per section (keyed by raw section id)
 let globalLayoutOrder: Record<string, string[]> = {};
 export const setGlobalLayoutOrder = (val: Record<string, string[]>) => {
   globalLayoutOrder = val || {};
@@ -15,11 +16,13 @@ export function reflowAllSections(previousNodes: Node[]): Node[] {
     const children = outputNodes.filter(nodeItem => nodeItem.parentNode === section.id && nodeItem.type === 'componentNode');
 
     if (children.length === 0) continue;
-
     const innerWidth = sectionWidth - GAP * 2;
+
     const occupiedSpaces: Array<{ x: number; y: number; w: number; h: number }> = [];
+
     let maxBottom = GAP;
 
+    // Scan a coarse grid from top-left to bottom-right for the first free spot
     const findBestPosition = (width: number, height: number): { x: number; y: number } => {
       const stepY = GAP;
       const stepX = 4;
@@ -35,6 +38,7 @@ export function reflowAllSections(previousNodes: Node[]): Node[] {
       return { x: GAP, y: maxBottom };
     };
 
+    // After initial placement, nudge any overlapping pairs by re-placing the second one
     const fixOverlapsInReflow = () => {
       let hasFixed = false;
       for (let i = 0; i < children.length; i++) {
@@ -56,6 +60,7 @@ export function reflowAllSections(previousNodes: Node[]): Node[] {
           );
 
           if (hasOverlap) {
+            // Re-seat the second node to the next best available slot
             const newPosition = findBestPosition(secondWidth, secondHeight);
             secondNode.position = { x: newPosition.x, y: newPosition.y } as any;
             occupiedSpaces.push({ x: newPosition.x, y: newPosition.y, w: secondWidth + GAP, h: secondHeight + GAP });
@@ -67,8 +72,10 @@ export function reflowAllSections(previousNodes: Node[]): Node[] {
       return hasFixed;
     };
 
+    // Sort children by stored layout order 
     sortChildrenByLayoutOrder(children, (section.id as string).replace(/^sec:/, ''));
 
+    // Initial placement pass
     for (const child of children) {
       const childWidth = (child.style?.width as number) ?? CARD_WIDTH;
       const childHeight = (child.style?.height as number) ?? getMinCardHeight((child as any)?.data?.comp);
@@ -79,11 +86,13 @@ export function reflowAllSections(previousNodes: Node[]): Node[] {
       maxBottom = Math.max(maxBottom, position.y + childHeight + GAP);
     }
 
+    // Attempt overlap-fix iterations
     let attempts = 0;
     while (fixOverlapsInReflow() && attempts < 3) {
       attempts++;
     }
 
+    // Expand section to fit its tallest content while respecting a minimum height
     section.style = { ...section.style, height: Math.max(SECTION_HEIGHT, maxBottom) } as any;
   }
 
@@ -102,6 +111,7 @@ export function sortChildrenByLayoutOrder(children: Node[], sectionId: string) {
         return firstIndex - secondIndex;
       }
     }
+    // Fallback: top-to-bottom, then left-to-right
     return firstNode.position.y - secondNode.position.y || firstNode.position.x - secondNode.position.x;
   });
 }

@@ -1,4 +1,4 @@
-import { AppState, WoTComponent, TDInfo, ParsedAffordance, AffordanceGroup } from '../types';
+import { AppState, WoTComponent, TDInfo, ParsedAffordance, AffordanceGroup, LayoutSnapshot } from '../types';
 
 export interface DashboardData {
   name: string;
@@ -9,6 +9,7 @@ export interface DashboardData {
   components: WoTComponent[];
   availableAffordances: ParsedAffordance[];
   groups?: AffordanceGroup[];
+  layoutSnapshot?: LayoutSnapshot;
 }
 
 class DashboardService {
@@ -210,6 +211,7 @@ class DashboardService {
       components,
       availableAffordances: state.availableAffordances,
       groups: state.groups,
+      layoutSnapshot: state.layoutSnapshot,
     };
   }
 

@@ -56,7 +56,7 @@ export function EditPopup(props: EditPopupProps) {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    // Popup dimensions (estimated if not rendered yet)
+    // Estimated popup dimensions if not rendered
     const popupWidth = popupRect.width || 350;
     const popupHeight = popupRect.height || 600;
 

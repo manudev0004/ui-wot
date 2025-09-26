@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+//
 import { AppProvider } from './context/AppContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { HomePage } from './pages/HomePage';
@@ -7,26 +7,11 @@ import { AffordanceSelectionPage } from './pages/AffordanceSelectionPage';
 import './styles/theme.css';
 import { ComponentCanvasPage } from './pages/ComponentCanvasPage';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { useAppContext as useCtx } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { NavbarProvider } from './context/NavbarContext';
 
 function RouterSync() {
-  const { dispatch } = useCtx();
   const location = useLocation();
-
-  useEffect(() => {
-    const pathToView = (path: string) => {
-      if (path === '/' || path === '') return 'home';
-      if (path.startsWith('/td-input')) return 'td-input';
-      if (path.startsWith('/affordances')) return 'affordance-selection';
-      if (path.startsWith('/components')) return 'component-canvas';
-      return 'home';
-    };
-
-    const newView = pathToView(location.pathname);
-    dispatch({ type: 'SET_VIEW', payload: newView });
-  }, [location.pathname, dispatch]);
 
   return (
     <div className="min-h-screen">

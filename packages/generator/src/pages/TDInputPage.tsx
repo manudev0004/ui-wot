@@ -13,8 +13,6 @@ export function TDInputPage() {
   const [urlInput, setUrlInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const USE_TD_HOST = (import.meta as any).env?.VITE_USE_TD_HOST === 'true';
-
   async function postTDToHost(td: any): Promise<string> {
     const resp = await fetch('http://localhost:8088/serve-td', {
       method: 'POST',
@@ -31,11 +29,14 @@ export function TDInputPage() {
 
   // Common TD setup logic after parsing from any source
   const setupTD = async (parsedTD: any, opts: { originalUrl?: string; file?: File }) => {
-    const finalUrl = USE_TD_HOST
-      ? await postTDToHost(parsedTD)
-      : opts.originalUrl
-      ? opts.originalUrl
-      : URL.createObjectURL(new Blob([JSON.stringify(parsedTD)], { type: 'application/json' }));
+    let finalUrl: string;
+    if (opts.file) {
+      finalUrl = await postTDToHost(parsedTD);
+    } else if (opts.originalUrl) {
+      finalUrl = opts.originalUrl;
+    } else {
+      finalUrl = URL.createObjectURL(new Blob([JSON.stringify(parsedTD)], { type: 'application/json' }));
+    }
 
     const affordances = parseAffordances(parsedTD);
 
@@ -122,6 +123,11 @@ export function TDInputPage() {
         },
       });
 
+      // If the imported file contains a React Flow layout snapshot, store it
+      if (dashboardData.layoutSnapshot) {
+        dispatch({ type: 'SET_LAYOUT_SNAPSHOT', payload: dashboardData.layoutSnapshot });
+      }
+
       navigate('/components');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to import dashboard. Please check the file format.');
@@ -136,7 +142,7 @@ export function TDInputPage() {
   return (
     <div className={`min-h-screen py-6 transition-colors duration-300`} style={{ backgroundColor: 'var(--bg-color)' }}>
       <div className="max-w-2xl mx-auto px-4">
-        {/* Note when adding to existing dashboard */}
+        {/* Add to navbar, when adding to existing dashboard */}
         {state.components.length > 0 && (
           <div className={`mb-6 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-300`}>
             Adding to existing dashboard with {state.components.length} components from {state.tdInfos.length} TD{state.tdInfos.length !== 1 ? 's' : ''}

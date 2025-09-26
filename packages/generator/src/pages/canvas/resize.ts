@@ -8,6 +8,7 @@ export function setupComponentAutoFit(reactFlowInstance: any, id: string, compon
   let childElement: HTMLElement | null = null;
   let shadowInnerElement: HTMLElement | null = null;
 
+  // Measure the rendered size of the component and expand the card
   const measure = () => {
     if (!containerElement || !childElement) return;
     const currentNode = reactFlowInstance.getNode(id);
@@ -32,6 +33,7 @@ export function setupComponentAutoFit(reactFlowInstance: any, id: string, compon
     const desiredHeight = needsHeight ? Math.ceil(innerRect.height + paddingY + FUDGE) : currentHeight;
 
     try {
+      // If the card sits in a row with other sibling nodes then cap its width so it doesn't overlap the next card.
       const allNodes = (reactFlowInstance as any).getNodes ? (reactFlowInstance as any).getNodes() : [];
       const parentSectionId = currentNode.parentNode as string | undefined;
       if (parentSectionId) {
@@ -40,6 +42,7 @@ export function setupComponentAutoFit(reactFlowInstance: any, id: string, compon
         const innerWidth = sectionWidth - GAP * 2;
         const siblingNodes = allNodes.filter((nodeItem: any) => nodeItem.type === 'componentNode' && nodeItem.parentNode === parentSectionId);
         const currentY = (currentNode.position?.y as number) ?? 0;
+        // Tolerance to consider nodes on the same visual row
         const rowTol = 12;
         const rowNodes = siblingNodes.filter((sibling: any) => Math.abs(((sibling.position?.y as number) ?? 0) - currentY) <= rowTol);
         rowNodes.sort((firstNode: any, secondNode: any) => ((firstNode.position?.x as number) ?? 0) - ((secondNode.position?.x as number) ?? 0));
@@ -47,6 +50,7 @@ export function setupComponentAutoFit(reactFlowInstance: any, id: string, compon
         if (currentIndex !== -1) {
           const currentX = (currentNode.position?.x as number) ?? 0;
           const nextNode = rowNodes[currentIndex + 1];
+          // If there's a neighbor to the right, keep enough gap
           const maxRightPosition = nextNode ? Math.max(GAP, ((nextNode.position?.x as number) ?? 0) - MIN_GAP) : innerWidth;
           const maxAllowedWidth = Math.max(CARD_WIDTH, Math.max(0, maxRightPosition - currentX));
           desiredWidth = Math.min(desiredWidth, Math.max(currentWidth, maxAllowedWidth));
@@ -55,6 +59,7 @@ export function setupComponentAutoFit(reactFlowInstance: any, id: string, compon
     } catch {}
 
     const minHeight = getMinCardHeight(component);
+    // Follow minimums and avoid unbounded growth
     const cappedWidth = Math.max(CARD_WIDTH, Math.min(desiredWidth, 1600));
     const cappedHeight = Math.max(minHeight, Math.min(desiredHeight, 1600));
     if (Math.abs(cappedWidth - currentWidth) < 2 && Math.abs(cappedHeight - currentHeight) < 2) return;
@@ -73,6 +78,7 @@ export function setupComponentAutoFit(reactFlowInstance: any, id: string, compon
         return nodeItem;
       });
       if (parentSectionId) {
+        // Update the section's height to accommodate the tallest child
         const sectionIndex = updatedNodes.findIndex((n: any) => n.id === parentSectionId);
         if (sectionIndex !== -1) {
           const children = updatedNodes.filter((n: any) => n.type === 'componentNode' && n.parentNode === parentSectionId);
@@ -89,6 +95,7 @@ export function setupComponentAutoFit(reactFlowInstance: any, id: string, compon
       return updatedNodes;
     });
 
+    // Re-run layout shortly after size adjustments to fix any row wraps or collisions
     setTimeout(() => reactFlowInstance.setNodes((prev: Node[]) => reflowAllSections(prev)), 50);
   };
 
@@ -119,6 +126,7 @@ export function createComponentResizeMouseDown(
   data: any,
   resizingState: React.MutableRefObject<{ startX: number; startY: number; w: number; h: number } | null>,
 ) {
+  // Manual resize handler for card and disables dragging while resizing
   return (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -143,6 +151,7 @@ export function createComponentResizeMouseDown(
       document.removeEventListener('mouseup', up);
       resizingState.current = null;
       reactFlowInstance.setNodes((prev: any) => prev.map((n: any) => (n.id === id ? { ...n, draggable: true } : n)));
+      // Finalize by reflowing sections so neighbors adjust to the new size
       reactFlowInstance.setNodes((prev: any) => reflowAllSections(prev));
     };
     document.addEventListener('mousemove', move);
@@ -155,6 +164,7 @@ export function createSectionResizeMouseDown(
   id: string,
   resizingState: React.MutableRefObject<{ startX: number; startY: number; w: number; h: number } | null>,
 ) {
+  // Manual resize handler for section containers; triggers live reflow while dragging
   return (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
