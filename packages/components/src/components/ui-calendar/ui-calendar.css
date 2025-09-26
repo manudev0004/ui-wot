@@ -1,0 +1,18 @@
+@import '../../global.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host {
+  display: inline-block;
+}
+
+/* Custom scrollbar for time picker */
+input[type='time']::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+}
+
+:host(.dark) input[type='time']::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}

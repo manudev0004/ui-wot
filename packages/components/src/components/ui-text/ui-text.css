@@ -1,0 +1,16 @@
+@import '../../global.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.ui-text-container:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-accent, var(--color-primary)) 40%, transparent);
+  border-color: var(--ui-accent, var(--color-primary));
+}
