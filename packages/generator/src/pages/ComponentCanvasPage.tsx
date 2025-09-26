@@ -80,17 +80,32 @@ export function ComponentCanvasPage() {
     localStorage.setItem(storageKey, JSON.stringify(manualPositions));
   }, [manualPositions]);
 
+  // Restore layout either from imported dashboard layoutSnapshot (preferred) or local storage fallback
   useEffect(() => {
-    const storageKey = `ui-wot-manual-positions-${window.location.pathname}`;
-    const savedPositions = localStorage.getItem(storageKey);
-    if (savedPositions) {
-      try {
-        const positions = JSON.parse(savedPositions);
-        setManualPositions(positions);
-      } catch (e) {
-        console.warn('Failed to load manual positions:', e);
+    if (state.layoutSnapshot) {
+      const snap = state.layoutSnapshot;
+      if (snap.membership) setMembership(snap.membership);
+      if (snap.layoutOrder) setLayoutOrder(snap.layoutOrder);
+      if (snap.sectionNames) setSectionNames(snap.sectionNames);
+      if (snap.sectionStyles) setSectionStyles(snap.sectionStyles);
+      if (snap.sizes) {
+      }
+      if (snap.manualPositions) setManualPositions(snap.manualPositions);
+      // Clear snapshot to avoid reapplying on subsequent navigations
+      setTimeout(() => dispatch({ type: 'SET_LAYOUT_SNAPSHOT', payload: undefined }), 0);
+    } else {
+      const storageKey = `ui-wot-manual-positions-${window.location.pathname}`;
+      const savedPositions = localStorage.getItem(storageKey);
+      if (savedPositions) {
+        try {
+          const positions = JSON.parse(savedPositions);
+          setManualPositions(positions);
+        } catch (e) {
+          console.warn('Failed to load manual positions:', e);
+        }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Preserve existing node positions/sizes on rebuild
@@ -195,12 +210,12 @@ export function ComponentCanvasPage() {
       let currentBottomY = GAP;
 
       const findBestPosition = (w: number, h: number): { x: number; y: number } => {
-        // Try to place at each y level, scanning for horizontal space
+        // Try to place at each y axis
         const stepY = GAP;
         const stepX = 4; // Fine horizontal positioning
 
         for (let y = GAP; y <= currentBottomY + h + GAP; y += stepY) {
-          // For each y level, try placing from left to right
+          // For each y axis, try placing from left to right
           for (let x = GAP; x + w <= innerWidth; x += stepX) {
             const candidate = { x, y, w: w + GAP, h: h + GAP };
             // Check if this position conflicts with any occupied space
@@ -300,7 +315,7 @@ export function ComponentCanvasPage() {
         attempts++;
       }
 
-      // adjust section height to enclose children using actual child bounds
+      // adjust section height to enclose children
       const children = result.slice(childrenStartIndex);
       let maxBottom = GAP;
       if (children.length) {
@@ -476,8 +491,28 @@ export function ComponentCanvasPage() {
               try {
                 const name = prompt('Save dashboard as (name):', state.tdInfos[0]?.title || 'dashboard')?.trim();
                 if (!name) return;
-                dashboardService.saveDashboard(state as any, name);
-                dashboardService.exportFromState(state as any, { name });
+                // Build a React Flow layout snapshot for persistence
+                const sizes: Record<string, { w: number; h: number }> = {};
+                nodesRef.current.forEach(n => {
+                  if (n.type === 'componentNode') {
+                    const w = (n.style?.width as number) ?? CARD_WIDTH;
+                    const h = (n.style?.height as number) ?? CARD_HEIGHT;
+                    sizes[n.id] = { w, h };
+                  }
+                });
+                const layoutSnapshot = {
+                  manualPositions,
+                  sizes,
+                  membership,
+                  layoutOrder,
+                  sectionNames,
+                  sectionStyles,
+                } as any;
+                // Attach snapshot to state for saving/export
+                dispatch({ type: 'SET_LAYOUT_SNAPSHOT', payload: layoutSnapshot });
+                const stateWithLayout = { ...state, layoutSnapshot } as any;
+                dashboardService.saveDashboard(stateWithLayout, name);
+                dashboardService.exportFromState(stateWithLayout, { name });
                 alert('Dashboard saved and downloaded as JSON.');
               } catch {}
             }}
@@ -491,12 +526,11 @@ export function ComponentCanvasPage() {
     return () => clear();
   }, [setContent, clear, navigate, editMode, dashboardSummary, state, dispatch]);
 
-  // Toggle node draggability when edit mode changes
+  // Toggle node draggability based on edit mode
   useEffect(() => {
     setNodes(prev => prev.map(n => ({ ...n, draggable: editMode })));
   }, [editMode, setNodes]);
 
-  // Use the original hook-based connector (called at top-level of component)
   connectThings({ tdInfos: state.tdInfos, components: state.components, editMode });
 
   const nodeTypes: NodeTypes = useMemo(
@@ -553,7 +587,7 @@ export function ComponentCanvasPage() {
     const draggingCardId = draggedNode.id;
     const draggingPosition = draggedNode.position;
 
-    // Find the section this card belongs to
+    // Find the section of the card being dragged
     const parentSectionId = draggedNode.parentNode;
     if (!parentSectionId) return;
 
@@ -743,12 +777,10 @@ export function ComponentCanvasPage() {
       }));
     }
 
-    // Optional: Trigger a gentle reflow after a delay to clean up any minor positioning issues
-    // but only if we're not in the middle of another drag operation
+    // Trigger a gentle reflow after a delay to clean up any minor positioning issues
     setTimeout(() => {
       if (!isDraggingRef.current) {
-        // Perform a minimal reflow that respects manually positioned cards
-        // This will only fix overlaps without completely rearranging the layout
+        // Only fix overlaps without completely rearranging the layout
         setNodes(previousNodes => {
           const updatedNodes = [...previousNodes];
           const sectionNodes = updatedNodes.filter(nodeItem => nodeItem.type === 'sectionNode');
@@ -849,7 +881,7 @@ export function ComponentCanvasPage() {
         {showGrid && <Background variant={BackgroundVariant.Lines} gap={20} size={1} />}
       </ReactFlow>
 
-      {/* Canvas Context Menu */}
+      {/* Canvas Right Click Menu */}
       {contextMenu.show && (
         <div
           className="fixed rounded-lg shadow-lg py-1 z-50"
@@ -1013,7 +1045,7 @@ export function ComponentCanvasPage() {
         </div>
       )}
 
-      {/* Edit Popup */}
+      {/* Card Edit Popup */}
       {editComponentId &&
         (() => {
           const comp = state.components.find(c => c.id === editComponentId);
@@ -1115,7 +1147,7 @@ function SectionNode({ id, data }: any) {
         position: 'relative',
       }}
     >
-      {/* Section label always visible; controls only in edit mode */}
+      {/* Section label */}
       <div style={{ position: 'absolute', left: GAP, top: -30, display: 'flex', alignItems: 'center', gap: 6, zIndex: 3 }}>
         <span
           className={`px-3 py-1 text-base font-heading font-semibold rounded shadow border ${data?.editMode ? 'section-drag-handle cursor-move' : 'nodrag nopan'}`}
@@ -1180,7 +1212,7 @@ function SectionNode({ id, data }: any) {
           </>
         )}
       </div>
-      {/* Resize handle only; drag anywhere else */}
+      {/* Resize handle */}
       {data?.editMode && (
         <div
           className="nodrag nopan"
@@ -1231,7 +1263,7 @@ function ComponentNode({ id, data }: any) {
             }
       }
     >
-      {/* In edit mode, a transparent overlay lets you drag anywhere */}
+      {/* A transparent overlay in edit mode to help drag anywhere */}
       {data?.editMode && <div style={{ position: 'absolute', inset: 0, zIndex: 1 }} />}
       {data?.editMode && (
         <div className="absolute top-1 right-1 flex items-center gap-2 z-10">
@@ -1296,7 +1328,7 @@ function ComponentNode({ id, data }: any) {
           height: '100%',
           padding: 8,
           boxSizing: 'border-box',
-          // Add scroll for object components
+          // Add scroll for object components when overflows
           overflow: data?.comp?.uiComponent?.toLowerCase().includes('object') || data?.comp?.affordanceKey?.includes('object') ? 'auto' : 'visible',
         }}
         data-component-id={data?.comp?.id}
@@ -1306,4 +1338,3 @@ function ComponentNode({ id, data }: any) {
     </div>
   );
 }
-
