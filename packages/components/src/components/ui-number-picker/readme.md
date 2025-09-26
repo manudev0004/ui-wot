@@ -2,6 +2,7 @@
 
 
 
+[Properties](#properties) · [Events](#events) · [Methods](#methods)
 <!-- Auto Generated Below -->
 
 
@@ -11,6 +12,75 @@ A versatile number picker component designed for WoT device control and monitori
 
 It has increment/decrement buttons, multiple visual styles, status and last updated timestamps.
 Supports both interactive control and read-only monitoring modes with customizable ranges.
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+<ui-number-picker variant="filled" value="50" min="0" max="100"></ui-number-picker>
+<ui-number-picker readonly="true" label="Sensor" show-last-updated="true"></ui-number-picker>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const numberPicker = document.getElementById('device-volume');
+const initialValue = Number(await (await thing.readProperty('volume')).value());
+
+await numberPicker.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('volume', value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+<ui-number-picker variant="filled" value="50" min="0" max="100"></ui-number-picker>
+<ui-number-picker readonly="true" label="Sensor" show-last-updated="true"></ui-number-picker>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const numberPicker = document.getElementById('device-volume');
+const initialValue = Number(await (await thing.readProperty('volume')).value());
+
+await numberPicker.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('volume', value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+<ui-number-picker variant="filled" value="50" min="0" max="100"></ui-number-picker>
+<ui-number-picker readonly="true" label="Sensor" show-last-updated="true"></ui-number-picker>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const numberPicker = document.getElementById('device-volume');
+const initialValue = Number(await (await thing.readProperty('volume')).value());
+
+await numberPicker.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('volume', value);
+  }
+});
+```
 
 ## Properties
 
@@ -83,6 +153,63 @@ Sets the number picker value with optional device communication api and other op
 This is the primary method for connecting number pickers to real devices.
 It supports optimistic updates, error handling, and automatic retries.
 
+
+#### Example
+
+```html
+<ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+<ui-number-picker variant="filled" value="50" min="0" max="100"></ui-number-picker>
+<ui-number-picker readonly="true" label="Sensor" show-last-updated="true"></ui-number-picker>
+```
+```javascript
+const numberPicker = document.getElementById('device-volume');
+const initialValue = Number(await (await thing.readProperty('volume')).value());
+
+await numberPicker.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('volume', value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+<ui-number-picker variant="filled" value="50" min="0" max="100"></ui-number-picker>
+<ui-number-picker readonly="true" label="Sensor" show-last-updated="true"></ui-number-picker>
+```
+```javascript
+const numberPicker = document.getElementById('device-volume');
+const initialValue = Number(await (await thing.readProperty('volume')).value());
+
+await numberPicker.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('volume', value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-number-picker variant="minimal" value="3" label="Quantity"></ui-number-picker>
+<ui-number-picker variant="filled" value="50" min="0" max="100"></ui-number-picker>
+<ui-number-picker readonly="true" label="Sensor" show-last-updated="true"></ui-number-picker>
+```
+```javascript
+const numberPicker = document.getElementById('device-volume');
+const initialValue = Number(await (await thing.readProperty('volume')).value());
+
+await numberPicker.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('volume', value);
+  }
+});
+```
+
 #### Parameters
 
 | Name      | Type                                                                                                                                                                                     | Description                                                    |
@@ -128,34 +255,3 @@ Type: `Promise<void>`
 
 
 
-
-## Shadow Parts
-
-| Part                       | Description |
-| -------------------------- | ----------- |
-| `"container"`              |             |
-| `"controls"`               |             |
-| `"decrement-button"`       |             |
-| `"increment-button"`       |             |
-| `"label"`                  |             |
-| `"readonly-indicator"`     |             |
-| `"readonly-pulse-sibling"` |             |
-| `"value-display"`          |             |
-
-
-## Dependencies
-
-### Used by
-
- - [ui-object](../ui-object)
-
-### Graph
-```mermaid
-graph TD;
-  ui-object --> ui-number-picker
-  style ui-number-picker fill:#f9f,stroke:#333,stroke-width:4px
-```
-
-----------------------------------------------
-
-*Built with [StencilJS](https://stenciljs.com/)*

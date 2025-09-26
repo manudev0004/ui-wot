@@ -76,3 +76,5 @@ UserInterfaceState.xcuserstate
 # Ignore Stencil build artifacts
 packages/components/.stencil/
 packages/components/www/build/
+.backup
+react-example/

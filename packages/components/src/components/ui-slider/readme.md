@@ -2,6 +2,7 @@
 
 
 
+[Properties](#properties) · [Events](#events) · [Methods](#methods)
 <!-- Auto Generated Below -->
 
 
@@ -11,6 +12,75 @@ A versatile slider component designed for WoT device control and monitoring.
 
 It supports continuous value selection with multiple visual styles, orientations, and different thumb shapes.
 Supports both interactive control and read-only monitoring modes with customizable ranges.
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-slider variant="narrow" value="50" label="Brightness"></ui-slider>
+<ui-slider variant="wide" value="75" min="0" max="100"></ui-slider>
+<ui-slider readonly="true" label="Sensor" show-last-updated="true"></ui-slider>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+const slider = document.getElementById('device-brightness');
+const initialValue = Number(await (await thing.readProperty('brightness')).value());
+
+await slider.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('brightness', value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-slider variant="narrow" value="50" label="Brightness"></ui-slider>
+<ui-slider variant="wide" value="75" min="0" max="100"></ui-slider>
+<ui-slider readonly="true" label="Sensor" show-last-updated="true"></ui-slider>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+const slider = document.getElementById('device-brightness');
+const initialValue = Number(await (await thing.readProperty('brightness')).value());
+
+await slider.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('brightness', value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-slider variant="narrow" value="50" label="Brightness"></ui-slider>
+<ui-slider variant="wide" value="75" min="0" max="100"></ui-slider>
+<ui-slider readonly="true" label="Sensor" show-last-updated="true"></ui-slider>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+const slider = document.getElementById('device-brightness');
+const initialValue = Number(await (await thing.readProperty('brightness')).value());
+
+await slider.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('brightness', value);
+  }
+});
+```
 
 ## Properties
 
@@ -86,6 +156,63 @@ This is the primary method for connecting slider to real devices.
 It supports optimistic updates, error handling, and automatic retries.
 Values are automatically clamped to the min/max range.
 
+
+#### Example
+
+```html
+<ui-slider variant="narrow" value="50" label="Brightness"></ui-slider>
+<ui-slider variant="wide" value="75" min="0" max="100"></ui-slider>
+<ui-slider readonly="true" label="Sensor" show-last-updated="true"></ui-slider>
+```
+```javascript
+const slider = document.getElementById('device-brightness');
+const initialValue = Number(await (await thing.readProperty('brightness')).value());
+
+await slider.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('brightness', value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-slider variant="narrow" value="50" label="Brightness"></ui-slider>
+<ui-slider variant="wide" value="75" min="0" max="100"></ui-slider>
+<ui-slider readonly="true" label="Sensor" show-last-updated="true"></ui-slider>
+```
+```javascript
+const slider = document.getElementById('device-brightness');
+const initialValue = Number(await (await thing.readProperty('brightness')).value());
+
+await slider.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('brightness', value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-slider variant="narrow" value="50" label="Brightness"></ui-slider>
+<ui-slider variant="wide" value="75" min="0" max="100"></ui-slider>
+<ui-slider readonly="true" label="Sensor" show-last-updated="true"></ui-slider>
+```
+```javascript
+const slider = document.getElementById('device-brightness');
+const initialValue = Number(await (await thing.readProperty('brightness')).value());
+
+await slider.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('brightness', value);
+  }
+});
+```
+
 #### Parameters
 
 | Name      | Type                                                                                                                                                                                     | Description                                                   |
@@ -131,30 +258,3 @@ Type: `Promise<void>`
 
 
 
-
-## Shadow Parts
-
-| Part                       | Description |
-| -------------------------- | ----------- |
-| `"container"`              |             |
-| `"label"`                  |             |
-| `"readonly-indicator"`     |             |
-| `"readonly-pulse-sibling"` |             |
-
-
-## Dependencies
-
-### Used by
-
- - [ui-object](../ui-object)
-
-### Graph
-```mermaid
-graph TD;
-  ui-object --> ui-slider
-  style ui-slider fill:#f9f,stroke:#333,stroke-width:4px
-```
-
-----------------------------------------------
-
-*Built with [StencilJS](https://stenciljs.com/)*

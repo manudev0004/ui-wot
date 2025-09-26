@@ -2,6 +2,7 @@
 
 
 
+[Properties](#properties) · [Events](#events) · [Methods](#methods)
 <!-- Auto Generated Below -->
 
 
@@ -10,6 +11,78 @@
 A versatile Text-Display component designed for WoT device control and monitoring
 It has various features, visual styles and supports text-heavy data display.
 Provides field, area, structured, unstructured, and editable modes with consistent styling.
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
+<ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
+<ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
+<ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+  const textElement = document.getElementById('text-field');
+  const value = await (await thing.readProperty('string')).value();
+
+  await textElement.setValue(value, {
+    writeOperation: async newValue => {
+      await thing.writeProperty('string', String(newValue));
+    },
+  });
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
+<ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
+<ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
+<ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+  const textElement = document.getElementById('text-field');
+  const value = await (await thing.readProperty('string')).value();
+
+  await textElement.setValue(value, {
+    writeOperation: async newValue => {
+      await thing.writeProperty('string', String(newValue));
+    },
+  });
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
+<ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
+<ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
+<ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+  const textElement = document.getElementById('text-field');
+  const value = await (await thing.readProperty('string')).value();
+
+  await textElement.setValue(value, {
+    writeOperation: async newValue => {
+      await thing.writeProperty('string', String(newValue));
+    },
+  });
+```
 
 ## Properties
 
@@ -95,6 +168,66 @@ Set the text value and handle optional operations and status management.
 This is the primary method for connecting text to real devices.
 It supports optimistic updates, error handling, and automatic retries.
 
+
+#### Example
+
+```html
+<ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
+<ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
+<ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
+<ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
+```
+```javascript
+  const textElement = document.getElementById('text-field');
+  const value = await (await thing.readProperty('string')).value();
+
+  await textElement.setValue(value, {
+    writeOperation: async newValue => {
+      await thing.writeProperty('string', String(newValue));
+    },
+  });
+```
+
+
+#### Example
+
+```html
+<ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
+<ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
+<ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
+<ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
+```
+```javascript
+  const textElement = document.getElementById('text-field');
+  const value = await (await thing.readProperty('string')).value();
+
+  await textElement.setValue(value, {
+    writeOperation: async newValue => {
+      await thing.writeProperty('string', String(newValue));
+    },
+  });
+```
+
+
+#### Example
+
+```html
+<ui-text mode="field" variant="outlined" value="Sample text" label="Name"></ui-text>
+<ui-text mode="area" variant="filled" value="Long text content..." label="Description"></ui-text>
+<ui-text mode="structured" variant="minimal" value='{"key": "value"}' label="JSON Data"></ui-text>
+<ui-text mode="editable" variant="outlined" value="Edit me" label="Notes" id="notes-field"></ui-text>
+```
+```javascript
+  const textElement = document.getElementById('text-field');
+  const value = await (await thing.readProperty('string')).value();
+
+  await textElement.setValue(value, {
+    writeOperation: async newValue => {
+      await thing.writeProperty('string', String(newValue));
+    },
+  });
+```
+
 #### Parameters
 
 | Name      | Type                                                                                                                                                                                     | Description                                        |
@@ -127,20 +260,3 @@ Type: `Promise<void>`
 
 
 
-
-## Dependencies
-
-### Used by
-
- - [ui-object](../ui-object)
-
-### Graph
-```mermaid
-graph TD;
-  ui-object --> ui-text
-  style ui-text fill:#f9f,stroke:#333,stroke-width:4px
-```
-
-----------------------------------------------
-
-*Built with [StencilJS](https://stenciljs.com/)*

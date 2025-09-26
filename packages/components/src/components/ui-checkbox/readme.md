@@ -2,6 +2,7 @@
 
 
 
+[Properties](#properties) · [Events](#events) · [Methods](#methods)
 <!-- Auto Generated Below -->
 
 
@@ -11,19 +12,88 @@ A versatile checkbox component designed for WoT device control.
 
 It has various features, multiple visual styles, status and last updated timestamps.
 
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+<ui-checkbox variant="radio" value="false" label="Enable Notifications"></ui-checkbox>
+<ui-checkbox variant="filled" label="Device Status" show-last-updated="true"></ui-checkbox>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const checkbox = document.getElementById('device-checkbox');
+const initialValue = Boolean(await (await thing.readProperty('enabled')).value());
+
+await checkbox.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('enabled', value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+<ui-checkbox variant="radio" value="false" label="Enable Notifications"></ui-checkbox>
+<ui-checkbox variant="filled" label="Device Status" show-last-updated="true"></ui-checkbox>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const checkbox = document.getElementById('device-checkbox');
+const initialValue = Boolean(await (await thing.readProperty('enabled')).value());
+
+await checkbox.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('enabled', value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+<ui-checkbox variant="radio" value="false" label="Enable Notifications"></ui-checkbox>
+<ui-checkbox variant="filled" label="Device Status" show-last-updated="true"></ui-checkbox>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const checkbox = document.getElementById('device-checkbox');
+const initialValue = Boolean(await (await thing.readProperty('enabled')).value());
+
+await checkbox.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('enabled', value);
+  }
+});
+```
+
 ## Properties
 
-| Property          | Attribute           | Description                                                                                                                                                                            | Type                                    | Default      |
-| ----------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------ |
-| `color`           | `color`             | Color theme for the active state matching to thingsweb theme                                                                                                                           | `"neutral" \| "primary" \| "secondary"` | `'primary'`  |
-| `dark`            | `dark`              | Enable dark mode theme styling when true                                                                                                                                               | `boolean`                               | `false`      |
-| `disabled`        | `disabled`          | Disable user interaction when true                                                                                                                                                     | `boolean`                               | `false`      |
-| `keyboard`        | `keyboard`          | Enable keyboard navigation so user can toggle using 'Space' and 'Enter' keys) when true                                                                                                | `boolean`                               | `true`       |
-| `label`           | `label`             | Text label displayed right to the checkbox (optional)                                                                                                                                  | `string`                                | `undefined`  |
-| `showLastUpdated` | `show-last-updated` | Show last updated timestamp below the component                                                                                                                                        | `boolean`                               | `false`      |
-| `showStatus`      | `show-status`       | Show visual operation status indicators (loading, success, failed) right to the component                                                                                              | `boolean`                               | `false`      |
-| `value`           | `value`             | Current boolean value of the checkbox                                                                                                                                                  | `boolean`                               | `false`      |
-| `variant`         | `variant`           | Visual style variant of the checkbox. - minimal: Clean design with transparent background - outlined: Border-focused design with outline style - filled: Solid background when checked | `"filled" \| "minimal" \| "outlined"`   | `'outlined'` |
+| Property          | Attribute           | Description                                                                                                                                                                          | Type                                    | Default      |
+| ----------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- | ------------ |
+| `color`           | `color`             | Color theme for the active state matching to thingsweb theme                                                                                                                         | `"neutral" \| "primary" \| "secondary"` | `'primary'`  |
+| `dark`            | `dark`              | Enable dark mode theme styling when true                                                                                                                                             | `boolean`                               | `false`      |
+| `disabled`        | `disabled`          | Disable user interaction when true                                                                                                                                                   | `boolean`                               | `false`      |
+| `keyboard`        | `keyboard`          | Enable keyboard navigation so user can toggle using 'Space' and 'Enter' keys) when true                                                                                              | `boolean`                               | `true`       |
+| `label`           | `label`             | Text label displayed right to the checkbox (optional)                                                                                                                                | `string`                                | `undefined`  |
+| `showLastUpdated` | `show-last-updated` | Show last updated timestamp below the component                                                                                                                                      | `boolean`                               | `false`      |
+| `showStatus`      | `show-status`       | Show visual operation status indicators (loading, success, failed) right to the component                                                                                            | `boolean`                               | `false`      |
+| `value`           | `value`             | Current boolean value of the checkbox                                                                                                                                                | `boolean`                               | `false`      |
+| `variant`         | `variant`           | Visual style variant of the checkbox. - radio: Clean design with transparent background - outlined: Border-focused design with outline style - filled: Solid background when checked | `"filled" \| "outlined" \| "radio"`     | `'outlined'` |
 
 
 ## Events
@@ -77,6 +147,63 @@ Sets the checkbox value with optional device communication api and other options
 This is the primary method for connecting checkboxes to real devices.
 It supports optimistic updates, error handling, and automatic retries.
 
+
+#### Example
+
+```html
+<ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+<ui-checkbox variant="radio" value="false" label="Enable Notifications"></ui-checkbox>
+<ui-checkbox variant="filled" label="Device Status" show-last-updated="true"></ui-checkbox>
+```
+```javascript
+const checkbox = document.getElementById('device-checkbox');
+const initialValue = Boolean(await (await thing.readProperty('enabled')).value());
+
+await checkbox.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('enabled', value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+<ui-checkbox variant="radio" value="false" label="Enable Notifications"></ui-checkbox>
+<ui-checkbox variant="filled" label="Device Status" show-last-updated="true"></ui-checkbox>
+```
+```javascript
+const checkbox = document.getElementById('device-checkbox');
+const initialValue = Boolean(await (await thing.readProperty('enabled')).value());
+
+await checkbox.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('enabled', value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
+<ui-checkbox variant="radio" value="false" label="Enable Notifications"></ui-checkbox>
+<ui-checkbox variant="filled" label="Device Status" show-last-updated="true"></ui-checkbox>
+```
+```javascript
+const checkbox = document.getElementById('device-checkbox');
+const initialValue = Boolean(await (await thing.readProperty('enabled')).value());
+
+await checkbox.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('enabled', value);
+  }
+});
+```
+
 #### Parameters
 
 | Name      | Type                                                                                                                                                                                      | Description                                                    |
@@ -109,16 +236,3 @@ Type: `Promise<void>`
 
 
 
-
-## Shadow Parts
-
-| Part          | Description |
-| ------------- | ----------- |
-| `"container"` |             |
-| `"control"`   |             |
-| `"label"`     |             |
-
-
-----------------------------------------------
-
-*Built with [StencilJS](https://stenciljs.com/)*

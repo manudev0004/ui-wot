@@ -2,6 +2,7 @@
 
 
 
+[Properties](#properties) · [Events](#events) · [Methods](#methods)
 <!-- Auto Generated Below -->
 
 
@@ -11,6 +12,60 @@ A simple button component designed for WoT device actions.
 
 Features multiple visual styles, status indicators, and Web of Things integration.
 Buttons trigger actions rather than managing state values.
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-button label="Click Me"></ui-button>
+<ui-button variant="filled" label="Submit" show-status="true"></ui-button>
+```
+#### Example – WoT Action Integration
+
+```javascript
+const button = document.getElementById('device-button');
+await button.setAction(async () => {
+  await thing.invokeAction('execute');
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-button label="Click Me"></ui-button>
+<ui-button variant="filled" label="Submit" show-status="true"></ui-button>
+```
+#### Example – WoT Action Integration
+
+```javascript
+const button = document.getElementById('device-button');
+await button.setAction(async () => {
+  await thing.invokeAction('execute');
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-button label="Click Me"></ui-button>
+<ui-button variant="filled" label="Submit" show-status="true"></ui-button>
+```
+#### Example – WoT Action Integration
+
+```javascript
+const button = document.getElementById('device-button');
+await button.setAction(async () => {
+  await thing.invokeAction('execute');
+});
+```
 
 ## Properties
 
@@ -39,6 +94,48 @@ Buttons trigger actions rather than managing state values.
 
 Sets the action to execute when button is clicked.
 This is the primary method for connecting button to real devices .
+
+
+#### Example
+
+```html
+<ui-button label="Click Me"></ui-button>
+<ui-button variant="filled" label="Submit" show-status="true"></ui-button>
+```
+```javascript
+const button = document.getElementById('device-button');
+await button.setAction(async () => {
+  await thing.invokeAction('execute');
+});
+```
+
+
+#### Example
+
+```html
+<ui-button label="Click Me"></ui-button>
+<ui-button variant="filled" label="Submit" show-status="true"></ui-button>
+```
+```javascript
+const button = document.getElementById('device-button');
+await button.setAction(async () => {
+  await thing.invokeAction('execute');
+});
+```
+
+
+#### Example
+
+```html
+<ui-button label="Click Me"></ui-button>
+<ui-button variant="filled" label="Submit" show-status="true"></ui-button>
+```
+```javascript
+const button = document.getElementById('device-button');
+await button.setAction(async () => {
+  await thing.invokeAction('execute');
+});
+```
 
 #### Parameters
 
@@ -70,28 +167,3 @@ Type: `Promise<void>`
 
 
 
-
-## Shadow Parts
-
-| Part          | Description |
-| ------------- | ----------- |
-| `"container"` |             |
-| `"control"`   |             |
-
-
-## Dependencies
-
-### Used by
-
- - [ui-object](../ui-object)
-
-### Graph
-```mermaid
-graph TD;
-  ui-object --> ui-button
-  style ui-button fill:#f9f,stroke:#333,stroke-width:4px
-```
-
-----------------------------------------------
-
-*Built with [StencilJS](https://stenciljs.com/)*

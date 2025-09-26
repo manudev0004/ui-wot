@@ -1,0 +1,51 @@
+{
+  "entryPoints": [
+    "src/docs-components.ts"
+  ],
+  "tsconfig": "tsconfig.json",
+  "exclude": ["**/__tests__/**", "**/*.spec.ts", "**/node_modules/**"],
+  "excludeNotDocumented": false,
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "readme": "README.md",
+  "out": "docs/typedoc",
+  "plugin": ["typedoc-plugin-markdown"],
+  "theme": "markdown",
+  "includeVersion": true,
+  "disableSources": false,
+  "sourceLinkTemplate": "https://github.com/manudev0004/ui-wot/blob/{gitRevision}/{path}#L{line}",
+  "hideGenerator": false,
+  "categorizeByGroup": true,
+  "defaultCategory": "Components",
+  "categoryOrder": ["Components", "Types", "Interfaces", "*"],
+  "groupOrder": ["Classes", "Interfaces", "Type Aliases", "*"],
+  "validation": {
+    "invalidLink": true,
+    "notExported": false,
+    "notDocumented": false
+  },
+  "blockTags": ["@example", "@param", "@returns", "@throws", "@default", "@see", "@since", "@deprecated", "@override"],
+  "modifierTags": ["@public", "@private", "@protected", "@readonly", "@internal"],
+  "treatWarningsAsErrors": false,
+  "sort": ["source-order", "alphabetical"],
+  "kindSortOrder": [
+    "Project",
+    "Module",
+    "Namespace",
+    "Class",
+    "Interface",
+    "TypeAlias",
+    "Variable",
+    "Function",
+    "Property",
+    "Method",
+    "Constructor",
+    "Accessor"
+  ],
+  "searchInComments": true,
+  "searchInDocuments": true,
+  "preserveWatchOutput": false,
+  "cleanOutputDir": true
+}

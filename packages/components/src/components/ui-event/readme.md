@@ -2,6 +2,7 @@
 
 
 
+[Properties](#properties) · [Events](#events) · [Methods](#methods)
 <!-- Auto Generated Below -->
 
 
@@ -10,6 +11,87 @@
 A versatile event listener component designed for WoT device control.
 
 It has various features, multiple visual styles, status and last updated timestamps.
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-event variant="outlined" label="Temperature Events" event-name="temperatureChanged"></ui-event>
+<ui-event variant="filled" label="Motion Events" max-events="20" show-timestamp="true"></ui-event>
+<ui-event variant="outlined" label="Device Status" show-last-updated="true"></ui-event>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const eventListener = document.getElementById('event-listener');
+await eventListener.startListening();
+
+// Subscribe to event and pipe to component
+await thing.subscribeEvent('on-bool', async data => {
+  const value = data?.value ?? data;
+  await eventListener.addEvent({
+    event: 'on-bool',
+    value,
+    timestamp: new Date().toISOString()
+  });
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-event variant="outlined" label="Temperature Events" event-name="temperatureChanged"></ui-event>
+<ui-event variant="filled" label="Motion Events" max-events="20" show-timestamp="true"></ui-event>
+<ui-event variant="outlined" label="Device Status" show-last-updated="true"></ui-event>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const eventListener = document.getElementById('event-listener');
+await eventListener.startListening();
+
+// Subscribe to event and pipe to component
+await thing.subscribeEvent('on-bool', async data => {
+  const value = data?.value ?? data;
+  await eventListener.addEvent({
+    event: 'on-bool',
+    value,
+    timestamp: new Date().toISOString()
+  });
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-event variant="outlined" label="Temperature Events" event-name="temperatureChanged"></ui-event>
+<ui-event variant="filled" label="Motion Events" max-events="20" show-timestamp="true"></ui-event>
+<ui-event variant="outlined" label="Device Status" show-last-updated="true"></ui-event>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const eventListener = document.getElementById('event-listener');
+await eventListener.startListening();
+
+// Subscribe to event and pipe to component
+await thing.subscribeEvent('on-bool', async data => {
+  const value = data?.value ?? data;
+  await eventListener.addEvent({
+    event: 'on-bool',
+    value,
+    timestamp: new Date().toISOString()
+  });
+});
+```
 
 ## Properties
 
@@ -24,7 +106,7 @@ It has various features, multiple visual styles, status and last updated timesta
 | `label`           | `label`             | Text label displayed above the event listener (optional)                                                                           | `string`                                | `undefined`  |
 | `maxEvents`       | `max-events`        | Maximum number of events to keep in history                                                                                        | `number`                                | `15`         |
 | `showLastUpdated` | `show-last-updated` | Show last updated timestamp below the component                                                                                    | `boolean`                               | `false`      |
-| `showStatus`      | `show-status`       | Show visual operation status indicators (loading, success, failed) right to the component                                          | `boolean`                               | `true`       |
+| `showStatus`      | `show-status`       | Show visual operation status indicators (loading, success, failed) right to the component                                          | `boolean`                               | `false`      |
 | `showTimestamp`   | `show-timestamp`    | Show event timestamps                                                                                                              | `boolean`                               | `true`       |
 | `variant`         | `variant`           | Visual style variant of the event listener. - outlined: Border-focused design with outline style - filled: Solid background design | `"filled" \| "outlined"`                | `'outlined'` |
 
@@ -116,6 +198,75 @@ Starts listening for events with optional device communication api and other opt
 
 This is the primary method for connecting event listeners to real devices.
 It supports event filtering, history management, and status tracking.
+
+
+#### Example
+
+```html
+<ui-event variant="outlined" label="Temperature Events" event-name="temperatureChanged"></ui-event>
+<ui-event variant="filled" label="Motion Events" max-events="20" show-timestamp="true"></ui-event>
+<ui-event variant="outlined" label="Device Status" show-last-updated="true"></ui-event>
+```
+```javascript
+const eventListener = document.getElementById('event-listener');
+await eventListener.startListening();
+
+// Subscribe to event and pipe to component
+await thing.subscribeEvent('on-bool', async data => {
+  const value = data?.value ?? data;
+  await eventListener.addEvent({
+    event: 'on-bool',
+    value,
+    timestamp: new Date().toISOString()
+  });
+});
+```
+
+
+#### Example
+
+```html
+<ui-event variant="outlined" label="Temperature Events" event-name="temperatureChanged"></ui-event>
+<ui-event variant="filled" label="Motion Events" max-events="20" show-timestamp="true"></ui-event>
+<ui-event variant="outlined" label="Device Status" show-last-updated="true"></ui-event>
+```
+```javascript
+const eventListener = document.getElementById('event-listener');
+await eventListener.startListening();
+
+// Subscribe to event and pipe to component
+await thing.subscribeEvent('on-bool', async data => {
+  const value = data?.value ?? data;
+  await eventListener.addEvent({
+    event: 'on-bool',
+    value,
+    timestamp: new Date().toISOString()
+  });
+});
+```
+
+
+#### Example
+
+```html
+<ui-event variant="outlined" label="Temperature Events" event-name="temperatureChanged"></ui-event>
+<ui-event variant="filled" label="Motion Events" max-events="20" show-timestamp="true"></ui-event>
+<ui-event variant="outlined" label="Device Status" show-last-updated="true"></ui-event>
+```
+```javascript
+const eventListener = document.getElementById('event-listener');
+await eventListener.startListening();
+
+// Subscribe to event and pipe to component
+await thing.subscribeEvent('on-bool', async data => {
+  const value = data?.value ?? data;
+  await eventListener.addEvent({
+    event: 'on-bool',
+    value,
+    timestamp: new Date().toISOString()
+  });
+});
+```
 
 #### Returns
 

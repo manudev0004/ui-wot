@@ -44,3 +44,16 @@ function write(file, content) {
   write(esmFile, esm);
   write(cjsFile, cjs);
 })();
+
+// After building, regenerate component docs to overwrite component readme.md with enhanced docs
+(function runDocsEnhancer() {
+  try {
+    const gen = path.join(__dirname, 'generate-component-docs.js');
+    if (fs.existsSync(gen)) {
+      require(gen);
+      console.log('[postbuild] enhanced component docs updated');
+    }
+  } catch (err) {
+    console.warn('[postbuild] docs enhancement failed:', err && err.message);
+  }
+})();

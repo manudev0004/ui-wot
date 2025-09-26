@@ -2,6 +2,7 @@
 
 
 
+[Properties](#properties) · [Events](#events) · [Methods](#methods)
 <!-- Auto Generated Below -->
 
 
@@ -10,6 +11,87 @@
 A versatile file picker component designed for WoT device control.
 
 It supports single and multiple file selection, drag-and-drop, and file type restrictions.
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
+<ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+<ui-file-picker label="Device Files" show-last-updated="true"></ui-file-picker>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+const file = document.getElementById('file');
+await file.setUpload(async (fileData) => {
+  console.log('File processed:', fileData.name, 'Size:', fileData.size);
+  // Just log the file data, don't invoke action yet
+  return { success: true, message: 'File processed successfully' };
+}, {
+  propertyName: 'selectedFile',
+  writeProperty: async (prop, value) => {
+    console.log('Writing to property:', prop, value);
+    await thing.writeProperty(prop, value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
+<ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+<ui-file-picker label="Device Files" show-last-updated="true"></ui-file-picker>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+const file = document.getElementById('file');
+await file.setUpload(async (fileData) => {
+  console.log('File processed:', fileData.name, 'Size:', fileData.size);
+  // Just log the file data, don't invoke action yet
+  return { success: true, message: 'File processed successfully' };
+}, {
+  propertyName: 'selectedFile',
+  writeProperty: async (prop, value) => {
+    console.log('Writing to property:', prop, value);
+    await thing.writeProperty(prop, value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
+<ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+<ui-file-picker label="Device Files" show-last-updated="true"></ui-file-picker>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+const file = document.getElementById('file');
+await file.setUpload(async (fileData) => {
+  console.log('File processed:', fileData.name, 'Size:', fileData.size);
+  // Just log the file data, don't invoke action yet
+  return { success: true, message: 'File processed successfully' };
+}, {
+  propertyName: 'selectedFile',
+  writeProperty: async (prop, value) => {
+    console.log('Writing to property:', prop, value);
+    await thing.writeProperty(prop, value);
+  }
+});
+```
 
 ## Properties
 
@@ -91,6 +173,75 @@ Sets the file picker upload operation with optional device communication api and
 This is the primary method for connecting file pickers to real devices.
 Files are automatically converted to base64 with metadata for WoT integration.
 
+
+#### Example
+
+```html
+<ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
+<ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+<ui-file-picker label="Device Files" show-last-updated="true"></ui-file-picker>
+```
+```javascript
+const file = document.getElementById('file');
+await file.setUpload(async (fileData) => {
+  console.log('File processed:', fileData.name, 'Size:', fileData.size);
+  // Just log the file data, don't invoke action yet
+  return { success: true, message: 'File processed successfully' };
+}, {
+  propertyName: 'selectedFile',
+  writeProperty: async (prop, value) => {
+    console.log('Writing to property:', prop, value);
+    await thing.writeProperty(prop, value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
+<ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+<ui-file-picker label="Device Files" show-last-updated="true"></ui-file-picker>
+```
+```javascript
+const file = document.getElementById('file');
+await file.setUpload(async (fileData) => {
+  console.log('File processed:', fileData.name, 'Size:', fileData.size);
+  // Just log the file data, don't invoke action yet
+  return { success: true, message: 'File processed successfully' };
+}, {
+  propertyName: 'selectedFile',
+  writeProperty: async (prop, value) => {
+    console.log('Writing to property:', prop, value);
+    await thing.writeProperty(prop, value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-file-picker label="Upload Document" accept=".pdf,.doc,.docx"></ui-file-picker>
+<ui-file-picker multiple="true" label="Select Images" accept="image/*"></ui-file-picker>
+<ui-file-picker label="Device Files" show-last-updated="true"></ui-file-picker>
+```
+```javascript
+const file = document.getElementById('file');
+await file.setUpload(async (fileData) => {
+  console.log('File processed:', fileData.name, 'Size:', fileData.size);
+  // Just log the file data, don't invoke action yet
+  return { success: true, message: 'File processed successfully' };
+}, {
+  propertyName: 'selectedFile',
+  writeProperty: async (prop, value) => {
+    console.log('Writing to property:', prop, value);
+    await thing.writeProperty(prop, value);
+  }
+});
+```
+
 #### Parameters
 
 | Name        | Type                                                                                              | Description                                                    |
@@ -104,19 +255,3 @@ Type: `Promise<boolean>`
 
 Promise resolving to true if successful, false if failed
 
-
-## Shadow Parts
-
-| Part              | Description |
-| ----------------- | ----------- |
-| `"clear-button"`  |             |
-| `"container"`     |             |
-| `"drop-zone"`     |             |
-| `"file-input"`    |             |
-| `"label"`         |             |
-| `"upload-button"` |             |
-
-
-----------------------------------------------
-
-*Built with [StencilJS](https://stenciljs.com/)*

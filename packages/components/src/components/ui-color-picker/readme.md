@@ -2,6 +2,7 @@
 
 
 
+[Properties](#properties) · [Events](#events) · [Methods](#methods)
 <!-- Auto Generated Below -->
 
 
@@ -9,12 +10,76 @@
 
 A versatile color picker component designed for WoT device control.
 
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const colorPicker = document.getElementById('device-color');
+const initialValue = String(await (await thing.readProperty('deviceColor')).value());
+
+await colorPicker.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('deviceColor', value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const colorPicker = document.getElementById('device-color');
+const initialValue = String(await (await thing.readProperty('deviceColor')).value());
+
+await colorPicker.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('deviceColor', value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const colorPicker = document.getElementById('device-color');
+const initialValue = String(await (await thing.readProperty('deviceColor')).value());
+
+await colorPicker.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('deviceColor', value);
+  }
+});
+```
+
 ## Properties
 
 | Property          | Attribute           | Description                                                                               | Type      | Default     |
 | ----------------- | ------------------- | ----------------------------------------------------------------------------------------- | --------- | ----------- |
 | `dark`            | `dark`              | Enable dark mode theme styling when true                                                  | `boolean` | `false`     |
 | `disabled`        | `disabled`          | Disable user interaction when true                                                        | `boolean` | `false`     |
+| `format`          | `format`            | Output format: hex \| rgb \| rgba \| hsl \| hsla (defaults to hex)                        | `string`  | `'hex'`     |
 | `label`           | `label`             | Text label displayed right to the color picker (optional)                                 | `string`  | `undefined` |
 | `showLastUpdated` | `show-last-updated` | Show last updated timestamp below the component                                           | `boolean` | `false`     |
 | `showStatus`      | `show-status`       | Show visual operation status indicators (loading, success, failed) right to the component | `boolean` | `true`      |
@@ -72,6 +137,57 @@ Sets the color picker value with optional device communication api and other opt
 This is the primary method for connecting color pickers to real devices.
 It supports optimistic updates, error handling, and automatic retries.
 
+
+#### Example
+
+```html
+<ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
+```
+```javascript
+const colorPicker = document.getElementById('device-color');
+const initialValue = String(await (await thing.readProperty('deviceColor')).value());
+
+await colorPicker.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('deviceColor', value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
+```
+```javascript
+const colorPicker = document.getElementById('device-color');
+const initialValue = String(await (await thing.readProperty('deviceColor')).value());
+
+await colorPicker.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('deviceColor', value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-color-picker value="#ff0000" label="Theme Color"></ui-color-picker>
+```
+```javascript
+const colorPicker = document.getElementById('device-color');
+const initialValue = String(await (await thing.readProperty('deviceColor')).value());
+
+await colorPicker.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('deviceColor', value);
+  }
+});
+```
+
 #### Parameters
 
 | Name      | Type                                                                                                                                                                                     | Description                                            |
@@ -104,16 +220,3 @@ Type: `Promise<void>`
 
 
 
-
-## Shadow Parts
-
-| Part            | Description |
-| --------------- | ----------- |
-| `"color-input"` |             |
-| `"container"`   |             |
-| `"label"`       |             |
-
-
-----------------------------------------------
-
-*Built with [StencilJS](https://stenciljs.com/)*

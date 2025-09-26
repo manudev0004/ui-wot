@@ -2,6 +2,10 @@
 
 
 
+[Properties](#properties) · [Methods](#methods)
+[Properties](#properties) · [Methods](#methods)
+[Properties](#properties) · [Methods](#methods)
+[Properties](#properties) · [Methods](#methods)
 <!-- Auto Generated Below -->
 
 
@@ -12,6 +16,75 @@ A versatile object component designed for WoT device to handle object type TD pr
 It auto-generates an editor interface for TD object-type properties with save button to push
 all the changes at once.
 It also features status indicators, last updated timestamps.
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-object variant="outlined" label="Device Settings"></ui-object>
+<ui-object variant="filled" show-last-updated="true" show-status="true"></ui-object>
+<ui-object readonly="true" label="System Status" dark="true"></ui-object>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+const objectEditor = document.getElementById('device-config');
+const initialValue = await (await thing.readProperty('configuration')).value();
+
+await objectEditor.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('configuration', value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-object variant="outlined" label="Device Settings"></ui-object>
+<ui-object variant="filled" show-last-updated="true" show-status="true"></ui-object>
+<ui-object readonly="true" label="System Status" dark="true"></ui-object>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+const objectEditor = document.getElementById('device-config');
+const initialValue = await (await thing.readProperty('configuration')).value();
+
+await objectEditor.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('configuration', value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-object variant="outlined" label="Device Settings"></ui-object>
+<ui-object variant="filled" show-last-updated="true" show-status="true"></ui-object>
+<ui-object readonly="true" label="System Status" dark="true"></ui-object>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+const objectEditor = document.getElementById('device-config');
+const initialValue = await (await thing.readProperty('configuration')).value();
+
+await objectEditor.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('configuration', value);
+  }
+});
+```
 
 ## Properties
 
@@ -65,6 +138,63 @@ Sets the object value with optional device communication api and other options.
 This is the primary method for connecting object editors to real devices.
 It supports optimistic updates, error handling, and stores write operations for Save button.
 
+
+#### Example
+
+```html
+<ui-object variant="outlined" label="Device Settings"></ui-object>
+<ui-object variant="filled" show-last-updated="true" show-status="true"></ui-object>
+<ui-object readonly="true" label="System Status" dark="true"></ui-object>
+```
+```javascript
+const objectEditor = document.getElementById('device-config');
+const initialValue = await (await thing.readProperty('configuration')).value();
+
+await objectEditor.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('configuration', value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-object variant="outlined" label="Device Settings"></ui-object>
+<ui-object variant="filled" show-last-updated="true" show-status="true"></ui-object>
+<ui-object readonly="true" label="System Status" dark="true"></ui-object>
+```
+```javascript
+const objectEditor = document.getElementById('device-config');
+const initialValue = await (await thing.readProperty('configuration')).value();
+
+await objectEditor.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('configuration', value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-object variant="outlined" label="Device Settings"></ui-object>
+<ui-object variant="filled" show-last-updated="true" show-status="true"></ui-object>
+<ui-object readonly="true" label="System Status" dark="true"></ui-object>
+```
+```javascript
+const objectEditor = document.getElementById('device-config');
+const initialValue = await (await thing.readProperty('configuration')).value();
+
+await objectEditor.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('configuration', value);
+  }
+});
+```
+
 #### Parameters
 
 | Name      | Type                                                                                                                                | Description                                                    |
@@ -97,28 +227,3 @@ Type: `Promise<void>`
 
 
 
-
-## Dependencies
-
-### Depends on
-
-- [ui-toggle](../ui-toggle)
-- [ui-number-picker](../ui-number-picker)
-- [ui-slider](../ui-slider)
-- [ui-text](../ui-text)
-- [ui-button](../ui-button)
-
-### Graph
-```mermaid
-graph TD;
-  ui-object --> ui-toggle
-  ui-object --> ui-number-picker
-  ui-object --> ui-slider
-  ui-object --> ui-text
-  ui-object --> ui-button
-  style ui-object fill:#f9f,stroke:#333,stroke-width:4px
-```
-
-----------------------------------------------
-
-*Built with [StencilJS](https://stenciljs.com/)*

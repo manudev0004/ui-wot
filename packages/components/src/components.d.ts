@@ -117,6 +117,11 @@ export namespace Components {
          */
         "dark": boolean;
         /**
+          * Date display pattern (dd/mm/yyyy, MM-DD-YYYY, yyyy/MM/dd, etc.)
+          * @default 'dd/MM/yyyy'
+         */
+        "dateFormat": string;
+        /**
           * Disable user interaction when true
           * @default false
          */
@@ -126,6 +131,11 @@ export namespace Components {
           * @default 0
          */
         "firstDayOfWeek": 0 | 1;
+        /**
+          * Output/storage format: iso | epoch-ms | epoch-s | unix | rfc2822
+          * @default 'iso'
+         */
+        "format": string;
         /**
           * Gets the current calendar value with optional metadata.
           * @param includeMetadata - Whether to include status, timestamp and other information
@@ -225,7 +235,7 @@ export namespace Components {
      * @example Basic Usage
      * ```html
      * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
-     * <ui-checkbox variant="minimal" value="false" label="Enable Notifications"></ui-checkbox>
+     * <ui-checkbox variant="radio" value="false" label="Enable Notifications"></ui-checkbox>
      * <ui-checkbox variant="filled" label="Device Status" show-last-updated="true"></ui-checkbox>
      * ```
      * @example JS integaration with node-wot browser bundle
@@ -306,10 +316,10 @@ export namespace Components {
          */
         "value": boolean;
         /**
-          * Visual style variant of the checkbox. - minimal: Clean design with transparent background - outlined: Border-focused design with outline style - filled: Solid background when checked
+          * Visual style variant of the checkbox. - radio: Clean design with transparent background - outlined: Border-focused design with outline style - filled: Solid background when checked
           * @default 'outlined'
          */
-        "variant": 'minimal' | 'outlined' | 'filled';
+        "variant": 'radio' | 'outlined' | 'filled';
     }
     /**
      * A versatile color picker component designed for WoT device control.
@@ -339,6 +349,11 @@ export namespace Components {
           * @default false
          */
         "disabled": boolean;
+        /**
+          * Output format: hex (default) | rgb | rgba | hsl | hsla
+          * @default 'hex'
+         */
+        "format": string;
         /**
           * Gets the current color picker value with optional metadata.
           * @param includeMetadata - Whether to include status, timestamp and other information
@@ -482,7 +497,7 @@ export namespace Components {
         "showLastUpdated": boolean;
         /**
           * Show visual operation status indicators (loading, success, failed) right to the component
-          * @default true
+          * @default false
          */
         "showStatus": boolean;
         /**
@@ -589,7 +604,7 @@ export namespace Components {
           * @param operation - Function that receives processed file data
           * @param options - Optional configuration for device communication and behavior
           * @returns Promise resolving to true if successful, false if failed
-          * @example Single file upload  ```javascript const file = document.getElementById('file'); await file.setUpload(async (fileData) => { console.log('File processed:', fileData.name, 'Size:', fileData.size); // Just log the file data, don't invoke action yet return { success: true, message: 'File processed successfully' }; }, { propertyName: 'selectedFile', writeProperty: async (prop, value) => { console.log('Writing to property:', prop, value); await thing.writeProperty(prop, value); } }); ```
+          * @example Single file upload ```javascript const file = document.getElementById('file'); await file.setUpload(async (fileData) => { console.log('File processed:', fileData.name, 'Size:', fileData.size); // Just log the file data, don't invoke action yet return { success: true, message: 'File processed successfully' }; }, { propertyName: 'selectedFile', writeProperty: async (prop, value) => { console.log('Writing to property:', prop, value); await thing.writeProperty(prop, value); } }); ```
           * @example Multiple file upload ```javascript const files = document.getElementById('files'); await files.setUpload(async (fileData) => { console.log('File processed:', fileData.name, 'Size:', fileData.size); // Just log the file data, don't invoke action yet return { success: true, message: 'File processed successfully' }; }, { propertyName: 'fileList', writeProperty: async (prop, value) => { console.log('Writing to property:', prop, value); await thing.writeProperty(prop, value); } }); ```
          */
         "setUpload": (operation: (fileData: { name: string; size: number; type: string; content: string; }) => Promise<any>, options?: { propertyName?: string; writeProperty?: (propertyName: string, value: any) => Promise<void>; }) => Promise<boolean>;
@@ -1087,7 +1102,7 @@ export namespace Components {
         "minRows": number;
         /**
           * Display mode for the text component. - field: One-line text display - area: Expandable text box (multi-line) - unstructured: Plain style, no highlighting - structured: Highlighted block (for JSON-like or formatted text) - editable: User can edit/write directly
-          * @default 'unstructured'
+          * @default 'structured'
          */
         "mode": 'field' | 'area' | 'unstructured' | 'structured' | 'editable';
         /**
@@ -1388,7 +1403,7 @@ declare global {
      * @example Basic Usage
      * ```html
      * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
-     * <ui-checkbox variant="minimal" value="false" label="Enable Notifications"></ui-checkbox>
+     * <ui-checkbox variant="radio" value="false" label="Enable Notifications"></ui-checkbox>
      * <ui-checkbox variant="filled" label="Device Status" show-last-updated="true"></ui-checkbox>
      * ```
      * @example JS integaration with node-wot browser bundle
@@ -1872,6 +1887,11 @@ declare namespace LocalJSX {
          */
         "dark"?: boolean;
         /**
+          * Date display pattern (dd/mm/yyyy, MM-DD-YYYY, yyyy/MM/dd, etc.)
+          * @default 'dd/MM/yyyy'
+         */
+        "dateFormat"?: string;
+        /**
           * Disable user interaction when true
           * @default false
          */
@@ -1881,6 +1901,11 @@ declare namespace LocalJSX {
           * @default 0
          */
         "firstDayOfWeek"?: 0 | 1;
+        /**
+          * Output/storage format: iso | epoch-ms | epoch-s | unix | rfc2822
+          * @default 'iso'
+         */
+        "format"?: string;
         /**
           * Include time picker alongside date picker
           * @default false
@@ -1958,7 +1983,7 @@ declare namespace LocalJSX {
      * @example Basic Usage
      * ```html
      * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
-     * <ui-checkbox variant="minimal" value="false" label="Enable Notifications"></ui-checkbox>
+     * <ui-checkbox variant="radio" value="false" label="Enable Notifications"></ui-checkbox>
      * <ui-checkbox variant="filled" label="Device Status" show-last-updated="true"></ui-checkbox>
      * ```
      * @example JS integaration with node-wot browser bundle
@@ -2017,10 +2042,10 @@ declare namespace LocalJSX {
          */
         "value"?: boolean;
         /**
-          * Visual style variant of the checkbox. - minimal: Clean design with transparent background - outlined: Border-focused design with outline style - filled: Solid background when checked
+          * Visual style variant of the checkbox. - radio: Clean design with transparent background - outlined: Border-focused design with outline style - filled: Solid background when checked
           * @default 'outlined'
          */
-        "variant"?: 'minimal' | 'outlined' | 'filled';
+        "variant"?: 'radio' | 'outlined' | 'filled';
     }
     /**
      * A versatile color picker component designed for WoT device control.
@@ -2050,6 +2075,11 @@ declare namespace LocalJSX {
           * @default false
          */
         "disabled"?: boolean;
+        /**
+          * Output format: hex (default) | rgb | rgba | hsl | hsla
+          * @default 'hex'
+         */
+        "format"?: string;
         /**
           * Text label displayed right to the color picker (optional)
          */
@@ -2148,7 +2178,7 @@ declare namespace LocalJSX {
         "showLastUpdated"?: boolean;
         /**
           * Show visual operation status indicators (loading, success, failed) right to the component
-          * @default true
+          * @default false
          */
         "showStatus"?: boolean;
         /**
@@ -2623,7 +2653,7 @@ declare namespace LocalJSX {
         "minRows"?: number;
         /**
           * Display mode for the text component. - field: One-line text display - area: Expandable text box (multi-line) - unstructured: Plain style, no highlighting - structured: Highlighted block (for JSON-like or formatted text) - editable: User can edit/write directly
-          * @default 'unstructured'
+          * @default 'structured'
          */
         "mode"?: 'field' | 'area' | 'unstructured' | 'structured' | 'editable';
         /**
@@ -2820,7 +2850,7 @@ declare module "@stencil/core" {
              * @example Basic Usage
              * ```html
              * <ui-checkbox variant="outlined" value="true" label="Accept Terms"></ui-checkbox>
-             * <ui-checkbox variant="minimal" value="false" label="Enable Notifications"></ui-checkbox>
+             * <ui-checkbox variant="radio" value="false" label="Enable Notifications"></ui-checkbox>
              * <ui-checkbox variant="filled" label="Device Status" show-last-updated="true"></ui-checkbox>
              * ```
              * @example JS integaration with node-wot browser bundle

@@ -2,6 +2,7 @@
 
 
 
+[Properties](#properties) · [Events](#events) · [Methods](#methods)
 <!-- Auto Generated Below -->
 
 
@@ -11,6 +12,75 @@ A versatile toggle switch component designed for WoT device control and monitori
 
 It has various features, multiple visual styles, status and last updated timestamps.
 Supports both interactive control and read-only monitoring modes.
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+<ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+<ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const toggle = document.getElementById('device-toggle');
+const initialValue = Boolean(await (await thing.readProperty('power')).value());
+
+await toggle.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('power', value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+<ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+<ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const toggle = document.getElementById('device-toggle');
+const initialValue = Boolean(await (await thing.readProperty('power')).value());
+
+await toggle.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('power', value);
+  }
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+<ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+<ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
+```
+#### Example – JS integaration with node-wot browser bundle
+
+```javascript
+const toggle = document.getElementById('device-toggle');
+const initialValue = Boolean(await (await thing.readProperty('power')).value());
+
+await toggle.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('power', value);
+  }
+});
+```
 
 ## Properties
 
@@ -80,6 +150,63 @@ Sets the toggle value with optional device communication api and other options.
 This is the primary method for connecting toggles to real devices.
 It supports optimistic updates, error handling, and automatic retries.
 
+
+#### Example
+
+```html
+<ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+<ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+<ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
+```
+```javascript
+const toggle = document.getElementById('device-toggle');
+const initialValue = Boolean(await (await thing.readProperty('power')).value());
+
+await toggle.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('power', value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+<ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+<ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
+```
+```javascript
+const toggle = document.getElementById('device-toggle');
+const initialValue = Boolean(await (await thing.readProperty('power')).value());
+
+await toggle.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('power', value);
+  }
+});
+```
+
+
+#### Example
+
+```html
+<ui-toggle variant="circle" value="true" label="Light"></ui-toggle>
+<ui-toggle variant="neon" value="false" label="Fan"></ui-toggle>
+<ui-toggle readonly="true" label="Sensor" show-last-updated="true"></ui-toggle>
+```
+```javascript
+const toggle = document.getElementById('device-toggle');
+const initialValue = Boolean(await (await thing.readProperty('power')).value());
+
+await toggle.setValue(initialValue, {
+  writeOperation: async value => {
+    await thing.writeProperty('power', value);
+  }
+});
+```
+
 #### Parameters
 
 | Name      | Type                                                                                                                                                                                      | Description                                                    |
@@ -125,32 +252,3 @@ Type: `Promise<void>`
 
 
 
-
-## Shadow Parts
-
-| Part                       | Description |
-| -------------------------- | ----------- |
-| `"container"`              |             |
-| `"control"`                |             |
-| `"label"`                  |             |
-| `"readonly-indicator"`     |             |
-| `"readonly-pulse-sibling"` |             |
-| `"thumb"`                  |             |
-
-
-## Dependencies
-
-### Used by
-
- - [ui-object](../ui-object)
-
-### Graph
-```mermaid
-graph TD;
-  ui-object --> ui-toggle
-  style ui-toggle fill:#f9f,stroke:#333,stroke-width:4px
-```
-
-----------------------------------------------
-
-*Built with [StencilJS](https://stenciljs.com/)*

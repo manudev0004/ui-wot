@@ -2,12 +2,82 @@
 
 
 
+[Properties](#properties) · [Events](#events) · [Methods](#methods)
 <!-- Auto Generated Below -->
 
 
 ## Overview
 
 A versatile notification component designed for WoT device control.
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-notification type="info" message="Operation completed successfully"></ui-notification>
+<ui-notification type="success" duration="3000" message="Device connected successfully"></ui-notification>
+<ui-notification type="warning" show-close-button="true" message="Low battery warning"></ui-notification>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+const notificationElement = document.getElementById('alert-notification');
+const eventName = 'temperature-critical';
+await thing.subscribeEvent(eventName, async (eventData) => {
+  const value = await eventData.value();
+  notificationElement.message = `Alert: ${eventName} - ${JSON.stringify(value)}`;
+  notificationElement.type = 'warning';
+  await notificationElement.show();
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-notification type="info" message="Operation completed successfully"></ui-notification>
+<ui-notification type="success" duration="3000" message="Device connected successfully"></ui-notification>
+<ui-notification type="warning" show-close-button="true" message="Low battery warning"></ui-notification>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+const notificationElement = document.getElementById('alert-notification');
+const eventName = 'temperature-critical';
+await thing.subscribeEvent(eventName, async (eventData) => {
+  const value = await eventData.value();
+  notificationElement.message = `Alert: ${eventName} - ${JSON.stringify(value)}`;
+  notificationElement.type = 'warning';
+  await notificationElement.show();
+});
+```
+
+
+### Examples
+
+#### Example – Basic Usage
+
+```html
+<ui-notification type="info" message="Operation completed successfully"></ui-notification>
+<ui-notification type="success" duration="3000" message="Device connected successfully"></ui-notification>
+<ui-notification type="warning" show-close-button="true" message="Low battery warning"></ui-notification>
+```
+#### Example – JS integration with node-wot browser bundle
+
+```javascript
+const notificationElement = document.getElementById('alert-notification');
+const eventName = 'temperature-critical';
+await thing.subscribeEvent(eventName, async (eventData) => {
+  const value = await eventData.value();
+  notificationElement.message = `Alert: ${eventName} - ${JSON.stringify(value)}`;
+  notificationElement.type = 'warning';
+  await notificationElement.show();
+});
+```
 
 ## Properties
 
@@ -69,6 +139,63 @@ Current visibility or detailed metadata object
 Shows the notification with animation.
 
 This is the primary method for displaying notifications programmatically.
+
+
+#### Example
+
+```html
+<ui-notification type="info" message="Operation completed successfully"></ui-notification>
+<ui-notification type="success" duration="3000" message="Device connected successfully"></ui-notification>
+<ui-notification type="warning" show-close-button="true" message="Low battery warning"></ui-notification>
+```
+```javascript
+const notificationElement = document.getElementById('alert-notification');
+const eventName = 'temperature-critical';
+await thing.subscribeEvent(eventName, async (eventData) => {
+  const value = await eventData.value();
+  notificationElement.message = `Alert: ${eventName} - ${JSON.stringify(value)}`;
+  notificationElement.type = 'warning';
+  await notificationElement.show();
+});
+```
+
+
+#### Example
+
+```html
+<ui-notification type="info" message="Operation completed successfully"></ui-notification>
+<ui-notification type="success" duration="3000" message="Device connected successfully"></ui-notification>
+<ui-notification type="warning" show-close-button="true" message="Low battery warning"></ui-notification>
+```
+```javascript
+const notificationElement = document.getElementById('alert-notification');
+const eventName = 'temperature-critical';
+await thing.subscribeEvent(eventName, async (eventData) => {
+  const value = await eventData.value();
+  notificationElement.message = `Alert: ${eventName} - ${JSON.stringify(value)}`;
+  notificationElement.type = 'warning';
+  await notificationElement.show();
+});
+```
+
+
+#### Example
+
+```html
+<ui-notification type="info" message="Operation completed successfully"></ui-notification>
+<ui-notification type="success" duration="3000" message="Device connected successfully"></ui-notification>
+<ui-notification type="warning" show-close-button="true" message="Low battery warning"></ui-notification>
+```
+```javascript
+const notificationElement = document.getElementById('alert-notification');
+const eventName = 'temperature-critical';
+await thing.subscribeEvent(eventName, async (eventData) => {
+  const value = await eventData.value();
+  notificationElement.message = `Alert: ${eventName} - ${JSON.stringify(value)}`;
+  notificationElement.type = 'warning';
+  await notificationElement.show();
+});
+```
 
 #### Returns
 
