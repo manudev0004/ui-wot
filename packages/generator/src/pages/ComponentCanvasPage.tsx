@@ -72,10 +72,11 @@ export function ComponentCanvasPage() {
   const [panOnScroll, setPanOnScroll] = useState(true);
   const [zoomOnDoubleClick, setZoomOnDoubleClick] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false });
-  // Top-center notification overlay state
+  // Notification overlay state
   const [overlayItems, setOverlayItems] = useState<OverlayNotification[]>([]);
   const overlayStopsRef = useRef<Array<() => void>>([]);
   const overlayNotifierKeyRef = useRef<string>('');
+  const overlaySeqRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     setGlobalLayoutOrder(layoutOrder);
@@ -114,28 +115,24 @@ export function ComponentCanvasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Subscribe to events that should be rendered via overlay (ui-notification)
+  // Subscribe to events that should be rendered via ui-notification
   useEffect(() => {
-    // Clean previous subscriptions
-    if (overlayStopsRef.current.length) {
-      for (const stop of overlayStopsRef.current) {
-        try {
-          stop();
-        } catch {}
-      }
-      overlayStopsRef.current = [];
-    }
+    // Cleanup any previous subscriptions
+    overlayStopsRef.current.forEach(s => {
+      try {
+        s();
+      } catch {}
+    });
+    overlayStopsRef.current = [];
 
-    // Gather event components using ui-notification
     const notifiers = state.components.filter(c => c.type === 'event' && c.uiComponent === 'ui-notification');
-    // When there are no notifiers anymore, clear any stale overlay items
     if (!notifiers.length) {
       if (overlayItems.length) setOverlayItems([]);
       overlayNotifierKeyRef.current = '';
       return;
     }
 
-    // If the set of notifiers changed (ids), reset overlay items to avoid stale toasts from previous config
+    // Reset overlay list when the set of notifiers changes
     const key = notifiers
       .map(n => n.id)
       .sort()
@@ -145,72 +142,91 @@ export function ComponentCanvasPage() {
       if (overlayItems.length) setOverlayItems([]);
     }
 
-    let cancelled = false;
-    const run = async () => {
-      // For each, create a temporary element and use connectEvent to subscribe
-      for (const comp of notifiers) {
-        // Resolve base URL (prefer TD source url, fallback to comp.tdUrl)
-        const tdInfo = state.tdInfos.find(t => t.id === comp.tdId);
-        const baseUrl = (tdInfo?.source.type === 'url' ? (tdInfo.source.content as string) : undefined) || comp.tdUrl || '';
-        if (!baseUrl) continue;
-        // Ensure the custom element is defined so methods exist
-        try {
-          if ('customElements' in window) {
-            await (customElements as any).whenDefined?.('ui-event');
-          }
-        } catch {}
-        const tmp = document.createElement('ui-event') as any; // ui-event implements startListening/addEvent
-        tmp.setAttribute('td-url', baseUrl);
-        tmp.setAttribute('td-event', comp.name);
-        try {
-          const stop = await connectEvent(tmp, { baseUrl, name: comp.name });
-          overlayStopsRef.current.push(stop);
-          // Start listening to receive events
-          try {
-            await tmp.startListening?.();
-          } catch {}
-        } catch {}
-
-        // Bridge incoming events into overlay notifications
-        try {
-          const onEventReceived = async (ev: any) => {
-            if (cancelled) return;
-            // Extract value; ui-event.addEvent will emit eventReceived with detail
-            const detail = ev?.detail;
-            const value = detail?.value ?? detail ?? ev;
-            const msg = typeof value === 'string' ? value : JSON.stringify(value);
-            const id = `${comp.id}-${Date.now()}`;
-            const type = (comp.attributes?.['type'] as any) || 'info';
-            const duration = comp.attributes?.['duration'] != null ? Number(comp.attributes['duration']) : 3000;
-            const showIcon = comp.attributes?.['show-icon'] != null ? String(comp.attributes['show-icon']) === 'true' : true;
-            const showCloseButton = comp.attributes?.['show-close-button'] != null ? String(comp.attributes['show-close-button']) === 'true' : true;
-            const dark = comp.attributes?.['dark'] != null ? String(comp.attributes['dark']) === 'true' : false;
-            setOverlayItems(prev => [{ id, message: msg, type, duration, showIcon, showCloseButton, dark }, ...prev].slice(0, 6));
-          };
-          tmp.addEventListener('eventReceived', onEventReceived);
-          // Ensure listener is cleaned up
-          overlayStopsRef.current.push(() => {
-            try {
-              tmp.removeEventListener('eventReceived', onEventReceived);
-            } catch {}
-          });
-        } catch {}
-      }
+    // Small helpers for message/type
+    const formatTime = (t: any) => {
+      const ms = typeof t === 'number' ? t : t ? Date.parse(String(t)) : NaN;
+      return Number.isFinite(ms) ? new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : undefined;
+    };
+    const summarize = (val: any): string => {
+      if (val == null) return '';
+      if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') return String(val);
+      if (Array.isArray(val))
+        return (
+          val
+            .slice(0, 3)
+            .map(v => (typeof v === 'object' ? JSON.stringify(v) : String(v)))
+            .join(', ') + (val.length > 3 ? ' …' : '')
+        );
+      const known = (val as any).message || (val as any).text || (val as any).description || (val as any).status;
+      if (known && typeof known === 'string') return known;
+      const entries = Object.entries(val as any)
+        .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : String(v)}`)
+        .slice(0, 3)
+        .join(', ');
+      return entries || JSON.stringify(val);
+    };
+    const inferType = (comp: any, val: any): 'info' | 'success' | 'warning' | 'error' => {
+      const explicit = comp?.attributes?.['type'] as string | undefined;
+      if (explicit && ['info', 'success', 'warning', 'error'].includes(explicit)) return explicit as any;
+      const level = (val && (val.level || val.severity || val.type || val.status))?.toString()?.toLowerCase?.();
+      if (level?.includes?.('error') || level === 'fatal' || level === 'fail') return 'error';
+      if (level?.includes?.('warn')) return 'warning';
+      if (level === 'ok' || level === 'success' || level === 'passed') return 'success';
+      return 'info';
     };
 
-    run();
+    const wireNotifier = async (component: any) => {
+      const tdInfo = state.tdInfos.find(t => t.id === component.tdId);
+      const baseUrl = (tdInfo?.source.type === 'url' ? (tdInfo.source.content as string) : undefined) || component.tdUrl || '';
+      if (!baseUrl) return;
+      await (customElements as any).whenDefined?.('ui-event');
+
+      const eventEl = document.createElement('ui-event') as any;
+      eventEl.setAttribute('td-url', baseUrl);
+      eventEl.setAttribute('td-event', component.name);
+
+      const stop = await connectEvent(eventEl, { baseUrl, name: component.name });
+      overlayStopsRef.current.push(stop);
+
+      const onEventReceived = (ev: any) => {
+        const detail = ev?.detail;
+        const payload = detail?.value ?? detail ?? ev;
+        const title = (component.attributes?.['label'] as any) || component.name || 'Event';
+        const isUiMsg = detail && typeof detail === 'object' && ('newVal' in detail || 'value' in detail || 'timestamp' in detail || 'ts' in detail);
+        const value = isUiMsg ? (detail as any).value ?? (detail as any).newVal : payload;
+        const timestamp = isUiMsg ? (detail as any).ts ?? (detail as any).timestamp : undefined;
+        const message = (() => {
+          const valueStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
+          const timeStr = formatTime(timestamp);
+          return timeStr ? `${title}: ${valueStr} • ${timeStr}` : `${title}: ${valueStr}`;
+        })();
+
+        const seq = (overlaySeqRef.current[component.id] = (overlaySeqRef.current[component.id] || 0) + 1);
+        const id = `${component.id}-${Date.now()}-${seq}`;
+        const type = inferType(component, payload);
+        const duration = component.attributes?.['duration'] != null ? Number(component.attributes['duration']) : 3000;
+        const showIcon = component.attributes?.['show-icon'] != null ? String(component.attributes['show-icon']) === 'true' : true;
+        const showCloseButton = component.attributes?.['show-close-button'] != null ? String(component.attributes['show-close-button']) === 'true' : true;
+        const dark = component.attributes?.['dark'] != null ? String(component.attributes['dark']) === 'true' : false;
+        setOverlayItems(prev => [{ id, message: message || summarize(payload), type, duration, showIcon, showCloseButton, dark }, ...prev].slice(0, 6));
+      };
+
+      eventEl.addEventListener('eventReceived', onEventReceived);
+      overlayStopsRef.current.push(() => eventEl.removeEventListener('eventReceived', onEventReceived));
+      await eventEl.startListening?.();
+    };
+
+    for (const n of notifiers) void wireNotifier(n);
+
     return () => {
-      cancelled = true;
-      if (overlayStopsRef.current.length) {
-        for (const stop of overlayStopsRef.current) {
-          try {
-            stop();
-          } catch {}
-        }
-        overlayStopsRef.current = [];
-      }
+      overlayStopsRef.current.forEach(s => {
+        try {
+          s();
+        } catch {}
+      });
+      overlayStopsRef.current = [];
     };
-  }, [state.components, state.tdInfos, overlayItems.length]);
+  }, [state.components, state.tdInfos]);
 
   // Preserve existing node positions/sizes on rebuild
   const nodesRef = useRef<Node[]>([]);
@@ -222,7 +238,7 @@ export function ComponentCanvasPage() {
     const thingOrder = state.tdInfos.map(thingInfo => thingInfo.id);
     const componentsBySection: Record<string, string[]> = {};
     state.components.forEach(component => {
-      // Skip building cards for overlay notifications
+      // Skip building cards for notifications
       if (component.type === 'event' && component.uiComponent === 'ui-notification') return;
       const sectionId = membership[component.id] ?? component.tdId ?? '__unassigned__';
       if (!componentsBySection[sectionId]) componentsBySection[sectionId] = [];
@@ -262,7 +278,7 @@ export function ComponentCanvasPage() {
     const result: Node[] = [];
 
     for (const sectionId of sectionIds) {
-  const componentIds = componentsBySection[sectionId] || [];
+      const componentIds = componentsBySection[sectionId] || [];
       if (componentIds.length === 0) continue;
 
       let columnIndex = 0;
@@ -380,7 +396,7 @@ export function ComponentCanvasPage() {
 
       while (componentsQueue.length) {
         const componentId = componentsQueue.shift()!;
-  const component = state.components.find(c => c.id === componentId);
+        const component = state.components.find(c => c.id === componentId);
         if (!component) continue;
 
         const existingChild = nodesRef.current.find(n => n.id === componentId);
@@ -935,14 +951,9 @@ export function ComponentCanvasPage() {
   };
 
   return (
-    <div ref={wrapperRef} className="canvas-page" style={{ width: '100%', height: 'calc(100vh - var(--navbar-height))' }}>
-      {/* Notification overlay (top-center, below navbar) */}
-      {overlayItems.length > 0 && (
-        <NotificationOverlay
-          items={overlayItems}
-          onClose={id => setOverlayItems(prev => prev.filter(i => i.id !== id))}
-        />
-      )}
+    <div ref={wrapperRef} className="canvas-page" style={{ position: 'relative', width: '100%', height: 'calc(100vh - var(--navbar-height))' }}>
+      {/* Notification (top-center, below navbar) */}
+      {overlayItems.length > 0 && <NotificationOverlay items={overlayItems} onClose={id => setOverlayItems(prev => prev.filter(i => i.id !== id))} />}
       <ReactFlow
         nodes={nodes}
         edges={edges}
