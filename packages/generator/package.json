@@ -13,9 +13,15 @@
     "start": "vite preview"
   },
   "dependencies": {
+    "@node-wot/binding-http": "^0.9.1",
+    "@node-wot/core": "^0.9.1",
+    "reactflow": "^11.10.2",
+    "@thingweb/ui-wot-components": "file:../components",
+    "@types/react-dropzone": "^4.2.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "@thingweb/ui-wot-components": "file:../components"
+    "react-dropzone": "^14.3.8",
+    "react-router-dom": "^6.14.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

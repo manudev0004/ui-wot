@@ -6,7 +6,8 @@
   "scripts": {
     "build": "npm run build --workspaces",
     "start:components": "npm run start --workspace packages/components",
-    "start:generator": "npm run preview --workspace packages/generator"
+    "start:generator": "npm run dev --workspace packages/generator",
+    "start:td-host": "node packages/generator/td-servient.cjs"
   },
   "repository": {
     "type": "git",
