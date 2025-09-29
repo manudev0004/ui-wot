@@ -309,3 +309,32 @@ export async function connectAll(options: { baseUrl: string; container?: ParentN
 
   return cleanups;
 }
+
+/** Default custom element tags provided by this library */
+const DEFAULT_TAGS = ['ui-toggle', 'ui-slider', 'ui-text', 'ui-button', 'ui-event', 'ui-object', 'ui-number-picker'];
+
+/**
+ * One-call convenience: initialize WoT, optionally wait for custom elements, and connect everything.
+ *
+ * Usage: await connect({ baseUrl: 'http://host/thing' })
+ */
+export async function connect(options: {
+  baseUrl: string;
+  container?: ParentNode;
+  waitFor?: 'custom-elements' | false;
+  tags?: string[];
+  reuseExisting?: boolean;
+}): Promise<Cleanup[]> {
+  // Initialize WoT (no-op if already inited)
+  await initializeWot({ reuseExisting: options.reuseExisting });
+
+  // Optionally wait for custom elements to be defined
+  const shouldWait = options.waitFor !== false; // default true
+  if (shouldWait && typeof customElements?.whenDefined === 'function') {
+    const tags = options.tags && options.tags.length ? options.tags : DEFAULT_TAGS;
+    await Promise.all(tags.map(t => customElements.whenDefined(t)));
+  }
+
+  // Connect all components under container
+  return connectAll({ baseUrl: options.baseUrl, container: options.container });
+}

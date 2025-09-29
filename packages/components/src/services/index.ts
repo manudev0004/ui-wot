@@ -5,4 +5,5 @@ export {
   connectAction,
   connectEvent,
   connectAll,
+  connect,
 } from './browser-bundle-connect';
