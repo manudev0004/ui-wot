@@ -12,7 +12,7 @@
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-  - [1. Vanilla HTML with Node-WoT Browser Bundle](#1-vanilla-html-with-node-wot-browser-bundle)
+  - [1. Vanilla HTML with node-wot Browser Bundle](#1-vanilla-html-with-node-wot-browser-bundle)
   - [2. Framework Integration (React/Vue/Angular)](#2-framework-integration-reactvueangular)
 - [Components Overview](#components-overview)
 - [Services](#services)
@@ -34,7 +34,7 @@ You will be redirected to http://localhost:3333/. if not, open the url to view t
 
 ## Quick Start
 
-### 1. Vanilla HTML with Node-WoT Browser Bundle
+### 1. Vanilla HTML with node-wot Browser Bundle
 
 For vanilla HTML applications, you need to add this script inside the head tag, then you can directly use the custom components tag
 
@@ -42,7 +42,7 @@ For vanilla HTML applications, you need to add this script inside the head tag, 
 <script type="module" src="<your-directory-path>/ui-wot/packages/components/www/build/ui-wot-components.esm.js"></script>
 ```
 
-To interact with a TD, you also need the Node-WoT browser bundle:
+To interact with a TD, you also need the node-wot browser bundle:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
@@ -54,7 +54,7 @@ Example:
 <!DOCTYPE html>
 <html>
   <head>
-    <!-- Required: Node-WoT browser bundle for WoT functionality -->
+    <!-- Required: node-wot browser bundle for WoT functionality -->
     <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
     <!-- Load all components -->
     <script type="module" src="<your-directory-path>/ui-wot/packages/components/www/build/ui-wot-components.esm.js"></script>
@@ -112,7 +112,7 @@ UiSlider();
 createRoot(document.getElementById('root')!).render(<App />);
 ```
 
-**index.html** - Include Node-WoT Bundle:
+**index.html** - Include node-wot Bundle:
 
 ```html
 <!DOCTYPE html>
@@ -121,7 +121,7 @@ createRoot(document.getElementById('root')!).render(<App />);
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>UI-WoT React Example</title>
-    <!-- Required: Node-WoT browser bundle -->
+    <!-- Required: node-wot browser bundle -->
     <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
   </head>
   <body>
@@ -258,13 +258,13 @@ Each component supports:
 
 ## Services
 
-The services module is built on top of Node-Wot broswer bundle and provides utilities for WoT integration, component management and TD connections. For comprehensive documentation, usage patterns, and examples, see the **[Services Documentation](../../docs/components/services.md)**.
+The services module is built on top of node-wot broswer bundle and provides utilities for WoT integration, component management and TD connections. For comprehensive documentation, usage patterns, and examples, see the **[Services Documentation](../../docs/components/services.md)**.
 
 ### Core Services Overview
 
 #### `initializeWot()`
 
-Initializes the WoT runtime using the Node-WoT browser bundle. Must be called before using any WoT features.
+Initializes the WoT runtime using the node-wot browser bundle. Must be called before using any WoT features.
 
 ```javascript
 import { initializeWot } from '@thingweb/ui-wot-components/services';
