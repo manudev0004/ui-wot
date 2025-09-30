@@ -8,6 +8,8 @@
 
 > Independent Web Components library for building UIs for IoT applications using **Web of Things (WoT)**. These components provide ready-to-use UI elements with simple TD integration.
 
+![Components Showcase](../../assets/components.gif)
+
 ### Table of Contents
 
 - [Installation](#installation)

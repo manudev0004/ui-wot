@@ -37,8 +37,8 @@ The UI-WoT Generator is a React-based web application that automatically creates
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) version 18 or higher
-- [npm](https://www.npmjs.com/) version 8 or higher
+- [Node.js](https://nodejs.org/) version 20+
+- [npm](https://www.npmjs.com/) version 9+
 - Modern web browser with ES2015+ support
 
 ## Installation & Setup
@@ -96,9 +96,13 @@ Here's how to create your first dashboard in under a minute:
    - At the home page, click '+' to get started
    - You will now be at the 'Add Thing Description' page
 
+   <img src="../../assets/homepage.png" alt="Home page" style="max-width:800px; width:100%; height:auto;" />
+
 3. **Load a Thing Description:**
 
    The generator supports three ways to load Thing Descriptions:
+
+   <img src="../../assets/td_input.png" alt="Thing Description input" style="max-width:800px; width:100%; height:auto;" />
 
    **Option 1: URL Input**
 
@@ -107,6 +111,8 @@ Here's how to create your first dashboard in under a minute:
    1. Enter the full URL (e.g., `http://192.168.1.100:8080/counter`)
    2. Click "Consume"
    3. Wait for redirect to affordance page
+
+   ![URL to Dashboard flow](../../assets/url_to_dashboard.gif)
 
    **Option 2: File Upload**
 
@@ -135,10 +141,14 @@ Here's how to create your first dashboard in under a minute:
 
 And there is your fully functional dashboard!
 
+<img src="../../assets/dashboard.png" alt="Generated dashboard" style="max-width:800px; width:100%; height:auto;" />
+
 ## Editing and Customizing
 
 **Entering Edit Mode:**
 To customize the dashboard, tick the edit checkbox at the top right corner of Navbar. The look will change and many icons will appear - now you can design your dashboard layout and customize component behavior:
+
+![Edit mode](../../assets/edit_mode.gif)
 
 ### Canvas Layout
 
@@ -263,10 +273,14 @@ Right-click outside any section/component to access the context menu with additi
 2. **Enter a name** for your dashboard
 3. **Choose save location and save** - This downloads a JSON file that you can also share with others
 
+![Saving a dashboard](../../assets/saving.gif)
+
 ### Loading Saved Dashboards
 
 **Loading Process:**  
 To load a previously saved dashboard, Simply use the dashboard JSON file in the 'From File' section to restore your previously saved dashboard configuration.
+
+![Loading a saved dashboard](../../assets/load_dashboard.gif)
 
 ## Tips and Best Practices
 
