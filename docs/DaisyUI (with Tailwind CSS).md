@@ -34,16 +34,45 @@ It also provides excellent styling for form controls, which is super helpful.
 
 DaisyUI, especially when paired with Tailwind CSS, is an **excellent choice** and highly reusable for this UI-WoT project. Here's why:
 
-*   **Foundational UI Building Blocks:** It gives a full set of all basic UI components that can be directly mapped to the fundamental data types and interaction patterns found in Thing Descriptions. For example, we can use DaisyUI's toggle for booleans, range for numbers, select for enums, and input for strings.
-*   **Rapid Development:** Pre-styled components and Tailwind's utility-first approach help to build UI quickly, allowing us to focus more on the core logic of TD parsing and dynamic generation.
-*   **Customization and Theming:** DaisyUI comes with some default settings, but almost everything about it can be changed with Tailwind. Thus anyone can easily change the look and feel of the dashboard to match any style.
-*   **Clean and Minimal:** It encourages a clean and modern aesthetic, which is great for a functional minimal yet catchy dashboard.
+- **Foundational UI Building Blocks:** It gives a full set of all basic UI components that can be directly mapped to the fundamental data types and interaction patterns found in Thing Descriptions. For example, we can use DaisyUI's toggle for booleans, range for numbers, select for enums, and input for strings.
+- **Rapid Development:** Pre-styled components and Tailwind's utility-first approach help to build UI quickly, allowing us to focus more on the core logic of TD parsing and dynamic generation.
+- **Customization and Theming:** DaisyUI comes with some default settings, but almost everything about it can be changed with Tailwind. Thus anyone can easily change the look and feel of the dashboard to match any style.
+- **Clean and Minimal:** It encourages a clean and modern aesthetic, which is great for a functional minimal yet catchy dashboard.
 
 ## Identified Gaps (and Our Opportunity!)
 
 When seen as a styling framework and a component library it is perfect. But for UI-WoT, DaisyUI does lack in dynamic UI generation from TDs. These are not the limitations of DaisyUI but places where UI-WoT has to extend from it, so currently it lacks:
 
-*   **No Schema-Based UI Generation:** DaisyUI doesn't automatically interpret a JSON Schema to generate a form or best component. DataSchema to the appropriate DaisyUI component.
-*   **No Semantic Enrichment:**  It does not understand that a boolean property with `@type` `saref:LightSwitch` should be rendered as a lightbulb icon toggle.
-*   **No Dynamic Layout Management:** DaisyUI provides components, but not a system for drag-and-drop layouts or persistence. 
+- **No Schema-Based UI Generation:** DaisyUI doesn't automatically interpret a JSON Schema to generate a form or best component. DataSchema to the appropriate DaisyUI component.
+- **No Semantic Enrichment:** It does not understand that a boolean property with `@type` `saref:LightSwitch` should be rendered as a lightbulb icon toggle.
+- **No Dynamic Layout Management:** DaisyUI provides components, but not a system for drag-and-drop layouts or persistence.
 
+## Design Patterns and Features that can be considered for UI-WoT
+
+Since UI-WoT aims to become a more advanced competitor, we can analyze and adopt some of the existing features to strengthen our own system. Below are the features we should consider to add or enhance in our UI-WoT project:
+
+- **Fixed Size Scaling:**
+  Looking through DaisyUI's examples it uses consistent sizing tokens (xs, sm, md, lg, xl) across buttons, inputs, and cards. This creates a clear visual hierarchy in dashboards.
+  We should apply this same scaling system to affordance cards in UI-WoT. Small cards would be perfect for simple boolean properties like switches, medium cards for standard properties with single values, and larger cards for complex objects or actions that require multiple input parameters.
+- **Interactive State Feedback:**
+  DaisyUI's interactive components, especially buttons, support multiple visual states: normal, hover, active, disabled, loading. Each state has distinct visual feedback that communicates what's happening to the user.
+  For UI-WoT, we need to extend this pattern and have clear visual feedback for execution, value changing and connection loss. These additional states are crucial for WoT because network interactions can be slow or fail, and users need to understand what's happening with their devices.
+
+- **Cards as a Core:**
+  DaisyUI's Card component is versatile and well-designed, making it an ideal foundation for our affordance representation. We should standardize on using Cards as the primary container for properties, actions, and events.
+  Each affordance card should include consistent elements: a title (from the TD affordance name), a description (from the TD description field), an icon (mapped from semantic annotations), and affordance badges that surface important metadata. This consistent card structure would make dashboards intuitive and scannable, regardless of how many different Things are displayed.
+
+- **Accessibility and Keyboard Support:**
+  DaisyUI builds on Tailwind's excellent accessibility features, including focus-visible utilities and proper ARIA attributes. Their components are keyboard-operable by default, which is essential for inclusive design.
+  We must leverage these accessible patterns throughout UI-WoT. All interactive elements like toggles, sliders, and others should be fully keyboard operable with visible focus rings. We can tie ARIA labels directly to TD titles and descriptions so that screen readers can announce meaningful information about each affordance.
+
+- **State Styling System:**
+  DaisyUI has a pattern of using state classes for different component states (disabled, loading, error, success). These classes apply consistent visual styling across the entire component library.
+  We can adopt and extend this pattern for WoT-specific states like offline, readonly, observable, secure. By applying a consistent visual language (e.g., greyed-out for readonly, pulsing for observable), users will immediately understand the nature of each affordance.
+
+- **Animation and Interactions:**
+  DaisyUI includes various transitions and hover states that make interfaces smooth and responsive. These micro-interactions provide important feedback without being distracting.
+  For UI-WoT, we should leverage these existing animations like a “pulse” or spinner while an action is executing. Connection loss warnings with fade-in/out alerts etc.
+
+- **Icons:**
+  While DaisyUI doesn't prescribe a specific icon library, their design language works well with popular icon sets like Heroicons, Lucide, or FontAwesome. Icons improve readability and quick recognition of widgets. For UI-WoT, we need a similar icon mapping strategy. For example, a temperature sensor could automatically get a thermometer icon, a light bulb gets a lamp icon, if not clear then there may be icons based on the type of TD.
